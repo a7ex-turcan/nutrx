@@ -10,7 +10,7 @@ struct ContentView: View {
 
     var body: some View {
         if isOnboardingComplete {
-            Text("Main App")
+            MainTabView()
         } else {
             OnboardingFlow()
         }
