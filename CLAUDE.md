@@ -109,16 +109,14 @@ nutrx/
 │   │   └── ViewModels/
 │   │       └── OnboardingViewModel.swift     # Holds draft state, validates inputs, writes UserProfile on step 1 completion.
 │   │
-│   ├── Today/                   # Tab 1 — the main daily logging screen.
+│   ├── Today/                   # Tab 1 — the main daily logging screen. (Implemented)
 │   │   ├── Views/
-│   │   │   ├── TodayView.swift              # Root list of NutrientRowViews for the day.
-│   │   │   ├── NutrientRowView.swift        # Single row: name, unit, progress bar, − and + buttons.
-│   │   │   ├── NutrientProgressBar.swift    # The progress bar component with visual states (normal / complete / exceeded).
-│   │   │   ├── EditStepSheet.swift          # Lightweight bottom sheet for editing step only (not the full nutrient form).
-│   │   │   └── CustomAmountSheet.swift      # Bottom sheet for entering a one-off custom intake amount.
+│   │   │   ├── TodayView.swift              # Scrollable list of NutrientRowView cards. Refreshes on foreground.
+│   │   │   ├── NutrientRowView.swift        # Card with name, intake label, progress bar, − and + buttons.
+│   │   │   └── NutrientProgressBar.swift    # Progress bar: blue (in progress), green (complete), orange (exceeded).
 │   │   └── ViewModels/
-│   │       └── TodayViewModel.swift         # Fetches today's nutrients + summed intakes, handles +/−/custom/exclude actions,
-│   │                                        # triggers midnight reset check on foreground.
+│   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords for today's calendar day.
+│   │                                        # Handles +/− by inserting positive/negative IntakeRecords.
 │   │
 │   ├── Nutrients/               # Tab 2 — manage the nutrient list. (Implemented)
 │   │   └── Views/
@@ -274,6 +272,8 @@ All persistence is handled via SwiftData. There are four models. No data is ever
 - **SwiftData relationships use navigation properties** — no manual ID fields. `IntakeRecord` holds a direct `var nutrient: Nutrient` reference; SwiftData manages the underlying foreign key. This is equivalent to EF Core navigation properties.
 - **Do not add `@unchecked Sendable`** to `@Model` classes — the `@Model` macro already synthesises `Sendable` conformance.
 - **Date comparisons must use calendar day, not timestamp equality** — `IntakeRecord.date` is a full `Date` (timestamp of the tap). Queries for "today" must compare using `Calendar.current` day components, not raw `Date` equality.
+- **Decrements are negative IntakeRecords** — tapping − inserts an `IntakeRecord` with a negative `amount`. The total is always computed by summing all records, and is floored at 0 in the UI. This keeps the record log append-only.
+- **No explicit midnight reset** — since intake is computed by summing records for today's calendar day, a new day naturally returns 0 with no reset action needed.
 
 ---
 
