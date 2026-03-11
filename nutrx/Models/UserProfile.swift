@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class UserProfile: @unchecked Sendable {
+final class UserProfile {
     var name: String
     var birthdate: Date
     var weight: Double

@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Exclusion: @unchecked Sendable {
+final class Exclusion {
     var nutrient: Nutrient?
     var date: Date
 

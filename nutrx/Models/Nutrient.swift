@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Nutrient: @unchecked Sendable {
+final class Nutrient {
     var name: String
     var unit: String
     var step: Double

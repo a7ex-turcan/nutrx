@@ -53,27 +53,16 @@ struct OnboardingPersonalInfoView: View {
     // MARK: - Fields
 
     private var nameField: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Name")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-
+        FormField(label: "Name") {
             TextField("Your name", text: $viewModel.name)
                 .textContentType(.name)
                 .autocorrectionDisabled()
                 .focused($focusedField, equals: .name)
-                .padding(12)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
 
     private var birthdayField: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Birthday")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-
+        FormField(label: "Birthday") {
             DatePicker(
                 "Birthday",
                 selection: $viewModel.birthdate,
@@ -82,10 +71,7 @@ struct OnboardingPersonalInfoView: View {
             )
             .datePickerStyle(.compact)
             .labelsHidden()
-            .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
 

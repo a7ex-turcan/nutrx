@@ -16,7 +16,10 @@ struct OnboardingFlow: View {
             }
             .tag(0)
 
-            // Step 1 (next screen) will be added here
+            OnboardingFirstNutrientView {
+                viewModel.completeOnboarding(context: modelContext)
+            }
+            .tag(1)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .animation(.easeInOut, value: step)
@@ -25,5 +28,5 @@ struct OnboardingFlow: View {
 
 #Preview {
     OnboardingFlow()
-        .modelContainer(for: UserProfile.self, inMemory: true)
+        .modelContainer(for: [UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self], inMemory: true)
 }
