@@ -11,6 +11,7 @@ struct NutrientsListView: View {
     @State private var addDraft = NutrientDraft()
     @State private var editDraft = NutrientDraft()
     @State private var nutrientToEdit: Nutrient?
+    @State private var nutrientToDelete: Nutrient?
 
     var body: some View {
         NavigationStack {
@@ -45,10 +46,33 @@ struct NutrientsListView: View {
                 NutrientFormView(
                     draft: editDraft,
                     title: "Edit Nutrient",
-                    buttonLabel: "Save Changes"
+                    buttonLabel: "Save Changes",
+                    onDelete: {
+                        nutrientToEdit = nil
+                        nutrientToDelete = nutrient
+                    }
                 ) {
                     applyEdit(to: nutrient)
                 }
+            }
+            .alert(
+                "Delete \(nutrientToDelete?.name ?? "Nutrient")?",
+                isPresented: Binding(
+                    get: { nutrientToDelete != nil },
+                    set: { if !$0 { nutrientToDelete = nil } }
+                )
+            ) {
+                Button("Delete", role: .destructive) {
+                    if let nutrient = nutrientToDelete {
+                        nutrient.isDeleted = true
+                        nutrientToDelete = nil
+                    }
+                }
+                Button("Cancel", role: .cancel) {
+                    nutrientToDelete = nil
+                }
+            } message: {
+                Text("This nutrient will be removed from your daily tracking. Your previously tracked intakes will not be affected.")
             }
         }
     }
@@ -75,7 +99,11 @@ struct NutrientsListView: View {
                         nutrientToEdit = nutrient
                     }
             }
-            .onDelete(perform: deleteNutrients)
+            .onDelete { offsets in
+                if let index = offsets.first {
+                    nutrientToDelete = nutrients[index]
+                }
+            }
             .onMove(perform: moveNutrients)
         }
         .listStyle(.insetGrouped)
@@ -124,12 +152,6 @@ struct NutrientsListView: View {
         nutrient.unit = editDraft.unit.trimmingCharacters(in: .whitespaces)
         nutrient.step = stepValue
         nutrient.dailyTarget = targetValue
-    }
-
-    private func deleteNutrients(at offsets: IndexSet) {
-        for index in offsets {
-            nutrients[index].isDeleted = true
-        }
     }
 
     private func moveNutrients(from source: IndexSet, to destination: Int) {

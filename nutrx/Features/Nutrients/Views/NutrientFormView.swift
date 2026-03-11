@@ -5,6 +5,7 @@ struct NutrientFormView: View {
     @Bindable var draft: NutrientDraft
     let title: String
     let buttonLabel: String
+    var onDelete: (() -> Void)?
     let onSave: () -> Void
 
     var body: some View {
@@ -24,6 +25,19 @@ struct NutrientFormView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(!draft.isValid)
+
+                    if let onDelete {
+                        Button(role: .destructive) {
+                            dismiss()
+                            onDelete()
+                        } label: {
+                            Text("Delete Nutrient")
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
                 .padding(24)
             }
