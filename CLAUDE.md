@@ -18,10 +18,9 @@ Open in Xcode:
 open nutrx.xcodeproj
 ```
 
-Build from command line:
+Build from command line (skip signing for CLI-only builds):
 ```bash
-xcodebuild -scheme nutrx -configuration Debug
-xcodebuild -scheme nutrx -configuration Release
+xcodebuild -scheme nutrx -configuration Debug -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 ```
 
 Run tests:
@@ -29,20 +28,13 @@ Run tests:
 xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 16'
 ```
 
-## Architecture
-
-Standard SwiftUI app structure:
-
-- **`nutrx/nutrxApp.swift`** — `@main` entry point, defines the root `WindowGroup` scene
-- **`nutrx/ContentView.swift`** — Root view rendered into the window
-- **`nutrx/Assets.xcassets/`** — App icon, accent color, and other asset catalogs
-
 ## Swift Configuration
 
 Notable build settings in the Xcode project:
 - `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` — All types default to `@MainActor`
 - `SWIFT_APPROACHABLE_CONCURRENCY = YES` — Strict concurrency checking enabled
 - SwiftUI previews enabled (`ENABLE_PREVIEWS = YES`)
+- Xcode project uses `PBXFileSystemSynchronizedRootGroup` — new files added to the `nutrx/` directory are auto-discovered by Xcode (no manual pbxproj edits needed)
 
 ## What is this app?
 
@@ -109,14 +101,11 @@ nutrx/
 │   │
 │   ├── Onboarding/              # Shown on first launch only. Mandatory before accessing the app.
 │   │   ├── Views/
-│   │   │   ├── OnboardingFlow.swift          # Coordinator view that steps through the onboarding pages.
-│   │   │   ├── OnboardingNameView.swift
-│   │   │   ├── OnboardingDOBView.swift
-│   │   │   ├── OnboardingWeightView.swift
-│   │   │   ├── OnboardingGenderView.swift
-│   │   │   └── OnboardingFirstNutrientView.swift  # "Create your first nutrient" prompt shown at end.
+│   │   │   ├── OnboardingFlow.swift              # Coordinator view using paged TabView to step through screens.
+│   │   │   ├── OnboardingPersonalInfoView.swift  # Step 1: name, birthday, weight, height on a single screen.
+│   │   │   └── (Step 2 view TBD)                 # "Create your first nutrient" prompt.
 │   │   └── ViewModels/
-│   │       └── OnboardingViewModel.swift     # Holds draft state across pages, writes UserProfile on completion.
+│   │       └── OnboardingViewModel.swift     # Holds draft state, validates inputs, writes UserProfile on step 1 completion.
 │   │
 │   ├── Today/                   # Tab 1 — the main daily logging screen.
 │   │   ├── Views/
@@ -145,7 +134,7 @@ nutrx/
 │   │
 │   └── Profile/                 # Tab 4 — view and edit personal info.
 │       ├── Views/
-│       │   └── ProfileView.swift            # Displays and allows editing of name, DOB, weight, weight unit, gender.
+│       │   └── ProfileView.swift            # Displays and allows editing of name, DOB, weight, height.
 │       └── ViewModels/
 │           └── ProfileViewModel.swift       # Loads and saves the single UserProfile instance.
 │
@@ -174,14 +163,17 @@ nutrx/
 
 ## Onboarding
 
-Onboarding is **mandatory** on first launch. It must be completed before the user can access the main app. It collects:
+Onboarding is **mandatory** on first launch. It must be completed before the user can access the main app. It is a two-step flow:
 
+**Step 1 — Personal Info** (implemented in `OnboardingPersonalInfoView`): collects all fields on a single screen:
 - **Name**
-- **Date of birth**
-- **Current weight** + **unit preference** – the user types their weight and selects their preferred unit (kg or lbs). This preference is stored and used throughout the app wherever weight is displayed.
-- **Gender**
+- **Birthday** (date picker)
+- **Weight** + **unit preference** (kg / lbs segmented picker)
+- **Height** + **unit preference** (cm / ft segmented picker)
 
-After the onboarding, the user is prompted to **create their first nutrient** so the Today screen is never empty on first use. An empty app on first open is a bad experience and must be avoided.
+**Step 2 — First Nutrient**: the user is prompted to **create their first nutrient** so the Today screen is never empty on first use.
+
+Onboarding completion is tracked via `UserProfile.onboardingCompleted`. `ContentView` queries this flag to decide whether to show `OnboardingFlow` or the main app.
 
 These fields are stored locally (SwiftData) and are editable later from the Profile tab.
 
@@ -291,7 +283,9 @@ Stores the single user's personal information collected during onboarding.
 | `birthdate` | `Date` | Date only; time component ignored |
 | `weight` | `Double` | Stored in the user's chosen unit |
 | `weightUnit` | `String` | `"kg"` or `"lbs"` |
-| `gender` | `String` | Free text or enum; collected during onboarding |
+| `height` | `Double` | Stored in the user's chosen unit |
+| `heightUnit` | `String` | `"cm"` or `"ft"` |
+| `onboardingCompleted` | `Bool` | Set to `true` when the full onboarding flow is finished |
 
 There is always exactly one `UserProfile` instance in the store.
 
