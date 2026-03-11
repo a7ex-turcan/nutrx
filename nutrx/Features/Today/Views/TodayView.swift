@@ -61,5 +61,5 @@ struct TodayView: View {
             .navigationTitle("Today")
             .navigationBarTitleDisplayMode(.inline)
     }
-    .modelContainer(for: [Nutrient.self, IntakeRecord.self, Exclusion.self], inMemory: true)
+    .modelContainer(previewContainer)
 }
