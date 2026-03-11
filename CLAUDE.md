@@ -103,7 +103,7 @@ nutrx/
 │   │   ├── Views/
 │   │   │   ├── OnboardingFlow.swift              # Coordinator view using paged TabView to step through screens.
 │   │   │   ├── OnboardingPersonalInfoView.swift  # Step 1: name, birthday, weight, height on a single screen.
-│   │   │   └── (Step 2 view TBD)                 # "Create your first nutrient" prompt.
+│   │   │   └── OnboardingFirstNutrientView.swift # Step 2: create first nutrient(s). At least one required to proceed.
 │   │   └── ViewModels/
 │   │       └── OnboardingViewModel.swift     # Holds draft state, validates inputs, writes UserProfile on step 1 completion.
 │   │
@@ -143,7 +143,9 @@ nutrx/
     │   ├── Date+Calendar.swift              # Helpers for calendar-day comparisons (isToday, isSameDay(_:), startOfDay).
     │   └── Double+Formatting.swift          # Consistent number display (strip trailing zeros, etc.).
     ├── Components/
-    │   └── PrimaryButton.swift             # Reusable styled button used across onboarding and forms.
+    │   ├── FormField.swift                # Labeled field wrapper with consistent card styling.
+    │   └── NutrientFormFields.swift       # Reusable nutrient form (name, unit, step, target) + NutrientDraft observable.
+    │                                       # Used by onboarding step 2 and the My Nutrients form.
     └── Persistence/
         └── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
                                              # Centralises schema registration so nutrxApp.swift stays clean.
@@ -269,6 +271,7 @@ All persistence is handled via SwiftData. There are four models. No data is ever
 - **Everything is derived from raw records** — there are no pre-aggregated or cached totals stored. Today's intake for a nutrient is computed by summing all `IntakeRecord` rows for that nutrient whose `date` falls on today's calendar date. History is all `IntakeRecord` rows whose `date` falls on a past calendar date. This keeps the model simple and the source of truth unambiguous.
 - **Soft deletes on Nutrient** — nutrients are never hard-deleted. Setting `isDeleted = true` hides them from the UI while preserving all historical `IntakeRecord` data that references them.
 - **SwiftData relationships use navigation properties** — no manual ID fields. `IntakeRecord` holds a direct `var nutrient: Nutrient` reference; SwiftData manages the underlying foreign key. This is equivalent to EF Core navigation properties.
+- **Do not add `@unchecked Sendable`** to `@Model` classes — the `@Model` macro already synthesises `Sendable` conformance.
 - **Date comparisons must use calendar day, not timestamp equality** — `IntakeRecord.date` is a full `Date` (timestamp of the tap). Queries for "today" must compare using `Calendar.current` day components, not raw `Date` equality.
 
 ---
