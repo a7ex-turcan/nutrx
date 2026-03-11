@@ -66,15 +66,16 @@ all core tracking features remain free forever.
 
 ## App Structure – Tab Navigation
 
-The app has five tabs (defined in `App/MainTabView.swift`):
+The app has four tabs (defined in `App/MainTabView.swift`):
 
 | Tab | Purpose |
 |---|---|
 | **Today** | The main daily tracking screen |
 | **My Nutrients** | Create, edit, delete, and reorder custom nutrients |
 | **History** | Browse past daily intake logs |
-| **Profile** | View and edit the user's personal info |
 | **About** | App information |
+
+Profile is **not** a tab — it's accessed via a profile icon (top-right of every screen's navigation bar). Tapping it opens a menu with "Edit Profile" (sheet) and "Log Out". This is implemented via the `.withProfileMenu()` view modifier, which every tab applies.
 
 ---
 
@@ -90,7 +91,7 @@ nutrx/
 │                                # OnboardingFlow and MainTabView.
 │
 ├── App/
-│   └── MainTabView.swift        # The TabView shell with five tabs. Profile is implemented; others are placeholders.
+│   └── MainTabView.swift        # The TabView shell with four tabs. Each tab has a NavigationStack with .withProfileMenu().
 │
 ├── Models/                      # SwiftData model classes — pure data, zero UI, zero business logic.
 │   ├── UserProfile.swift
@@ -119,12 +120,10 @@ nutrx/
 │   │       └── TodayViewModel.swift         # Fetches today's nutrients + summed intakes, handles +/−/custom/exclude actions,
 │   │                                        # triggers midnight reset check on foreground.
 │   │
-│   ├── Nutrients/               # Tab 2 — manage the nutrient list.
-│   │   ├── Views/
-│   │   │   ├── NutrientsListView.swift      # Reorderable list of all non-deleted nutrients with add / edit / delete.
-│   │   │   └── NutrientFormView.swift       # Form used for both creating and editing a nutrient (name, unit, step, target).
-│   │   └── ViewModels/
-│   │       └── NutrientsViewModel.swift     # CRUD operations, drag-and-drop reorder logic, soft-delete.
+│   ├── Nutrients/               # Tab 2 — manage the nutrient list. (Implemented)
+│   │   └── Views/
+│   │       ├── NutrientsListView.swift      # Reorderable list with add/edit/delete + confirmation alerts.
+│   │       └── NutrientFormView.swift       # Sheet for creating and editing a nutrient. Delete button shown in edit mode.
 │   │
 │   ├── History/                 # Tab 3 — read-only log of past days.
 │   │   ├── Views/
@@ -133,9 +132,9 @@ nutrx/
 │   │   └── ViewModels/
 │   │       └── HistoryViewModel.swift       # Groups IntakeRecords by calendar day, exposes sorted day list.
 │   │
-│   └── Profile/                 # Tab 4 — view and edit personal info. (Implemented)
+│   └── Profile/                 # Accessed via profile menu, not a tab. (Implemented)
 │       ├── Views/
-│       │   └── ProfileView.swift            # Editable form for name, birthday, weight, height with save button + toast.
+│       │   └── ProfileView.swift            # Editable form presented as a sheet. Cancel + Save toolbar, toast on save.
 │       └── ViewModels/
 │           └── ProfileViewModel.swift       # Loads UserProfile, tracks changes vs original, saves back.
 │
@@ -144,9 +143,10 @@ nutrx/
     │   ├── Date+Calendar.swift              # Helpers for calendar-day comparisons (isToday, isSameDay(_:), startOfDay).
     │   └── Double+Formatting.swift          # Consistent number display (strip trailing zeros, etc.).
     ├── Components/
-    │   ├── FormField.swift                # Labeled field wrapper with consistent card styling.
-    │   └── NutrientFormFields.swift       # Reusable nutrient form (name, unit, step, target) + NutrientDraft observable.
-    │                                       # Used by onboarding step 2 and the My Nutrients form.
+    │   ├── FormField.swift                  # Labeled field wrapper with consistent card styling.
+    │   ├── NutrientFormFields.swift         # Reusable nutrient form (name, unit, step, target) + NutrientDraft observable.
+    │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / Log Out).
+    │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + edit sheet to any nav bar.
     └── Persistence/
         └── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
                                              # Centralises schema registration so nutrxApp.swift stays clean.

@@ -4,7 +4,11 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             Tab("Today", systemImage: "calendar") {
-                Text("Today")
+                NavigationStack {
+                    Text("Today")
+                        .navigationTitle("Today")
+                        .withProfileMenu()
+                }
             }
 
             Tab("My Nutrients", systemImage: "leaf") {
@@ -12,15 +16,19 @@ struct MainTabView: View {
             }
 
             Tab("History", systemImage: "chart.bar.xaxis") {
-                Text("History")
-            }
-
-            Tab("Profile", systemImage: "person.crop.circle") {
-                ProfileView()
+                NavigationStack {
+                    Text("History")
+                        .navigationTitle("History")
+                        .withProfileMenu()
+                }
             }
 
             Tab("About", systemImage: "info.circle") {
-                Text("About")
+                NavigationStack {
+                    Text("About")
+                        .navigationTitle("About")
+                        .withProfileMenu()
+                }
             }
         }
     }

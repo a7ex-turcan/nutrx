@@ -11,39 +11,43 @@ struct ProfileView: View {
         case name, weight, height
     }
 
+    @Environment(\.dismiss) private var dismiss
+
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    profileIcon
-                    fields
+        ScrollView {
+            VStack(spacing: 24) {
+                profileIcon
+                fields
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 24)
+            .padding(.bottom, 32)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Edit Profile")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") { dismiss() }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Save") {
+                    focusedField = nil
+                    viewModel.save()
+                    showSavedConfirmation = true
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 24)
-                .padding(.bottom, 32)
+                .fontWeight(.semibold)
+                .disabled(!viewModel.hasChanges || !viewModel.isValid)
             }
-            .scrollDismissesKeyboard(.interactively)
-            .background(Color(.systemGroupedBackground))
-            .navigationTitle("Profile")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
-                        focusedField = nil
-                        viewModel.save()
-                        showSavedConfirmation = true
-                    }
-                    .fontWeight(.semibold)
-                    .disabled(!viewModel.hasChanges || !viewModel.isValid)
-                }
+        }
+        .overlay {
+            if showSavedConfirmation {
+                savedToast
             }
-            .overlay {
-                if showSavedConfirmation {
-                    savedToast
-                }
-            }
-            .onAppear {
-                viewModel.load(context: modelContext)
-            }
+        }
+        .onAppear {
+            viewModel.load(context: modelContext)
         }
     }
 

@@ -23,6 +23,7 @@ struct NutrientsListView: View {
                 }
             }
             .navigationTitle("My Nutrients")
+            .withProfileMenu()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
