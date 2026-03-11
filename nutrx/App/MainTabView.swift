@@ -7,6 +7,7 @@ struct MainTabView: View {
                 NavigationStack {
                     Text("Today")
                         .navigationTitle("Today")
+                        .navigationBarTitleDisplayMode(.inline)
                         .withProfileMenu()
                 }
             }
@@ -19,6 +20,7 @@ struct MainTabView: View {
                 NavigationStack {
                     Text("History")
                         .navigationTitle("History")
+                        .navigationBarTitleDisplayMode(.inline)
                         .withProfileMenu()
                 }
             }
@@ -27,6 +29,7 @@ struct MainTabView: View {
                 NavigationStack {
                     Text("About")
                         .navigationTitle("About")
+                        .navigationBarTitleDisplayMode(.inline)
                         .withProfileMenu()
                 }
             }
