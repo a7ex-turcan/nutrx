@@ -107,6 +107,15 @@ struct NutrientsListView: View {
                             Image(systemName: "trash")
                         }
                     }
+                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                        Button {
+                            editDraft.populate(from: nutrient)
+                            nutrientToEdit = nutrient
+                        } label: {
+                            Image(systemName: "pencil")
+                        }
+                        .tint(.blue)
+                    }
             }
             .onMove(perform: moveNutrients)
         }
