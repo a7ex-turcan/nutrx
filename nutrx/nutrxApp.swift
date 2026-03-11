@@ -1,17 +1,14 @@
-//
-//  nutrxApp.swift
-//  nutrx
-//
-//  Created by Alexandru Turcan on 10.03.2026.
-//
-
 import SwiftUI
+import SwiftData
 
 @main
 struct nutrxApp: App {
+    let modelContainer = ModelContainerFactory.create()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(modelContainer)
     }
 }

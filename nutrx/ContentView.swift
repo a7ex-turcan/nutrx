@@ -1,24 +1,23 @@
-//
-//  ContentView.swift
-//  nutrx
-//
-//  Created by Alexandru Turcan on 10.03.2026.
-//
-
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    @Query private var profiles: [UserProfile]
+
+    private var isOnboardingComplete: Bool {
+        profiles.first?.onboardingCompleted == true
+    }
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        if isOnboardingComplete {
+            Text("Main App")
+        } else {
+            OnboardingFlow()
         }
-        .padding()
     }
 }
 
 #Preview {
     ContentView()
+        .modelContainer(for: UserProfile.self, inMemory: true)
 }

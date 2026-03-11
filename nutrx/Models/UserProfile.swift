@@ -7,13 +7,25 @@ final class UserProfile: @unchecked Sendable {
     var birthdate: Date
     var weight: Double
     var weightUnit: String
-    var gender: String
+    var height: Double
+    var heightUnit: String
+    var onboardingCompleted: Bool
 
-    init(name: String, birthdate: Date, weight: Double, weightUnit: String = "kg", gender: String) {
+    init(
+        name: String,
+        birthdate: Date,
+        weight: Double,
+        weightUnit: String = "kg",
+        height: Double,
+        heightUnit: String = "cm",
+        onboardingCompleted: Bool = false
+    ) {
         self.name = name
         self.birthdate = birthdate
         self.weight = weight
         self.weightUnit = weightUnit
-        self.gender = gender
+        self.height = height
+        self.heightUnit = heightUnit
+        self.onboardingCompleted = onboardingCompleted
     }
 }
