@@ -8,7 +8,7 @@ struct MainTabView: View {
             }
 
             Tab("My Nutrients", systemImage: "leaf") {
-                Text("My Nutrients")
+                NutrientsListView()
             }
 
             Tab("History", systemImage: "chart.bar.xaxis") {
