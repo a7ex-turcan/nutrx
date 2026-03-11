@@ -16,7 +16,7 @@ struct MainTabView: View {
             }
 
             Tab("Profile", systemImage: "person.crop.circle") {
-                Text("Profile")
+                ProfileView()
             }
 
             Tab("About", systemImage: "info.circle") {
