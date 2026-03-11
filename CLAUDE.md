@@ -44,7 +44,6 @@ Notable build settings in the Xcode project:
 - `SWIFT_APPROACHABLE_CONCURRENCY = YES` — Strict concurrency checking enabled
 - SwiftUI previews enabled (`ENABLE_PREVIEWS = YES`)
 
-
 ## What is this app?
 
 nutrx is a privacy-first iOS app for tracking daily nutrient intake.
@@ -83,6 +82,93 @@ The app has four tabs:
 | **My Nutrients** | Create, edit, delete, and reorder custom nutrients |
 | **History** | Browse past daily intake logs |
 | **Profile** | View and edit the user's personal info |
+
+---
+
+## Project Directory Structure
+
+The Xcode project is named `nutrx`. All Swift source lives under `nutrx/`. The structure mirrors the four-tab feature split plus shared infrastructure.
+
+```
+nutrx/
+├── nutrxApp.swift               # @main entry point. Bootstraps the SwiftData container and decides
+│                                # whether to show Onboarding or the main TabView.
+├── ContentView.swift            # Root view. Reads onboarding-complete flag and switches between
+│                                # OnboardingFlow and MainTabView.
+│
+├── App/
+│   └── MainTabView.swift        # The TabView shell with four tabs wired to each feature root view.
+│
+├── Models/                      # SwiftData model classes — pure data, zero UI, zero business logic.
+│   ├── UserProfile.swift
+│   ├── Nutrient.swift
+│   ├── IntakeRecord.swift
+│   └── Exclusion.swift
+│
+├── Features/
+│   │
+│   ├── Onboarding/              # Shown on first launch only. Mandatory before accessing the app.
+│   │   ├── Views/
+│   │   │   ├── OnboardingFlow.swift          # Coordinator view that steps through the onboarding pages.
+│   │   │   ├── OnboardingNameView.swift
+│   │   │   ├── OnboardingDOBView.swift
+│   │   │   ├── OnboardingWeightView.swift
+│   │   │   ├── OnboardingGenderView.swift
+│   │   │   └── OnboardingFirstNutrientView.swift  # "Create your first nutrient" prompt shown at end.
+│   │   └── ViewModels/
+│   │       └── OnboardingViewModel.swift     # Holds draft state across pages, writes UserProfile on completion.
+│   │
+│   ├── Today/                   # Tab 1 — the main daily logging screen.
+│   │   ├── Views/
+│   │   │   ├── TodayView.swift              # Root list of NutrientRowViews for the day.
+│   │   │   ├── NutrientRowView.swift        # Single row: name, unit, progress bar, − and + buttons.
+│   │   │   ├── NutrientProgressBar.swift    # The progress bar component with visual states (normal / complete / exceeded).
+│   │   │   ├── EditStepSheet.swift          # Lightweight bottom sheet for editing step only (not the full nutrient form).
+│   │   │   └── CustomAmountSheet.swift      # Bottom sheet for entering a one-off custom intake amount.
+│   │   └── ViewModels/
+│   │       └── TodayViewModel.swift         # Fetches today's nutrients + summed intakes, handles +/−/custom/exclude actions,
+│   │                                        # triggers midnight reset check on foreground.
+│   │
+│   ├── Nutrients/               # Tab 2 — manage the nutrient list.
+│   │   ├── Views/
+│   │   │   ├── NutrientsListView.swift      # Reorderable list of all non-deleted nutrients with add / edit / delete.
+│   │   │   └── NutrientFormView.swift       # Form used for both creating and editing a nutrient (name, unit, step, target).
+│   │   └── ViewModels/
+│   │       └── NutrientsViewModel.swift     # CRUD operations, drag-and-drop reorder logic, soft-delete.
+│   │
+│   ├── History/                 # Tab 3 — read-only log of past days.
+│   │   ├── Views/
+│   │   │   ├── HistoryListView.swift        # Chronological list of past days, most recent first.
+│   │   │   └── HistoryDayView.swift         # Detail view for a single past day showing each nutrient's logged intake.
+│   │   └── ViewModels/
+│   │       └── HistoryViewModel.swift       # Groups IntakeRecords by calendar day, exposes sorted day list.
+│   │
+│   └── Profile/                 # Tab 4 — view and edit personal info.
+│       ├── Views/
+│       │   └── ProfileView.swift            # Displays and allows editing of name, DOB, weight, weight unit, gender.
+│       └── ViewModels/
+│           └── ProfileViewModel.swift       # Loads and saves the single UserProfile instance.
+│
+└── Shared/                      # Reusable components and utilities used across multiple features.
+    ├── Extensions/
+    │   ├── Date+Calendar.swift              # Helpers for calendar-day comparisons (isToday, isSameDay(_:), startOfDay).
+    │   └── Double+Formatting.swift          # Consistent number display (strip trailing zeros, etc.).
+    ├── Components/
+    │   └── PrimaryButton.swift             # Reusable styled button used across onboarding and forms.
+    └── Persistence/
+        └── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
+                                             # Centralises schema registration so nutrxApp.swift stays clean.
+```
+
+### Rules Claude Code must follow for file placement
+
+- **New SwiftData models** → `Models/`
+- **New tab** → new folder under `Features/` with its own `Views/` and `ViewModels/` subfolders
+- **New view used in only one feature** → inside that feature's `Views/` folder
+- **New view used across two or more features** → `Shared/Components/`
+- **Date / number / string utilities** → `Shared/Extensions/`
+- **No files at the root of `Features/`** — everything must be inside a named feature folder
+- **No business logic in view files** — if a view needs to do anything beyond layout and user input forwarding, that logic belongs in the corresponding ViewModel
 
 ---
 
@@ -180,6 +266,83 @@ The following features are explicitly **deferred** and should not be built or sc
 - AI features
 - Data export
 - iCloud sync
+
+---
+
+## Data Models
+
+All persistence is handled via SwiftData. There are four models. No data is ever sent off-device.
+
+### Design principles
+- **Everything is derived from raw records** — there are no pre-aggregated or cached totals stored. Today's intake for a nutrient is computed by summing all `IntakeRecord` rows for that nutrient whose `date` falls on today's calendar date. History is all `IntakeRecord` rows whose `date` falls on a past calendar date. This keeps the model simple and the source of truth unambiguous.
+- **Soft deletes on Nutrient** — nutrients are never hard-deleted. Setting `isDeleted = true` hides them from the UI while preserving all historical `IntakeRecord` data that references them.
+- **SwiftData relationships use navigation properties** — no manual ID fields. `IntakeRecord` holds a direct `var nutrient: Nutrient` reference; SwiftData manages the underlying foreign key. This is equivalent to EF Core navigation properties.
+- **Date comparisons must use calendar day, not timestamp equality** — `IntakeRecord.date` is a full `Date` (timestamp of the tap). Queries for "today" must compare using `Calendar.current` day components, not raw `Date` equality.
+
+---
+
+### UserProfile
+
+Stores the single user's personal information collected during onboarding.
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `String` | Free text |
+| `birthdate` | `Date` | Date only; time component ignored |
+| `weight` | `Double` | Stored in the user's chosen unit |
+| `weightUnit` | `String` | `"kg"` or `"lbs"` |
+| `gender` | `String` | Free text or enum; collected during onboarding |
+
+There is always exactly one `UserProfile` instance in the store.
+
+---
+
+### Nutrient
+
+Represents a user-defined nutrient that the user wants to track.
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `String` | e.g. "Vitamin D", "Caffeine" |
+| `unit` | `String` | e.g. "mg", "IU", "cups" |
+| `step` | `Double` | Increment per + / − tap. Must be > 0 |
+| `dailyTarget` | `Double` | The daily goal, in the nutrient's own unit |
+| `sortOrder` | `Int` | Drives display order on Today and My Nutrients screens. Lower = higher up. Updated on every drag-and-drop reorder |
+| `isDeleted` | `Bool` | Soft delete flag. When `true`, hidden from all active UI but retained so historical `IntakeRecord` rows remain valid |
+
+**Relationships:**
+- One `Nutrient` → many `IntakeRecord` (inverse: `IntakeRecord.nutrient`)
+- One `Nutrient` → many `Exclusion` (inverse: `Exclusion.nutrient`)
+
+---
+
+### IntakeRecord
+
+Represents a single logging event — one tap of + or a custom amount entry. To get the total intake for a nutrient on a given day, **SUM** all `IntakeRecord.amount` values where `nutrient` matches and `date` falls on that calendar day.
+
+| Field | Type | Notes |
+|---|---|---|
+| `nutrient` | `Nutrient` | Navigation property (SwiftData relationship) |
+| `amount` | `Double` | The amount logged in this single event, in the nutrient's unit. Always positive |
+| `date` | `Date` | Full timestamp of when the record was created. Use calendar-day comparison for grouping, not raw equality |
+
+**Query patterns:**
+- **Today's intake for a nutrient:** `SUM(amount)` where `nutrient == x` and `date` is today's calendar day
+- **Today's view:** all non-deleted, non-excluded nutrients, each with their summed intake for today
+- **History for a past day:** all `IntakeRecord` rows where `date` falls on that day, grouped by nutrient
+
+---
+
+### Exclusion
+
+Records that a specific nutrient has been excluded from a specific day's Today view. Exclusions are created by the "Exclude for today" action and cleared automatically at midnight (the next day the nutrient reappears by default).
+
+| Field | Type | Notes |
+|---|---|---|
+| `nutrient` | `Nutrient` | Navigation property (SwiftData relationship) |
+| `date` | `Date` | The calendar day the exclusion applies to. Only the date component is meaningful; time is ignored |
+
+**Usage:** a nutrient is excluded from a given day's Today view if an `Exclusion` row exists for that nutrient where `date` matches that calendar day. At midnight (checked on foreground), any `Exclusion` rows for previous days can be purged — they are no longer needed since exclusions do not carry forward.
 
 ---
 
