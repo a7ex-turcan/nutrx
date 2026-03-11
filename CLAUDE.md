@@ -66,7 +66,7 @@ all core tracking features remain free forever.
 
 ## App Structure – Tab Navigation
 
-The app has four tabs:
+The app has five tabs (defined in `App/MainTabView.swift`):
 
 | Tab | Purpose |
 |---|---|
@@ -74,6 +74,7 @@ The app has four tabs:
 | **My Nutrients** | Create, edit, delete, and reorder custom nutrients |
 | **History** | Browse past daily intake logs |
 | **Profile** | View and edit the user's personal info |
+| **About** | App information |
 
 ---
 
@@ -89,7 +90,7 @@ nutrx/
 │                                # OnboardingFlow and MainTabView.
 │
 ├── App/
-│   └── MainTabView.swift        # The TabView shell with four tabs wired to each feature root view.
+│   └── MainTabView.swift        # The TabView shell with five tabs. Profile is implemented; others are placeholders.
 │
 ├── Models/                      # SwiftData model classes — pure data, zero UI, zero business logic.
 │   ├── UserProfile.swift
@@ -132,11 +133,11 @@ nutrx/
 │   │   └── ViewModels/
 │   │       └── HistoryViewModel.swift       # Groups IntakeRecords by calendar day, exposes sorted day list.
 │   │
-│   └── Profile/                 # Tab 4 — view and edit personal info.
+│   └── Profile/                 # Tab 4 — view and edit personal info. (Implemented)
 │       ├── Views/
-│       │   └── ProfileView.swift            # Displays and allows editing of name, DOB, weight, height.
+│       │   └── ProfileView.swift            # Editable form for name, birthday, weight, height with save button + toast.
 │       └── ViewModels/
-│           └── ProfileViewModel.swift       # Loads and saves the single UserProfile instance.
+│           └── ProfileViewModel.swift       # Loads UserProfile, tracks changes vs original, saves back.
 │
 └── Shared/                      # Reusable components and utilities used across multiple features.
     ├── Extensions/
