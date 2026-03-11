@@ -100,11 +100,13 @@ struct NutrientsListView: View {
                         editDraft.populate(from: nutrient)
                         nutrientToEdit = nutrient
                     }
-            }
-            .onDelete { offsets in
-                if let index = offsets.first {
-                    nutrientToDelete = nutrients[index]
-                }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            nutrientToDelete = nutrient
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                    }
             }
             .onMove(perform: moveNutrients)
         }
