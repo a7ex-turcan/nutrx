@@ -52,6 +52,12 @@ final class TodayViewModel {
         refresh(context: context)
     }
 
+    func addCustomAmount(_ amount: Double, to nutrient: Nutrient, context: ModelContext) {
+        let record = IntakeRecord(nutrient: nutrient, amount: amount)
+        context.insert(record)
+        refresh(context: context)
+    }
+
     func decrement(_ nutrient: Nutrient, context: ModelContext) {
         // Find current total for today
         if let entry = nutrientIntakes.first(where: { $0.nutrient.persistentModelID == nutrient.persistentModelID }) {

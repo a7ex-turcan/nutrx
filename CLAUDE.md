@@ -111,12 +111,12 @@ nutrx/
 │   │
 │   ├── Today/                   # Tab 1 — the main daily logging screen. (Implemented)
 │   │   ├── Views/
-│   │   │   ├── TodayView.swift              # Scrollable list of NutrientRowView cards. Refreshes on foreground.
-│   │   │   ├── NutrientRowView.swift        # Card with name, intake label, progress bar, − and + buttons.
-│   │   │   └── NutrientProgressBar.swift    # Progress bar: blue (in progress), green (complete), orange (exceeded).
+│   │   │   ├── TodayView.swift              # Scrollable list of NutrientRowView cards. Long-press context menu
+│   │   │   │                                # with "Add Exact Amount" and "Edit Nutrient". Refreshes on foreground.
+│   │   │   └── CustomAmountSheet.swift      # Half-sheet for entering a one-off custom intake amount.
 │   │   └── ViewModels/
 │   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords for today's calendar day.
-│   │                                        # Handles +/− by inserting positive/negative IntakeRecords.
+│   │                                        # Handles +/−/custom by inserting IntakeRecords.
 │   │
 │   ├── Nutrients/               # Tab 2 — manage the nutrient list. (Implemented)
 │   │   └── Views/
@@ -143,11 +143,13 @@ nutrx/
     ├── Components/
     │   ├── FormField.swift                  # Labeled field wrapper with consistent card styling.
     │   ├── NutrientFormFields.swift         # Reusable nutrient form (name, unit, step, target) + NutrientDraft observable.
+    │   ├── NutrientRowView.swift            # Card with name, intake label, progress bar, − and + buttons.
+    │   ├── NutrientProgressBar.swift        # Progress bar: blue (in progress), green (complete), orange (exceeded).
     │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / Log Out).
     │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + edit sheet to any nav bar.
     └── Persistence/
-        └── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
-                                             # Centralises schema registration so nutrxApp.swift stays clean.
+        ├── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
+        └── PreviewSampleData.swift          # previewContainer with seeded nutrients + intake for Xcode previews.
 ```
 
 ### Rules Claude Code must follow for file placement
