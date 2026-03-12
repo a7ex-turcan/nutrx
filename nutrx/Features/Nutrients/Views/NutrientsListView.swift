@@ -26,6 +26,11 @@ struct NutrientsListView: View {
             .navigationBarTitleDisplayMode(.inline)
             .withProfileMenu()
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if !nutrients.isEmpty {
+                        EditButton()
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         addDraft.reset()
