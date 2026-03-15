@@ -42,5 +42,25 @@ let previewContainer: ModelContainer = {
     context.insert(IntakeRecord(nutrient: water, amount: 1))
     context.insert(IntakeRecord(nutrient: water, amount: 1))
 
+    // Past day records for History preview
+    let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now)!
+    let twoDaysAgo = Calendar.current.date(byAdding: .day, value: -2, to: .now)!
+
+    for date in [yesterday, twoDaysAgo] {
+        context.insert(IntakeRecord(nutrient: vitD, amount: 1000, date: date))
+        context.insert(IntakeRecord(nutrient: vitD, amount: 1000, date: date))
+        context.insert(IntakeRecord(nutrient: vitD, amount: 1000, date: date))
+        context.insert(IntakeRecord(nutrient: omega3, amount: 500, date: date))
+        context.insert(IntakeRecord(nutrient: omega3, amount: 500, date: date))
+        context.insert(IntakeRecord(nutrient: caffeine, amount: 100, date: date))
+        context.insert(IntakeRecord(nutrient: caffeine, amount: 100, date: date))
+        context.insert(IntakeRecord(nutrient: water, amount: 1, date: date))
+        context.insert(IntakeRecord(nutrient: water, amount: 1, date: date))
+        context.insert(IntakeRecord(nutrient: water, amount: 1, date: date))
+        context.insert(IntakeRecord(nutrient: water, amount: 1, date: date))
+        context.insert(IntakeRecord(nutrient: protein, amount: 10, date: date))
+        context.insert(IntakeRecord(nutrient: protein, amount: 10, date: date))
+    }
+
     return container
 }()

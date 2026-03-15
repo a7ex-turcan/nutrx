@@ -3,8 +3,12 @@ import SwiftUI
 struct NutrientRowView: View {
     let nutrient: Nutrient
     let currentIntake: Double
-    let onIncrement: () -> Void
-    let onDecrement: () -> Void
+    var onIncrement: (() -> Void)?
+    var onDecrement: (() -> Void)?
+
+    private var showButtons: Bool {
+        onIncrement != nil || onDecrement != nil
+    }
 
     private var isComplete: Bool {
         nutrient.dailyTarget > 0 && currentIntake >= nutrient.dailyTarget
@@ -24,28 +28,32 @@ struct NutrientRowView: View {
                     .foregroundStyle(isComplete ? .green : .secondary)
             }
 
-            // Progress bar with +/- buttons
+            // Progress bar with optional +/- buttons
             HStack(spacing: 14) {
-                Button {
-                    onDecrement()
-                } label: {
-                    Image(systemName: "minus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(currentIntake > 0 ? .red : Color(.systemGray4))
+                if showButtons {
+                    Button {
+                        onDecrement?()
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(currentIntake > 0 ? .red : Color(.systemGray4))
+                    }
+                    .disabled(currentIntake <= 0)
+                    .buttonStyle(.plain)
                 }
-                .disabled(currentIntake <= 0)
-                .buttonStyle(.plain)
 
                 NutrientProgressBar(current: currentIntake, target: nutrient.dailyTarget)
 
-                Button {
-                    onIncrement()
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.green)
+                if showButtons {
+                    Button {
+                        onIncrement?()
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
         }
         .padding(16)
@@ -63,22 +71,14 @@ struct NutrientRowView: View {
 #Preview {
     VStack(spacing: 12) {
         NutrientRowView(
-            nutrient: {
-                let n = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 4000, sortOrder: 0)
-                return n
-            }(),
+            nutrient: Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 4000, sortOrder: 0),
             currentIntake: 2000,
             onIncrement: {},
             onDecrement: {}
         )
         NutrientRowView(
-            nutrient: {
-                let n = Nutrient(name: "Omega-3", unit: "mg", step: 500, dailyTarget: 2000, sortOrder: 1)
-                return n
-            }(),
-            currentIntake: 2000,
-            onIncrement: {},
-            onDecrement: {}
+            nutrient: Nutrient(name: "Omega-3", unit: "mg", step: 500, dailyTarget: 2000, sortOrder: 1),
+            currentIntake: 2000
         )
     }
     .padding()

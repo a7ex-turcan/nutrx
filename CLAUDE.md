@@ -123,12 +123,12 @@ nutrx/
 │   │       ├── NutrientsListView.swift      # Reorderable list with add/edit/delete + confirmation alerts.
 │   │       └── NutrientFormView.swift       # Sheet for creating and editing a nutrient. Delete button shown in edit mode.
 │   │
-│   ├── History/                 # Tab 3 — read-only log of past days.
+│   ├── History/                 # Tab 3 — read-only log of past days. (Implemented)
 │   │   ├── Views/
-│   │   │   ├── HistoryListView.swift        # Chronological list of past days, most recent first.
-│   │   │   └── HistoryDayView.swift         # Detail view for a single past day showing each nutrient's logged intake.
+│   │   │   ├── HistoryListView.swift        # List of past days (most recent first) with nutrient preview summary.
+│   │   │   └── HistoryDayView.swift         # Day detail: read-only NutrientRowViews. Tap nutrient for intake entries sheet.
 │   │   └── ViewModels/
-│   │       └── HistoryViewModel.swift       # Groups IntakeRecords by calendar day, exposes sorted day list.
+│   │       └── HistoryViewModel.swift       # Groups IntakeRecords by calendar day (excludes today), sums per nutrient.
 │   │
 │   └── Profile/                 # Accessed via profile menu, not a tab. (Implemented)
 │       ├── Views/
@@ -143,7 +143,7 @@ nutrx/
     ├── Components/
     │   ├── FormField.swift                  # Labeled field wrapper with consistent card styling.
     │   ├── NutrientFormFields.swift         # Reusable nutrient form (name, unit, step, target) + NutrientDraft observable.
-    │   ├── NutrientRowView.swift            # Card with name, intake label, progress bar, − and + buttons.
+    │   ├── NutrientRowView.swift            # Card with name, intake label, progress bar. +/− buttons optional (nil = read-only).
     │   ├── NutrientProgressBar.swift        # Progress bar: blue (in progress), green (complete), orange (exceeded).
     │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / Log Out).
     │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + edit sheet to any nav bar.
