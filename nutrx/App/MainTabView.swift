@@ -28,7 +28,7 @@ struct MainTabView: View {
 
             Tab("About", systemImage: "info.circle") {
                 NavigationStack {
-                    Text("About")
+                    AboutView()
                         .navigationTitle("About")
                         .navigationBarTitleDisplayMode(.inline)
                         .withProfileMenu()
