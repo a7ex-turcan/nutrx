@@ -66,22 +66,21 @@ all core tracking features remain free forever.
 
 ## App Structure – Tab Navigation
 
-The app has four tabs (defined in `App/MainTabView.swift`):
+The app has three tabs (defined in `App/MainTabView.swift`):
 
 | Tab | Purpose |
 |---|---|
 | **Today** | The main daily tracking screen |
 | **My Nutrients** | Create, edit, delete, and reorder custom nutrients |
 | **History** | Browse past daily intake logs |
-| **About** | App information |
 
-Profile is **not** a tab — it's accessed via a profile icon (top-right of every screen's navigation bar). Tapping it opens a menu with "Edit Profile" (sheet) and "Log Out". This is implemented via the `.withProfileMenu()` view modifier, which every tab applies.
+Profile and About are **not** tabs — they're accessed via a profile icon (top-right of every screen's navigation bar). Tapping it opens a menu with "Edit Profile" (sheet), "About" (sheet), and "Log Out". This is implemented via the `.withProfileMenu()` view modifier, which every tab applies.
 
 ---
 
 ## Project Directory Structure
 
-The Xcode project is named `nutrx`. All Swift source lives under `nutrx/`. The structure mirrors the four-tab feature split plus shared infrastructure.
+The Xcode project is named `nutrx`. All Swift source lives under `nutrx/`. The structure mirrors the three-tab feature split plus shared infrastructure.
 
 ```
 nutrx/
@@ -91,7 +90,7 @@ nutrx/
 │                                # OnboardingFlow and MainTabView.
 │
 ├── App/
-│   └── MainTabView.swift        # The TabView shell with four tabs. Each tab has a NavigationStack with .withProfileMenu().
+│   └── MainTabView.swift        # The TabView shell with three tabs. Each tab has a NavigationStack with .withProfileMenu().
 │
 ├── Models/                      # SwiftData model classes — pure data, zero UI, zero business logic.
 │   ├── UserProfile.swift
@@ -130,6 +129,10 @@ nutrx/
 │   │   └── ViewModels/
 │   │       └── HistoryViewModel.swift       # Groups IntakeRecords by calendar day (excludes today), sums per nutrient.
 │   │
+│   ├── About/                   # Accessed via profile menu, not a tab. (Implemented)
+│   │   └── Views/
+│   │       └── AboutView.swift              # App info, privacy philosophy, how-it-works. Shown as sheet from profile menu.
+│   │
 │   └── Profile/                 # Accessed via profile menu, not a tab. (Implemented)
 │       ├── Views/
 │       │   └── ProfileView.swift            # Editable form presented as a sheet. Cancel + Save toolbar, toast on save.
@@ -145,8 +148,8 @@ nutrx/
     │   ├── NutrientFormFields.swift         # Reusable nutrient form (name, unit, step, target) + NutrientDraft observable.
     │   ├── NutrientRowView.swift            # Card with name, intake label, progress bar. +/− buttons optional (nil = read-only).
     │   ├── NutrientProgressBar.swift        # Progress bar: blue (in progress), green (complete), orange (exceeded).
-    │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / Log Out).
-    │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + edit sheet to any nav bar.
+    │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / About / Log Out).
+    │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + edit/about sheets to any nav bar.
     └── Persistence/
         ├── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
         └── PreviewSampleData.swift          # previewContainer with seeded nutrients + intake for Xcode previews.

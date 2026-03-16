@@ -26,14 +26,6 @@ struct MainTabView: View {
                 }
             }
 
-            Tab("About", systemImage: "info.circle") {
-                NavigationStack {
-                    AboutView()
-                        .navigationTitle("About")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .withProfileMenu()
-                }
-            }
         }
     }
 }
