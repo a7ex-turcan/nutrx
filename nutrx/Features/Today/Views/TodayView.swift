@@ -4,10 +4,21 @@ import SwiftData
 struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+    @Query private var allPreferences: [UserPreferences]
     @State private var viewModel = TodayViewModel()
     @State private var nutrientForCustomAmount: Nutrient?
     @State private var nutrientToEdit: Nutrient?
     @State private var editDraft = NutrientDraft()
+    @State private var showBanner = false
+
+    private var preferences: UserPreferences {
+        if let existing = allPreferences.first {
+            return existing
+        }
+        let new = UserPreferences()
+        modelContext.insert(new)
+        return new
+    }
 
     var body: some View {
         Group {
@@ -15,6 +26,16 @@ struct TodayView: View {
                 emptyState
             } else {
                 List {
+                    if showBanner {
+                        NotificationBannerView(
+                            onEnable: { enableReminder() },
+                            onDismiss: { dismissBanner() }
+                        )
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                    }
+
                     ForEach(viewModel.nutrientIntakes, id: \.nutrient.persistentModelID) { entry in
                         NutrientRowView(
                             nutrient: entry.nutrient,
@@ -72,6 +93,7 @@ struct TodayView: View {
         .background(Color(.systemGroupedBackground))
         .onAppear {
             viewModel.refresh(context: modelContext)
+            refreshBannerVisibility()
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
@@ -103,6 +125,47 @@ struct TodayView: View {
             Text("Add nutrients in the My Nutrients tab to start tracking.")
         }
         .padding(.top, 60)
+    }
+
+    private func refreshBannerVisibility() {
+        Task {
+            if preferences.hasSeenNotificationBanner {
+                showBanner = false
+                return
+            }
+            let status = await NotificationService.permissionStatus()
+            showBanner = status != .granted
+        }
+    }
+
+    private func enableReminder() {
+        Task {
+            let status = await NotificationService.permissionStatus()
+
+            switch status {
+            case .notDetermined:
+                let granted = await NotificationService.requestPermission()
+                if granted {
+                    preferences.dailyReminderEnabled = true
+                    NotificationService.scheduleDailyReminder()
+                }
+
+            case .granted:
+                preferences.dailyReminderEnabled = true
+                NotificationService.scheduleDailyReminder()
+
+            case .denied:
+                break
+            }
+
+            preferences.hasSeenNotificationBanner = true
+            withAnimation { showBanner = false }
+        }
+    }
+
+    private func dismissBanner() {
+        preferences.hasSeenNotificationBanner = true
+        withAnimation { showBanner = false }
     }
 
     private func applyEdit(to nutrient: Nutrient) {
