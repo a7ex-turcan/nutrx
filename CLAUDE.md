@@ -221,7 +221,7 @@ Each nutrient is displayed as a **row** containing:
 ### Long press on the progress bar
 Long pressing the progress bar opens a **context menu** with the following options:
 - **Edit step amount** – opens a small focused sheet showing **only the step field** for that nutrient (not the full edit form). The user updates the value and confirms. The change is permanent and persists going forward. This is intentionally lightweight — the user is mid-logging and should not be taken to the full My Nutrients edit screen.
-- **Enter custom amount** – opens a number input; the entered value is **added** to the current intake (not a replacement). e.g. if 200mg is already logged and the user enters 150, the new total is 350mg.
+- **Enter custom amount** – opens a number input with an optional note field; the entered value is **added** to the current intake (not a replacement). e.g. if 200mg is already logged and the user enters 150, the new total is 350mg. Notes are stored on the `IntakeRecord` and displayed in the History intake detail sheet.
 - **Exclude for today** – hides this nutrient from today's view without deleting it (it comes back tomorrow)
 - *(further options may be added in future iterations)*
 
@@ -332,6 +332,7 @@ Represents a single logging event — one tap of + or a custom amount entry. To 
 | `nutrient` | `Nutrient` | Navigation property (SwiftData relationship) |
 | `amount` | `Double` | The amount logged in this single event, in the nutrient's unit. Always positive |
 | `date` | `Date` | Full timestamp of when the record was created. Use calendar-day comparison for grouping, not raw equality |
+| `note` | `String?` | Optional user-provided note (e.g. "with breakfast"). Only set via Add Exact Amount |
 
 **Query patterns:**
 - **Today's intake for a nutrient:** `SUM(amount)` where `nutrient == x` and `date` is today's calendar day

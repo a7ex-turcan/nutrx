@@ -79,9 +79,9 @@ struct TodayView: View {
             }
         }
         .sheet(item: $nutrientForCustomAmount) { nutrient in
-            CustomAmountSheet(nutrient: nutrient) { amount in
+            CustomAmountSheet(nutrient: nutrient) { amount, note in
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    viewModel.addCustomAmount(amount, to: nutrient, context: modelContext)
+                    viewModel.addCustomAmount(amount, to: nutrient, note: note, context: modelContext)
                 }
             }
         }

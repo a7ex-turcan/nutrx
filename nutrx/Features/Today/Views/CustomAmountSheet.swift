@@ -3,9 +3,10 @@ import SwiftUI
 struct CustomAmountSheet: View {
     @Environment(\.dismiss) private var dismiss
     let nutrient: Nutrient
-    let onSave: (Double) -> Void
+    let onSave: (Double, String?) -> Void
 
     @State private var amountText: String = ""
+    @State private var noteText: String = ""
     @FocusState private var isFocused: Bool
 
     private var amount: Double? {
@@ -32,9 +33,14 @@ struct CustomAmountSheet: View {
                         .focused($isFocused)
                 }
 
+                FormField(label: "Note (optional)") {
+                    TextField("e.g. with breakfast", text: $noteText)
+                }
+
                 Button {
                     if let amount {
-                        onSave(amount)
+                        let note = noteText.trimmingCharacters(in: .whitespaces)
+                        onSave(amount, note.isEmpty ? nil : note)
                         dismiss()
                     }
                 } label: {
@@ -65,5 +71,5 @@ struct CustomAmountSheet: View {
 #Preview {
     CustomAmountSheet(
         nutrient: Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 4000, sortOrder: 0)
-    ) { _ in }
+    ) { _, _ in }
 }

@@ -14,6 +14,7 @@ final class HistoryViewModel {
         let id = UUID()
         let amount: Double
         let date: Date
+        let note: String?
     }
 
     private(set) var days: [DaySummary] = []
@@ -75,6 +76,6 @@ final class HistoryViewModel {
 
         return records
             .filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }
-            .map { IntakeEntry(amount: $0.amount, date: $0.date) }
+            .map { IntakeEntry(amount: $0.amount, date: $0.date, note: $0.note) }
     }
 }

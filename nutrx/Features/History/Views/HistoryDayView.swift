@@ -56,16 +56,24 @@ private struct IntakeDetailSheet: View {
                 } else {
                     VStack(spacing: 0) {
                         ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
-                            HStack {
-                                Text(entry.date.formatted(date: .omitted, time: .shortened))
-                                    .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text(entry.date.formatted(date: .omitted, time: .shortened))
+                                        .foregroundStyle(.secondary)
 
-                                Spacer()
+                                    Spacer()
 
-                                let sign: String = entry.amount >= 0 ? "+" : ""
-                                Text("\(sign)\(formatted(entry.amount)) \(nutrient.unit)")
-                                    .font(.body.weight(.medium))
-                                    .foregroundStyle(entry.amount >= 0 ? Color.primary : Color.red)
+                                    let sign: String = entry.amount >= 0 ? "+" : ""
+                                    Text("\(sign)\(formatted(entry.amount)) \(nutrient.unit)")
+                                        .font(.body.weight(.medium))
+                                        .foregroundStyle(entry.amount >= 0 ? Color.primary : Color.red)
+                                }
+
+                                if let note = entry.note {
+                                    Text(note)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)

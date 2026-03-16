@@ -52,8 +52,8 @@ final class TodayViewModel {
         refresh(context: context)
     }
 
-    func addCustomAmount(_ amount: Double, to nutrient: Nutrient, context: ModelContext) {
-        let record = IntakeRecord(nutrient: nutrient, amount: amount)
+    func addCustomAmount(_ amount: Double, to nutrient: Nutrient, note: String? = nil, context: ModelContext) {
+        let record = IntakeRecord(nutrient: nutrient, amount: amount, note: note)
         context.insert(record)
         refresh(context: context)
     }
