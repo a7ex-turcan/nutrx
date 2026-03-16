@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ProfileMenuButton: View {
     @Binding var showEditProfile: Bool
-    @Binding var showAbout: Bool
+    @Binding var showSettings: Bool
 
     var body: some View {
         Menu {
@@ -13,9 +13,9 @@ struct ProfileMenuButton: View {
             }
 
             Button {
-                showAbout = true
+                showSettings = true
             } label: {
-                Label("About", systemImage: "info.circle")
+                Label("Settings", systemImage: "gearshape")
             }
 
             Button(role: .destructive) {
