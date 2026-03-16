@@ -74,7 +74,7 @@ The app has three tabs (defined in `App/MainTabView.swift`):
 | **My Nutrients** | Create, edit, delete, and reorder custom nutrients |
 | **History** | Browse past daily intake logs |
 
-Profile and About are **not** tabs — they're accessed via a profile icon (top-right of every screen's navigation bar). Tapping it opens a menu with "Edit Profile" (sheet), "About" (sheet), and "Log Out". This is implemented via the `.withProfileMenu()` view modifier, which every tab applies.
+Profile, Settings, and About are **not** tabs — they're accessed via a profile icon (top-right of every screen's navigation bar). Tapping it opens a flyout menu with three items: "Edit Profile" (opens a sheet), "Settings" (opens a sheet), and "Log Out". About has been moved inside the Settings sheet. This is implemented via the `.withProfileMenu()` view modifier, which every tab applies.
 
 ---
 
@@ -112,7 +112,10 @@ nutrx/
 │   │   ├── Views/
 │   │   │   ├── TodayView.swift              # List of NutrientRowView cards. Swipe right = Add Exact Amount,
 │   │   │   │                                # swipe left = Edit Nutrient. Long-press context menu. Refreshes on foreground.
-│   │   │   └── CustomAmountSheet.swift      # Half-sheet for entering a one-off custom intake amount.
+│   │   │   │                                # Shows NotificationBannerView at the top when applicable.
+│   │   │   ├── CustomAmountSheet.swift      # Half-sheet for entering a one-off custom intake amount.
+│   │   │   └── NotificationBannerView.swift # Dismissible banner prompting the user to enable the daily check-in reminder.
+│   │   │                                    # Shown once after onboarding; never shown again once dismissed or permission granted.
 │   │   └── ViewModels/
 │   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords for today's calendar day.
 │   │                                        # Handles +/−/custom by inserting IntakeRecords.
@@ -129,9 +132,17 @@ nutrx/
 │   │   └── ViewModels/
 │   │       └── HistoryViewModel.swift       # Groups IntakeRecords by calendar day (excludes today), sums per nutrient.
 │   │
-│   ├── About/                   # Accessed via profile menu, not a tab. (Implemented)
+│   ├── About/                   # Accessed via Settings screen, not directly from the profile menu. (Implemented)
 │   │   └── Views/
-│   │       └── AboutView.swift              # App info, privacy philosophy, how-it-works. Shown as sheet from profile menu.
+│   │       └── AboutView.swift              # App info, privacy philosophy, how-it-works. Shown as a section at the
+│   │                                        # bottom of SettingsView (standard iOS convention).
+│   │
+│   ├── Settings/                # Accessed via profile menu flyout → "Settings". (To be implemented)
+│   │   └── Views/
+│   │       └── SettingsView.swift           # Grouped list sheet. Two sections:
+│   │                                        # 1. "Daily check-in reminder" — notification permission toggle with
+│   │                                        #    three-state logic (not asked / granted / denied → deep-link to iOS Settings).
+│   │                                        # 2. About — renders AboutView inline at the bottom.
 │   │
 │   └── Profile/                 # Accessed via profile menu, not a tab. (Implemented)
 │       ├── Views/
@@ -148,11 +159,18 @@ nutrx/
     │   ├── NutrientFormFields.swift         # Reusable nutrient form (name, unit, step, target) + NutrientDraft observable.
     │   ├── NutrientRowView.swift            # Card with name, intake label, progress bar. +/− buttons optional (nil = read-only).
     │   ├── NutrientProgressBar.swift        # Progress bar: blue (in progress), green (complete), orange (exceeded).
-    │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / About / Log Out).
-    │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + edit/about sheets to any nav bar.
-    └── Persistence/
-        ├── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
-        └── PreviewSampleData.swift          # previewContainer with seeded nutrients + intake for Xcode previews.
+    │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / Settings / Log Out).
+    │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + flyout menu (Edit Profile,
+    │                                        # Settings, Log Out) to any nav bar. Opens ProfileView or SettingsView as sheets.
+    ├── Persistence/
+    │   ├── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
+    │   └── PreviewSampleData.swift          # previewContainer with seeded nutrients + intake for Xcode previews.
+    └── Services/
+        └── NotificationService.swift        # Wraps UNUserNotificationCenter. Responsibilities:
+                                             # - Request authorisation and return current permission status.
+                                             # - Schedule / cancel the daily check-in reminder (noon, id: daily-checkin-reminder).
+                                             # - Check whether any intake has been logged today (to skip the reminder if so).
+                                             # Pure Swift class — no SwiftUI imports.
 ```
 
 ### Rules Claude Code must follow for file placement
@@ -250,6 +268,51 @@ Long pressing the progress bar opens a **context menu** with the following optio
 
 ---
 
+## Notifications
+
+nutrx uses **local notifications only** — no push infrastructure, no server. All scheduling is done on-device via `UNUserNotificationCenter`.
+
+### Daily check-in reminder
+
+A single notification fires at **12:00 noon** if the user has not logged any intake that day. It is the only notification type in the current version.
+
+- Notification identifier: `daily-checkin-reminder` — use namespaced identifiers for all future notification types (e.g. `nutrient-{id}-reminder`) to avoid conflicts.
+- The reminder is **opt-in**. The app never schedules it without the user explicitly granting permission.
+- Scheduling and cancellation logic lives in `NotificationService.swift` (see Shared layer).
+
+### Permission flow
+
+iOS notification permission has three distinct states that the UI must handle differently:
+
+| State | What the UI does |
+|---|---|
+| **Not yet asked** | Trigger the OS permission prompt via `UNUserNotificationCenter.requestAuthorization` |
+| **Granted** | Show a confirmation / active status. Schedule the reminder if not already scheduled. |
+| **Denied** | Cannot re-prompt programmatically. Show a message explaining that notifications are disabled and provide a button that deep-links to iOS Settings via `UIApplication.openSettingsURLString`. |
+
+### Notification banner (Today screen)
+
+- A small dismissible banner is shown **at the top of the Today screen**, above the nutrient list, the first time the user lands on Today after completing onboarding.
+- It has two actions: **"Enable"** (triggers the OS permission prompt) and a dismiss button (×).
+- Once dismissed — or once the user grants or denies the OS prompt — the banner is **never shown again**. Persist this flag in `UserDefaults` (`hasSeenNotificationBanner`).
+- The banner is not shown if permission is already granted.
+
+### Settings screen (profile menu → Settings)
+
+- A grouped list sheet with two sections:
+  1. **Daily check-in reminder** — a toggle or status row that reflects current permission state and handles all three states described above.
+  2. **About** — `AboutView` rendered inline at the bottom of the sheet (standard iOS convention; About always lives at the bottom of Settings).
+- The Settings sheet replaces the former direct "About" item in the profile flyout menu.
+
+### Per-nutrient notifications (future — do not build yet)
+
+- Each `Nutrient` will eventually have a toggle in `NutrientFormView` to enable a reminder if that nutrient hasn't been logged by a certain time.
+- This toggle should only be visible when notification permission is already granted.
+- When the time comes, use the namespaced identifier pattern (`nutrient-{id}-reminder`) so new notification types slot in without refactoring.
+- Do **not** scaffold this now.
+
+---
+
 ## Monetisation
 
 - The app is **free with no ads**.
@@ -262,7 +325,6 @@ Long pressing the progress bar opens a **context menu** with the following optio
 
 The following features are explicitly **deferred** and should not be built or scaffolded yet:
 
-- Push notifications / reminders
 - Home screen widgets
 - Pro / in-app purchase
 - AI features
