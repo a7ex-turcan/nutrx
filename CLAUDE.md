@@ -110,8 +110,8 @@ nutrx/
 │   │
 │   ├── Today/                   # Tab 1 — the main daily logging screen. (Implemented)
 │   │   ├── Views/
-│   │   │   ├── TodayView.swift              # Scrollable list of NutrientRowView cards. Long-press context menu
-│   │   │   │                                # with "Add Exact Amount" and "Edit Nutrient". Refreshes on foreground.
+│   │   │   ├── TodayView.swift              # List of NutrientRowView cards. Swipe right = Add Exact Amount,
+│   │   │   │                                # swipe left = Edit Nutrient. Long-press context menu. Refreshes on foreground.
 │   │   │   └── CustomAmountSheet.swift      # Half-sheet for entering a one-off custom intake amount.
 │   │   └── ViewModels/
 │   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords for today's calendar day.
@@ -214,8 +214,12 @@ Each nutrient is displayed as a **row** containing:
 - Tapping **+** increases the logged intake by the nutrient's configured step amount.
 - Tapping **−** decreases the logged intake by the step amount (floor at 0, never go negative).
 
+### Swipe actions
+- **Swipe right** — opens the "Add Exact Amount" sheet (same as the context menu option).
+- **Swipe left** — opens the "Edit Nutrient" sheet (same as the context menu option).
+
 ### Long press on the progress bar
-Long pressing the progress bar opens a **context menu / bottom sheet** with the following options:
+Long pressing the progress bar opens a **context menu** with the following options:
 - **Edit step amount** – opens a small focused sheet showing **only the step field** for that nutrient (not the full edit form). The user updates the value and confirms. The change is permanent and persists going forward. This is intentionally lightweight — the user is mid-logging and should not be taken to the full My Nutrients edit screen.
 - **Enter custom amount** – opens a number input; the entered value is **added** to the current intake (not a replacement). e.g. if 200mg is already logged and the user enters 150, the new total is 350mg.
 - **Exclude for today** – hides this nutrient from today's view without deleting it (it comes back tomorrow)

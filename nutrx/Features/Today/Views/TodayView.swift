@@ -10,11 +10,11 @@ struct TodayView: View {
     @State private var editDraft = NutrientDraft()
 
     var body: some View {
-        ScrollView {
+        Group {
             if viewModel.nutrientIntakes.isEmpty {
                 emptyState
             } else {
-                VStack(spacing: 12) {
+                List {
                     ForEach(viewModel.nutrientIntakes, id: \.nutrient.persistentModelID) { entry in
                         NutrientRowView(
                             nutrient: entry.nutrient,
@@ -30,6 +30,9 @@ struct TodayView: View {
                                 }
                             }
                         )
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                         .contextMenu {
                             Button {
                                 nutrientForCustomAmount = entry.nutrient
@@ -44,11 +47,26 @@ struct TodayView: View {
                                 Label("Edit Nutrient", systemImage: "pencil")
                             }
                         }
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                nutrientForCustomAmount = entry.nutrient
+                            } label: {
+                                Image(systemName: "number")
+                            }
+                            .tint(.blue)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button {
+                                editDraft.populate(from: entry.nutrient)
+                                nutrientToEdit = entry.nutrient
+                            } label: {
+                                Image(systemName: "pencil")
+                            }
+                            .tint(.orange)
+                        }
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 24)
+                .listStyle(.plain)
             }
         }
         .background(Color(.systemGroupedBackground))
