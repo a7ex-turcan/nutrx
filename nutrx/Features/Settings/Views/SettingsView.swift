@@ -91,12 +91,12 @@ private struct NotificationsSettingsView: View {
                 let granted = await NotificationService.requestPermission()
                 if granted {
                     preferences.dailyReminderEnabled = true
-                    NotificationService.scheduleDailyReminder()
+                    NotificationService.refreshDailyReminder(context: modelContext)
                 }
 
             case .granted:
                 preferences.dailyReminderEnabled = true
-                NotificationService.scheduleDailyReminder()
+                NotificationService.refreshDailyReminder(context: modelContext)
 
             case .denied:
                 showDeniedAlert = true
@@ -117,7 +117,7 @@ private struct NotificationsSettingsView: View {
                 NotificationService.cancelDailyReminder()
             }
             if status == .granted && preferences.dailyReminderEnabled {
-                NotificationService.scheduleDailyReminder()
+                NotificationService.refreshDailyReminder(context: modelContext)
             }
         }
     }

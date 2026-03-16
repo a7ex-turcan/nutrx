@@ -98,6 +98,7 @@ struct TodayView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 viewModel.refresh(context: modelContext)
+                NotificationService.refreshDailyReminder(context: modelContext)
             }
         }
         .sheet(item: $nutrientForCustomAmount) { nutrient in
@@ -147,12 +148,12 @@ struct TodayView: View {
                 let granted = await NotificationService.requestPermission()
                 if granted {
                     preferences.dailyReminderEnabled = true
-                    NotificationService.scheduleDailyReminder()
+                    NotificationService.refreshDailyReminder(context: modelContext)
                 }
 
             case .granted:
                 preferences.dailyReminderEnabled = true
-                NotificationService.scheduleDailyReminder()
+                NotificationService.refreshDailyReminder(context: modelContext)
 
             case .denied:
                 break

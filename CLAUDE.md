@@ -277,8 +277,14 @@ nutrx uses **local notifications only** — no push infrastructure, no server. A
 A single notification fires at **12:00 noon** if the user has not logged any intake that day. It is the only notification type in the current version.
 
 - Notification identifier: `daily-checkin-reminder` — use namespaced identifiers for all future notification types (e.g. `nutrient-{id}-reminder`) to avoid conflicts.
-- The reminder is **opt-in**. The app never schedules it without the user explicitly granting permission.
+- The reminder is **opt-in**. The app never schedules it without the user explicitly granting permission. The preference is stored in `UserPreferences.dailyReminderEnabled`.
 - Scheduling and cancellation logic lives in `NotificationService.swift` (see Shared layer).
+- **Smart scheduling**: uses one-shot (non-repeating) notifications instead of repeating ones. `NotificationService.refreshDailyReminder(context:)` checks whether the user has logged any intake today and schedules accordingly:
+  - No intake today + before noon → schedule for today at noon.
+  - No intake today + after noon → schedule for tomorrow at noon.
+  - Intake logged today → cancel today's notification, schedule for tomorrow.
+  - Reminder disabled or permissions revoked → cancel all pending.
+- **Refresh triggers**: `refreshDailyReminder` is called on every app foreground, after every intake action (increment/decrement/custom amount), and when the Settings toggle changes.
 
 ### Permission flow
 
@@ -294,7 +300,7 @@ iOS notification permission has three distinct states that the UI must handle di
 
 - A small dismissible banner is shown **at the top of the Today screen**, above the nutrient list, the first time the user lands on Today after completing onboarding.
 - It has two actions: **"Enable"** (triggers the OS permission prompt) and a dismiss button (×).
-- Once dismissed — or once the user grants or denies the OS prompt — the banner is **never shown again**. Persist this flag in `UserDefaults` (`hasSeenNotificationBanner`).
+- Once dismissed — or once the user grants or denies the OS prompt — the banner is **never shown again**. Persisted via `UserPreferences.hasSeenNotificationBanner`.
 - The banner is not shown if permission is already granted.
 
 ### Settings screen (profile menu → Settings)
@@ -335,7 +341,7 @@ The following features are explicitly **deferred** and should not be built or sc
 
 ## Data Models
 
-All persistence is handled via SwiftData. There are four models. No data is ever sent off-device.
+All persistence is handled via SwiftData. There are five models. No data is ever sent off-device.
 
 ### Design principles
 - **Everything is derived from raw records** — there are no pre-aggregated or cached totals stored. Today's intake for a nutrient is computed by summing all `IntakeRecord` rows for that nutrient whose `date` falls on today's calendar date. History is all `IntakeRecord` rows whose `date` falls on a past calendar date. This keeps the model simple and the source of truth unambiguous.
@@ -345,6 +351,7 @@ All persistence is handled via SwiftData. There are four models. No data is ever
 - **Date comparisons must use calendar day, not timestamp equality** — `IntakeRecord.date` is a full `Date` (timestamp of the tap). Queries for "today" must compare using `Calendar.current` day components, not raw `Date` equality.
 - **Decrements are negative IntakeRecords** — tapping − inserts an `IntakeRecord` with a negative `amount`. The total is always computed by summing all records, and is floored at 0 in the UI. This keeps the record log append-only.
 - **No explicit midnight reset** — since intake is computed by summing records for today's calendar day, a new day naturally returns 0 with no reset action needed.
+- **Property-level defaults on @Model fields** — when adding new non-optional fields to an existing `@Model`, always assign a default value at the property declaration (e.g. `var flag: Bool = false`), not just in the initialiser. SwiftData's lightweight migration requires this to populate the column for existing rows.
 
 ---
 
@@ -400,6 +407,17 @@ Represents a single logging event — one tap of + or a custom amount entry. To 
 - **Today's intake for a nutrient:** `SUM(amount)` where `nutrient == x` and `date` is today's calendar day
 - **Today's view:** all non-deleted, non-excluded nutrients, each with their summed intake for today
 - **History for a past day:** all `IntakeRecord` rows where `date` falls on that day, grouped by nutrient
+
+---
+
+### UserPreferences
+
+Stores app-wide user preferences. There is always exactly one instance in the store.
+
+| Field | Type | Notes |
+|---|---|---|
+| `dailyReminderEnabled` | `Bool` | Whether the daily check-in notification is active. Default `false` |
+| `hasSeenNotificationBanner` | `Bool` | Whether the Today screen notification banner has been shown/dismissed. Default `false` |
 
 ---
 

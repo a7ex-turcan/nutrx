@@ -50,12 +50,14 @@ final class TodayViewModel {
         let record = IntakeRecord(nutrient: nutrient, amount: nutrient.step)
         context.insert(record)
         refresh(context: context)
+        NotificationService.refreshDailyReminder(context: context)
     }
 
     func addCustomAmount(_ amount: Double, to nutrient: Nutrient, note: String? = nil, context: ModelContext) {
         let record = IntakeRecord(nutrient: nutrient, amount: amount, note: note)
         context.insert(record)
         refresh(context: context)
+        NotificationService.refreshDailyReminder(context: context)
     }
 
     func decrement(_ nutrient: Nutrient, context: ModelContext) {
@@ -67,6 +69,7 @@ final class TodayViewModel {
                 let record = IntakeRecord(nutrient: nutrient, amount: -nutrient.step)
                 context.insert(record)
                 refresh(context: context)
+                NotificationService.refreshDailyReminder(context: context)
             }
         }
     }
