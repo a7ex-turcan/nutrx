@@ -4,7 +4,7 @@ import SwiftData
 @MainActor
 let previewContainer: ModelContainer = {
     let container = try! ModelContainer(
-        for: UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self,
+        for: UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self, UserPreferences.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let context = container.mainContext
