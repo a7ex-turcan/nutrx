@@ -60,7 +60,7 @@ all core tracking features remain free forever.
 - **Persistence:** SwiftData (Apple's current recommended local persistence layer)
 - **Networking:** None — the app is fully offline
 - **Minimum iOS target:** Latest stable iOS (always target the most recent release)
-- **Bundle ID convention:** com.nutrx.app
+- **Bundle ID convention:** nutrx-labs.nutrx
 
 ---
 
