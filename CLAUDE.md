@@ -96,7 +96,8 @@ nutrx/
 │   ├── UserProfile.swift
 │   ├── Nutrient.swift
 │   ├── IntakeRecord.swift
-│   └── Exclusion.swift
+│   ├── Exclusion.swift
+│   └── NutrientReminder.swift   # MVP 2 — not yet created. One row per dose reminder per nutrient.
 │
 ├── Features/
 │   │
@@ -216,6 +217,10 @@ Each nutrient has:
 
 Nutrients can be reordered, edited, and deleted from the **My Nutrients** tab. Order is set by the user via **drag-and-drop** and is fully manual — no automatic sorting. The order defined in My Nutrients is the exact order nutrients appear on the Today screen. It never changes unless the user explicitly reorders them.
 
+### Reminders (MVP 2 — not yet built)
+
+Each nutrient will support zero, one, or multiple dose reminders. See the **Per-nutrient notifications** section under Notifications for the full spec.
+
 ---
 
 ## Today Tab – Core Logging UX
@@ -266,6 +271,12 @@ Long pressing the progress bar opens a **context menu** with the following optio
 - Read-only — the user cannot edit past entries.
 - History is stored locally via SwiftData and is never deleted automatically.
 
+### Monthly section headers (MVP 2 — not yet built)
+
+- The day list will gain sticky section headers grouped by month (e.g. "March 2026", "February 2026").
+- No new drill-down level — tapping a day entry still opens the same `HistoryDayView`.
+- No new SwiftData model or query changes needed — purely a grouping change in `HistoryViewModel` and `HistoryListView`.
+
 ---
 
 ## Notifications
@@ -310,32 +321,64 @@ iOS notification permission has three distinct states that the UI must handle di
   2. **About** — `AboutView` rendered inline at the bottom of the sheet (standard iOS convention; About always lives at the bottom of Settings).
 - The Settings sheet replaces the former direct "About" item in the profile flyout menu.
 
-### Per-nutrient notifications (future — do not build yet)
+### Per-nutrient notifications (MVP 2 — not yet built)
 
-- Each `Nutrient` will eventually have a toggle in `NutrientFormView` to enable a reminder if that nutrient hasn't been logged by a certain time.
-- This toggle should only be visible when notification permission is already granted.
-- When the time comes, use the namespaced identifier pattern (`nutrient-{id}-reminder`) so new notification types slot in without refactoring.
-- Do **not** scaffold this now.
+Each nutrient can have zero, one, or multiple **dose reminders** — each reminder is a time of day that fires daily.
+
+**User-facing behaviour:**
+- Notification message: *"Time to log your [Nutrient Name]"*
+- **Smart suppression:** if the user has already logged that nutrient since the previous reminder fired, the upcoming notification is cancelled silently and rescheduled for the following day.
+- Fully local — no server, no network.
+
+**Where it lives:**
+- A dedicated **"Reminders" section** at the bottom of `NutrientFormView` (both create and edit).
+- The section shows a summary (e.g. "3 reminders" or "No reminders") and opens a **Reminders sheet** on tap.
+- The Reminders sheet lists all configured times with a delete (✕) button per entry and an **"+ Add Reminder"** button that presents a time picker.
+
+**New SwiftData model: `NutrientReminder`** (see Data Models section).
+
+**Notification IDs:** use the namespaced pattern `nutrient-{id}-reminder-{HHmm}` (e.g. `nutrient-abc123-reminder-0900`). When the user logs an intake for a nutrient, call `UNUserNotificationCenter.removePendingNotificationRequests(withIdentifiers:)` for any of that nutrient's reminders scheduled before the next one in sequence. Each midnight (checked on app foreground, same pattern as daily reset), reschedule all reminders for the day.
+
+- This toggle/section in `NutrientFormView` should only be visible when notification permission is already granted.
+- Do **not** build or scaffold this until MVP 2.
 
 ---
 
 ## Monetisation
 
 - The app is **free with no ads**.
-- A **Pro tier** is planned for a future release. It will only unlock AI-powered features (e.g. insights, personalised recommendations based on profile data). All tracking features remain free forever.
-- Do not build any paywall or in-app purchase infrastructure for the MVP.
+- A **Pro tier** is planned for MVP 4. It will only unlock AI-powered features. All core tracking features remain free forever.
+- **Indicative Pro pricing:** $2.99/month · $19.99/year · $49.99 lifetime one-time purchase.
+- **Planned Pro features:** daily AI insights, smart target suggestions, natural language logging, full history charts.
+- **AI architecture (MVP 4):** hybrid — on-device (Apple Intelligence / Foundation Models framework) for natural language logging and insight phrasing; third-party LLM API (Anthropic / OpenAI) for nutritional reasoning where on-device quality is insufficient. Only aggregated summaries are ever sent off-device — raw `IntakeRecord` data never leaves the device.
+- Do not build any paywall, StoreKit, or AI infrastructure before MVP 4.
 
 ---
 
-## Out of Scope for MVP
+## Out of Scope — Not Yet Built
 
-The following features are explicitly **deferred** and should not be built or scaffolded yet:
+The following features are planned in future MVPs but must not be built or scaffolded until their target version.
 
-- Home screen widgets
-- Pro / in-app purchase
-- AI features
+**MVP 2 (next):**
+- Per-nutrient dose reminders (`NutrientReminder` model, Reminders sheet inside `NutrientFormView`)
+- Home screen & lock screen widgets (WidgetKit — requires a separate extension target and shared App Group `group.nutrx-labs.nutrx`)
+- History tab monthly section headers (grouping change in `HistoryViewModel` / `HistoryListView`)
+- Streaks & consistency tracking (computed from existing `IntakeRecord` data, no new model needed)
+- Nutrient grouping / categories (new `NutrientGroup` model, collapsible sections in Today and My Nutrients)
+
+**MVP 3:**
+- iCloud sync (CloudKit + SwiftData — requires `NSPersistentCloudKitContainer`, `iCloud` + `CloudKit` entitlements, all `@Model` fields must have property-level defaults)
+- Analytics & charts (weekly/monthly breakdowns per nutrient)
+- Apple Health integration (HealthKit write, no read)
+
+**MVP 4:**
+- Pro tier / in-app purchase (StoreKit 2)
+- AI features (on-device Foundation Models + third-party LLM API)
+
+**Indefinitely deferred:**
+- Localisation / internationalisation
+- iPad-specific layout optimisation
 - Data export
-- iCloud sync
 
 ---
 
@@ -431,6 +474,22 @@ Records that a specific nutrient has been excluded from a specific day's Today v
 | `date` | `Date` | The calendar day the exclusion applies to. Only the date component is meaningful; time is ignored |
 
 **Usage:** a nutrient is excluded from a given day's Today view if an `Exclusion` row exists for that nutrient where `date` matches that calendar day. At midnight (checked on foreground), any `Exclusion` rows for previous days can be purged — they are no longer needed since exclusions do not carry forward.
+
+---
+
+### NutrientReminder (MVP 2 — not yet built)
+
+Represents a single scheduled dose reminder for a nutrient. Each instance maps to one local notification that fires daily at the configured time.
+
+| Field | Type | Notes |
+|---|---|---|
+| `nutrient` | `Nutrient` | Navigation property (SwiftData relationship) |
+| `timeOfDay` | `Date` | Only the time component is meaningful; date is ignored |
+
+**Relationships:**
+- One `Nutrient` → many `NutrientReminder` (inverse: `NutrientReminder.nutrient`)
+
+Do not create this model until MVP 2.
 
 ---
 
