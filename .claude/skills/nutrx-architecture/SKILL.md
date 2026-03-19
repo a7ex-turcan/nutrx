@@ -11,7 +11,7 @@ description: >
 ## Project Root
 
 All Swift source lives under `nutrx/`. The Xcode project is named `nutrx`.
-Bundle ID: `com.nutrx.app`.
+Bundle ID: `nutrx-labs.nutrx`.
 
 ---
 
