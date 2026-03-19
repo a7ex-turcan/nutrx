@@ -19,7 +19,3 @@ Open `nutrx.xcodeproj` in Xcode 26.3+ and run, or build from the command line:
 ```bash
 xcodebuild -scheme nutrx -configuration Debug -destination 'generic/platform=iOS' build
 ```
-
-## License
-
-All rights reserved.
