@@ -136,6 +136,8 @@ struct OnboardingFirstNutrientView: View {
             dailyTarget: targetValue,
             sortOrder: nutrients.count
         )
+        let notes = draft.notes.trimmingCharacters(in: .whitespaces)
+        nutrient.notes = notes.isEmpty ? nil : notes
         modelContext.insert(nutrient)
         draft.reset()
     }

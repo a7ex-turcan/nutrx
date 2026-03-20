@@ -18,8 +18,17 @@ struct NutrientRowView: View {
         VStack(spacing: 10) {
             // Name + intake label
             HStack {
-                Text(nutrient.name)
-                    .font(.subheadline.weight(.semibold))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(nutrient.name)
+                        .font(.subheadline.weight(.semibold))
+
+                    if let notes = nutrient.notes, !notes.isEmpty {
+                        Text(notes)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
 
                 Spacer()
 

@@ -177,6 +177,8 @@ struct TodayView: View {
         nutrient.unit = editDraft.unit.trimmingCharacters(in: .whitespaces)
         nutrient.step = stepValue
         nutrient.dailyTarget = targetValue
+        let notes = editDraft.notes.trimmingCharacters(in: .whitespaces)
+        nutrient.notes = notes.isEmpty ? nil : notes
         viewModel.refresh(context: modelContext)
     }
 }

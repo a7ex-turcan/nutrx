@@ -159,6 +159,8 @@ struct NutrientsListView: View {
             dailyTarget: targetValue,
             sortOrder: nutrients.count
         )
+        let notes = addDraft.notes.trimmingCharacters(in: .whitespaces)
+        nutrient.notes = notes.isEmpty ? nil : notes
         modelContext.insert(nutrient)
     }
 
@@ -170,6 +172,8 @@ struct NutrientsListView: View {
         nutrient.unit = editDraft.unit.trimmingCharacters(in: .whitespaces)
         nutrient.step = stepValue
         nutrient.dailyTarget = targetValue
+        let notes = editDraft.notes.trimmingCharacters(in: .whitespaces)
+        nutrient.notes = notes.isEmpty ? nil : notes
     }
 
     private func moveNutrients(from source: IndexSet, to destination: Int) {

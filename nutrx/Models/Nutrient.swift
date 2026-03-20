@@ -9,6 +9,7 @@ final class Nutrient {
     var dailyTarget: Double
     var sortOrder: Int
     var isDeleted: Bool
+    var notes: String? = nil
 
     @Relationship(deleteRule: .cascade, inverse: \IntakeRecord.nutrient)
     var intakeRecords: [IntakeRecord] = []

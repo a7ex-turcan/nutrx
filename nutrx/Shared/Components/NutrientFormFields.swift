@@ -8,6 +8,7 @@ final class NutrientDraft {
     var unit: String = ""
     var step: String = ""
     var dailyTarget: String = ""
+    var notes: String = ""
 
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -21,6 +22,7 @@ final class NutrientDraft {
         unit = ""
         step = ""
         dailyTarget = ""
+        notes = ""
     }
 
     func populate(from nutrient: Nutrient) {
@@ -28,6 +30,7 @@ final class NutrientDraft {
         unit = nutrient.unit
         step = String(nutrient.step)
         dailyTarget = String(nutrient.dailyTarget)
+        notes = nutrient.notes ?? ""
     }
 }
 
@@ -38,7 +41,7 @@ struct NutrientFormFields: View {
     @FocusState private var focusedField: Field?
 
     private enum Field: Hashable {
-        case name, unit, step, dailyTarget
+        case name, unit, step, dailyTarget, notes
     }
 
     var body: some View {
@@ -67,6 +70,11 @@ struct NutrientFormFields: View {
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .dailyTarget)
                 }
+            }
+
+            FormField(label: "Notes") {
+                TextField("Why you're tracking this, best time to take it…", text: $draft.notes)
+                    .focused($focusedField, equals: .notes)
             }
         }
     }
