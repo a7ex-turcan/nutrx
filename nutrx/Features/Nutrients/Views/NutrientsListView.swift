@@ -54,6 +54,7 @@ struct NutrientsListView: View {
                     draft: editDraft,
                     title: "Edit Nutrient",
                     buttonLabel: "Save Changes",
+                    nutrient: nutrient,
                     onDelete: {
                         nutrientToEdit = nil
                         nutrientToDelete = nutrient

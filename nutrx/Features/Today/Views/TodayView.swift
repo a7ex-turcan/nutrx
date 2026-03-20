@@ -99,6 +99,7 @@ struct TodayView: View {
             if newPhase == .active {
                 viewModel.refresh(context: modelContext)
                 NotificationService.refreshDailyReminder(context: modelContext)
+                NotificationService.refreshAllNutrientReminders(context: modelContext)
             }
         }
         .sheet(item: $nutrientForCustomAmount) { nutrient in
@@ -112,7 +113,8 @@ struct TodayView: View {
             NutrientFormView(
                 draft: editDraft,
                 title: "Edit Nutrient",
-                buttonLabel: "Save Changes"
+                buttonLabel: "Save Changes",
+                nutrient: nutrient
             ) {
                 applyEdit(to: nutrient)
             }

@@ -51,6 +51,7 @@ final class TodayViewModel {
         context.insert(record)
         refresh(context: context)
         NotificationService.refreshDailyReminder(context: context)
+        NotificationService.suppressRemindersAfterLogging(for: nutrient)
     }
 
     func addCustomAmount(_ amount: Double, to nutrient: Nutrient, note: String? = nil, context: ModelContext) {
@@ -58,6 +59,7 @@ final class TodayViewModel {
         context.insert(record)
         refresh(context: context)
         NotificationService.refreshDailyReminder(context: context)
+        NotificationService.suppressRemindersAfterLogging(for: nutrient)
     }
 
     func decrement(_ nutrient: Nutrient, context: ModelContext) {

@@ -17,6 +17,9 @@ final class Nutrient {
     @Relationship(deleteRule: .cascade, inverse: \Exclusion.nutrient)
     var exclusions: [Exclusion] = []
 
+    @Relationship(deleteRule: .cascade, inverse: \NutrientReminder.nutrient)
+    var reminders: [NutrientReminder] = []
+
     init(name: String, unit: String, step: Double, dailyTarget: Double, sortOrder: Int, isDeleted: Bool = false) {
         self.name = name
         self.unit = unit

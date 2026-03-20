@@ -8,6 +8,7 @@ enum ModelContainerFactory {
             IntakeRecord.self,
             Exclusion.self,
             UserPreferences.self,
+            NutrientReminder.self,
         ])
         let configuration = ModelConfiguration(schema: schema)
 

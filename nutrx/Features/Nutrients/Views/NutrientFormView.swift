@@ -1,18 +1,27 @@
 import SwiftUI
+import SwiftData
 
 struct NutrientFormView: View {
     @Environment(\.dismiss) private var dismiss
+    @Query private var allReminders: [NutrientReminder]
     @Bindable var draft: NutrientDraft
     let title: String
     let buttonLabel: String
+    var nutrient: Nutrient?
     var onDelete: (() -> Void)?
     let onSave: () -> Void
+
+    @State private var showRemindersSheet = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     NutrientFormFields(draft: draft)
+
+                    if let nutrient {
+                        remindersSection(for: nutrient)
+                    }
 
                     Button {
                         onSave()
@@ -50,7 +59,38 @@ struct NutrientFormView: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+            .sheet(isPresented: $showRemindersSheet) {
+                if let nutrient {
+                    NutrientRemindersSheet(nutrient: nutrient)
+                }
+            }
         }
+    }
+
+    private func remindersSection(for nutrient: Nutrient) -> some View {
+        Button {
+            showRemindersSheet = true
+        } label: {
+            HStack {
+                Label("Reminders", systemImage: "bell")
+                    .font(.subheadline.weight(.medium))
+
+                Spacer()
+
+                let count = allReminders.filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }.count
+                Text(count == 0 ? "None" : "\(count) reminder\(count == 1 ? "" : "s")")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(12)
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
     }
 }
 
