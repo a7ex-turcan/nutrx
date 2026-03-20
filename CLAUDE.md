@@ -214,6 +214,7 @@ Each nutrient has:
 - **Unit** – user-defined string (e.g. "mg", "g", "IU", "ml", "cups")
 - **Step** – the increment used when tapping + or − on the Today screen (e.g. 0.5, 1, 100). Must be a positive number.
 - **Daily target** – the goal for the day, expressed in the nutrient's own unit. Shown as the "full" value of the progress bar on the Today screen. Required.
+- **Notes** – optional free-form text (e.g. "doctor recommended for bone density", "read about sleep benefits"). Editable in the nutrient form. Shown as a single muted line below the nutrient name on the Today card; only rendered when non-empty. (MVP 2 — not yet built)
 
 Nutrients can be reordered, edited, and deleted from the **My Nutrients** tab. Order is set by the user via **drag-and-drop** and is fully manual — no automatic sorting. The order defined in My Nutrients is the exact order nutrients appear on the Today screen. It never changes unless the user explicitly reorders them.
 
@@ -361,6 +362,7 @@ The following features are planned in future MVPs but must not be built or scaff
 
 **MVP 2 (next):**
 - Per-nutrient dose reminders (`NutrientReminder` model, Reminders sheet inside `NutrientFormView`)
+- Nutrient notes field (`Nutrient.notes: String?` — free-form text shown in edit form and as a muted line on the Today card)
 - Home screen & lock screen widgets (WidgetKit — requires a separate extension target and shared App Group `group.nutrx-labs.nutrx`)
 - History tab monthly section headers (grouping change in `HistoryViewModel` / `HistoryListView`)
 - Streaks & consistency tracking (computed from existing `IntakeRecord` data, no new model needed)
@@ -428,6 +430,7 @@ Represents a user-defined nutrient that the user wants to track.
 | `dailyTarget` | `Double` | The daily goal, in the nutrient's own unit |
 | `sortOrder` | `Int` | Drives display order on Today and My Nutrients screens. Lower = higher up. Updated on every drag-and-drop reorder |
 | `isDeleted` | `Bool` | Soft delete flag. When `true`, hidden from all active UI but retained so historical `IntakeRecord` rows remain valid |
+| `notes` | `String?` | Optional free-form text capturing why the user tracks this nutrient. Shown as a muted single line on the Today card when non-empty. MVP 2 — not yet added. |
 
 **Relationships:**
 - One `Nutrient` → many `IntakeRecord` (inverse: `IntakeRecord.nutrient`)

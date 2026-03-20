@@ -88,7 +88,20 @@ Relationship: one `Nutrient` → many `NutrientReminder` (inverse: `NutrientRemi
 
 ### Tier 2 — Meaningful UX Improvements
 
-#### 4. History Tab — Monthly Section Headers
+#### 4. Nutrient Notes
+**Why:** Users add supplements based on research they do once and forget. A notes field gives them a place to capture the reasoning — "doctor recommended for bone density", "read about sleep benefits" — so they always know why something is in their list.
+
+- A single optional free-form text field added to the `Nutrient` model (`notes: String?`)
+- Editable in both the **Create** and **Edit Nutrient** form, below the Daily Target field
+- Label: "Notes" with placeholder text "Why you're tracking this, best time to take it…"
+- On the **Today card**: rendered as a single line of muted text directly below the nutrient name, truncated with an ellipsis if too long. Only shown when the field is non-empty — nutrients without notes look exactly as they do today
+- No new SwiftData model needed — just a new optional field on `Nutrient`
+
+> ⚠️ **Technical note for Claude Code:** `notes` must be declared as `var notes: String? = nil` at the property level (not just in the initialiser) to satisfy SwiftData lightweight migration for existing rows.
+
+---
+
+#### 5. History Tab — Monthly Section Headers
 **Why:** As history accumulates, a flat list becomes hard to navigate. Month headers provide orientation without adding a new navigation level.
 
 - The existing day-entry list gains sticky section headers, one per month (e.g. "March 2026", "February 2026")
@@ -98,7 +111,7 @@ Relationship: one `Nutrient` → many `NutrientReminder` (inverse: `NutrientRemi
 
 ---
 
-#### 5. Streaks & Consistency Tracking
+#### 6. Streaks & Consistency Tracking
 **Why:** Simple, motivating, zero infrastructure cost. Encourages daily use without being gamified or annoying.
 
 - A nutrient "hit" is defined as reaching or exceeding its daily target
@@ -110,7 +123,7 @@ Relationship: one `Nutrient` → many `NutrientReminder` (inverse: `NutrientRemi
 
 ---
 
-#### 6. Nutrient Grouping / Categories
+#### 7. Nutrient Grouping / Categories
 **Why:** As users add more nutrients (10, 15, 20+), the Today screen becomes unwieldy. Groups let users organise without deleting.
 
 - Users can create named groups (e.g. "Vitamins", "Minerals", "Supplements", "Other")
