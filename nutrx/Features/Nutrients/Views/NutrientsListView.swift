@@ -11,6 +11,7 @@ struct NutrientsListView: View {
     @State private var showAddSheet = false
     @State private var addDraft = NutrientDraft()
     @State private var editDraft = NutrientDraft()
+    @State private var selectedGroupForAdd: NutrientGroup?
     @State private var nutrientToEdit: Nutrient?
     @State private var nutrientToDelete: Nutrient?
     @State private var nutrientToMove: Nutrient?
@@ -59,6 +60,7 @@ struct NutrientsListView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         addDraft.reset()
+                        selectedGroupForAdd = generalGroup
                         showAddSheet = true
                     } label: {
                         Image(systemName: "plus")
@@ -69,7 +71,9 @@ struct NutrientsListView: View {
                 NutrientFormView(
                     draft: addDraft,
                     title: "New Nutrient",
-                    buttonLabel: "Add Nutrient"
+                    buttonLabel: "Add Nutrient",
+                    selectedGroup: $selectedGroupForAdd,
+                    showGroupPicker: true
                 ) {
                     addNutrient()
                 }
@@ -231,10 +235,10 @@ struct NutrientsListView: View {
         let notes = addDraft.notes.trimmingCharacters(in: .whitespaces)
         nutrient.notes = notes.isEmpty ? nil : notes
 
-        // Assign to General group by default
-        if let general = generalGroup {
-            nutrient.group = general
-            nutrient.groupSortOrder = (general.nutrients.map(\.groupSortOrder).max() ?? -1) + 1
+        let targetGroup = selectedGroupForAdd ?? generalGroup
+        if let group = targetGroup {
+            nutrient.group = group
+            nutrient.groupSortOrder = (group.nutrients.map(\.groupSortOrder).max() ?? -1) + 1
         }
 
         modelContext.insert(nutrient)

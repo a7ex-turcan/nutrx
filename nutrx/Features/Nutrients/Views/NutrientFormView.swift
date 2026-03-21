@@ -4,20 +4,47 @@ import SwiftData
 struct NutrientFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var allReminders: [NutrientReminder]
+    @Query(sort: \NutrientGroup.sortOrder) private var allGroups: [NutrientGroup]
     @Bindable var draft: NutrientDraft
     let title: String
     let buttonLabel: String
     var nutrient: Nutrient?
+    @Binding var selectedGroup: NutrientGroup?
+    var showGroupPicker: Bool = false
     var onDelete: (() -> Void)?
     let onSave: () -> Void
 
     @State private var showRemindersSheet = false
+
+    init(
+        draft: NutrientDraft,
+        title: String,
+        buttonLabel: String,
+        nutrient: Nutrient? = nil,
+        selectedGroup: Binding<NutrientGroup?> = .constant(nil),
+        showGroupPicker: Bool = false,
+        onDelete: (() -> Void)? = nil,
+        onSave: @escaping () -> Void
+    ) {
+        self.draft = draft
+        self.title = title
+        self.buttonLabel = buttonLabel
+        self.nutrient = nutrient
+        self._selectedGroup = selectedGroup
+        self.showGroupPicker = showGroupPicker
+        self.onDelete = onDelete
+        self.onSave = onSave
+    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     NutrientFormFields(draft: draft)
+
+                    if showGroupPicker {
+                        groupPickerSection
+                    }
 
                     if let nutrient {
                         remindersSection(for: nutrient)
@@ -64,6 +91,25 @@ struct NutrientFormView: View {
                     NutrientRemindersSheet(nutrient: nutrient)
                 }
             }
+        }
+    }
+
+    private var groupPickerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Group")
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+
+            Picker("Group", selection: $selectedGroup) {
+                ForEach(allGroups, id: \.persistentModelID) { group in
+                    Text(group.name).tag(Optional(group))
+                }
+            }
+            .pickerStyle(.menu)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemGroupedBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
         }
     }
 
