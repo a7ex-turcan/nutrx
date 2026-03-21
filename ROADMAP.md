@@ -26,7 +26,7 @@
 | Per-nutrient dose reminders | ✅ Shipped (v1.1) |
 | Nutrient notes | ✅ Shipped (v1.1) |
 | Home screen & lock screen widgets | 📋 Planned |
-| History monthly section headers | 📋 Planned |
+| History monthly section headers | ✅ Shipped (v1.1) |
 | Streaks & consistency tracking | 📋 Planned |
 | Nutrient grouping / categories | 📋 Planned |
 
@@ -106,13 +106,10 @@ Optional free-form text field on `Nutrient` (`notes: String? = nil`). Editable i
 
 ---
 
-#### 5. History Tab — Monthly Section Headers
-**Why:** As history accumulates, a flat list becomes hard to navigate. Month headers provide orientation without adding a new navigation level.
+#### 5. History Tab — Monthly Section Headers ✅
+**Status:** Shipped in v1.1
 
-- The existing day-entry list gains sticky section headers, one per month (e.g. "March 2026", "February 2026")
-- No new drill-down level — tapping a day entry still opens the same `HistoryDayView` as before
-- Most recent month appears at the top; entries within each month remain sorted most-recent-first
-- No new SwiftData model or query changes needed — purely a grouping change in `HistoryViewModel` and `HistoryListView`
+Day entries grouped under sticky month section headers (e.g. "March, 2026"). Most recent month first. Grouping computed in `HistoryViewModel.monthSections`, rendered as `Section` headers in `HistoryListView`.
 
 ---
 

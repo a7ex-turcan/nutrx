@@ -278,11 +278,11 @@ Long pressing the progress bar opens a **context menu** with the following optio
 - Read-only — the user cannot edit past entries.
 - History is stored locally via SwiftData and is never deleted automatically.
 
-### Monthly section headers (MVP 2 — not yet built)
+### Monthly section headers
 
-- The day list will gain sticky section headers grouped by month (e.g. "March 2026", "February 2026").
-- No new drill-down level — tapping a day entry still opens the same `HistoryDayView`.
-- No new SwiftData model or query changes needed — purely a grouping change in `HistoryViewModel` and `HistoryListView`.
+- The day list uses sticky section headers grouped by month (e.g. "March, 2026").
+- Grouping is computed in `HistoryViewModel.monthSections` and rendered as `Section` headers in `HistoryListView`.
+- Most recent month first; days within each month sorted most-recent-first.
 
 ---
 
@@ -368,7 +368,6 @@ The following features are planned in future MVPs but must not be built or scaff
 
 **MVP 2 (next):**
 - Home screen & lock screen widgets (WidgetKit — requires a separate extension target and shared App Group `group.nutrx-labs.nutrx`)
-- History tab monthly section headers (grouping change in `HistoryViewModel` / `HistoryListView`)
 - Streaks & consistency tracking (computed from existing `IntakeRecord` data, no new model needed)
 - Nutrient grouping / categories (new `NutrientGroup` model, collapsible sections in Today and My Nutrients)
 

@@ -28,9 +28,13 @@ struct HistoryListView: View {
 
     private var dayList: some View {
         List {
-            ForEach(viewModel.days) { day in
-                NavigationLink(value: day.id) {
-                    dayRow(day)
+            ForEach(viewModel.monthSections) { section in
+                Section(section.label) {
+                    ForEach(section.days) { day in
+                        NavigationLink(value: day.id) {
+                            dayRow(day)
+                        }
+                    }
                 }
             }
         }

@@ -17,7 +17,14 @@ final class HistoryViewModel {
         let note: String?
     }
 
+    struct MonthSection: Identifiable {
+        let id: Date // first day of the month
+        let label: String // e.g. "March, 2026"
+        var days: [DaySummary]
+    }
+
     private(set) var days: [DaySummary] = []
+    private(set) var monthSections: [MonthSection] = []
 
     func refresh(context: ModelContext) {
         let descriptor = FetchDescriptor<IntakeRecord>(
@@ -62,6 +69,28 @@ final class HistoryViewModel {
                 return DaySummary(id: day, date: day, nutrientTotals: nutrientTotals)
             }
             .sorted { $0.date > $1.date }
+
+        // Group days into month sections
+        let calendar = Calendar.current
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM, yyyy"
+
+        var sectionMap: [Date: [DaySummary]] = [:]
+        for day in days {
+            let components = calendar.dateComponents([.year, .month], from: day.date)
+            let monthStart = calendar.date(from: components)!
+            sectionMap[monthStart, default: []].append(day)
+        }
+
+        monthSections = sectionMap
+            .map { (monthStart, days) in
+                MonthSection(
+                    id: monthStart,
+                    label: formatter.string(from: monthStart),
+                    days: days.sorted { $0.date > $1.date }
+                )
+            }
+            .sorted { $0.id > $1.id }
     }
 
     func intakeRecords(for nutrient: Nutrient, on day: Date, context: ModelContext) -> [IntakeEntry] {
