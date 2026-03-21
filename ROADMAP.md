@@ -4,14 +4,49 @@
 
 ---
 
-## Status Overview
+## Feature Tracker
 
-| Version | Theme | Status |
-|---|---|---|
-| MVP 1 | Core tracking loop | ✅ Shipped |
-| MVP 2 | Retention & reach | 🔨 In progress |
-| MVP 3 | Ecosystem & sync | 📋 Planned |
-| MVP 4 | Pro tier & AI | 📋 Planned |
+### MVP 1 — Core Tracking Loop ✅
+
+| Feature | Status |
+|---|---|
+| User onboarding (name, birthday, weight, height) | ✅ Shipped |
+| User-defined nutrients (name, unit, step, daily target) | ✅ Shipped |
+| Today tab (+/− logging, custom amounts, exclusions) | ✅ Shipped |
+| History tab (read-only, grouped by day) | ✅ Shipped |
+| My Nutrients tab (create, edit, delete, reorder) | ✅ Shipped |
+| Profile + About via profile menu | ✅ Shipped |
+| Settings screen with daily check-in reminder | ✅ Shipped |
+| SwiftData persistence, fully offline | ✅ Shipped |
+
+### MVP 2 — Retention & Reach 🔨
+
+| Feature | Status |
+|---|---|
+| Per-nutrient dose reminders | ✅ Shipped (v1.1) |
+| Nutrient notes | ✅ Shipped (v1.1) |
+| Home screen & lock screen widgets | 📋 Planned |
+| History monthly section headers | 📋 Planned |
+| Streaks & consistency tracking | 📋 Planned |
+| Nutrient grouping / categories | 📋 Planned |
+
+### MVP 3 — Ecosystem & Sync 📋
+
+| Feature | Status |
+|---|---|
+| iCloud sync (CloudKit + SwiftData) | 📋 Planned |
+| Analytics & charts | 📋 Planned |
+| Apple Health integration (HealthKit write) | 📋 Planned |
+
+### MVP 4 — Pro Tier & AI 📋
+
+| Feature | Status |
+|---|---|
+| Pro subscription (StoreKit 2) | 📋 Planned |
+| Daily AI insights | 📋 Planned |
+| Smart target suggestions | 📋 Planned |
+| Natural language logging | 📋 Planned |
+| Full history charts | 📋 Planned |
 
 ---
 
