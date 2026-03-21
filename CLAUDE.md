@@ -97,7 +97,8 @@ nutrx/
 │   ├── Nutrient.swift
 │   ├── IntakeRecord.swift
 │   ├── Exclusion.swift
-│   └── NutrientReminder.swift   # One row per dose reminder per nutrient.
+│   ├── NutrientReminder.swift   # One row per dose reminder per nutrient.
+│   └── NutrientGroup.swift      # Named group for organising nutrients. System "General" group seeded on first launch.
 │
 ├── Features/
 │   │
@@ -144,10 +145,9 @@ nutrx/
 │   │
 │   ├── Settings/                # Accessed via profile menu flyout → "Settings". (Implemented)
 │   │   └── Views/
-│   │       └── SettingsView.swift           # Grouped list sheet. Two sections:
-│   │                                        # 1. "Daily check-in reminder" — notification permission toggle with
-│   │                                        #    three-state logic (not asked / granted / denied → deep-link to iOS Settings).
-│   │                                        # 2. About — renders AboutView inline at the bottom.
+│   │       ├── SettingsView.swift           # Grouped list sheet. Sections: Manage Groups, Notifications, About.
+│   │       └── ManageGroupsView.swift       # Reorderable group list. Create, rename (tap), reorder (drag),
+│   │                                        # delete (swipe) custom groups. System "General" group shown locked.
 │   │
 │   └── Profile/                 # Accessed via profile menu, not a tab. (Implemented)
 │       ├── Views/
@@ -164,6 +164,8 @@ nutrx/
     │   ├── NutrientFormFields.swift         # Reusable nutrient form (name, unit, step, target) + NutrientDraft observable.
     │   ├── NutrientRowView.swift            # Card with name, intake label, progress bar. +/− buttons optional (nil = read-only).
     │   ├── NutrientProgressBar.swift        # Progress bar: blue (in progress), green (complete), orange (exceeded).
+    │   ├── GroupHeaderView.swift            # Collapsible group section header with chevron and aggregate progress bar.
+    │   ├── MoveToGroupSheet.swift           # Half-sheet for moving a nutrient to a different group.
     │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / Settings / Log Out).
     │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + flyout menu (Edit Profile,
     │                                        # Settings, Log Out) to any nav bar. Opens ProfileView or SettingsView as sheets.

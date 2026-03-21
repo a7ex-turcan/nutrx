@@ -28,7 +28,7 @@
 | Home screen & lock screen widgets | 📋 Planned |
 | History monthly section headers | ✅ Shipped (v1.1) |
 | Streaks & consistency tracking | 📋 Planned |
-| Nutrient grouping / categories | 🔨 In Progress |
+| Nutrient grouping / categories | ✅ Shipped (v1.2) |
 
 ### MVP 3 — Ecosystem & Sync 📋
 
@@ -125,74 +125,10 @@ Day entries grouped under sticky month section headers (e.g. "March, 2026"). Mos
 
 ---
 
-#### 7. Nutrient Grouping / Categories
+#### 7. Nutrient Grouping / Categories ✅
+**Status:** Shipped in v1.2
 
-**Why:** As users add more nutrients (10, 15, 20+), the Today screen becomes unwieldy. Groups let users organise without deleting.
-
-##### Data model
-
-New SwiftData model: `NutrientGroup`
-
-| Field | Type | Notes |
-|---|---|---|
-| `name` | `String` | User-defined label, e.g. "Vitamins", "Minerals" |
-| `sortOrder` | `Int` | Controls display order across all screens |
-| `isSystem` | `Bool = false` | `true` only for the General group — blocks rename and delete |
-| `isCollapsed` | `Bool = false` | Persisted collapse state for Today screen |
-
-`Nutrient` gains two new fields:
-
-| Field | Type | Notes |
-|---|---|---|
-| `group` | `NutrientGroup?` | Optional relationship; `nil` resolves to General at query time |
-| `groupSortOrder` | `Int` | Display order within the group. Append-to-bottom on creation or move |
-
-##### The General group
-
-- A physical `NutrientGroup` row with `isSystem = true`, `name = "General"`.
-- Created automatically at first launch via `ModelContainerFactory` if it does not already exist.
-- Also seeded for existing users on first launch after the update (migration guard: check for absence before inserting).
-- Cannot be renamed or deleted from the UI.
-- Nutrients without an explicit group assignment resolve to General at query time (treat `nil` group as General).
-- Sits at the bottom of the group order by default (`sortOrder = Int.max` effectively, or last in the seeded order).
-
-##### Group management UI
-
-- Accessible via **Settings → Manage Groups** (a section within the existing Settings sheet, not a new profile menu item).
-- A reorderable list of all non-system groups with drag handles.
-- Swipe-to-delete on non-system groups. On delete: show confirmation alert — *"[Name] will be deleted. Its X nutrients will move to General."* — then migrate nutrients (`group = General`, appended to bottom of General's sort order) before deleting the group.
-- A **+** toolbar button opens a simple name prompt to create a new group. New group appended to the bottom of the order.
-- Group names are editable inline (or via tap-to-edit sheet — follow existing form patterns).
-- The General group row is shown at the bottom with a lock/system indicator and no drag handle or delete affordance.
-
-##### "Move to group" action
-
-- Available via **long-press context menu** on nutrient rows in both Today and My Nutrients.
-- Menu item label: "Move to Group".
-- Opens a half-sheet listing all groups (including General). Current group shown with a checkmark.
-- Selecting a group sets `nutrient.group` to the chosen group and assigns `groupSortOrder = max(existing) + 1` in that group (appended to bottom).
-- Tapping "New Group…" at the bottom of the list creates a group inline (name prompt) and immediately moves the nutrient into it.
-
-##### Today screen — collapsible group sections
-
-- Nutrients are rendered in named sections, one per group, in `sortOrder` order.
-- Within each section, nutrients appear in `groupSortOrder` order.
-- Section header shows: group name, collapse chevron, and — when collapsed — an aggregate progress indicator.
-- **Aggregate progress bar:** a slim bar spanning the full header width. Colour logic mirrors individual nutrients — blue while in progress, green when all nutrients in the group are at or above target, orange if any are exceeded.
-- Tapping the header toggles collapse. The new state is written back to `NutrientGroup.isCollapsed` immediately (persisted via SwiftData).
-- When collapsed, individual nutrient rows are hidden; only the header with aggregate bar is shown.
-- Drag-to-reorder of individual nutrients continues to work within a group's expanded section (updates `groupSortOrder`). Reordering across groups is not supported via drag — use "Move to group" instead.
-
-##### My Nutrients screen
-
-- Same grouped section structure as Today, also collapsible.
-- Create nutrient → assigned to General by default (`groupSortOrder` = appended to bottom of General).
-
-##### Migration notes for Claude Code
-
-- On first launch after this update, check if any `NutrientGroup` rows exist. If none, seed the General group.
-- All existing `Nutrient` rows have `group = nil`. These are treated as belonging to General at query time — no data migration of existing nutrients is required. Their `groupSortOrder` should be seeded from their existing `sortOrder` value so relative ordering is preserved.
-- New fields on `Nutrient` (`group`, `groupSortOrder`) must have property-level defaults (`nil` and `0` respectively) for SwiftData lightweight migration to succeed.
+Nutrients can be organised into named groups with collapsible sections on Today and My Nutrients screens. A system "General" group is seeded on first launch. Group management (create, rename, reorder, delete) lives in Settings → Manage Groups. "Move to Group" available via context menu. Group picker shown in Create Nutrient form (My Nutrients tab only). Model: `NutrientGroup`. Nutrient gains `group` and `groupSortOrder` fields.
 
 ---
 
