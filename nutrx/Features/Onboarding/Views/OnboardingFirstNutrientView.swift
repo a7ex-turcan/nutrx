@@ -39,7 +39,7 @@ struct OnboardingFirstNutrientView: View {
             Text("Your Nutrients")
                 .font(.largeTitle.bold())
 
-            Text("Add at least one nutrient you'd like to track.\nYou can always add more later.")
+            Text("Add at least one nutrient you'd like to track.\nYou can add more and configure reminders later.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
