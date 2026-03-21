@@ -6,12 +6,37 @@ struct NutrientsListView: View {
     @Query(filter: #Predicate<Nutrient> { !$0.isDeleted },
            sort: \Nutrient.sortOrder)
     private var nutrients: [Nutrient]
+    @Query(sort: \NutrientGroup.sortOrder) private var allGroups: [NutrientGroup]
 
     @State private var showAddSheet = false
     @State private var addDraft = NutrientDraft()
     @State private var editDraft = NutrientDraft()
     @State private var nutrientToEdit: Nutrient?
     @State private var nutrientToDelete: Nutrient?
+    @State private var nutrientToMove: Nutrient?
+
+    private var generalGroup: NutrientGroup? {
+        allGroups.first(where: { $0.isSystem })
+    }
+
+    private var groupedSections: [(group: NutrientGroup, nutrients: [Nutrient])] {
+        var sectionMap: [PersistentIdentifier: [Nutrient]] = [:]
+        for nutrient in nutrients {
+            let groupID = (nutrient.group ?? generalGroup)?.persistentModelID ?? generalGroup?.persistentModelID
+            guard let gid = groupID else { continue }
+            sectionMap[gid, default: []].append(nutrient)
+        }
+
+        // Sort nutrients within each group by groupSortOrder
+        for key in sectionMap.keys {
+            sectionMap[key]?.sort { $0.groupSortOrder < $1.groupSortOrder }
+        }
+
+        return allGroups.compactMap { group in
+            guard let nutrients = sectionMap[group.persistentModelID], !nutrients.isEmpty else { return nil }
+            return (group: group, nutrients: nutrients)
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -63,6 +88,9 @@ struct NutrientsListView: View {
                     applyEdit(to: nutrient)
                 }
             }
+            .sheet(item: $nutrientToMove) { nutrient in
+                MoveToGroupSheet(nutrient: nutrient)
+            }
             .alert(
                 "Delete \(nutrientToDelete?.name ?? "Nutrient")?",
                 isPresented: Binding(
@@ -99,31 +127,71 @@ struct NutrientsListView: View {
 
     private var nutrientList: some View {
         List {
-            ForEach(nutrients) { nutrient in
-                nutrientRow(nutrient)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        editDraft.populate(from: nutrient)
-                        nutrientToEdit = nutrient
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            nutrientToDelete = nutrient
-                        } label: {
-                            Image(systemName: "trash")
+            ForEach(groupedSections, id: \.group.persistentModelID) { section in
+                Section {
+                    if !section.group.isCollapsed {
+                        ForEach(section.nutrients, id: \.persistentModelID) { nutrient in
+                            nutrientRow(nutrient)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    editDraft.populate(from: nutrient)
+                                    nutrientToEdit = nutrient
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        nutrientToDelete = nutrient
+                                    } label: {
+                                        Image(systemName: "trash")
+                                    }
+                                }
+                                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                    Button {
+                                        editDraft.populate(from: nutrient)
+                                        nutrientToEdit = nutrient
+                                    } label: {
+                                        Image(systemName: "pencil")
+                                    }
+                                    .tint(.blue)
+                                }
+                                .contextMenu {
+                                    Button {
+                                        editDraft.populate(from: nutrient)
+                                        nutrientToEdit = nutrient
+                                    } label: {
+                                        Label("Edit Nutrient", systemImage: "pencil")
+                                    }
+
+                                    Button {
+                                        nutrientToMove = nutrient
+                                    } label: {
+                                        Label("Move to Group", systemImage: "folder")
+                                    }
+
+                                    Button(role: .destructive) {
+                                        nutrientToDelete = nutrient
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                        }
+                        .onMove { source, destination in
+                            moveNutrients(in: section.group, from: source, to: destination)
                         }
                     }
-                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                        Button {
-                            editDraft.populate(from: nutrient)
-                            nutrientToEdit = nutrient
-                        } label: {
-                            Image(systemName: "pencil")
+                } header: {
+                    GroupHeaderView(
+                        name: section.group.name,
+                        isCollapsed: section.group.isCollapsed,
+                        intakes: [], // No aggregate progress needed in My Nutrients
+                        onToggle: {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                section.group.isCollapsed.toggle()
+                            }
                         }
-                        .tint(.blue)
-                    }
+                    )
+                    .padding(.vertical, 4)
+                }
             }
-            .onMove(perform: moveNutrients)
         }
         .listStyle(.insetGrouped)
     }
@@ -162,6 +230,13 @@ struct NutrientsListView: View {
         )
         let notes = addDraft.notes.trimmingCharacters(in: .whitespaces)
         nutrient.notes = notes.isEmpty ? nil : notes
+
+        // Assign to General group by default
+        if let general = generalGroup {
+            nutrient.group = general
+            nutrient.groupSortOrder = (general.nutrients.map(\.groupSortOrder).max() ?? -1) + 1
+        }
+
         modelContext.insert(nutrient)
     }
 
@@ -177,11 +252,13 @@ struct NutrientsListView: View {
         nutrient.notes = notes.isEmpty ? nil : notes
     }
 
-    private func moveNutrients(from source: IndexSet, to destination: Int) {
-        var reordered = nutrients
-        reordered.move(fromOffsets: source, toOffset: destination)
-        for (index, nutrient) in reordered.enumerated() {
-            nutrient.sortOrder = index
+    private func moveNutrients(in group: NutrientGroup, from source: IndexSet, to destination: Int) {
+        var groupNutrients = nutrients
+            .filter { ($0.group ?? generalGroup)?.persistentModelID == group.persistentModelID }
+            .sorted { $0.groupSortOrder < $1.groupSortOrder }
+        groupNutrients.move(fromOffsets: source, toOffset: destination)
+        for (index, nutrient) in groupNutrients.enumerated() {
+            nutrient.groupSortOrder = index
         }
     }
 
@@ -194,5 +271,5 @@ struct NutrientsListView: View {
 
 #Preview {
     NutrientsListView()
-        .modelContainer(for: [Nutrient.self, IntakeRecord.self, Exclusion.self], inMemory: true)
+        .modelContainer(previewContainer)
 }

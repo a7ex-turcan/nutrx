@@ -8,6 +8,14 @@ struct SettingsView: View {
         List {
             Section {
                 NavigationLink {
+                    ManageGroupsView()
+                        .navigationTitle("Manage Groups")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    Label("Manage Groups", systemImage: "folder")
+                }
+
+                NavigationLink {
                     NotificationsSettingsView()
                         .navigationTitle("Notifications")
                         .navigationBarTitleDisplayMode(.inline)

@@ -6,6 +6,7 @@ struct OnboardingFirstNutrientView: View {
     @Query(filter: #Predicate<Nutrient> { !$0.isDeleted },
            sort: \Nutrient.sortOrder)
     private var nutrients: [Nutrient]
+    @Query(filter: #Predicate<NutrientGroup> { $0.isSystem }) private var systemGroups: [NutrientGroup]
 
     @State private var draft = NutrientDraft()
     var onFinish: () -> Void
@@ -138,6 +139,12 @@ struct OnboardingFirstNutrientView: View {
         )
         let notes = draft.notes.trimmingCharacters(in: .whitespaces)
         nutrient.notes = notes.isEmpty ? nil : notes
+
+        if let general = systemGroups.first {
+            nutrient.group = general
+            nutrient.groupSortOrder = (general.nutrients.map(\.groupSortOrder).max() ?? -1) + 1
+        }
+
         modelContext.insert(nutrient)
         draft.reset()
     }

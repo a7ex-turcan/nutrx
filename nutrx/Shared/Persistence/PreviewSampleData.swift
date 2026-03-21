@@ -4,7 +4,7 @@ import SwiftData
 @MainActor
 let previewContainer: ModelContainer = {
     let container = try! ModelContainer(
-        for: UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self, UserPreferences.self, NutrientReminder.self,
+        for: UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self, UserPreferences.self, NutrientReminder.self, NutrientGroup.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let context = container.mainContext
@@ -19,12 +19,34 @@ let previewContainer: ModelContainer = {
     )
     context.insert(profile)
 
+    // Groups
+    let vitamins = NutrientGroup(name: "Vitamins", sortOrder: 0)
+    let supplements = NutrientGroup(name: "Supplements", sortOrder: 1)
+    let general = NutrientGroup(name: "General", sortOrder: Int.max, isSystem: true)
+    context.insert(vitamins)
+    context.insert(supplements)
+    context.insert(general)
+
     // Sample nutrients
     let vitD = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 4000, sortOrder: 0)
+    vitD.group = vitamins
+    vitD.groupSortOrder = 0
+
     let omega3 = Nutrient(name: "Omega-3", unit: "mg", step: 500, dailyTarget: 2000, sortOrder: 1)
+    omega3.group = supplements
+    omega3.groupSortOrder = 0
+
     let caffeine = Nutrient(name: "Caffeine", unit: "mg", step: 100, dailyTarget: 400, sortOrder: 2)
+    caffeine.group = general
+    caffeine.groupSortOrder = 0
+
     let water = Nutrient(name: "Water", unit: "cups", step: 1, dailyTarget: 8, sortOrder: 3)
+    water.group = general
+    water.groupSortOrder = 1
+
     let protein = Nutrient(name: "Protein", unit: "g", step: 10, dailyTarget: 150, sortOrder: 4)
+    protein.group = supplements
+    protein.groupSortOrder = 1
 
     for nutrient in [vitD, omega3, caffeine, water, protein] {
         context.insert(nutrient)

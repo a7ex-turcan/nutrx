@@ -5,9 +5,11 @@ struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Query private var allPreferences: [UserPreferences]
+    @Query private var allGroups: [NutrientGroup]
     @State private var viewModel = TodayViewModel()
     @State private var nutrientForCustomAmount: Nutrient?
     @State private var nutrientToEdit: Nutrient?
+    @State private var nutrientToMove: Nutrient?
     @State private var editDraft = NutrientDraft()
     @State private var showBanner = false
 
@@ -22,7 +24,7 @@ struct TodayView: View {
 
     var body: some View {
         Group {
-            if viewModel.nutrientIntakes.isEmpty {
+            if viewModel.groupSections.isEmpty {
                 emptyState
             } else {
                 List {
@@ -36,54 +38,25 @@ struct TodayView: View {
                         .listRowBackground(Color.clear)
                     }
 
-                    ForEach(viewModel.nutrientIntakes, id: \.nutrient.persistentModelID) { entry in
-                        NutrientRowView(
-                            nutrient: entry.nutrient,
-                            currentIntake: entry.total,
-                            onIncrement: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    viewModel.increment(entry.nutrient, context: modelContext)
-                                }
-                            },
-                            onDecrement: {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    viewModel.decrement(entry.nutrient, context: modelContext)
+                    ForEach(viewModel.groupSections) { section in
+                        Section {
+                            if !section.group.isCollapsed {
+                                ForEach(section.intakes, id: \.nutrient.persistentModelID) { entry in
+                                    nutrientRow(entry)
                                 }
                             }
-                        )
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                        .contextMenu {
-                            Button {
-                                nutrientForCustomAmount = entry.nutrient
-                            } label: {
-                                Label("Add Exact Amount", systemImage: "number")
-                            }
-
-                            Button {
-                                editDraft.populate(from: entry.nutrient)
-                                nutrientToEdit = entry.nutrient
-                            } label: {
-                                Label("Edit Nutrient", systemImage: "pencil")
-                            }
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                            Button {
-                                nutrientForCustomAmount = entry.nutrient
-                            } label: {
-                                Image(systemName: "number")
-                            }
-                            .tint(.blue)
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button {
-                                editDraft.populate(from: entry.nutrient)
-                                nutrientToEdit = entry.nutrient
-                            } label: {
-                                Image(systemName: "pencil")
-                            }
-                            .tint(.orange)
+                        } header: {
+                            GroupHeaderView(
+                                name: section.group.name,
+                                isCollapsed: section.group.isCollapsed,
+                                intakes: section.intakes.map { (current: $0.total, target: $0.nutrient.dailyTarget) },
+                                onToggle: {
+                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                        section.group.isCollapsed.toggle()
+                                    }
+                                }
+                            )
+                            .padding(.vertical, 4)
                         }
                     }
                 }
@@ -94,6 +67,9 @@ struct TodayView: View {
         .onAppear {
             viewModel.refresh(context: modelContext)
             refreshBannerVisibility()
+        }
+        .onChange(of: allGroups.count) {
+            viewModel.refresh(context: modelContext)
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
@@ -118,6 +94,66 @@ struct TodayView: View {
             ) {
                 applyEdit(to: nutrient)
             }
+        }
+        .sheet(item: $nutrientToMove) { nutrient in
+            MoveToGroupSheet(nutrient: nutrient)
+        }
+    }
+
+    private func nutrientRow(_ entry: TodayViewModel.NutrientIntake) -> some View {
+        NutrientRowView(
+            nutrient: entry.nutrient,
+            currentIntake: entry.total,
+            onIncrement: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    viewModel.increment(entry.nutrient, context: modelContext)
+                }
+            },
+            onDecrement: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    viewModel.decrement(entry.nutrient, context: modelContext)
+                }
+            }
+        )
+        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+        .contextMenu {
+            Button {
+                nutrientForCustomAmount = entry.nutrient
+            } label: {
+                Label("Add Exact Amount", systemImage: "number")
+            }
+
+            Button {
+                editDraft.populate(from: entry.nutrient)
+                nutrientToEdit = entry.nutrient
+            } label: {
+                Label("Edit Nutrient", systemImage: "pencil")
+            }
+
+            Button {
+                nutrientToMove = entry.nutrient
+            } label: {
+                Label("Move to Group", systemImage: "folder")
+            }
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button {
+                nutrientForCustomAmount = entry.nutrient
+            } label: {
+                Image(systemName: "number")
+            }
+            .tint(.blue)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                editDraft.populate(from: entry.nutrient)
+                nutrientToEdit = entry.nutrient
+            } label: {
+                Image(systemName: "pencil")
+            }
+            .tint(.orange)
         }
     }
 
