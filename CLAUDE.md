@@ -351,6 +351,65 @@ Each nutrient can have zero, one, or multiple **dose reminders** — each remind
 
 ---
 
+## Nutrient Grouping
+
+Nutrients can be organised into named groups. Groups are collapsible on the Today screen and orderable. All grouping features are part of MVP 2.
+
+### General group
+
+- Always exists as a real `NutrientGroup` row with `isSystem = true`.
+- Seeded by `ModelContainerFactory` on first launch if no groups exist (handles both fresh installs and upgrades).
+- Acts as the default home for all nutrients. Newly created nutrients are assigned to General.
+- Nutrients with `group = nil` are treated as belonging to General at query time — no backfill migration needed.
+- Cannot be renamed, deleted, or reordered above other groups.
+
+### Group management
+
+- Lives in **Settings → Manage Groups** — a section within the existing `SettingsView` sheet.
+- Renders a reorderable list of all non-system groups with drag handles (updates `NutrientGroup.sortOrder`).
+- General is shown at the bottom with a visual indicator that it is a system group; no drag handle or delete affordance.
+- **Create:** + toolbar button opens a name prompt. New group is appended to the bottom of the order.
+- **Rename:** tap a group row to edit its name inline or via a focused sheet.
+- **Delete (non-system groups only):** swipe-to-delete triggers a confirmation alert — *"[Name] will be deleted. Its X nutrients will move to General."* — then migrates all nutrients in that group (`nutrient.group = General`, `nutrient.groupSortOrder = max(General) + 1`) before deleting the row.
+
+### "Move to group" action
+
+- Exposed via **long-press context menu** on nutrient rows in both Today and My Nutrients.
+- Menu item: "Move to Group".
+- Opens a half-sheet listing all groups. The current group is shown with a checkmark.
+- Selecting a group sets `nutrient.group` to the target and assigns `nutrient.groupSortOrder = max(existing groupSortOrder in that group) + 1`.
+- A "New Group…" row at the bottom of the list lets the user create a group inline and immediately move the nutrient into it.
+
+### Today screen — collapsible group sections
+
+- Nutrients render in `NutrientGroup.sortOrder` order, each group as a named section.
+- Within a section, nutrients appear in `Nutrient.groupSortOrder` order.
+- **Section header contains:**
+  - Group name (left-aligned)
+  - Collapse chevron (right-aligned, rotates on state change)
+  - When collapsed: aggregate progress bar spanning the full header width
+- **Aggregate progress bar colour logic:**
+  - All nutrients in group at or above target → green
+  - Any nutrient exceeded → orange
+  - Otherwise → blue (in progress)
+- Tapping the header toggles `NutrientGroup.isCollapsed` and persists the change immediately to SwiftData.
+- When collapsed, individual nutrient rows are hidden; only the header row is shown.
+- Drag-to-reorder within an expanded section updates `groupSortOrder`. Cross-group reordering via drag is not supported — users use "Move to group" instead.
+
+### My Nutrients screen
+
+- Same grouped section structure. Groups are also collapsible here (same `isCollapsed` property).
+- Drag-to-reorder within a section updates `groupSortOrder`.
+
+### Migration notes
+
+- On first launch after this update, `ModelContainerFactory` checks for the absence of any `NutrientGroup` rows and seeds the General group if none exist.
+- Existing `Nutrient` rows have `group = nil` — no migration required; they resolve to General at query time.
+- `groupSortOrder` for existing nutrients should be seeded from their legacy `sortOrder` value so relative order is preserved.
+- Both new fields on `Nutrient` (`group: NutrientGroup? = nil`, `groupSortOrder: Int = 0`) must have property-level defaults for SwiftData lightweight migration.
+
+---
+
 ## Monetisation
 
 - The app is **free with no ads**.
@@ -369,7 +428,6 @@ The following features are planned in future MVPs but must not be built or scaff
 **MVP 2 (next):**
 - Home screen & lock screen widgets (WidgetKit — requires a separate extension target and shared App Group `group.nutrx-labs.nutrx`)
 - Streaks & consistency tracking (computed from existing `IntakeRecord` data, no new model needed)
-- Nutrient grouping / categories (new `NutrientGroup` model, collapsible sections in Today and My Nutrients)
 
 **MVP 3:**
 - iCloud sync (CloudKit + SwiftData — requires `NSPersistentCloudKitContainer`, `iCloud` + `CloudKit` entitlements, all `@Model` fields must have property-level defaults)
@@ -431,14 +489,17 @@ Represents a user-defined nutrient that the user wants to track.
 | `unit` | `String` | e.g. "mg", "IU", "cups" |
 | `step` | `Double` | Increment per + / − tap. Must be > 0 |
 | `dailyTarget` | `Double` | The daily goal, in the nutrient's own unit |
-| `sortOrder` | `Int` | Drives display order on Today and My Nutrients screens. Lower = higher up. Updated on every drag-and-drop reorder |
+| `sortOrder` | `Int` | Legacy flat sort order. Still used as the initial seed for `groupSortOrder` on migration |
+| `groupSortOrder` | `Int = 0` | Display order within the nutrient's group. Property-level default required for SwiftData migration |
 | `isDeleted` | `Bool` | Soft delete flag. When `true`, hidden from all active UI but retained so historical `IntakeRecord` rows remain valid |
 | `notes` | `String?` | Optional free-form text capturing why the user tracks this nutrient. Shown as a muted single line on the Today card when non-empty. |
+| `group` | `NutrientGroup?` | Optional relationship to a `NutrientGroup`. `nil` resolves to the General group at query time. Property-level default `nil` required for SwiftData migration |
 
 **Relationships:**
 - One `Nutrient` → many `IntakeRecord` (inverse: `IntakeRecord.nutrient`)
 - One `Nutrient` → many `Exclusion` (inverse: `Exclusion.nutrient`)
 - One `Nutrient` → many `NutrientReminder` (inverse: `NutrientReminder.nutrient`)
+- Many `Nutrient` → one `NutrientGroup?` (inverse: `NutrientGroup.nutrients`)
 
 ---
 
@@ -481,6 +542,28 @@ Records that a specific nutrient has been excluded from a specific day's Today v
 | `date` | `Date` | The calendar day the exclusion applies to. Only the date component is meaningful; time is ignored |
 
 **Usage:** a nutrient is excluded from a given day's Today view if an `Exclusion` row exists for that nutrient where `date` matches that calendar day. At midnight (checked on foreground), any `Exclusion` rows for previous days can be purged — they are no longer needed since exclusions do not carry forward.
+
+---
+
+### NutrientGroup
+
+Represents a user-defined group that organises nutrients on the Today and My Nutrients screens.
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `String` | User-defined label, e.g. "Vitamins", "Minerals", "Supplements" |
+| `sortOrder` | `Int` | Controls the display order of groups. Lower = higher up |
+| `isSystem` | `Bool = false` | `true` only for the General group. Blocks rename and delete in the UI |
+| `isCollapsed` | `Bool = false` | Persisted collapsed state for Today and My Nutrients screens. Written back immediately on header tap |
+
+**The General group:**
+- A physical `NutrientGroup` row with `isSystem = true` and `name = "General"`.
+- Seeded once by `ModelContainerFactory` on first launch if no `NutrientGroup` rows exist (covers both new installs and upgrades from pre-grouping versions).
+- Nutrients with `group = nil` resolve to General at query time — no data migration of existing rows is needed.
+- Cannot be renamed, deleted, or reordered above other groups. Rendered last in all group lists.
+
+**Relationships:**
+- One `NutrientGroup` → many `Nutrient` (inverse: `Nutrient.group`)
 
 ---
 
