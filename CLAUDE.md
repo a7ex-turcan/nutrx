@@ -97,7 +97,7 @@ nutrx/
 │   ├── Nutrient.swift
 │   ├── IntakeRecord.swift
 │   ├── Exclusion.swift
-│   └── NutrientReminder.swift   # MVP 2 — not yet created. One row per dose reminder per nutrient.
+│   └── NutrientReminder.swift   # One row per dose reminder per nutrient.
 │
 ├── Features/
 │   │
@@ -124,7 +124,11 @@ nutrx/
 │   ├── Nutrients/               # Tab 2 — manage the nutrient list. (Implemented)
 │   │   └── Views/
 │   │       ├── NutrientsListView.swift      # Reorderable list with add/edit/delete + confirmation alerts.
-│   │       └── NutrientFormView.swift       # Sheet for creating and editing a nutrient. Delete button shown in edit mode.
+│   │       ├── NutrientFormView.swift       # Sheet for creating and editing a nutrient. Delete button shown in edit mode.
+│   │       │                                # In edit mode, shows a "Reminders" section linking to NutrientRemindersSheet.
+│   │       └── NutrientRemindersSheet.swift # Half-sheet for managing per-nutrient dose reminders. Lists existing reminders
+│   │                                        # sorted by time, swipe-to-delete, compact DatePicker for adding new ones.
+│   │                                        # Uses @Query for reliable SwiftUI updates on insert/delete.
 │   │
 │   ├── History/                 # Tab 3 — read-only log of past days. (Implemented)
 │   │   ├── Views/
@@ -138,7 +142,7 @@ nutrx/
 │   │       └── AboutView.swift              # App info, privacy philosophy, how-it-works. Shown as a section at the
 │   │                                        # bottom of SettingsView (standard iOS convention).
 │   │
-│   ├── Settings/                # Accessed via profile menu flyout → "Settings". (To be implemented)
+│   ├── Settings/                # Accessed via profile menu flyout → "Settings". (Implemented)
 │   │   └── Views/
 │   │       └── SettingsView.swift           # Grouped list sheet. Two sections:
 │   │                                        # 1. "Daily check-in reminder" — notification permission toggle with
@@ -170,7 +174,9 @@ nutrx/
         └── NotificationService.swift        # Wraps UNUserNotificationCenter. Responsibilities:
                                              # - Request authorisation and return current permission status.
                                              # - Schedule / cancel the daily check-in reminder (noon, id: daily-checkin-reminder).
-                                             # - Check whether any intake has been logged today (to skip the reminder if so).
+                                             # - Schedule / cancel per-nutrient dose reminders (id: nutrient-{id}-reminder-{HHmm}).
+                                             # - Smart suppression: cancel upcoming nutrient reminders after logging intake.
+                                             # - refreshAllNutrientReminders(context:) — called on every app foreground.
                                              # Pure Swift class — no SwiftUI imports.
 ```
 
@@ -214,13 +220,13 @@ Each nutrient has:
 - **Unit** – user-defined string (e.g. "mg", "g", "IU", "ml", "cups")
 - **Step** – the increment used when tapping + or − on the Today screen (e.g. 0.5, 1, 100). Must be a positive number.
 - **Daily target** – the goal for the day, expressed in the nutrient's own unit. Shown as the "full" value of the progress bar on the Today screen. Required.
-- **Notes** – optional free-form text (e.g. "doctor recommended for bone density", "read about sleep benefits"). Editable in the nutrient form. Shown as a single muted line below the nutrient name on the Today card; only rendered when non-empty. (MVP 2 — not yet built)
+- **Notes** – optional free-form text (e.g. "doctor recommended for bone density", "read about sleep benefits"). Editable in the nutrient form. Shown as a single muted line below the nutrient name on the Today card; only rendered when non-empty.
 
 Nutrients can be reordered, edited, and deleted from the **My Nutrients** tab. Order is set by the user via **drag-and-drop** and is fully manual — no automatic sorting. The order defined in My Nutrients is the exact order nutrients appear on the Today screen. It never changes unless the user explicitly reorders them.
 
-### Reminders (MVP 2 — not yet built)
+### Reminders
 
-Each nutrient will support zero, one, or multiple dose reminders. See the **Per-nutrient notifications** section under Notifications for the full spec.
+Each nutrient supports zero, one, or multiple dose reminders. See the **Per-nutrient notifications** section under Notifications for the full spec.
 
 ---
 
@@ -322,26 +328,26 @@ iOS notification permission has three distinct states that the UI must handle di
   2. **About** — `AboutView` rendered inline at the bottom of the sheet (standard iOS convention; About always lives at the bottom of Settings).
 - The Settings sheet replaces the former direct "About" item in the profile flyout menu.
 
-### Per-nutrient notifications (MVP 2 — not yet built)
+### Per-nutrient notifications
 
 Each nutrient can have zero, one, or multiple **dose reminders** — each reminder is a time of day that fires daily.
 
 **User-facing behaviour:**
 - Notification message: *"Time to log your [Nutrient Name]"*
-- **Smart suppression:** if the user has already logged that nutrient since the previous reminder fired, the upcoming notification is cancelled silently and rescheduled for the following day.
+- **Smart suppression:** if the user has already logged that nutrient since the previous reminder fired, the upcoming notification is cancelled silently and rescheduled for the following day. Implemented via `NotificationService.suppressRemindersAfterLogging(for:)`, called on every intake action.
 - Fully local — no server, no network.
 
 **Where it lives:**
-- A dedicated **"Reminders" section** at the bottom of `NutrientFormView` (both create and edit).
-- The section shows a summary (e.g. "3 reminders" or "No reminders") and opens a **Reminders sheet** on tap.
-- The Reminders sheet lists all configured times with a delete (✕) button per entry and an **"+ Add Reminder"** button that presents a time picker.
+- A dedicated **"Reminders" section** at the bottom of `NutrientFormView` (edit mode only — shown when a `nutrient` is passed).
+- The section shows a summary (e.g. "3 reminders" or "No reminders") and opens `NutrientRemindersSheet` on tap.
+- The Reminders sheet lists all configured times sorted chronologically, with swipe-to-delete and a compact DatePicker for adding new reminders.
+- Uses `@Query private var allReminders: [NutrientReminder]` (not relationship reads) for reliable SwiftUI view updates on insert/delete.
 
-**New SwiftData model: `NutrientReminder`** (see Data Models section).
+**SwiftData model: `NutrientReminder`** (see Data Models section).
 
-**Notification IDs:** use the namespaced pattern `nutrient-{id}-reminder-{HHmm}` (e.g. `nutrient-abc123-reminder-0900`). When the user logs an intake for a nutrient, call `UNUserNotificationCenter.removePendingNotificationRequests(withIdentifiers:)` for any of that nutrient's reminders scheduled before the next one in sequence. Each midnight (checked on app foreground, same pattern as daily reset), reschedule all reminders for the day.
+**Notification IDs:** use the namespaced pattern `nutrient-{id}-reminder-{HHmm}` (e.g. `nutrient-abc123-reminder-0900`). When the user logs an intake for a nutrient, call `UNUserNotificationCenter.removePendingNotificationRequests(withIdentifiers:)` for that nutrient's reminders. On every app foreground, `NotificationService.refreshAllNutrientReminders(context:)` reschedules all reminders.
 
-- This toggle/section in `NutrientFormView` should only be visible when notification permission is already granted.
-- Do **not** build or scaffold this until MVP 2.
+**Permission handling in sheets:** The OS notification permission prompt can be swallowed when triggered from within a presented sheet. The pattern used is a two-stage approach: show an in-app `.alert` first explaining why permissions are needed, then trigger the OS prompt from the alert's button action.
 
 ---
 
@@ -361,8 +367,6 @@ Each nutrient can have zero, one, or multiple **dose reminders** — each remind
 The following features are planned in future MVPs but must not be built or scaffolded until their target version.
 
 **MVP 2 (next):**
-- Per-nutrient dose reminders (`NutrientReminder` model, Reminders sheet inside `NutrientFormView`)
-- Nutrient notes field (`Nutrient.notes: String?` — free-form text shown in edit form and as a muted line on the Today card)
 - Home screen & lock screen widgets (WidgetKit — requires a separate extension target and shared App Group `group.nutrx-labs.nutrx`)
 - History tab monthly section headers (grouping change in `HistoryViewModel` / `HistoryListView`)
 - Streaks & consistency tracking (computed from existing `IntakeRecord` data, no new model needed)
@@ -430,11 +434,12 @@ Represents a user-defined nutrient that the user wants to track.
 | `dailyTarget` | `Double` | The daily goal, in the nutrient's own unit |
 | `sortOrder` | `Int` | Drives display order on Today and My Nutrients screens. Lower = higher up. Updated on every drag-and-drop reorder |
 | `isDeleted` | `Bool` | Soft delete flag. When `true`, hidden from all active UI but retained so historical `IntakeRecord` rows remain valid |
-| `notes` | `String?` | Optional free-form text capturing why the user tracks this nutrient. Shown as a muted single line on the Today card when non-empty. MVP 2 — not yet added. |
+| `notes` | `String?` | Optional free-form text capturing why the user tracks this nutrient. Shown as a muted single line on the Today card when non-empty. |
 
 **Relationships:**
 - One `Nutrient` → many `IntakeRecord` (inverse: `IntakeRecord.nutrient`)
 - One `Nutrient` → many `Exclusion` (inverse: `Exclusion.nutrient`)
+- One `Nutrient` → many `NutrientReminder` (inverse: `NutrientReminder.nutrient`)
 
 ---
 
@@ -480,7 +485,7 @@ Records that a specific nutrient has been excluded from a specific day's Today v
 
 ---
 
-### NutrientReminder (MVP 2 — not yet built)
+### NutrientReminder
 
 Represents a single scheduled dose reminder for a nutrient. Each instance maps to one local notification that fires daily at the configured time.
 
@@ -491,8 +496,6 @@ Represents a single scheduled dose reminder for a nutrient. Each instance maps t
 
 **Relationships:**
 - One `Nutrient` → many `NutrientReminder` (inverse: `NutrientReminder.nutrient`)
-
-Do not create this model until MVP 2.
 
 ---
 

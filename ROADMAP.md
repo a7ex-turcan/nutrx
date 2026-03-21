@@ -41,34 +41,10 @@
 
 ### Tier 1 — High Value, Ship First
 
-#### 1. Per-Nutrient Dose Reminders
-**Why:** The single highest-impact retention feature. Reminders that map to a user's actual supplement schedule (e.g. Aspirin at 9 AM, noon, and 8 PM) are far more useful than a generic daily nudge — and far less likely to be dismissed or disabled.
+#### 1. Per-Nutrient Dose Reminders ✅
+**Status:** Shipped in v1.1
 
-**User-facing behaviour:**
-- Each nutrient can have zero, one, or multiple reminders configured
-- Each reminder is a **time of day** that fires daily (e.g. 09:00 AM, 12:00 PM, 08:00 PM)
-- Notification message: *"Time to log your [Nutrient Name]"*
-- **Smart suppression:** if the user has already logged that nutrient since the previous reminder fired, the upcoming notification is cancelled silently. It is rescheduled fresh the following day.
-- Reminders are fully local — no server, no network, consistent with the privacy promise
-
-**Where it lives:**
-- Configured inside the **Edit Nutrient screen**, as a dedicated "Reminders" section at the bottom of the form
-- The section shows a summary (e.g. "3 reminders" or "No reminders") and opens a dedicated **Reminders sheet** on tap
-- The Reminders sheet lists all configured times with a delete (✕) button per entry, and an **"+ Add Reminder"** button that presents a time picker
-- Reminders can also be configured during **Create Nutrient** (same section, same sheet)
-
-**New SwiftData model: `NutrientReminder`**
-
-| Field | Type | Notes |
-|---|---|---|
-| `nutrient` | `Nutrient` | Navigation property (SwiftData relationship) |
-| `timeOfDay` | `Date` | Only the time component is meaningful; date is ignored |
-
-Relationship: one `Nutrient` → many `NutrientReminder` (inverse: `NutrientReminder.nutrient`)
-
-> ⚠️ **Technical note for Claude Code:** Smart suppression requires predictable, cancellable notification IDs. Use the format `nutrient-{id}-reminder-{HHmm}` (e.g. `nutrient-abc123-reminder-0900`), consistent with the namespaced identifier pattern established in `NotificationService.swift`. When the user logs an intake for a nutrient, call `UNUserNotificationCenter.removePendingNotificationRequests(withIdentifiers:)` for any of that nutrient's reminders scheduled before the next one in sequence. Each night at midnight (checked on app foreground, same pattern as daily reset), reschedule all reminders for the day. This ensures the suppression slate is clean every morning.
-
-**New screen:** Settings (see below — introduced in this tier to host a global notification toggle and permission prompt)
+Each nutrient can have zero, one, or multiple dose reminders. Each reminder fires daily at a configured time. Smart suppression cancels upcoming reminders after the user logs intake. Configured via a "Reminders" section in the Edit Nutrient form, opening `NutrientRemindersSheet`. Model: `NutrientReminder`. Notification IDs: `nutrient-{id}-reminder-{HHmm}`.
 
 ---
 
@@ -88,16 +64,10 @@ Relationship: one `Nutrient` → many `NutrientReminder` (inverse: `NutrientRemi
 
 ### Tier 2 — Meaningful UX Improvements
 
-#### 4. Nutrient Notes
-**Why:** Users add supplements based on research they do once and forget. A notes field gives them a place to capture the reasoning — "doctor recommended for bone density", "read about sleep benefits" — so they always know why something is in their list.
+#### 4. Nutrient Notes ✅
+**Status:** Shipped in v1.1
 
-- A single optional free-form text field added to the `Nutrient` model (`notes: String?`)
-- Editable in both the **Create** and **Edit Nutrient** form, below the Daily Target field
-- Label: "Notes" with placeholder text "Why you're tracking this, best time to take it…"
-- On the **Today card**: rendered as a single line of muted text directly below the nutrient name, truncated with an ellipsis if too long. Only shown when the field is non-empty — nutrients without notes look exactly as they do today
-- No new SwiftData model needed — just a new optional field on `Nutrient`
-
-> ⚠️ **Technical note for Claude Code:** `notes` must be declared as `var notes: String? = nil` at the property level (not just in the initialiser) to satisfy SwiftData lightweight migration for existing rows.
+Optional free-form text field on `Nutrient` (`notes: String? = nil`). Editable in Create/Edit Nutrient form. Shown as a muted single line below the nutrient name on the Today card when non-empty.
 
 ---
 
