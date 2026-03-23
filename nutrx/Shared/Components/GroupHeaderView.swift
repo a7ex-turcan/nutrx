@@ -23,6 +23,10 @@ struct GroupHeaderView: View {
         return totalCurrent / totalTarget
     }
 
+    private var completedCount: Int {
+        intakes.filter { $0.target > 0 && $0.current >= $0.target }.count
+    }
+
     var body: some View {
         Button(action: onToggle) {
             VStack(spacing: isCollapsed ? 8 : 0) {
@@ -30,6 +34,12 @@ struct GroupHeaderView: View {
                     Text(name)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
+
+                    if !intakes.isEmpty {
+                        Text("\(completedCount)/\(intakes.count)")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(completedCount == intakes.count ? .green : .secondary)
+                    }
 
                     Spacer()
 
