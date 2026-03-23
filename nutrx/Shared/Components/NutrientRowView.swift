@@ -41,6 +41,7 @@ struct NutrientRowView: View {
             HStack(spacing: 14) {
                 if showButtons {
                     Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         onDecrement?()
                     } label: {
                         Image(systemName: "minus.circle.fill")
@@ -55,6 +56,7 @@ struct NutrientRowView: View {
 
                 if showButtons {
                     Button {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         onIncrement?()
                     } label: {
                         Image(systemName: "plus.circle.fill")
