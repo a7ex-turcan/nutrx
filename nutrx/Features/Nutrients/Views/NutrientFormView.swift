@@ -15,6 +15,8 @@ struct NutrientFormView: View {
     let onSave: () -> Void
 
     @State private var showRemindersSheet = false
+    @State private var showNewGroupAlert = false
+    @State private var newGroupName = ""
 
     init(
         draft: NutrientDraft,
@@ -100,17 +102,49 @@ struct NutrientFormView: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
 
-            Picker("Group", selection: $selectedGroup) {
-                ForEach(allGroups, id: \.persistentModelID) { group in
-                    Text(group.name).tag(Optional(group))
+            HStack(spacing: 12) {
+                Picker("Group", selection: $selectedGroup) {
+                    ForEach(allGroups, id: \.persistentModelID) { group in
+                        Text(group.name).tag(Optional(group))
+                    }
                 }
+                .pickerStyle(.menu)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button {
+                    newGroupName = ""
+                    showNewGroupAlert = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(.green)
+                }
+                .buttonStyle(.plain)
             }
-            .pickerStyle(.menu)
             .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(.secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
+        .alert("New Group", isPresented: $showNewGroupAlert) {
+            TextField("Group name", text: $newGroupName)
+            Button("Add") {
+                createGroup()
+            }
+            .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    @Environment(\.modelContext) private var modelContext
+
+    private func createGroup() {
+        let name = newGroupName.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+
+        let maxOrder = allGroups.filter { !$0.isSystem }.map(\.sortOrder).max() ?? -1
+        let group = NutrientGroup(name: name, sortOrder: maxOrder + 1)
+        modelContext.insert(group)
+        selectedGroup = group
     }
 
     private func remindersSection(for nutrient: Nutrient) -> some View {
