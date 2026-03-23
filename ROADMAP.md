@@ -29,6 +29,7 @@
 | History monthly section headers | ✅ Shipped (v1.1) |
 | Streaks & consistency tracking | 📋 Planned |
 | Nutrient grouping / categories | ✅ Shipped (v1.2) |
+| Group UX polish (completion counts, inline creation, haptics) | ✅ Shipped (v1.3) |
 
 ### MVP 3 — Ecosystem & Sync 📋
 

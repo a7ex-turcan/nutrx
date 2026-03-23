@@ -126,6 +126,7 @@ nutrx/
 │   │   └── Views/
 │   │       ├── NutrientsListView.swift      # Reorderable list with add/edit/delete + confirmation alerts.
 │   │       ├── NutrientFormView.swift       # Sheet for creating and editing a nutrient. Delete button shown in edit mode.
+│   │       │                                # Includes a group picker with inline "New Group…" option for creating groups without leaving the form.
 │   │       │                                # In edit mode, shows a "Reminders" section linking to NutrientRemindersSheet.
 │   │       └── NutrientRemindersSheet.swift # Half-sheet for managing per-nutrient dose reminders. Lists existing reminders
 │   │                                        # sorted by time, swipe-to-delete, compact DatePicker for adding new ones.
@@ -243,8 +244,8 @@ Each nutrient is displayed as a **row** containing:
 - A **+ button** on the right
 
 ### Tap behaviour
-- Tapping **+** increases the logged intake by the nutrient's configured step amount.
-- Tapping **−** decreases the logged intake by the step amount (floor at 0, never go negative).
+- Tapping **+** increases the logged intake by the nutrient's configured step amount. Triggers subtle haptic feedback.
+- Tapping **−** decreases the logged intake by the step amount (floor at 0, never go negative). Triggers subtle haptic feedback.
 
 ### Swipe actions
 - **Swipe right** — opens the "Add Exact Amount" sheet (same as the context menu option).
@@ -388,6 +389,7 @@ Nutrients can be organised into named groups. Groups are collapsible on the Toda
 - Within a section, nutrients appear in `Nutrient.groupSortOrder` order.
 - **Section header contains:**
   - Group name (left-aligned)
+  - Completion count showing how many nutrients have reached their daily target (e.g. "2 / 5")
   - Collapse chevron (right-aligned, rotates on state change)
   - When collapsed: aggregate progress bar spanning the full header width
 - **Aggregate progress bar colour logic:**

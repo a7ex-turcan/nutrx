@@ -4,6 +4,16 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v1.3 — 2026-03-23
+
+### Improvements
+- **Completion count in group headers** — Collapsed and expanded group headers now show how many nutrients have reached their daily target (e.g. "2 / 5").
+- **Inline group creation** — Create a new group directly from the nutrient form's group picker without leaving the screen.
+- **Haptic feedback** — Subtle haptic feedback on +/− buttons for a more tactile logging experience.
+- **Tighter group spacing** — Reduced section spacing between groups on the Today screen for a more compact layout.
+
+---
+
 ## v1.2 — 2026-03-21
 
 ### Features
