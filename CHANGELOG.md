@@ -11,6 +11,7 @@ All notable changes to nutrx are documented in this file.
 - **Inline group creation** — Create a new group directly from the nutrient form's group picker without leaving the screen.
 - **Haptic feedback** — Subtle haptic feedback on +/− buttons for a more tactile logging experience.
 - **Tighter group spacing** — Reduced section spacing between groups on the Today screen for a more compact layout.
+- **Notes in reminders** — Nutrient reminders now show the nutrient's note as the notification body when one is set.
 
 ### Fixes
 - Fixed nutrient reminders not firing due to an async race condition in notification scheduling.
