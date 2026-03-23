@@ -12,6 +12,9 @@ All notable changes to nutrx are documented in this file.
 - **Haptic feedback** — Subtle haptic feedback on +/− buttons for a more tactile logging experience.
 - **Tighter group spacing** — Reduced section spacing between groups on the Today screen for a more compact layout.
 
+### Fixes
+- Fixed nutrient reminders not firing due to an async race condition in notification scheduling.
+
 ---
 
 ## v1.2 — 2026-03-21
