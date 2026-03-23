@@ -61,6 +61,7 @@ struct TodayView: View {
                     }
                 }
                 .listStyle(.plain)
+                .listSectionSpacing(4)
             }
         }
         .background(Color(.systemGroupedBackground))
