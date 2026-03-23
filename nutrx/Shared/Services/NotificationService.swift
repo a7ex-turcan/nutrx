@@ -69,11 +69,17 @@ enum NotificationService {
 
     /// Schedules all reminders for a given nutrient. Cancels existing ones first.
     static func scheduleReminders(for nutrient: Nutrient) {
-        cancelReminders(for: nutrient)
+        let center = UNUserNotificationCenter.current()
+        let prefix = "\(nutrientReminderPrefix)\(nutrient.persistentModelID)-reminder-"
+
+        // Collect the IDs we're about to schedule so we can cancel stale ones synchronously
+        var newIDs: Set<String> = []
+        var requests: [UNNotificationRequest] = []
 
         for reminder in nutrient.reminders {
             let (hour, minute) = reminder.timeComponents
             let id = nutrientReminderID(nutrientID: nutrient.persistentModelID, hour: hour, minute: minute)
+            newIDs.insert(id)
 
             let content = UNMutableNotificationContent()
             content.title = "Time to log your \(nutrient.name)"
@@ -85,9 +91,23 @@ enum NotificationService {
             dateComponents.minute = minute
 
             let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-            let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)
+            requests.append(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
+        }
 
-            UNUserNotificationCenter.current().add(request)
+        // Remove all existing reminders for this nutrient, then add new ones.
+        // Using getPendingNotificationRequests async overload ensures cancel completes before scheduling.
+        Task {
+            let pending = await center.pendingNotificationRequests()
+            let staleIDs = pending
+                .map(\.identifier)
+                .filter { $0.hasPrefix(prefix) && !newIDs.contains($0) }
+            if !staleIDs.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: staleIDs)
+            }
+
+            for request in requests {
+                try? await center.add(request)
+            }
         }
     }
 
@@ -96,8 +116,9 @@ enum NotificationService {
         let prefix = "\(nutrientReminderPrefix)\(nutrient.persistentModelID)-reminder-"
         let center = UNUserNotificationCenter.current()
 
-        center.getPendingNotificationRequests { requests in
-            let ids = requests
+        Task {
+            let pending = await center.pendingNotificationRequests()
+            let ids = pending
                 .map(\.identifier)
                 .filter { $0.hasPrefix(prefix) }
             if !ids.isEmpty {
@@ -107,45 +128,22 @@ enum NotificationService {
     }
 
     /// Called after a user logs intake for a nutrient. Suppresses any pending
-    /// reminders for that nutrient that are scheduled for earlier today.
+    /// reminders for that nutrient scheduled for later today, then reschedules
+    /// them so they fire again tomorrow.
     static func suppressRemindersAfterLogging(for nutrient: Nutrient) {
-        let now = Date.now
-        let calendar = Calendar.current
-        let currentHour = calendar.component(.hour, from: now)
-        let currentMinute = calendar.component(.minute, from: now)
-
         let prefix = "\(nutrientReminderPrefix)\(nutrient.persistentModelID)-reminder-"
         let center = UNUserNotificationCenter.current()
 
-        center.getPendingNotificationRequests { requests in
-            var idsToCancel: [String] = []
-
-            for request in requests where request.identifier.hasPrefix(prefix) {
-                // Extract HHmm from the ID
-                let suffix = request.identifier.dropFirst(prefix.count)
-                guard suffix.count == 4,
-                      let hour = Int(suffix.prefix(2)),
-                      let minute = Int(suffix.suffix(2)) else { continue }
-
-                // Cancel reminders scheduled for later today (they'll re-fire tomorrow via repeating trigger)
-                if hour > currentHour || (hour == currentHour && minute > currentMinute) {
-                    // This is a future reminder today — keep it, the user might need it
-                    // Actually per the spec: suppress if user already logged since the *previous* reminder
-                    // For simplicity, after logging we cancel all remaining reminders for today
-                    // They will fire again tomorrow via the repeating trigger
-                }
-
-                // Cancel all pending for today — they'll repeat tomorrow automatically
-                idsToCancel.append(request.identifier)
-            }
+        Task {
+            let pending = await center.pendingNotificationRequests()
+            let idsToCancel = pending
+                .map(\.identifier)
+                .filter { $0.hasPrefix(prefix) }
 
             if !idsToCancel.isEmpty {
                 center.removePendingNotificationRequests(withIdentifiers: idsToCancel)
-                // Reschedule them so they fire again tomorrow
-                // Since we use repeating triggers, removing and re-adding restarts them for next day
-                DispatchQueue.main.async {
-                    NotificationService.scheduleReminders(for: nutrient)
-                }
+                // Reschedule so they fire again tomorrow (repeating triggers restart on re-add)
+                scheduleReminders(for: nutrient)
             }
         }
     }
