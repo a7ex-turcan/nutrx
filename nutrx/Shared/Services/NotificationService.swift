@@ -83,7 +83,11 @@ enum NotificationService {
 
             let content = UNMutableNotificationContent()
             content.title = "Time to log your \(nutrient.name)"
-            content.body = "Tap to log your \(nutrient.name) intake."
+            if let notes = nutrient.notes, !notes.isEmpty {
+                content.body = notes
+            } else {
+                content.body = "Tap to log your \(nutrient.name) intake."
+            }
             content.sound = .default
 
             var dateComponents = DateComponents()
