@@ -32,7 +32,7 @@ struct NutrientRowView: View {
 
                 Spacer()
 
-                Text("\(formatted(currentIntake)) / \(formatted(nutrient.dailyTarget)) \(nutrient.unit)")
+                Text("\(currentIntake.displayString) / \(nutrient.dailyTarget.displayString) \(nutrient.unit)")
                     .font(.caption)
                     .foregroundStyle(isComplete ? .green : .secondary)
             }
@@ -72,11 +72,6 @@ struct NutrientRowView: View {
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    private func formatted(_ value: Double) -> String {
-        value.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", value)
-            : String(format: "%.1f", value)
-    }
 }
 
 #Preview {

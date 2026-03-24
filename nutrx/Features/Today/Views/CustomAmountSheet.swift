@@ -10,7 +10,7 @@ struct CustomAmountSheet: View {
     @FocusState private var isFocused: Bool
 
     private var amount: Double? {
-        guard let value = Double(amountText), value > 0 else { return nil }
+        guard let value = amountText.parsedDouble, value > 0 else { return nil }
         return value
     }
 

@@ -206,7 +206,7 @@ struct NutrientsListView: View {
                 Text(nutrient.name)
                     .font(.body.weight(.medium))
 
-                Text("\(formatted(nutrient.dailyTarget)) \(nutrient.unit)/day  ·  step \(formatted(nutrient.step))")
+                Text("\(nutrient.dailyTarget.displayString) \(nutrient.unit)/day  ·  step \(nutrient.step.displayString)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -222,8 +222,8 @@ struct NutrientsListView: View {
     // MARK: - Actions
 
     private func addNutrient() {
-        guard let stepValue = Double(addDraft.step),
-              let targetValue = Double(addDraft.dailyTarget) else { return }
+        guard let stepValue = addDraft.step.parsedDouble,
+              let targetValue = addDraft.dailyTarget.parsedDouble else { return }
 
         let nutrient = Nutrient(
             name: addDraft.name.trimmingCharacters(in: .whitespaces),
@@ -245,8 +245,8 @@ struct NutrientsListView: View {
     }
 
     private func applyEdit(to nutrient: Nutrient) {
-        guard let stepValue = Double(editDraft.step),
-              let targetValue = Double(editDraft.dailyTarget) else { return }
+        guard let stepValue = editDraft.step.parsedDouble,
+              let targetValue = editDraft.dailyTarget.parsedDouble else { return }
 
         nutrient.name = editDraft.name.trimmingCharacters(in: .whitespaces)
         nutrient.unit = editDraft.unit.trimmingCharacters(in: .whitespaces)
@@ -266,11 +266,6 @@ struct NutrientsListView: View {
         }
     }
 
-    private func formatted(_ value: Double) -> String {
-        value.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", value)
-            : String(value)
-    }
 }
 
 #Preview {

@@ -53,7 +53,7 @@ struct HistoryListView: View {
 
             let summary = day.nutrientTotals
                 .prefix(3)
-                .map { "\($0.nutrient.name): \(formatted($0.total)) \($0.nutrient.unit)" }
+                .map { "\($0.nutrient.name): \($0.total.displayString) \($0.nutrient.unit)" }
                 .joined(separator: "  ·  ")
 
             let remaining = day.nutrientTotals.count - 3
@@ -66,11 +66,6 @@ struct HistoryListView: View {
         }
     }
 
-    private func formatted(_ value: Double) -> String {
-        value.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", value)
-            : String(format: "%.1f", value)
-    }
 }
 
 #Preview {

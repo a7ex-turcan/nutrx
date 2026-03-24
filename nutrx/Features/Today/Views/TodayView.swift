@@ -209,8 +209,8 @@ struct TodayView: View {
     }
 
     private func applyEdit(to nutrient: Nutrient) {
-        guard let stepValue = Double(editDraft.step),
-              let targetValue = Double(editDraft.dailyTarget) else { return }
+        guard let stepValue = editDraft.step.parsedDouble,
+              let targetValue = editDraft.dailyTarget.parsedDouble else { return }
 
         nutrient.name = editDraft.name.trimmingCharacters(in: .whitespaces)
         nutrient.unit = editDraft.unit.trimmingCharacters(in: .whitespaces)

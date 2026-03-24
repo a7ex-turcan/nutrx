@@ -88,7 +88,7 @@ struct OnboardingFirstNutrientView: View {
                 Text(nutrient.name)
                     .font(.body.weight(.medium))
 
-                Text("\(formatted(nutrient.dailyTarget)) \(nutrient.unit)/day  ·  step \(formatted(nutrient.step))")
+                Text("\(nutrient.dailyTarget.displayString) \(nutrient.unit)/day  ·  step \(nutrient.step.displayString)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -127,8 +127,8 @@ struct OnboardingFirstNutrientView: View {
     // MARK: - Actions
 
     private func addNutrient() {
-        guard let stepValue = Double(draft.step),
-              let targetValue = Double(draft.dailyTarget) else { return }
+        guard let stepValue = draft.step.parsedDouble,
+              let targetValue = draft.dailyTarget.parsedDouble else { return }
 
         let nutrient = Nutrient(
             name: draft.name.trimmingCharacters(in: .whitespaces),
@@ -149,11 +149,6 @@ struct OnboardingFirstNutrientView: View {
         draft.reset()
     }
 
-    private func formatted(_ value: Double) -> String {
-        value.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", value)
-            : String(value)
-    }
 }
 
 #Preview {

@@ -15,6 +15,8 @@ All notable changes to nutrx are documented in this file.
 
 ### Fixes
 - Fixed nutrient reminders not firing due to an async race condition in notification scheduling.
+- Fixed decimal input not working on devices with comma decimal separators (e.g. entering "0,5" as a step value).
+- Fixed number display truncating to 1 decimal place — now shows up to 2 (e.g. "0.25").
 
 ---
 

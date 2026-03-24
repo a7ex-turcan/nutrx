@@ -24,8 +24,8 @@ final class ProfileViewModel {
 
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
-            && (Double(weight) ?? 0) > 0
-            && (Double(height) ?? 0) > 0
+            && (weight.parsedDouble ?? 0) > 0
+            && (height.parsedDouble ?? 0) > 0
     }
 
     func load(context: ModelContext) {
@@ -42,8 +42,8 @@ final class ProfileViewModel {
 
     func save() {
         guard let profile,
-              let weightValue = Double(weight),
-              let heightValue = Double(height) else { return }
+              let weightValue = weight.parsedDouble,
+              let heightValue = height.parsedDouble else { return }
 
         profile.name = name.trimmingCharacters(in: .whitespaces)
         profile.birthdate = birthdate
@@ -54,8 +54,6 @@ final class ProfileViewModel {
     }
 
     private func formattedValue(_ value: Double) -> String {
-        value.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", value)
-            : String(value)
+        value.displayString
     }
 }

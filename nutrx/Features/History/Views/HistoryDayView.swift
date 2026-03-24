@@ -64,7 +64,7 @@ private struct IntakeDetailSheet: View {
                                     Spacer()
 
                                     let sign: String = entry.amount >= 0 ? "+" : ""
-                                    Text("\(sign)\(formatted(entry.amount)) \(nutrient.unit)")
+                                    Text("\(sign)\(entry.amount.displayString) \(nutrient.unit)")
                                         .font(.body.weight(.medium))
                                         .foregroundStyle(entry.amount >= 0 ? Color.primary : Color.red)
                                 }
@@ -99,9 +99,4 @@ private struct IntakeDetailSheet: View {
         }
     }
 
-    private func formatted(_ value: Double) -> String {
-        value.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", value)
-            : String(format: "%.1f", value)
-    }
 }

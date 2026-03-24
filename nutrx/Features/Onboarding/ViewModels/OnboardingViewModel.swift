@@ -12,13 +12,13 @@ final class OnboardingViewModel {
 
     var isPersonalInfoValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
-            && Double(weight) != nil && Double(weight)! > 0
-            && Double(height) != nil && Double(height)! > 0
+            && (weight.parsedDouble ?? 0) > 0
+            && (height.parsedDouble ?? 0) > 0
     }
 
     func saveProfile(context: ModelContext) {
-        guard let weightValue = Double(weight),
-              let heightValue = Double(height) else { return }
+        guard let weightValue = weight.parsedDouble,
+              let heightValue = height.parsedDouble else { return }
 
         let profile = UserProfile(
             name: name.trimmingCharacters(in: .whitespaces),

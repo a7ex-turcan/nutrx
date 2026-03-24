@@ -13,8 +13,8 @@ final class NutrientDraft {
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
             && !unit.trimmingCharacters(in: .whitespaces).isEmpty
-            && (Double(step) ?? 0) > 0
-            && (Double(dailyTarget) ?? 0) > 0
+            && (step.parsedDouble ?? 0) > 0
+            && (dailyTarget.parsedDouble ?? 0) > 0
     }
 
     func reset() {
