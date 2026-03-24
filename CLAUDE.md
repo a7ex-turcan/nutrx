@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Language**: Swift 5.0
 - **UI Framework**: SwiftUI
-- **iOS Deployment Target**: 26.0
+- **iOS Deployment Target**: 26.2
 - **Built with**: Xcode 26.3
 
 ## Build & Run
@@ -414,6 +414,149 @@ Nutrients can be organised into named groups. Groups are collapsible on the Toda
 
 ---
 
+## Widgets
+
+nutrx ships four widget configurations across three surfaces: small home screen, medium home screen, lock screen circular, and lock screen inline. Standby mode reuses the medium widget automatically — no separate implementation needed.
+
+> ⚠️ **Build order — do these three things before writing any widget view code:**
+> 1. **Create the WidgetKit extension target first.** Add a new WidgetKit extension target (`NutrxWidgets`) to the Xcode project. Everything else depends on this existing.
+> 2. **Update `ModelContainerFactory` to use the App Group container URL.** This is the linchpin — without it the widget reads from a different store than the app and sees no data. Add `ModelContainerFactory.swift` to the widget extension's target membership so both targets share the same factory.
+> 3. **Set `LogNutrientIntent` target membership to include both the main app and the widget extension.** This will not happen automatically. It must be done explicitly in Xcode's target membership panel, otherwise the interactive + button will fail to compile in the widget extension.
+
+### Infrastructure requirements
+
+- **WidgetKit extension target** — a separate target (e.g. `NutrxWidgets`) must be added to the Xcode project. This is a distinct binary from the main app.
+- **App Group** — both the main app target and the widget extension must share the App Group `group.nutrx-labs.nutrx`. This is the only way the widget can read the SwiftData store. Both targets must have the App Group entitlement configured in Xcode and on the provisioning profile.
+- **Shared ModelContainer** — `ModelContainerFactory` must be updated to initialise the container using the App Group's shared container URL rather than the default app sandbox location. The widget extension uses the same factory to open the same store read-only.
+- **AppIntent for logging** — interactive buttons require an `AppIntent` conforming type (`LogNutrientIntent`). This intent writes an `IntakeRecord` to the shared SwiftData store and triggers a widget timeline reload. It must be declared in a target-membership that includes both the main app and the widget extension (or in a shared framework).
+- **No `@Query` in widgets** — WidgetKit does not support SwiftData's `@Query` macro. Data must be fetched manually using a `ModelContext` inside the `TimelineProvider`.
+
+### Widget 1 — Small (Home Screen)
+
+**Kind identifier:** `NutrxSmallWidget`
+
+**Content:**
+- nutrx app icon (small, top-left)
+- Large centre figure: number of nutrients that have reached or exceeded their daily target today (e.g. `3`)
+- Subtitle: `"of 6 on target"` (total non-deleted, non-excluded nutrient count)
+- A circular progress ring behind or around the figure representing overall completion ratio
+
+**Interaction:** entire widget is a `Link` that deep-links to the Today tab. No interactive elements.
+
+**States:**
+- **Empty (no nutrients defined):** ring at zero, label `"Add nutrients"`, tapping opens the app to My Nutrients
+- **Nothing logged yet:** ring at zero, `"0 of N on target"`, normal tap → Today tab
+- **All complete:** ring full, green tint on ring and figure
+- **Normal (partial):** blue ring, current count
+
+### Widget 2 — Medium (Home Screen)
+
+**Kind identifier:** `NutrxMediumWidget`
+
+**Content:**
+- Header row: `"Today"` label (left) + `"X / Y"` completion badge (right, grey pill)
+- 3 nutrient rows, drawn from the first 3 non-deleted nutrients ordered by `groupSortOrder` within their group, then `NutrientGroup.sortOrder` — i.e. the same order as the Today screen. If fewer than 3 nutrients exist, show only what is available.
+- Each nutrient row contains:
+  - Nutrient name (left, medium weight)
+  - Progress bar (full width, coloured by state — see colour logic below)
+  - Current / target label in the nutrient's unit (e.g. `"400 / 1000 IU"`)
+  - **+ button** (right-aligned, circular, tappable — triggers `LogNutrientIntent`)
+
+**Progress bar colour logic** (matches the main app):
+- Below target → blue
+- At or above target → green
+- Exceeded → orange (bar fills to edge, value shown in orange)
+
+**+ button states:**
+- Below target → `+` symbol, accent blue
+- At or above target → `✓` symbol, green — **still tappable**. Tapping logs another step (soft targets, same as in-app behaviour). The checkmark is a visual indicator only, not a lock.
+- The intent always inserts one `IntakeRecord` for that nutrient with `amount = nutrient.step`.
+
+**Interaction:**
+- Tapping the **+** button fires `LogNutrientIntent(nutrientID:)`, writes an `IntakeRecord` to the shared store, then calls `WidgetCenter.shared.reloadTimelines(ofKind:)` to refresh.
+- Tapping anywhere else (outside a + button) → deep-links to Today tab.
+
+**States:**
+- **Empty (no nutrients defined):** single centred label `"Open nutrx to add nutrients"`, tapping opens app
+- **Fewer than 3 nutrients:** show only the nutrients that exist, no placeholder rows
+
+**Standby:** the medium widget renders in Standby automatically at larger scale with a dark background. Ensure all colours use adaptive SwiftUI values (`.primary`, `.secondary`, or explicit dark-mode variants) so the widget looks correct on the dark Standby canvas.
+
+### Widget 3 — Lock Screen Circular
+
+**Kind identifier:** `NutrxCircularWidget`  
+**WidgetKit family:** `.accessoryCircular`
+
+**Content:**
+- Circular progress ring (`Gauge` with `.accessoryCircularCapacity` style, or a custom `Circle` arc)
+- Centre: integer count of nutrients on target today
+- No label text (space is too constrained)
+
+**Interaction:** read-only. Tap → Today tab.
+
+**States:** same as Small widget — empty shows `0`, all-complete shows full ring.
+
+### Widget 4 — Lock Screen Inline
+
+**Kind identifier:** `NutrxInlineWidget`  
+**WidgetKit family:** `.accessoryInline`
+
+**Content:**
+- Plain text string rendered above the clock face
+- Format: `"3 / 6 on target"` — always reflects today's completion at last refresh
+- When all complete: `"All done today ✓"`
+- When no nutrients: `"Open nutrx"`
+
+**Interaction:** read-only. Tap → Today tab.
+
+### Timeline & refresh strategy
+
+- Use a **non-repeating timeline** with a single entry valid until end of day (`Calendar.current.startOfDay` + 24 hours). WidgetKit will request a new timeline at that point automatically.
+- After `LogNutrientIntent` fires, call `WidgetCenter.shared.reloadAllTimelines()` to force an immediate refresh so the progress bar updates after a widget tap.
+- The main app calls `WidgetCenter.shared.reloadAllTimelines()` on every foreground (in `nutrxApp` via `.onReceive(NotificationCenter...willEnterForegroundNotification)`) so widgets always reflect the latest state after the user logs something in-app.
+- WidgetKit refresh budget is limited by iOS — do not schedule frequent periodic refreshes. Rely on the two triggers above (intent completion + app foreground).
+
+### AppIntent — LogNutrientIntent
+
+```swift
+// Sketch — Claude Code should implement fully
+struct LogNutrientIntent: AppIntent {
+    static var title: LocalizedStringResource = "Log Nutrient"
+    
+    @Parameter(title: "Nutrient ID")
+    var nutrientID: String  // the nutrient's persistent model ID as a string
+    
+    func perform() async throws -> some IntentResult {
+        // 1. Open shared ModelContainer via ModelContainerFactory
+        // 2. Fetch Nutrient by ID
+        // 3. Insert IntakeRecord(nutrient:, amount: nutrient.step, date: .now, note: nil)
+        // 4. Save context
+        // 5. WidgetCenter.shared.reloadAllTimelines()
+        return .result()
+    }
+}
+```
+
+**Important:** `LogNutrientIntent` must have its target membership set to include both the main app and the widget extension. Alternatively, place it in a shared Swift package or framework that both targets import. The `ModelContainerFactory` must also be accessible from both targets.
+
+### File placement
+
+```
+NutrxWidgets/                        # New WidgetKit extension target
+├── NutrxWidgets.swift               # @main entry point, declares all four widget kinds in a WidgetBundle
+├── Provider.swift                   # TimelineProvider — fetches data from shared SwiftData store, builds entries
+├── WidgetEntry.swift                # TimelineEntry — snapshot of data needed to render all widgets
+├── SmallWidgetView.swift            # View for NutrxSmallWidget
+├── MediumWidgetView.swift           # View for NutrxMediumWidget
+├── CircularWidgetView.swift         # View for NutrxCircularWidget (lock screen)
+├── InlineWidgetView.swift           # View for NutrxInlineWidget (lock screen)
+└── LogNutrientIntent.swift          # AppIntent for + button — must also be in main app target membership
+```
+
+`ModelContainerFactory.swift` (already in `Shared/Persistence/`) must be added to the widget extension's target membership so both targets share the same factory and open the same App Group store.
+
+---
+
 ## Monetisation
 
 - The app is **free with no ads**.
@@ -430,7 +573,7 @@ Nutrients can be organised into named groups. Groups are collapsible on the Toda
 The following features are planned in future MVPs but must not be built or scaffolded until their target version.
 
 **MVP 2 (next):**
-- Home screen & lock screen widgets (WidgetKit — requires a separate extension target and shared App Group `group.nutrx-labs.nutrx`)
+- Widgets — see the **Widgets** section above for full spec (WidgetKit extension + App Group `group.nutrx-labs.nutrx`)
 - Streaks & consistency tracking (computed from existing `IntakeRecord` data, no new model needed)
 
 **MVP 3:**
