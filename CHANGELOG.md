@@ -12,7 +12,9 @@ All notable changes to nutrx are documented in this file.
 - **App Group shared data** — Widgets read from the same SwiftData store as the main app via a shared App Group container. Existing data migrates automatically on first launch.
 
 ### Improvements
-- **Widget refresh** — Widgets update instantly after logging (via + button or in-app) and on every am m
+- **Widget refresh** — Widgets update instantly after logging (via + button or in-app) and on every app foreground.
+- **Date in navigation bar** — The Today screen now shows the current date (e.g. "Tuesday, 24 March") instead of a static "Today" title.
+
 ---
 
 ## v1.3 — 2026-03-23

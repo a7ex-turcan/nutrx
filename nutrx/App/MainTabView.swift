@@ -7,7 +7,7 @@ struct MainTabView: View {
             Tab("Today", systemImage: "calendar") {
                 NavigationStack {
                     TodayView()
-                        .navigationTitle("Today")
+                        .navigationTitle(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                         .navigationBarTitleDisplayMode(.inline)
                         .withProfileMenu()
                 }
