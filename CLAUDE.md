@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Language**: Swift 5.0
 - **UI Framework**: SwiftUI
-- **iOS Deployment Target**: 26.2
+- **iOS Deployment Target**: 26.0
 - **Built with**: Xcode 26.3
 
 ## Build & Run
