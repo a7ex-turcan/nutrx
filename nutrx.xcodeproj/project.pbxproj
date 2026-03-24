@@ -6,19 +6,99 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		64702A8D2F72A89200C45D23 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 64702A8C2F72A89200C45D23 /* WidgetKit.framework */; };
+		64702A8F2F72A89200C45D23 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 64702A8E2F72A89200C45D23 /* SwiftUI.framework */; };
+		64702A9E2F72A89300C45D23 /* NutrxWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 64702A8A2F72A89200C45D23 /* NutrxWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		64702A9C2F72A89300C45D23 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 64DE98632F60628D008EF50E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 64702A892F72A89200C45D23;
+			remoteInfo = NutrxWidgetsExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		64702AA32F72A89300C45D23 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				64702A9E2F72A89300C45D23 /* NutrxWidgetsExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		64702A8A2F72A89200C45D23 /* NutrxWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NutrxWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		64702A8C2F72A89200C45D23 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		64702A8E2F72A89200C45D23 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		64702AA52F72A8E600C45D23 /* NutrxWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NutrxWidgetsExtension.entitlements; sourceTree = "<group>"; };
 		64DE986B2F60628D008EF50E /* nutrx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nutrx.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		64702A9F2F72A89300C45D23 /* Exceptions for "NutrxWidgets" folder in "NutrxWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 64702A892F72A89200C45D23 /* NutrxWidgetsExtension */;
+		};
+		64702AAD2F72ABD400C45D23 /* Exceptions for "nutrx" folder in "NutrxWidgetsExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/Exclusion.swift,
+				Models/IntakeRecord.swift,
+				Models/Nutrient.swift,
+				Models/NutrientGroup.swift,
+				Models/NutrientReminder.swift,
+				Models/UserPreferences.swift,
+				Models/UserProfile.swift,
+				Shared/Components/NutrientProgressBar.swift,
+				"Shared/Extensions/Double+Formatting.swift",
+				Shared/Persistence/ModelContainerFactory.swift,
+			);
+			target = 64702A892F72A89200C45D23 /* NutrxWidgetsExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		64702A902F72A89200C45D23 /* NutrxWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				64702A9F2F72A89300C45D23 /* Exceptions for "NutrxWidgets" folder in "NutrxWidgetsExtension" target */,
+			);
+			path = NutrxWidgets;
+			sourceTree = "<group>";
+		};
 		64DE986D2F60628D008EF50E /* nutrx */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				64702AAD2F72ABD400C45D23 /* Exceptions for "nutrx" folder in "NutrxWidgetsExtension" target */,
+			);
 			path = nutrx;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		64702A872F72A89200C45D23 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				64702A8F2F72A89200C45D23 /* SwiftUI.framework in Frameworks */,
+				64702A8D2F72A89200C45D23 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		64DE98682F60628D008EF50E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -29,10 +109,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		64702A8B2F72A89200C45D23 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				64702A8C2F72A89200C45D23 /* WidgetKit.framework */,
+				64702A8E2F72A89200C45D23 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		64DE98622F60628D008EF50E = {
 			isa = PBXGroup;
 			children = (
+				64702AA52F72A8E600C45D23 /* NutrxWidgetsExtension.entitlements */,
 				64DE986D2F60628D008EF50E /* nutrx */,
+				64702A902F72A89200C45D23 /* NutrxWidgets */,
+				64702A8B2F72A89200C45D23 /* Frameworks */,
 				64DE986C2F60628D008EF50E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +133,7 @@
 			isa = PBXGroup;
 			children = (
 				64DE986B2F60628D008EF50E /* nutrx.app */,
+				64702A8A2F72A89200C45D23 /* NutrxWidgetsExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,6 +141,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		64702A892F72A89200C45D23 /* NutrxWidgetsExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 64702AA02F72A89300C45D23 /* Build configuration list for PBXNativeTarget "NutrxWidgetsExtension" */;
+			buildPhases = (
+				64702A862F72A89200C45D23 /* Sources */,
+				64702A872F72A89200C45D23 /* Frameworks */,
+				64702A882F72A89200C45D23 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				64702A902F72A89200C45D23 /* NutrxWidgets */,
+			);
+			name = NutrxWidgetsExtension;
+			packageProductDependencies = (
+			);
+			productName = NutrxWidgetsExtension;
+			productReference = 64702A8A2F72A89200C45D23 /* NutrxWidgetsExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		64DE986A2F60628D008EF50E /* nutrx */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 64DE98762F60628E008EF50E /* Build configuration list for PBXNativeTarget "nutrx" */;
@@ -55,10 +170,12 @@
 				64DE98672F60628D008EF50E /* Sources */,
 				64DE98682F60628D008EF50E /* Frameworks */,
 				64DE98692F60628D008EF50E /* Resources */,
+				64702AA32F72A89300C45D23 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				64702A9D2F72A89300C45D23 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				64DE986D2F60628D008EF50E /* nutrx */,
@@ -80,6 +197,9 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					64702A892F72A89200C45D23 = {
+						CreatedOnToolsVersion = 26.3;
+					};
 					64DE986A2F60628D008EF50E = {
 						CreatedOnToolsVersion = 26.3;
 					};
@@ -100,11 +220,19 @@
 			projectRoot = "";
 			targets = (
 				64DE986A2F60628D008EF50E /* nutrx */,
+				64702A892F72A89200C45D23 /* NutrxWidgetsExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		64702A882F72A89200C45D23 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		64DE98692F60628D008EF50E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -115,6 +243,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		64702A862F72A89200C45D23 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		64DE98672F60628D008EF50E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -124,7 +259,81 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		64702A9D2F72A89300C45D23 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 64702A892F72A89200C45D23 /* NutrxWidgetsExtension */;
+			targetProxy = 64702A9C2F72A89300C45D23 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		64702AA12F72A89300C45D23 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = NutrxWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6396A6L9J3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NutrxWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = NutrxWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.3;
+				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx.NutrxWidgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		64702AA22F72A89300C45D23 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = NutrxWidgetsExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6396A6L9J3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NutrxWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = NutrxWidgets;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.3;
+				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx.NutrxWidgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		64DE98742F60628E008EF50E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -250,6 +459,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = nutrx/nutrx.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6396A6L9J3;
@@ -286,6 +496,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				CODE_SIGN_ENTITLEMENTS = nutrx/nutrx.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 6396A6L9J3;
@@ -319,6 +530,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		64702AA02F72A89300C45D23 /* Build configuration list for PBXNativeTarget "NutrxWidgetsExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				64702AA12F72A89300C45D23 /* Debug */,
+				64702AA22F72A89300C45D23 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		64DE98662F60628D008EF50E /* Build configuration list for PBXProject "nutrx" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

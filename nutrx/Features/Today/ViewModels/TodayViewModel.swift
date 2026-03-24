@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import WidgetKit
 
 @Observable
 final class TodayViewModel {
@@ -90,6 +91,7 @@ final class TodayViewModel {
         refresh(context: context)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.suppressRemindersAfterLogging(for: nutrient)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func addCustomAmount(_ amount: Double, to nutrient: Nutrient, note: String? = nil, context: ModelContext) {
@@ -98,6 +100,7 @@ final class TodayViewModel {
         refresh(context: context)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.suppressRemindersAfterLogging(for: nutrient)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     func decrement(_ nutrient: Nutrient, context: ModelContext) {
@@ -108,6 +111,7 @@ final class TodayViewModel {
                 context.insert(record)
                 refresh(context: context)
                 NotificationService.refreshDailyReminder(context: context)
+                WidgetCenter.shared.reloadAllTimelines()
             }
         }
     }

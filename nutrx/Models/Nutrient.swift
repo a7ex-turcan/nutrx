@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 final class Nutrient {
+    @Attribute(.unique) var id: UUID = UUID()
     var name: String
     var unit: String
     var step: Double
