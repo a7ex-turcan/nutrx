@@ -25,7 +25,7 @@
 |---|---|
 | Per-nutrient dose reminders | ✅ Shipped (v1.1) |
 | Nutrient notes | ✅ Shipped (v1.1) |
-| Home screen & lock screen widgets | 📋 Planned |
+| Home screen & lock screen widgets | ✅ Shipped (v1.4) |
 | History monthly section headers | ✅ Shipped (v1.1) |
 | Streaks & consistency tracking | 📋 Planned |
 | Nutrient grouping / categories | ✅ Shipped (v1.2) |
@@ -84,55 +84,10 @@ Each nutrient can have zero, one, or multiple dose reminders. Each reminder fire
 
 ---
 
-#### 2. Home Screen & Lock Screen Widgets
+#### 2. Home Screen & Lock Screen Widgets ✅
+**Status:** Shipped in v1.4
 
-**Why:** A glanceable widget is the highest daily touchpoint outside the app itself. Users who add widgets retain far better. The medium widget goes further — iOS 17 interactive widgets allow a + button that logs directly from the home screen without opening the app.
-
-Four widget configurations ship together as a single WidgetKit extension:
-
----
-
-**Small — Home Screen (`NutrxSmallWidget`)**
-- Completion ring showing how many nutrients are on target today (e.g. `3 of 6`)
-- Read-only. Tap → Today tab.
-- Empty state: `"Add nutrients"` → My Nutrients tab
-- All-complete state: ring full, green tint
-
----
-
-**Medium — Home Screen (`NutrxMediumWidget`)**
-- Header: `"Today"` + `"X / Y"` completion badge
-- 3 nutrient rows — first 3 non-deleted nutrients in the user's Today screen sort order (zero configuration required)
-- Each row: name · progress bar · current/target value · **+ button**
-- **+ button is interactive (iOS 17 AppIntent).** Tapping logs one step increment without opening the app. Widget refreshes immediately after.
-- Progress bar colours match the app: blue (in progress) · green (on target) · orange (exceeded)
-- + button icon: `+` when below target, `✓` when at/above target — **always tappable** (soft targets, consistent with in-app behaviour)
-- Tapping anywhere except + → Today tab
-- Empty state: `"Open nutrx to add nutrients"`
-- Standby mode: renders automatically at larger scale with dark background — no extra implementation needed, but all colours must use adaptive SwiftUI values
-
----
-
-**Lock Screen Circular (`NutrxCircularWidget`, `.accessoryCircular`)**
-- Circular ring gauge, integer completion count in centre
-- Read-only. Tap → Today tab.
-
----
-
-**Lock Screen Inline (`NutrxInlineWidget`, `.accessoryInline`)**
-- Plain text above the clock: `"3 / 6 on target"`
-- All complete: `"All done today ✓"`
-- No nutrients: `"Open nutrx"`
-- Read-only. Tap → Today tab.
-
----
-
-**Refresh strategy:**
-- Non-repeating timeline valid until end of day. WidgetKit requests a new one at midnight automatically.
-- `LogNutrientIntent` calls `WidgetCenter.shared.reloadAllTimelines()` after each tap so progress updates immediately.
-- Main app calls `WidgetCenter.shared.reloadAllTimelines()` on every foreground so widgets reflect any in-app logging.
-
-> ⚠️ **Technical note for Claude Code:** Widgets require a separate WidgetKit extension target (`NutrxWidgets`) and a shared App Group entitlement (`group.nutrx-labs.nutrx`) on both targets. `ModelContainerFactory` must be updated to use the App Group container URL and added to the widget extension's target membership. `@Query` is not available in widgets — fetch data manually via `ModelContext` inside the `TimelineProvider`. `LogNutrientIntent` (the AppIntent powering the + button) must be in both the main app and widget extension target membership. See the **Widgets** section in CLAUDE.md for the full technical spec and file structure.
+Six widget configurations across a single WidgetKit extension (`NutrxWidgetsExtension`): interactive Today widget in small (2 nutrients), medium (3), and large (6) sizes with + buttons for quick logging; a completion ring (small home screen); lock screen circular gauge; lock screen inline text. All powered by a shared App Group SwiftData store (`group.nutrx-labs.nutrx`) with `LogNutrientIntent` for interactive logging. Widgets refresh on app foreground and after every intake action.
 
 ---
 
@@ -153,7 +108,7 @@ Day entries grouped under sticky month section headers (e.g. "March, 2026"). Mos
 ---
 
 #### 6. Streaks & Consistency Tracking
-**Why:** Simple, motivating, zero infrastructure cost. Encourages daily use without being gamified or annoying.
+**Why:** Simple, motivating, zero inchafrastructure cost. Encourages daily use without being gamified or annoying.
 
 - A nutrient "hit" is defined as reaching or exceeding its daily target
 - Track the current streak (consecutive days where all tracked nutrients were hit)

@@ -4,6 +4,17 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v1.4 — 2026-03-24
+
+### Features
+- **Home screen widgets** — Three sizes (small, medium, large) showing your daily nutrient progress with interactive + buttons to log directly from the home screen without opening the app.
+- **Lock screen widgets** — Circular ring gauge and inline text widget showing daily completion count at a glance.
+- **App Group shared data** — Widgets read from the same SwiftData store as the main app via a shared App Group container. Existing data migrates automatically on first launch.
+
+### Improvements
+- **Widget refresh** — Widgets update instantly after logging (via + button or in-app) and on every am m
+---
+
 ## v1.3 — 2026-03-23
 
 ### Improvements

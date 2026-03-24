@@ -632,6 +632,7 @@ Represents a user-defined nutrient that the user wants to track.
 
 | Field | Type | Notes |
 |---|---|---|
+| `id` | `UUID = UUID()` | Stable unique identifier. Used by `LogNutrientIntent` for widget interactions. `@Attribute(.unique)` |
 | `name` | `String` | e.g. "Vitamin D", "Caffeine" |
 | `unit` | `String` | e.g. "mg", "IU", "cups" |
 | `step` | `Double` | Increment per + / − tap. Must be > 0 |
