@@ -146,7 +146,7 @@ nutrx/
 │   │
 │   ├── Settings/                # Accessed via profile menu flyout → "Settings". (Implemented)
 │   │   └── Views/
-│   │       ├── SettingsView.swift           # Grouped list sheet. Sections: Manage Groups, Notifications, About.
+│   │       ├── SettingsView.swift           # Grouped list sheet. Sections: Manage Groups, Streaks, Notifications, About.
 │   │       └── ManageGroupsView.swift       # Reorderable group list. Create, rename (tap), reorder (drag),
 │   │                                        # delete (swipe) custom groups. System "General" group shown locked.
 │   │
@@ -174,12 +174,17 @@ nutrx/
     │   ├── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
     │   └── PreviewSampleData.swift          # previewContainer with seeded nutrients + intake for Xcode previews.
     └── Services/
-        └── NotificationService.swift        # Wraps UNUserNotificationCenter. Responsibilities:
-                                             # - Request authorisation and return current permission status.
-                                             # - Schedule / cancel the daily check-in reminder (noon, id: daily-checkin-reminder).
-                                             # - Schedule / cancel per-nutrient dose reminders (id: nutrient-{id}-reminder-{HHmm}).
-                                             # - Smart suppression: cancel upcoming nutrient reminders after logging intake.
-                                             # - refreshAllNutrientReminders(context:) — called on every app foreground.
+        ├── NotificationService.swift        # Wraps UNUserNotificationCenter. Responsibilities:
+        │                                    # - Request authorisation and return current permission status.
+        │                                    # - Schedule / cancel the daily check-in reminder (noon, id: daily-checkin-reminder).
+        │                                    # - Schedule / cancel per-nutrient dose reminders (id: nutrient-{id}-reminder-{HHmm}).
+        │                                    # - Smart suppression: cancel upcoming nutrient reminders after logging intake.
+        │                                    # - refreshAllNutrientReminders(context:) — called on every app foreground.
+        │                                    # Pure Swift class — no SwiftUI imports.
+        └── StreakService.swift              # Computes current streak and best streak from IntakeRecord + Exclusion + Nutrient data.
+                                             # - compute(context:) → StreakResult (currentStreak: Int, bestStreak: Int)
+                                             # - Returns (0, 0) immediately if UserPreferences.streaksEnabled == false.
+                                             # - Called on every app foreground and after every intake action.
                                              # Pure Swift class — no SwiftUI imports.
 ```
 
@@ -414,6 +419,106 @@ Nutrients can be organised into named groups. Groups are collapsible on the Toda
 
 ---
 
+## Streaks
+
+nutrx tracks a daily streak to reward consistency. All streak logic is opt-in via `UserPreferences.streaksEnabled` (default `true`). When disabled, all streak UI is hidden and `StreakService` is never called.
+
+### Definition
+
+A **streak day** is any completed calendar day (never today) where:
+- Every non-deleted nutrient that existed on that day — meaning `nutrient.createdAt`'s calendar day ≤ that day — reached or exceeded its `dailyTarget`
+- Nutrients with an `Exclusion` record matching that day are ignored entirely
+- Days where the active nutrient set is empty do not count (cannot streak before any nutrients are created)
+
+The **current streak** is the count of consecutive streak days ending on yesterday. If yesterday was not a streak day, current streak = 0.
+
+The **best streak** is the longest such consecutive run across all of history.
+
+### Key rules
+
+- **Today is never counted** — streak reflects completed past days only
+- **`createdAt` scopes each nutrient's streak window** — a nutrient only contributes to streak calculation from the calendar day it was created onward. Adding a new nutrient never retroactively breaks an existing streak.
+- **Soft-deleted nutrients** are excluded from all streak calculations, past and present
+- **Excluded nutrients** (via "Exclude for today") are ignored for that day — they do not count against the streak
+- **Gaps matter** — the algorithm walks day by day from yesterday, not just across days that have records. A day with zero intake records is a missed day and breaks the streak.
+- **No data if no history** — if the user has no completed days, streak = 0 and no UI is shown
+
+### StreakService
+
+Lives at `Shared/Services/StreakService.swift`. Pure Swift class, no SwiftUI imports.
+
+```swift
+struct StreakResult {
+    let currentStreak: Int
+    let bestStreak: Int
+}
+```
+
+**Algorithm (`compute(context:) → StreakResult`):**
+
+1. Check `UserPreferences.streaksEnabled` — if `false`, return `(0, 0)` immediately
+2. Fetch all non-deleted `Nutrient` records with their `createdAt` dates
+3. Fetch all `IntakeRecord` records (excluding today)
+4. Fetch all `Exclusion` records
+5. Walk backward day by day from yesterday:
+   - Determine the active nutrient set for the day: nutrients where `createdAt` calendar day ≤ current day
+   - If active set is empty, stop walking (no nutrients existed yet)
+   - Remove nutrients that have an `Exclusion` for the current day
+   - Sum `IntakeRecord.amount` values per nutrient for the current day
+   - If every remaining nutrient's sum ≥ its `dailyTarget` → day passes, increment current streak counter
+   - Otherwise → current streak is finalised, stop
+6. For best streak: make a separate full pass over all history using the same per-day logic, tracking the longest consecutive run
+
+Called on every app foreground and after every intake action (same triggers as `NotificationService`).
+
+### UI — Today screen
+
+Shown subtly below the date in the navigation bar area, only when `streaksEnabled == true` and `currentStreak ≥ 1`:
+
+```
+🔥 12-day streak
+```
+
+When streak = 0, show nothing — the absence is the message. Never show "0-day streak".
+
+### UI — History tab
+
+A summary card rendered at the top of `HistoryListView`, above the day entries. Shown only when `streaksEnabled == true` and at least one of `currentStreak` or `bestStreak` is > 0:
+
+| | |
+|---|---|
+| 🔥 Current streak | **12 days** |
+| 🏆 Best streak | **34 days** |
+
+Styled as a white card with a subtle border, consistent with the existing History UI.
+
+Individual day rows in the list also show a small visual indicator (e.g. a flame SF Symbol or subtle green dot) when that day qualified as a streak day. Unobtrusive — decorative only.
+
+### UI — Widgets
+
+- **Small widget:** compact `🔥 12` label below the main ring. Only shown when `streaksEnabled == true` and `currentStreak ≥ 1`.
+- **Medium widget:** `🔥 12` added to the header row between the "Today" label and the `"X / Y"` completion badge. Same conditions.
+- **Lock screen widgets:** no change — too space-constrained.
+
+The `WidgetEntry` struct must include `currentStreak: Int` and `streaksEnabled: Bool` so widget views can conditionally render the streak label.
+
+### Settings
+
+`SettingsView` gains a new **"Streaks"** section, positioned between "Manage Groups" and "Notifications":
+
+- Single row: **"Track streaks"** — standard iOS `Toggle` bound to `UserPreferences.streaksEnabled`
+- Default: `true`
+- When toggled off: all streak UI disappears immediately; `StreakService` computation is skipped on all future triggers
+- When re-enabled: streaks recompute from scratch on next foreground — no data is lost
+
+### Out of scope for this iteration
+
+- Per-nutrient streaks
+- Streak freeze / grace day mechanics
+- Streak-based notifications ("you're on a 7-day streak, keep it up!")
+
+---
+
 ## Widgets
 
 nutrx ships four widget configurations across three surfaces: small home screen, medium home screen, lock screen circular, and lock screen inline. Standby mode reuses the medium widget automatically — no separate implementation needed.
@@ -573,8 +678,7 @@ NutrxWidgets/                        # New WidgetKit extension target
 The following features are planned in future MVPs but must not be built or scaffolded until their target version.
 
 **MVP 2 (next):**
-- Widgets — see the **Widgets** section above for full spec (WidgetKit extension + App Group `group.nutrx-labs.nutrx`)
-- Streaks & consistency tracking (computed from existing `IntakeRecord` data, no new model needed)
+- Streaks & consistency tracking — see the **Streaks** section below for full spec
 
 **MVP 3:**
 - iCloud sync (CloudKit + SwiftData — requires `NSPersistentCloudKitContainer`, `iCloud` + `CloudKit` entitlements, all `@Model` fields must have property-level defaults)
@@ -642,6 +746,7 @@ Represents a user-defined nutrient that the user wants to track.
 | `isDeleted` | `Bool` | Soft delete flag. When `true`, hidden from all active UI but retained so historical `IntakeRecord` rows remain valid |
 | `notes` | `String?` | Optional free-form text capturing why the user tracks this nutrient. Shown as a muted single line on the Today card when non-empty. |
 | `group` | `NutrientGroup?` | Optional relationship to a `NutrientGroup`. `nil` resolves to the General group at query time. Property-level default `nil` required for SwiftData migration |
+| `createdAt` | `Date = Date()` | Timestamp of when the nutrient was created. Used by streak computation to determine which nutrients were active on any given past day. Property-level default required for SwiftData migration — existing nutrients receive the migration date, which is a safe approximation. |
 
 **Relationships:**
 - One `Nutrient` → many `IntakeRecord` (inverse: `IntakeRecord.nutrient`)
@@ -677,6 +782,7 @@ Stores app-wide user preferences. There is always exactly one instance in the st
 |---|---|---|
 | `dailyReminderEnabled` | `Bool` | Whether the daily check-in notification is active. Default `false` |
 | `hasSeenNotificationBanner` | `Bool` | Whether the Today screen notification banner has been shown/dismissed. Default `false` |
+| `streaksEnabled` | `Bool = true` | Whether streak tracking is active. When `false`, all streak UI is hidden and `StreakService` computation is skipped entirely. Property-level default required for SwiftData migration — existing users get streaks on. |
 
 ---
 
