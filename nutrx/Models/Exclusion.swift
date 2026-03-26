@@ -4,7 +4,7 @@ import SwiftData
 @Model
 final class Exclusion {
     var nutrient: Nutrient?
-    var date: Date
+    var date: Date = Date.distantPast
 
     init(nutrient: Nutrient, date: Date) {
         self.date = Calendar.current.startOfDay(for: date)

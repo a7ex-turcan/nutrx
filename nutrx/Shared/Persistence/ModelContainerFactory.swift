@@ -3,6 +3,7 @@ import SwiftData
 
 enum ModelContainerFactory {
     static let appGroupID = "group.nutrx-labs.nutrx"
+    static let cloudKitContainerID = "iCloud.nutrx-labs.nutrx"
 
     static func create() -> ModelContainer {
         migrateStoreToAppGroupIfNeeded()
@@ -18,14 +19,30 @@ enum ModelContainerFactory {
         ])
 
         let storeURL = sharedStoreURL()
-        let configuration = ModelConfiguration(schema: schema, url: storeURL)
+
+        // Try CloudKit-backed configuration first
+        let cloudConfig = ModelConfiguration(
+            schema: schema,
+            url: storeURL,
+            cloudKitDatabase: .private(cloudKitContainerID)
+        )
 
         do {
-            let container = try ModelContainer(for: schema, configurations: [configuration])
+            let container = try ModelContainer(for: schema, configurations: [cloudConfig])
             seedGeneralGroupIfNeeded(context: container.mainContext)
+            deduplicateSingletons(context: container.mainContext)
             return container
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // Fallback to local-only if CloudKit config fails
+            let localConfig = ModelConfiguration(schema: schema, url: storeURL)
+            do {
+                let container = try ModelContainer(for: schema, configurations: [localConfig])
+                seedGeneralGroupIfNeeded(context: container.mainContext)
+                deduplicateSingletons(context: container.mainContext)
+                return container
+            } catch {
+                fatalError("Failed to create ModelContainer: \(error)")
+            }
         }
     }
 
@@ -39,22 +56,17 @@ enum ModelContainerFactory {
 
     // MARK: - One-Time Migration
 
-    /// Copies the SwiftData store from the app sandbox to the App Group container.
-    /// Only runs once — if the App Group store already exists, this is a no-op.
     private static func migrateStoreToAppGroupIfNeeded() {
         let fm = FileManager.default
         let destination = sharedStoreURL()
 
-        // If the shared store already exists, nothing to do.
         guard !fm.fileExists(atPath: destination.path()) else { return }
 
-        // Find the old default store in the app sandbox.
         guard let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
         let oldStore = appSupport.appending(path: "default.store")
 
         guard fm.fileExists(atPath: oldStore.path()) else { return }
 
-        // Copy main store file + WAL/SHM companions.
         let extensions = ["", "-shm", "-wal"]
         for ext in extensions {
             let src = URL(filePath: oldStore.path() + ext)
@@ -73,6 +85,55 @@ enum ModelContainerFactory {
         if existingGroups.isEmpty {
             let general = NutrientGroup(name: "General", sortOrder: Int.max, isSystem: true)
             context.insert(general)
+        }
+    }
+
+    // MARK: - Deduplication (CloudKit sync safety)
+
+    @MainActor
+    private static func deduplicateSingletons(context: ModelContext) {
+        deduplicateGeneralGroups(context: context)
+        deduplicateUserProfiles(context: context)
+        deduplicateUserPreferences(context: context)
+    }
+
+    @MainActor
+    private static func deduplicateGeneralGroups(context: ModelContext) {
+        let descriptor = FetchDescriptor<NutrientGroup>(
+            predicate: #Predicate { $0.isSystem == true }
+        )
+        guard let systemGroups = try? context.fetch(descriptor),
+              systemGroups.count > 1 else { return }
+
+        let keeper = systemGroups[0]
+        for duplicate in systemGroups.dropFirst() {
+            for nutrient in duplicate.nutrients ?? [] {
+                nutrient.group = keeper
+            }
+            context.delete(duplicate)
+        }
+    }
+
+    @MainActor
+    private static func deduplicateUserProfiles(context: ModelContext) {
+        let descriptor = FetchDescriptor<UserProfile>()
+        guard let profiles = try? context.fetch(descriptor),
+              profiles.count > 1 else { return }
+
+        let keeper = profiles.first(where: { $0.onboardingCompleted }) ?? profiles[0]
+        for profile in profiles where profile.persistentModelID != keeper.persistentModelID {
+            context.delete(profile)
+        }
+    }
+
+    @MainActor
+    private static func deduplicateUserPreferences(context: ModelContext) {
+        let descriptor = FetchDescriptor<UserPreferences>()
+        guard let prefs = try? context.fetch(descriptor),
+              prefs.count > 1 else { return }
+
+        for duplicate in prefs.dropFirst() {
+            context.delete(duplicate)
         }
     }
 }

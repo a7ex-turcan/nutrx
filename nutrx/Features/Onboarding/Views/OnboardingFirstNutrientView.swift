@@ -142,7 +142,7 @@ struct OnboardingFirstNutrientView: View {
 
         if let general = systemGroups.first {
             nutrient.group = general
-            nutrient.groupSortOrder = (general.nutrients.map(\.groupSortOrder).max() ?? -1) + 1
+            nutrient.groupSortOrder = ((general.nutrients ?? []).map(\.groupSortOrder).max() ?? -1) + 1
         }
 
         modelContext.insert(nutrient)

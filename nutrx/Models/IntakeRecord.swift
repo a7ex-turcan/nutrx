@@ -4,8 +4,8 @@ import SwiftData
 @Model
 final class IntakeRecord {
     var nutrient: Nutrient?
-    var amount: Double
-    var date: Date
+    var amount: Double = 0
+    var date: Date = Date.now
     var note: String?
 
     init(nutrient: Nutrient, amount: Double, date: Date = .now, note: String? = nil) {

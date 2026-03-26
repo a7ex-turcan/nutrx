@@ -12,7 +12,10 @@ struct TodayView: View {
     @State private var nutrientToMove: Nutrient?
     @State private var editDraft = NutrientDraft()
     @State private var showBanner = false
+    @State private var showSyncBanner = false
+    @State private var syncBannerVariant: SyncBannerView.Variant = .enabled
     @State private var streak: StreakResult?
+    @AppStorage("wasSyncRestored") private var wasSyncRestored = false
 
     private var hasCustomGroups: Bool {
         allGroups.contains(where: { !$0.isSystem })
@@ -54,6 +57,13 @@ struct TodayView: View {
                         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
+                    } else if showSyncBanner {
+                        SyncBannerView(variant: syncBannerVariant) {
+                            dismissSyncBanner()
+                        }
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
 
                     ForEach(viewModel.groupSections) { section in
@@ -88,6 +98,7 @@ struct TodayView: View {
         .onAppear {
             viewModel.refresh(context: modelContext)
             refreshBannerVisibility()
+            refreshSyncBannerVisibility()
             refreshStreak()
         }
         .onChange(of: allGroups.count) {
@@ -228,6 +239,33 @@ struct TodayView: View {
     private func dismissBanner() {
         preferences.hasSeenNotificationBanner = true
         withAnimation { showBanner = false }
+    }
+
+    private func refreshSyncBannerVisibility() {
+        // Don't show sync banner if notification banner is visible
+        guard !showBanner else {
+            showSyncBanner = false
+            return
+        }
+
+        if wasSyncRestored && !preferences.hasSeenSyncRestoredBanner {
+            syncBannerVariant = .restored
+            showSyncBanner = true
+        } else if !wasSyncRestored && !preferences.hasSeenSyncEnabledBanner {
+            syncBannerVariant = .enabled
+            showSyncBanner = true
+        } else {
+            showSyncBanner = false
+        }
+    }
+
+    private func dismissSyncBanner() {
+        if syncBannerVariant == .restored {
+            preferences.hasSeenSyncRestoredBanner = true
+        } else {
+            preferences.hasSeenSyncEnabledBanner = true
+        }
+        withAnimation { showSyncBanner = false }
     }
 
     private func refreshStreak() {

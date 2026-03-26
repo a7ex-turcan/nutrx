@@ -76,7 +76,7 @@ enum NotificationService {
         var newIDs: Set<String> = []
         var requests: [UNNotificationRequest] = []
 
-        for reminder in nutrient.reminders {
+        for reminder in nutrient.reminders ?? [] {
             let (hour, minute) = reminder.timeComponents
             let id = nutrientReminderID(nutrientID: nutrient.persistentModelID, hour: hour, minute: minute)
             newIDs.insert(id)
@@ -160,7 +160,7 @@ enum NotificationService {
         )
         guard let nutrients = try? context.fetch(descriptor) else { return }
 
-        for nutrient in nutrients where !nutrient.reminders.isEmpty {
+        for nutrient in nutrients where !(nutrient.reminders ?? []).isEmpty {
             scheduleReminders(for: nutrient)
         }
     }

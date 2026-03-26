@@ -35,7 +35,7 @@
 
 | Feature | Status |
 |---|---|
-| iCloud sync (CloudKit + SwiftData) | 🔨 In progress |
+| iCloud sync (CloudKit + SwiftData) | ✅ Shipped (v1.6) |
 | Analytics & charts | 📋 Planned |
 | Apple Health integration (HealthKit write) | 📋 Planned |
 
@@ -131,7 +131,6 @@ The Settings screen is accessible via the profile menu. It already contains the 
 - **Per-Nutrient Reminders** — a note directing users to configure these inside each nutrient's edit screen. No per-nutrient configuration lives in Settings.
 
 **Reserved for future versions:**
-- iCloud sync toggle (MVP 3)
 - Appearance / theme (future)
 - Units preference (future)
 
@@ -156,80 +155,11 @@ The following are explicitly deferred to MVP 3 or later:
 
 ---
 
-### iCloud Sync 🔨
+### iCloud Sync ✅
 
-**Status:** Specced, in progress
+**Status:** Shipped in v1.6
 
-> ⚠️ **Three rules for Claude Code before touching any code:**
->
-> 1. **Do the full model audit before touching `ModelContainerFactory`.** A CloudKit-backed container initialised against a schema with invalid fields will fail silently and be extremely hard to debug. Audit first, no exceptions.
-> 2. **Test the new-device flow on a real device, not Simulator.** CloudKit behaves materially differently in Simulator — the onboarding-skip logic and banner triggers require a real device with a real iCloud account.
-> 3. **The ~3 second loading window for the onboarding-skip check is a hard cap.** Blocking the user indefinitely is worse than occasionally showing onboarding to a returning user.
-
-**Guiding principles:**
-- On by default — no setup, no sign-in flow
-- User is informed but not burdened — subtle nudges, never blocking
-- App always works offline — sync is additive, never a dependency
-- Opt-out available in Settings
-
-**What changes:**
-
-*Data layer*
-- `ModelContainerFactory` switches to a CloudKit-backed configuration using container `iCloud.nutrx-labs.nutrx`
-- Factory handles CloudKit available and unavailable gracefully — app never fails to launch because CloudKit is unreachable
-- App Group container URL stays unchanged — widgets continue to work regardless of sync state
-
-*Model audit (prerequisite)*
-- Every `@Model` field must have a property-level default or be optional for CloudKit compatibility
-- Known fields needing attention: `UserProfile.name`, `weightUnit`, `heightUnit` (default `""`), `UserProfile.weight`, `height` (default `0.0`), all relationship fields need explicit `@Relationship` delete rules
-- Full audit of all models required before implementation
-
-*Entitlements (both main app and widget extension)*
-- iCloud capability with CloudKit enabled
-- Container: `iCloud.nutrx-labs.nutrx`
-- Existing App Group entitlement unchanged
-
-*New device / first launch*
-- On first launch, wait up to 3 seconds for CloudKit initial sync
-- If `UserProfile` with `onboardingCompleted = true` is found → skip onboarding, show sync-restored banner
-- If nothing found within 3 seconds → assume new user, proceed with onboarding as normal
-- Minimal loading state (spinner) shown during the wait
-
-*Conflict resolution*
-- Last-write-wins for all models except `IntakeRecord`
-- `IntakeRecord` is append-only — two devices logging simultaneously produces two valid records, both correct
-- Soft deletes on `Nutrient` (`isDeleted = true`) handle offline deletion cleanly
-
-**Settings UI — new iCloud Sync section (above Notifications):**
-
-| State | Icon | Title | Toggle | Footer |
-|---|---|---|---|---|
-| Sync on, available | iCloud | Sync with iCloud | ON | "Your data syncs across all your Apple devices automatically." |
-| Sync on, iCloud unavailable | ⚠️ orange | iCloud Unavailable | ON | "Sign in to iCloud in Settings to enable sync." + link to iOS Settings |
-| Sync off | iCloud muted | Sync with iCloud | OFF | "Your data is stored on this device only." |
-
-Toggle stored in `UserPreferences.iCloudSyncEnabled` (default `true`). Toggling reinitialises the container. No data deleted in either direction.
-
-**One-time banners (Today screen, styled like existing notification banner):**
-
-- *Sync restored* — shown after new-device restore: "Your nutrx data has been restored from iCloud." Suppressed via `UserPreferences.hasSeenSyncRestoredBanner`.
-- *Sync enabled* — shown once after fresh-install onboarding completes: "Your data is syncing to iCloud. Reinstalling won't lose anything. You can turn this off in Settings." Suppressed via `UserPreferences.hasSeenSyncEnabledBanner`.
-
-**App deletion behaviour:**
-
-Deleting the app removes the local store but leaves CloudKit data intact — reinstalling restores everything via the new-device flow. However, if the user chooses "Delete App and Data" when prompted by iOS, the CloudKit container is wiped for all devices. This is an iOS system behaviour nutrx cannot prevent. During implementation, test which CloudKit container configuration triggers this prompt least aggressively, and prefer it. The reinstall-safe banner copy above is intentional — it sets the right expectation before users ever encounter that prompt.
-
-Banners appear one at a time. Notification permission banner takes priority.
-
-**New `UserPreferences` fields:**
-
-| Field | Type | Default |
-|---|---|---|
-| `iCloudSyncEnabled` | `Bool` | `true` |
-| `hasSeenSyncRestoredBanner` | `Bool` | `false` |
-| `hasSeenSyncEnabledBanner` | `Bool` | `false` |
-
-**Out of scope for this iteration:** merge conflict UI, per-record sync status, manual sync trigger, two devices completing onboarding independently before syncing.
+Automatic CloudKit sync across all Apple devices. On by default, no setup. `ModelContainerFactory` uses `CloudKit.private("iCloud.nutrx-labs.nutrx")` with local-only fallback. All models audited for CloudKit compatibility (property-level defaults, optional relationships, no unique constraints). New-device flow waits up to 3 seconds for CloudKit data before falling back to onboarding. One-time sync banners on Today screen. Settings → iCloud Sync page with status, toggle, and "Delete iCloud Data" option. Singleton deduplication for General group, UserProfile, and UserPreferences. New `UserPreferences` fields: `iCloudSyncEnabled`, `hasSeenSyncRestoredBanner`, `hasSeenSyncEnabledBanner`. New components: `SyncLoadingView`, `SyncBannerView`.
 
 ---
 

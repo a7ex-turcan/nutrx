@@ -3,13 +3,13 @@ import SwiftData
 
 @Model
 final class NutrientGroup {
-    var name: String
-    var sortOrder: Int
+    var name: String = ""
+    var sortOrder: Int = 0
     var isSystem: Bool = false
     var isCollapsed: Bool = false
 
     @Relationship(deleteRule: .nullify, inverse: \Nutrient.group)
-    var nutrients: [Nutrient] = []
+    var nutrients: [Nutrient]? = []
 
     init(name: String, sortOrder: Int, isSystem: Bool = false) {
         self.name = name

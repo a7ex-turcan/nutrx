@@ -244,7 +244,7 @@ struct NutrientsListView: View {
         let targetGroup = selectedGroupForAdd ?? generalGroup
         if let group = targetGroup {
             nutrient.group = group
-            nutrient.groupSortOrder = (group.nutrients.map(\.groupSortOrder).max() ?? -1) + 1
+            nutrient.groupSortOrder = ((group.nutrients ?? []).map(\.groupSortOrder).max() ?? -1) + 1
         }
 
         modelContext.insert(nutrient)

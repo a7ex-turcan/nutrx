@@ -114,7 +114,7 @@ nutrx/
 │   │   ├── Views/
 │   │   │   ├── TodayView.swift              # List of NutrientRowView cards. Swipe right = Add Exact Amount,
 │   │   │   │                                # swipe left = Edit Nutrient. Long-press context menu. Refreshes on foreground.
-│   │   │   │                                # Shows NotificationBannerView at the top when applicable.
+│   │   │   │                                # Shows NotificationBannerView and SyncBannerView at the top when applicable.
 │   │   │   ├── CustomAmountSheet.swift      # Half-sheet for entering a one-off custom intake amount.
 │   │   │   └── NotificationBannerView.swift # Dismissible banner prompting the user to enable the daily check-in reminder.
 │   │   │                                    # Shown once after onboarding; never shown again once dismissed or permission granted.
@@ -146,7 +146,9 @@ nutrx/
 │   │
 │   ├── Settings/                # Accessed via profile menu flyout → "Settings". (Implemented)
 │   │   └── Views/
-│   │       ├── SettingsView.swift           # Grouped list sheet. Sections: Manage Groups, Streaks, Notifications, About.
+│   │       ├── SettingsView.swift           # Grouped list sheet. Sections: iCloud Sync, Manage Groups, Streaks,
+│   │       │                                # Notifications, About. Also contains sub-page views:
+│   │       │                                # ICloudSyncSettingsView, StreaksSettingsView, NotificationsSettingsView.
 │   │       └── ManageGroupsView.swift       # Reorderable group list. Create, rename (tap), reorder (drag),
 │   │                                        # delete (swipe) custom groups. System "General" group shown locked.
 │   │
@@ -167,11 +169,15 @@ nutrx/
     │   ├── NutrientProgressBar.swift        # Progress bar: blue (in progress), green (complete), orange (exceeded).
     │   ├── GroupHeaderView.swift            # Collapsible group section header with chevron and aggregate progress bar.
     │   ├── MoveToGroupSheet.swift           # Half-sheet for moving a nutrient to a different group.
+    │   ├── SyncLoadingView.swift            # Minimal spinner shown during the 3-second CloudKit sync wait on new devices.
+    │   ├── SyncBannerView.swift             # Dismissible iCloud sync banner (restored / enabled variants) on Today screen.
     │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / Settings / Log Out).
     │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + flyout menu (Edit Profile,
     │                                        # Settings, Log Out) to any nav bar. Opens ProfileView or SettingsView as sheets.
     ├── Persistence/
     │   ├── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
+    │   │                                    # Uses CloudKit-backed config (iCloud.nutrx-labs.nutrx) with local-only fallback.
+    │   │                                    # Includes singleton deduplication for General group, UserProfile, UserPreferences.
     │   └── PreviewSampleData.swift          # previewContainer with seeded nutrients + intake for Xcode previews.
     └── Services/
         ├── NotificationService.swift        # Wraps UNUserNotificationCenter. Responsibilities:
@@ -836,8 +842,7 @@ To minimise the risk of this prompt appearing or being misunderstood:
 
 The following features are planned in future MVPs but must not be built or scaffolded until their target version.
 
-**MVP 3 (next):**
-- iCloud sync — **specced and ready to build, see the iCloud Sync section above**
+**MVP 3 (in progress):**
 - Analytics & charts (weekly/monthly breakdowns per nutrient)
 - Apple Health integration (HealthKit write, no read)
 
@@ -865,6 +870,7 @@ All persistence is handled via SwiftData. There are five models. No data is ever
 - **Decrements are negative IntakeRecords** — tapping − inserts an `IntakeRecord` with a negative `amount`. The total is always computed by summing all records, and is floored at 0 in the UI. This keeps the record log append-only.
 - **No explicit midnight reset** — since intake is computed by summing records for today's calendar day, a new day naturally returns 0 with no reset action needed.
 - **Property-level defaults on @Model fields** — when adding new non-optional fields to an existing `@Model`, always assign a default value at the property declaration (e.g. `var flag: Bool = false`), not just in the initialiser. SwiftData's lightweight migration requires this to populate the column for existing rows.
+- **CloudKit compatibility** — all relationship arrays must be optional (`[T]?`, accessed via `?? []`). No `@Attribute(.unique)` constraints (CloudKit does not support them). All non-optional scalar fields must have property-level defaults.
 
 ---
 
@@ -892,7 +898,7 @@ Represents a user-defined nutrient that the user wants to track.
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `UUID = UUID()` | Stable unique identifier. Used by `LogNutrientIntent` for widget interactions. `@Attribute(.unique)` |
+| `id` | `UUID = UUID()` | Stable unique identifier. Used by `LogNutrientIntent` for widget interactions. No unique constraint (CloudKit incompatible). |
 | `name` | `String` | e.g. "Vitamin D", "Caffeine" |
 | `unit` | `String` | e.g. "mg", "IU", "cups" |
 | `step` | `Double` | Increment per + / − tap. Must be > 0 |
@@ -904,10 +910,10 @@ Represents a user-defined nutrient that the user wants to track.
 | `group` | `NutrientGroup?` | Optional relationship to a `NutrientGroup`. `nil` resolves to the General group at query time. Property-level default `nil` required for SwiftData migration |
 | `createdAt` | `Date = Date()` | Timestamp of when the nutrient was created. Used by streak computation to determine which nutrients were active on any given past day. Property-level default required for SwiftData migration — existing nutrients receive the migration date, which is a safe approximation. |
 
-**Relationships:**
-- One `Nutrient` → many `IntakeRecord` (inverse: `IntakeRecord.nutrient`)
-- One `Nutrient` → many `Exclusion` (inverse: `Exclusion.nutrient`)
-- One `Nutrient` → many `NutrientReminder` (inverse: `NutrientReminder.nutrient`)
+**Relationships** (all optional arrays for CloudKit compatibility — access via `?? []`):
+- One `Nutrient` → many `IntakeRecord`? (inverse: `IntakeRecord.nutrient`)
+- One `Nutrient` → many `Exclusion`? (inverse: `Exclusion.nutrient`)
+- One `Nutrient` → many `NutrientReminder`? (inverse: `NutrientReminder.nutrient`)
 - Many `Nutrient` → one `NutrientGroup?` (inverse: `NutrientGroup.nutrients`)
 
 ---
@@ -938,7 +944,10 @@ Stores app-wide user preferences. There is always exactly one instance in the st
 |---|---|---|
 | `dailyReminderEnabled` | `Bool` | Whether the daily check-in notification is active. Default `false` |
 | `hasSeenNotificationBanner` | `Bool` | Whether the Today screen notification banner has been shown/dismissed. Default `false` |
-| `streaksEnabled` | `Bool = true` | Whether streak tracking is active. When `false`, all streak UI is hidden and `StreakService` computation is skipped entirely. Property-level default required for SwiftData migration — existing users get streaks on. |
+| `streaksEnabled` | `Bool = true` | Whether streak tracking is active. When `false`, all streak UI is hidden and `StreakService` computation is skipped entirely. |
+| `iCloudSyncEnabled` | `Bool = true` | Whether iCloud sync is active. Drives `ModelContainerFactory` configuration. |
+| `hasSeenSyncRestoredBanner` | `Bool = false` | Whether the sync-restored banner has been dismissed. |
+| `hasSeenSyncEnabledBanner` | `Bool = false` | Whether the sync-enabled banner has been dismissed. |
 
 ---
 
@@ -972,8 +981,8 @@ Represents a user-defined group that organises nutrients on the Today and My Nut
 - Nutrients with `group = nil` resolve to General at query time — no data migration of existing rows is needed.
 - Cannot be renamed, deleted, or reordered above other groups. Rendered last in all group lists.
 
-**Relationships:**
-- One `NutrientGroup` → many `Nutrient` (inverse: `Nutrient.group`)
+**Relationships** (optional array for CloudKit compatibility — access via `?? []`):
+- One `NutrientGroup` → many `Nutrient`? (inverse: `Nutrient.group`)
 
 ---
 

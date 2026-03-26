@@ -61,7 +61,7 @@ struct MoveToGroupSheet: View {
     }
 
     private func moveNutrient(to group: NutrientGroup) {
-        let maxOrder = group.nutrients.map(\.groupSortOrder).max() ?? -1
+        let maxOrder = (group.nutrients ?? []).map(\.groupSortOrder).max() ?? -1
         nutrient.group = group
         nutrient.groupSortOrder = maxOrder + 1
         dismiss()

@@ -4,6 +4,20 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v1.6 — 2026-03-26
+
+### Features
+- **iCloud sync** — Your data now syncs automatically across all your Apple devices via CloudKit. On by default, no setup required. Works offline — sync is additive, never a dependency.
+- **New-device restore** — Reinstalling the app or setting up a new device restores all your data from iCloud automatically, skipping onboarding.
+- **Sync banners** — One-time banners on the Today screen inform you when data is restored from iCloud or when sync is active on a fresh install.
+- **iCloud Sync settings** — New Settings → iCloud Sync page showing sync status, a toggle to enable/disable sync, and a "Delete iCloud Data" option to permanently remove your data from iCloud while keeping local data intact.
+
+### Improvements
+- **CloudKit-compatible models** — All data models updated with property-level defaults and optional relationships for CloudKit compatibility.
+- **Singleton deduplication** — Automatic deduplication of system records (General group, user profile, preferences) when syncing across multiple devices.
+
+---
+
 ## v1.5 — 2026-03-26
 
 ### Features

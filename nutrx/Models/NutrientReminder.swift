@@ -4,7 +4,7 @@ import SwiftData
 @Model
 final class NutrientReminder {
     var nutrient: Nutrient?
-    var timeOfDay: Date
+    var timeOfDay: Date = Date.distantPast
 
     init(nutrient: Nutrient, timeOfDay: Date) {
         self.nutrient = nutrient

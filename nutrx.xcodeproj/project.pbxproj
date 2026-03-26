@@ -69,6 +69,13 @@
 			);
 			target = 64702A892F72A89200C45D23 /* NutrxWidgetsExtension */;
 		};
+		64AB21CD2F75596D004396D2 /* Exceptions for "nutrx" folder in "nutrx" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 64DE986A2F60628D008EF50E /* nutrx */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -83,6 +90,7 @@
 		64DE986D2F60628D008EF50E /* nutrx */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				64AB21CD2F75596D004396D2 /* Exceptions for "nutrx" folder in "nutrx" target */,
 				64702AAD2F72ABD400C45D23 /* Exceptions for "nutrx" folder in "NutrxWidgetsExtension" target */,
 			);
 			path = nutrx;
@@ -288,7 +296,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx.NutrxWidgets";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -321,7 +329,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx.NutrxWidgets";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -466,6 +474,7 @@
 				DEVELOPMENT_TEAM = 6396A6L9J3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = nutrx/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = nutrx;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
@@ -478,7 +487,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -503,6 +512,7 @@
 				DEVELOPMENT_TEAM = 6396A6L9J3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = nutrx/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = nutrx;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
@@ -515,7 +525,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5;
+				MARKETING_VERSION = 1.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

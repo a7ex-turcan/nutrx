@@ -3,13 +3,13 @@ import SwiftData
 
 @Model
 final class UserProfile {
-    var name: String
-    var birthdate: Date
-    var weight: Double
-    var weightUnit: String
-    var height: Double
-    var heightUnit: String
-    var onboardingCompleted: Bool
+    var name: String = ""
+    var birthdate: Date = Date.distantPast
+    var weight: Double = 0
+    var weightUnit: String = "kg"
+    var height: Double = 0
+    var heightUnit: String = "cm"
+    var onboardingCompleted: Bool = false
 
     init(
         name: String,

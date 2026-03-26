@@ -30,7 +30,7 @@ struct ManageGroupsView: View {
 
                             Spacer()
 
-                            Text("\(group.nutrients.count)")
+                            Text("\((group.nutrients ?? []).count)")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -67,7 +67,7 @@ struct ManageGroupsView: View {
 
                         Spacer()
 
-                        Text("\(general.nutrients.count)")
+                        Text("\((general.nutrients ?? []).count)")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -129,7 +129,7 @@ struct ManageGroupsView: View {
             }
             Button("Cancel", role: .cancel) { groupToDelete = nil }
         } message: {
-            let count = groupToDelete?.nutrients.count ?? 0
+            let count = (groupToDelete?.nutrients ?? []).count
             Text("\(groupToDelete?.name ?? "This group") will be deleted. Its \(count) nutrient\(count == 1 ? "" : "s") will move to General.")
         }
     }
@@ -153,8 +153,8 @@ struct ManageGroupsView: View {
 
     private func deleteGroup(_ group: NutrientGroup) {
         guard let general = systemGroup else { return }
-        let maxOrder = general.nutrients.map(\.groupSortOrder).max() ?? -1
-        for (offset, nutrient) in group.nutrients.enumerated() {
+        let maxOrder = (general.nutrients ?? []).map(\.groupSortOrder).max() ?? -1
+        for (offset, nutrient) in (group.nutrients ?? []).enumerated() {
             nutrient.group = general
             nutrient.groupSortOrder = maxOrder + 1 + offset
         }
