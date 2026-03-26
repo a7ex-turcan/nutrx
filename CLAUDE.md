@@ -674,12 +674,170 @@ NutrxWidgets/                        # New WidgetKit extension target
 
 ---
 
+## iCloud Sync (MVP 3)
+
+> ⚠️ **Before writing a single line of implementation, read these three rules:**
+>
+> 1. **Do the full model audit before touching `ModelContainerFactory`.** A CloudKit-backed container initialised against a schema with invalid fields (missing defaults, non-optional without a default) will fail silently and produce extremely hard-to-debug sync issues. The audit comes first — no exceptions.
+> 2. **Test the new-device flow on a real device, not Simulator.** CloudKit behaves materially differently in Simulator — the initial sync delay, the onboarding-skip logic, and the banner trigger all require a real device with a real iCloud account to verify correctly.
+> 3. **The ~3 second loading window for the onboarding-skip check must be respected.** CloudKit's initial data pull on a slow connection can take longer, but blocking the user indefinitely is worse than occasionally showing onboarding to a returning user. Hard cap at 3 seconds, then assume new user and proceed.
+
+---
+
+### Guiding principles
+
+- Sync is **on by default** — no setup required, no sign-in flow
+- The user is **informed but not burdened** — nudges are subtle, never blocking
+- The app **always works offline** — sync is additive, never a dependency
+- Opt-out is available in Settings but not prominent
+
+---
+
+### Step 0 — Model audit (do this first)
+
+Before any other work, audit every `@Model` class for CloudKit compatibility. CloudKit requires every field to have a property-level default or be optional. Fields that currently need attention (illustrative, not exhaustive — do a full audit):
+
+- `UserProfile`: `name`, `weightUnit`, `heightUnit` → default to `""`
+- `UserProfile`: `weight`, `height` → default to `0.0`
+- `IntakeRecord.nutrient`, `Exclusion.nutrient`, `NutrientReminder.nutrient` → relationships need explicit `@Relationship` delete rules set (`.nullify` or `.cascade` as appropriate) so CloudKit can reason about them
+
+Any field that fails this check must be fixed before proceeding. Document every change made during the audit.
+
+---
+
+### ModelContainerFactory changes
+
+Switch from a standard local `ModelConfiguration` to a CloudKit-backed one using container identifier `iCloud.nutrx-labs.nutrx`.
+
+The factory must handle two initialisation paths gracefully:
+- **CloudKit available** (signed into iCloud, storage not full) → initialise with CloudKit backing
+- **CloudKit unavailable** (not signed in, airplane mode, storage full) → fall back to local-only initialisation silently. The app must never fail to launch because CloudKit is unreachable.
+
+The App Group container URL stays unchanged — widgets continue reading from the shared store. Both paths must write to the same App Group location so widgets always have access regardless of sync state.
+
+---
+
+### Entitlements
+
+Both the main app target and the widget extension (`NutrxWidgets`) need:
+- iCloud capability with CloudKit enabled
+- Container identifier: `iCloud.nutrx-labs.nutrx`
+- Existing App Group entitlement (`group.nutrx-labs.nutrx`) stays unchanged
+
+---
+
+### First launch on a new device
+
+When the app launches for the first time on a new device:
+
+1. Initialise the CloudKit container
+2. Wait up to **3 seconds** for initial sync to complete
+3. Query for a `UserProfile` with `onboardingCompleted = true`
+4. **If found** → skip onboarding, go straight to `MainTabView`, show the sync-restored banner (see Banners below)
+5. **If not found within 3 seconds** → assume new user, proceed with onboarding as normal
+
+Show a minimal loading state (spinner, no nutrx chrome) during the 3-second window.
+
+---
+
+### Conflict resolution
+
+No custom conflict resolution logic is needed. Rely on CloudKit's default last-write-wins for all models except `IntakeRecord`.
+
+`IntakeRecord` is append-only by design — two devices logging simultaneously produces two valid records, both sync, both count toward the daily total. This is correct behaviour requiring no special handling.
+
+Soft deletes on `Nutrient` (`isDeleted = true`) mean a nutrient deleted on one device while another was offline will sync the deletion flag cleanly without orphaning historical `IntakeRecord` rows.
+
+---
+
+### Settings UI
+
+Add a new **iCloud Sync** section to `SettingsView`, positioned above the Notifications section.
+
+**State: sync on and available**
+- Row icon: iCloud SF Symbol
+- Row title: "Sync with iCloud"
+- Toggle: ON
+- Footer text: "Your data syncs across all your Apple devices automatically."
+
+**State: sync on but iCloud unavailable** (not signed in or storage full)
+- Row icon: warning SF Symbol (orange tint)
+- Row title: "iCloud Unavailable"
+- Toggle: ON
+- Footer text: "Sign in to iCloud in Settings to enable sync." with a tappable link that opens iOS Settings via `UIApplication.openSettingsURLString`
+
+**State: sync off**
+- Row icon: iCloud SF Symbol (muted)
+- Row title: "Sync with iCloud"
+- Toggle: OFF
+- Footer text: "Your data is stored on this device only."
+
+Toggle state is stored in `UserPreferences.iCloudSyncEnabled` (default `true`). When toggled off, reinitialise the container as local-only. When toggled back on, reinitialise with CloudKit. No data is deleted in either direction — toggling off just stops syncing going forward.
+
+---
+
+### Banners
+
+Two new one-time banners, styled consistently with the existing `NotificationBannerView` on the Today screen. Both are dismissible with ×, never shown again once dismissed. Shown below the notification permission banner if that is also visible — never stacked on top of each other, one at a time, notification banner takes priority.
+
+**Banner 1 — Sync restored** (new device, existing data found)
+Triggered when the new-device flow detects an existing `UserProfile`. Suppressed via `UserPreferences.hasSeenSyncRestoredBanner`.
+
+> *[iCloud icon] Your nutrx data has been restored from iCloud.*
+
+**Banner 2 — Sync enabled** (fresh install, shown after onboarding completes)
+Triggered once after onboarding completion on a brand new install. Suppressed via `UserPreferences.hasSeenSyncEnabledBanner`.
+
+> *[iCloud icon] Your data is syncing to iCloud. Reinstalling won't lose anything. You can turn this off in Settings.*
+
+---
+
+### New fields on UserPreferences
+
+| Field | Type | Default | Purpose |
+|---|---|---|---|
+| `iCloudSyncEnabled` | `Bool` | `true` | Drives container initialisation mode |
+| `hasSeenSyncRestoredBanner` | `Bool` | `false` | One-time restore banner suppression |
+| `hasSeenSyncEnabledBanner` | `Bool` | `false` | One-time sync-enabled banner suppression |
+
+All three require property-level defaults for SwiftData lightweight migration.
+
+---
+
+### App deletion behaviour
+
+When a user deletes nutrx from a device:
+- The local SwiftData store is removed with the app
+- The CloudKit data remains intact in iCloud
+- On reinstall, the new-device flow detects the existing `UserProfile`, skips onboarding, and restores all data — other devices are completely unaffected
+
+**The "Delete App and Data" edge case**
+
+When deleting an app, iOS may prompt the user with two options: "Delete App" and "Delete App and Data". If the user chooses "Delete App and Data", iOS wipes the CloudKit container for **all devices** — the other device will lose its data on next sync. This is an iOS system behaviour that nutrx cannot prevent or intercept.
+
+To minimise the risk of this prompt appearing or being misunderstood:
+- The sync-enabled banner copy should set the right expectation: reinforce that data is safe in iCloud, so the user understands the weight of choosing "Delete App and Data" if they ever see that prompt
+- During implementation, test which CloudKit container configuration (private database scope vs shared) triggers the "Delete App and Data" prompt more or less aggressively, and prefer the configuration that gives the user the clearest signal before wiping
+
+> ⚠️ **For Claude Code:** test the app deletion and reinstall flow on a real device. Verify that a plain "Delete App" (without "and Data") followed by reinstall correctly triggers the new-device restore path and shows the sync-restored banner.
+
+---
+
+### Out of scope for this iteration
+
+- Merge conflict UI
+- Per-record sync status indicators
+- Manual "sync now" trigger
+- Handling two devices completing onboarding independently before syncing (edge case, acceptable to address in a follow-up)
+
+---
+
 ## Out of Scope — Not Yet Built
 
 The following features are planned in future MVPs but must not be built or scaffolded until their target version.
 
 **MVP 3 (next):**
-- iCloud sync (CloudKit + SwiftData — requires `NSPersistentCloudKitContainer`, `iCloud` + `CloudKit` entitlements, all `@Model` fields must have property-level defaults)
+- iCloud sync — **specced and ready to build, see the iCloud Sync section above**
 - Analytics & charts (weekly/monthly breakdowns per nutrient)
 - Apple Health integration (HealthKit write, no read)
 
