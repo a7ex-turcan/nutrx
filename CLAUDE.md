@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Language**: Swift 5.0
 - **UI Framework**: SwiftUI
-- **iOS Deployment Target**: 26.2
+- **iOS Deployment Target**: 26.0
 - **Built with**: Xcode 26.3
 
 ## Build & Run
@@ -331,9 +331,9 @@ iOS notification permission has three distinct states that the UI must handle di
 
 ### Settings screen (profile menu → Settings)
 
-- A grouped list sheet with two sections:
-  1. **Daily check-in reminder** — a toggle or status row that reflects current permission state and handles all three states described above.
-  2. **About** — `AboutView` rendered inline at the bottom of the sheet (standard iOS convention; About always lives at the bottom of Settings).
+- A grouped list sheet with items grouped into two sections:
+  - **Main section:** Manage Groups, Streaks (dedicated sub-page), Notifications (dedicated sub-page).
+  - **About section:** `AboutView` as a NavigationLink at the bottom (standard iOS convention).
 - The Settings sheet replaces the former direct "About" item in the profile flyout menu.
 
 ### Per-nutrient notifications
@@ -504,12 +504,13 @@ The `WidgetEntry` struct must include `currentStreak: Int` and `streaksEnabled: 
 
 ### Settings
 
-`SettingsView` gains a new **"Streaks"** section, positioned between "Manage Groups" and "Notifications":
+A dedicated **Settings → Streaks** page (`StreaksSettingsView`), accessed via NavigationLink from the main Settings list:
 
 - Single row: **"Track streaks"** — standard iOS `Toggle` bound to `UserPreferences.streaksEnabled`
 - Default: `true`
 - When toggled off: all streak UI disappears immediately; `StreakService` computation is skipped on all future triggers
 - When re-enabled: streaks recompute from scratch on next foreground — no data is lost
+- The page is designed for future streak-related settings (e.g. streak freeze, notifications)
 
 ### Out of scope for this iteration
 
@@ -677,10 +678,7 @@ NutrxWidgets/                        # New WidgetKit extension target
 
 The following features are planned in future MVPs but must not be built or scaffolded until their target version.
 
-**MVP 2 (next):**
-- Streaks & consistency tracking — see the **Streaks** section below for full spec
-
-**MVP 3:**
+**MVP 3 (next):**
 - iCloud sync (CloudKit + SwiftData — requires `NSPersistentCloudKitContainer`, `iCloud` + `CloudKit` entitlements, all `@Model` fields must have property-level defaults)
 - Analytics & charts (weekly/monthly breakdowns per nutrient)
 - Apple Health integration (HealthKit write, no read)

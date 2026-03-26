@@ -4,6 +4,19 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v1.5 — 2026-03-26
+
+### Features
+- **Streaks & consistency tracking** — Track your daily completion streak across Today, History, and widgets. A streak day is any past day where all active nutrients met their targets, respecting exclusions and creation dates.
+- **Streak summary in History** — Current streak and best streak shown in a summary card at the top of the History tab, with flame indicators on individual streak days.
+- **Streak in widgets** — Small and medium home screen widgets show your current streak count when active.
+- **Streaks settings page** — Dedicated Settings → Streaks page with a "Track streaks" toggle (on by default). Designed for future streak-related settings.
+
+### Improvements
+- **Tighter Settings layout** — Settings items grouped into fewer sections for a more compact, standard iOS look.
+
+---
+
 ## v1.4 — 2026-03-24
 
 ### Features

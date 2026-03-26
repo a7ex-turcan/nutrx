@@ -19,7 +19,7 @@
 | Settings screen with daily check-in reminder | ✅ Shipped |
 | SwiftData persistence, fully offline | ✅ Shipped |
 
-### MVP 2 — Retention & Reach 🔨
+### MVP 2 — Retention & Reach ✅
 
 | Feature | Status |
 |---|---|
@@ -27,7 +27,7 @@
 | Nutrient notes | ✅ Shipped (v1.1) |
 | Home screen & lock screen widgets | ✅ Shipped (v1.4) |
 | History monthly section headers | ✅ Shipped (v1.1) |
-| Streaks & consistency tracking | 🔨 In progress |
+| Streaks & consistency tracking | ✅ Shipped (v1.5) |
 | Nutrient grouping / categories | ✅ Shipped (v1.2) |
 | Group UX polish (completion counts, inline creation, haptics) | ✅ Shipped (v1.3) |
 
@@ -67,7 +67,7 @@
 
 ---
 
-## MVP 2 — Retention & Reach 🔨
+## MVP 2 — Retention & Reach ✅
 
 **Goal:** Make the core loop stickier. Give users more reasons to open the app daily and more surfaces where the app is visible.
 
@@ -107,69 +107,10 @@ Day entries grouped under sticky month section headers (e.g. "March, 2026"). Mos
 
 ---
 
-#### 6. Streaks & Consistency Tracking
-**Why:** Simple, motivating, zero infrastructure cost. Encourages daily use without being gamified or annoying.
+#### 6. Streaks & Consistency Tracking ✅
+**Status:** Shipped in v1.5
 
-**Definition — streak day:** A completed calendar day (never today, which is still in progress) where every non-deleted nutrient that existed on that day (i.e. `createdAt ≤ that day`) reached or exceeded its daily target. Nutrients excluded on that day are ignored entirely. Days where the user had zero active nutrients do not count.
-
-**Current streak:** Count of consecutive streak days ending on yesterday. Resets to 0 if yesterday was not a streak day.
-
-**Best streak:** Longest such consecutive run across all of history.
-
-**Key rules:**
-- Today is never included — streak only reflects completed past days
-- A nutrient only counts toward streak calculation from the day it was created (`Nutrient.createdAt`) onward — adding a new nutrient never retroactively breaks an existing streak
-- Soft-deleted nutrients are excluded from all streak calculations, past and present
-- Nutrients excluded for a day (via "Exclude for today") are ignored for that day's calculation and do not count against the streak
-- A day with zero intake records is a missed day — gaps in history break the streak
-- If the user has no completed days yet, streak = 0 and no UI is shown
-
-**Model changes required (SwiftData lightweight migration):**
-- `Nutrient.createdAt: Date = Date()` — property-level default required; existing nutrients will receive the migration date as their `createdAt`, which is a safe approximation
-- `UserPreferences.streaksEnabled: Bool = true` — on by default; property-level default required
-
-**Computation — `StreakService.swift` (`Shared/Services/`):**
-1. If `streaksEnabled == false`, skip entirely
-2. Collect all distinct calendar days in history, excluding today
-3. Walk backward day by day from yesterday (not just days with records — gaps matter)
-4. For each day, determine the active nutrient set: non-deleted nutrients where `createdAt`'s calendar day ≤ that day
-5. If active set is empty, stop — cannot count this day
-6. Remove any nutrients with an `Exclusion` record matching that day
-7. Sum all `IntakeRecord.amount` values for each remaining nutrient on that day
-8. If every nutrient's sum ≥ its `dailyTarget`, the day passes — otherwise streak is broken, stop
-9. Current streak = count of consecutive passing days before the first failure
-10. Best streak = longest such run across full history (one full separate pass)
-
-Recomputed on every app foreground and after every intake action.
-
-**UI — Today screen:**
-- Shown subtly below the date in the navigation bar area: `🔥 12-day streak`
-- Only shown if `streaksEnabled == true` and current streak ≥ 1
-- If streak = 0, show nothing — the absence is the message
-
-**UI — History tab:**
-- A summary card at the top of the list, above day entries, when `streaksEnabled == true` and at least one streak value > 0:
-  ```
-  🔥 Current streak   12 days
-  🏆 Best streak      34 days
-  ```
-- Individual day rows get a subtle visual indicator (e.g. small flame or green dot) if that day was a streak day
-
-**UI — Widgets:**
-- Small widget: compact `🔥 12` label below the main ring, only if `streaksEnabled == true` and streak ≥ 1
-- Medium widget: `🔥 12` added to the header row between "Today" label and completion badge, same conditions
-- Lock screen widgets: no change — too space-constrained
-
-**Settings — `SettingsView`:**
-- New "Streaks" section, positioned between "Manage Groups" and "Notifications"
-- Single row: "Track streaks" — standard iOS `Toggle`, default `true`
-- When toggled off: all streak UI disappears immediately across Today, History, and Widgets; computation is skipped entirely
-- When re-enabled: streaks recompute from scratch on next foreground — no data is lost since everything derives from existing `IntakeRecord` data
-
-**Out of scope for this iteration:**
-- Per-nutrient streaks
-- Streak freeze / grace day mechanics
-- Streak-based notifications
+Daily streak tracking across Today (🔥 X-day streak label), History (summary card with current + best streak, flame indicators on streak days), and widgets (small + medium). `StreakService` computes streaks from `IntakeRecord`, `Exclusion`, and `Nutrient.createdAt` data. Opt-in via `UserPreferences.streaksEnabled` (default `true`). Dedicated Streaks settings page in Settings. Model additions: `Nutrient.createdAt`, `UserPreferences.streaksEnabled`.
 
 ---
 
@@ -185,7 +126,7 @@ Nutrients can be organised into named groups with collapsible sections on Today 
 The Settings screen is accessible via the profile menu. It already contains the daily check-in reminder toggle from MVP 1. MVP 2 adds to it:
 
 **Added in MVP 2:**
-- **Streaks** section (new) — single "Track streaks" toggle, on by default. Positioned between Manage Groups and Notifications.
+- **Streaks** page (new) — dedicated sub-page with "Track streaks" toggle, on by default. Accessed via Settings → Streaks.
 - Global notifications permission prompt (requests `UNUserNotificationCenter` authorisation on first enable — shared by both notification systems)
 - **Per-Nutrient Reminders** — a note directing users to configure these inside each nutrient's edit screen. No per-nutrient configuration lives in Settings.
 

@@ -25,9 +25,7 @@ struct SettingsView: View {
                 } label: {
                     Label("Manage Groups", systemImage: "folder")
                 }
-            }
 
-            Section {
                 NavigationLink {
                     StreaksSettingsView()
                         .navigationTitle("Streaks")
@@ -35,9 +33,7 @@ struct SettingsView: View {
                 } label: {
                     Label("Streaks", systemImage: "flame")
                 }
-            }
 
-            Section {
                 NavigationLink {
                     NotificationsSettingsView()
                         .navigationTitle("Notifications")
