@@ -20,6 +20,8 @@ struct NutrxWidgetEntry: TimelineEntry {
     let date: Date
     let nutrients: [NutrientSnapshot]
     let isPlaceholder: Bool
+    let currentStreak: Int
+    let streaksEnabled: Bool
 
     var completedCount: Int { nutrients.filter(\.isOnTarget).count }
     var totalCount: Int { nutrients.count }
@@ -32,7 +34,9 @@ struct NutrxWidgetEntry: TimelineEntry {
                 NutrientSnapshot(id: "", name: "Omega-3", unit: "mg", current: 1500, target: 2000, step: 500),
                 NutrientSnapshot(id: "", name: "Magnesium", unit: "mg", current: 400, target: 400, step: 200),
             ],
-            isPlaceholder: true
+            isPlaceholder: true,
+            currentStreak: 12,
+            streaksEnabled: true
         )
     }
 }

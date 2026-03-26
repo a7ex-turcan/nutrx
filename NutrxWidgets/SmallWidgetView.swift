@@ -67,6 +67,11 @@ struct SmallWidgetView: View {
                 Text("of \(entry.totalCount) on target")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+
+                if entry.streaksEnabled && entry.currentStreak >= 1 {
+                    Text("🔥 \(entry.currentStreak)")
+                        .font(.caption2.weight(.medium))
+                }
             }
             .widgetURL(URL(string: "nutrx://today"))
         }

@@ -19,6 +19,10 @@ let previewContainer: ModelContainer = {
     )
     context.insert(profile)
 
+    // Preferences (streaks enabled for preview)
+    let preferences = UserPreferences()
+    context.insert(preferences)
+
     // Groups
     let vitamins = NutrientGroup(name: "Vitamins", sortOrder: 0)
     let supplements = NutrientGroup(name: "Supplements", sortOrder: 1)
@@ -27,26 +31,33 @@ let previewContainer: ModelContainer = {
     context.insert(supplements)
     context.insert(general)
 
-    // Sample nutrients
+    // Sample nutrients (createdAt set 10 days ago so streaks can compute)
+    let tenDaysAgo = Calendar.current.date(byAdding: .day, value: -10, to: .now)!
+
     let vitD = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 4000, sortOrder: 0)
     vitD.group = vitamins
     vitD.groupSortOrder = 0
+    vitD.createdAt = tenDaysAgo
 
     let omega3 = Nutrient(name: "Omega-3", unit: "mg", step: 500, dailyTarget: 2000, sortOrder: 1)
     omega3.group = supplements
     omega3.groupSortOrder = 0
+    omega3.createdAt = tenDaysAgo
 
     let caffeine = Nutrient(name: "Caffeine", unit: "mg", step: 100, dailyTarget: 400, sortOrder: 2)
     caffeine.group = general
     caffeine.groupSortOrder = 0
+    caffeine.createdAt = tenDaysAgo
 
     let water = Nutrient(name: "Water", unit: "cups", step: 1, dailyTarget: 8, sortOrder: 3)
     water.group = general
     water.groupSortOrder = 1
+    water.createdAt = tenDaysAgo
 
     let protein = Nutrient(name: "Protein", unit: "g", step: 10, dailyTarget: 150, sortOrder: 4)
     protein.group = supplements
     protein.groupSortOrder = 1
+    protein.createdAt = tenDaysAgo
 
     for nutrient in [vitD, omega3, caffeine, water, protein] {
         context.insert(nutrient)
@@ -65,24 +76,26 @@ let previewContainer: ModelContainer = {
     context.insert(IntakeRecord(nutrient: water, amount: 1))
 
     // Past day records for History preview
-    let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: .now)!
-    let twoDaysAgo = Calendar.current.date(byAdding: .day, value: -2, to: .now)!
+    // 5 consecutive days where all targets are met → 5-day streak
+    let pastDays = (1...5).map { Calendar.current.date(byAdding: .day, value: -$0, to: .now)! }
 
-    for date in [yesterday, twoDaysAgo] {
-        context.insert(IntakeRecord(nutrient: vitD, amount: 1000, date: date))
-        context.insert(IntakeRecord(nutrient: vitD, amount: 1000, date: date))
-        context.insert(IntakeRecord(nutrient: vitD, amount: 1000, date: date))
-        context.insert(IntakeRecord(nutrient: omega3, amount: 500, date: date))
-        context.insert(IntakeRecord(nutrient: omega3, amount: 500, date: date))
-        context.insert(IntakeRecord(nutrient: caffeine, amount: 100, date: date))
-        context.insert(IntakeRecord(nutrient: caffeine, amount: 100, date: date))
-        context.insert(IntakeRecord(nutrient: water, amount: 1, date: date))
-        context.insert(IntakeRecord(nutrient: water, amount: 1, date: date))
-        context.insert(IntakeRecord(nutrient: water, amount: 1, date: date))
-        context.insert(IntakeRecord(nutrient: water, amount: 1, date: date))
-        context.insert(IntakeRecord(nutrient: protein, amount: 10, date: date))
-        context.insert(IntakeRecord(nutrient: protein, amount: 10, date: date))
+    for date in pastDays {
+        // Vitamin D: 4×1000 = 4000 (target 4000) ✓
+        for _ in 0..<4 { context.insert(IntakeRecord(nutrient: vitD, amount: 1000, date: date)) }
+        // Omega-3: 4×500 = 2000 (target 2000) ✓
+        for _ in 0..<4 { context.insert(IntakeRecord(nutrient: omega3, amount: 500, date: date)) }
+        // Caffeine: 4×100 = 400 (target 400) ✓
+        for _ in 0..<4 { context.insert(IntakeRecord(nutrient: caffeine, amount: 100, date: date)) }
+        // Water: 8×1 = 8 (target 8) ✓
+        for _ in 0..<8 { context.insert(IntakeRecord(nutrient: water, amount: 1, date: date)) }
+        // Protein: 15×10 = 150 (target 150) ✓
+        for _ in 0..<15 { context.insert(IntakeRecord(nutrient: protein, amount: 10, date: date)) }
     }
+
+    // 6 days ago: incomplete day (breaks the streak, so best = current = 5)
+    let sixDaysAgo = Calendar.current.date(byAdding: .day, value: -6, to: .now)!
+    context.insert(IntakeRecord(nutrient: vitD, amount: 1000, date: sixDaysAgo))
+    context.insert(IntakeRecord(nutrient: water, amount: 1, date: sixDaysAgo))
 
     return container
 }()

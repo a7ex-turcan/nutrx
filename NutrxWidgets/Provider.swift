@@ -36,10 +36,16 @@ struct NutrxTimelineProvider: TimelineProvider {
             let configuration = ModelConfiguration(schema: schema, url: storeURL, allowsSave: false)
             container = try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            return NutrxWidgetEntry(date: .now, nutrients: [], isPlaceholder: false)
+            return NutrxWidgetEntry(date: .now, nutrients: [], isPlaceholder: false, currentStreak: 0, streaksEnabled: false)
         }
 
         let context = container.mainContext
+
+        // Fetch streak + preferences
+        let prefsDescriptor = FetchDescriptor<UserPreferences>()
+        let prefs = (try? context.fetch(prefsDescriptor))?.first
+        let streaksEnabled = prefs?.streaksEnabled ?? true
+        let streakResult = streaksEnabled ? StreakService.compute(context: context) : StreakResult(current: 0, best: 0)
 
         let startOfDay = Calendar.current.startOfDay(for: .now)
         let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
@@ -97,6 +103,6 @@ struct NutrxTimelineProvider: TimelineProvider {
             )
         }
 
-        return NutrxWidgetEntry(date: .now, nutrients: snapshots, isPlaceholder: false)
+        return NutrxWidgetEntry(date: .now, nutrients: snapshots, isPlaceholder: false, currentStreak: streakResult.current, streaksEnabled: streaksEnabled)
     }
 }

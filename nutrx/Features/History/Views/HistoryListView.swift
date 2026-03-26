@@ -3,7 +3,11 @@ import SwiftData
 
 struct HistoryListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var allPreferences: [UserPreferences]
     @State private var viewModel = HistoryViewModel()
+    @State private var streak: StreakResult?
+
+    private var preferences: UserPreferences? { allPreferences.first }
 
     var body: some View {
         Group {
@@ -15,6 +19,7 @@ struct HistoryListView: View {
         }
         .onAppear {
             viewModel.refresh(context: modelContext)
+            streak = StreakService.compute(context: modelContext)
         }
     }
 
@@ -28,6 +33,32 @@ struct HistoryListView: View {
 
     private var dayList: some View {
         List {
+            if let streak, preferences?.streaksEnabled != false,
+               (streak.current > 0 || streak.best > 0) {
+                Section {
+                    HStack {
+                        Label {
+                            Text("Current streak")
+                        } icon: {
+                            Text("🔥")
+                        }
+                        Spacer()
+                        Text("\(streak.current) days")
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Label {
+                            Text("Best streak")
+                        } icon: {
+                            Text("🏆")
+                        }
+                        Spacer()
+                        Text("\(streak.best) days")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
             ForEach(viewModel.monthSections) { section in
                 Section(section.label) {
                     ForEach(section.days) { day in
@@ -46,10 +77,22 @@ struct HistoryListView: View {
         }
     }
 
+    private func isStreakDay(_ day: HistoryViewModel.DaySummary) -> Bool {
+        guard !day.nutrientTotals.isEmpty else { return false }
+        return day.nutrientTotals.allSatisfy { $0.total >= $0.nutrient.dailyTarget }
+    }
+
     private func dayRow(_ day: HistoryViewModel.DaySummary) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(day.date.formatted(date: .long, time: .omitted))
-                .font(.body.weight(.medium))
+            HStack {
+                Text(day.date.formatted(date: .long, time: .omitted))
+                    .font(.body.weight(.medium))
+
+                if preferences?.streaksEnabled != false && isStreakDay(day) {
+                    Text("🔥")
+                        .font(.caption)
+                }
+            }
 
             let summary = day.nutrientTotals
                 .prefix(3)

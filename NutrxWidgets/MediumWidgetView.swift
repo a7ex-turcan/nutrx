@@ -38,6 +38,16 @@ struct MediumWidgetView: View {
         }
     }
 
+    // MARK: - Streak label helper
+
+    @ViewBuilder
+    private var streakLabel: some View {
+        if entry.streaksEnabled && entry.currentStreak >= 1 {
+            Text("🔥 \(entry.currentStreak)")
+                .font(.caption2.weight(.medium))
+        }
+    }
+
     // MARK: - Small Layout (2 nutrients, compact)
 
     private var smallLayout: some View {
@@ -45,6 +55,8 @@ struct MediumWidgetView: View {
             HStack {
                 Text("Today")
                     .font(.caption.weight(.semibold))
+
+                streakLabel
 
                 Spacer()
 
@@ -69,6 +81,8 @@ struct MediumWidgetView: View {
             HStack {
                 Text("Today")
                     .font(.headline)
+
+                streakLabel
 
                 Spacer()
 
@@ -95,6 +109,8 @@ struct MediumWidgetView: View {
             HStack {
                 Text("Today")
                     .font(.headline)
+
+                streakLabel
 
                 Spacer()
 

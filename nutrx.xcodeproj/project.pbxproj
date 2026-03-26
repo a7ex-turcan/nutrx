@@ -65,6 +65,7 @@
 				Shared/Components/NutrientProgressBar.swift,
 				"Shared/Extensions/Double+Formatting.swift",
 				Shared/Persistence/ModelContainerFactory.swift,
+				Shared/Services/StreakService.swift,
 			);
 			target = 64702A892F72A89200C45D23 /* NutrxWidgetsExtension */;
 		};

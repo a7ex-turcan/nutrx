@@ -13,6 +13,7 @@ final class Nutrient {
     var notes: String? = nil
     var group: NutrientGroup? = nil
     var groupSortOrder: Int = 0
+    var createdAt: Date = Date()
 
     @Relationship(deleteRule: .cascade, inverse: \IntakeRecord.nutrient)
     var intakeRecords: [IntakeRecord] = []

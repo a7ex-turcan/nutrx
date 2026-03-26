@@ -3,6 +3,17 @@ import SwiftData
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
+    @Query private var allPreferences: [UserPreferences]
+
+    private var preferences: UserPreferences {
+        if let existing = allPreferences.first {
+            return existing
+        }
+        let new = UserPreferences()
+        modelContext.insert(new)
+        return new
+    }
 
     var body: some View {
         List {
@@ -14,7 +25,19 @@ struct SettingsView: View {
                 } label: {
                     Label("Manage Groups", systemImage: "folder")
                 }
+            }
 
+            Section {
+                NavigationLink {
+                    StreaksSettingsView()
+                        .navigationTitle("Streaks")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    Label("Streaks", systemImage: "flame")
+                }
+            }
+
+            Section {
                 NavigationLink {
                     NotificationsSettingsView()
                         .navigationTitle("Notifications")
@@ -22,7 +45,9 @@ struct SettingsView: View {
                 } label: {
                     Label("Notifications", systemImage: "bell")
                 }
+            }
 
+            Section {
                 NavigationLink {
                     AboutView()
                         .navigationTitle("About")
@@ -40,6 +65,36 @@ struct SettingsView: View {
                 Button("Done") { dismiss() }
             }
         }
+    }
+}
+
+private struct StreaksSettingsView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var allPreferences: [UserPreferences]
+
+    private var preferences: UserPreferences {
+        if let existing = allPreferences.first {
+            return existing
+        }
+        let new = UserPreferences()
+        modelContext.insert(new)
+        return new
+    }
+
+    var body: some View {
+        List {
+            Section {
+                Toggle(isOn: Binding(
+                    get: { preferences.streaksEnabled },
+                    set: { preferences.streaksEnabled = $0 }
+                )) {
+                    Text("Track streaks")
+                }
+            } footer: {
+                Text("Show your daily completion streak on the Today and History screens.")
+            }
+        }
+        .listStyle(.insetGrouped)
     }
 }
 

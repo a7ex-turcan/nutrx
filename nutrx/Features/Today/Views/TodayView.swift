@@ -12,6 +12,7 @@ struct TodayView: View {
     @State private var nutrientToMove: Nutrient?
     @State private var editDraft = NutrientDraft()
     @State private var showBanner = false
+    @State private var streak: StreakResult?
 
     private var preferences: UserPreferences {
         if let existing = allPreferences.first {
@@ -28,6 +29,19 @@ struct TodayView: View {
                 emptyState
             } else {
                 List {
+                    if let streak, streak.current >= 1, preferences.streaksEnabled {
+                        HStack {
+                            Spacer()
+                            Text("🔥 \(streak.current)-day streak")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.orange)
+                            Spacer()
+                        }
+                        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                    }
+
                     if showBanner {
                         NotificationBannerView(
                             onEnable: { enableReminder() },
@@ -68,6 +82,7 @@ struct TodayView: View {
         .onAppear {
             viewModel.refresh(context: modelContext)
             refreshBannerVisibility()
+            refreshStreak()
         }
         .onChange(of: allGroups.count) {
             viewModel.refresh(context: modelContext)
@@ -75,6 +90,7 @@ struct TodayView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 viewModel.refresh(context: modelContext)
+                refreshStreak()
                 NotificationService.refreshDailyReminder(context: modelContext)
                 NotificationService.refreshAllNutrientReminders(context: modelContext)
             }
@@ -206,6 +222,10 @@ struct TodayView: View {
     private func dismissBanner() {
         preferences.hasSeenNotificationBanner = true
         withAnimation { showBanner = false }
+    }
+
+    private func refreshStreak() {
+        streak = StreakService.compute(context: modelContext)
     }
 
     private func applyEdit(to nutrient: Nutrient) {
