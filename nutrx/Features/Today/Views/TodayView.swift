@@ -14,6 +14,10 @@ struct TodayView: View {
     @State private var showBanner = false
     @State private var streak: StreakResult?
 
+    private var hasCustomGroups: Bool {
+        allGroups.contains(where: { !$0.isSystem })
+    }
+
     private var preferences: UserPreferences {
         if let existing = allPreferences.first {
             return existing
@@ -60,17 +64,19 @@ struct TodayView: View {
                                 }
                             }
                         } header: {
-                            GroupHeaderView(
-                                name: section.group.name,
-                                isCollapsed: section.group.isCollapsed,
-                                intakes: section.intakes.map { (current: $0.total, target: $0.nutrient.dailyTarget) },
-                                onToggle: {
-                                    withAnimation(.easeInOut(duration: 0.25)) {
-                                        section.group.isCollapsed.toggle()
+                            if hasCustomGroups {
+                                GroupHeaderView(
+                                    name: section.group.name,
+                                    isCollapsed: section.group.isCollapsed,
+                                    intakes: section.intakes.map { (current: $0.total, target: $0.nutrient.dailyTarget) },
+                                    onToggle: {
+                                        withAnimation(.easeInOut(duration: 0.25)) {
+                                            section.group.isCollapsed.toggle()
+                                        }
                                     }
-                                }
-                            )
-                            .padding(.vertical, 4)
+                                )
+                                .padding(.vertical, 4)
+                            }
                         }
                     }
                 }

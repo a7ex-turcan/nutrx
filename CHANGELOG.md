@@ -14,6 +14,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Improvements
 - **Tighter Settings layout** — Settings items grouped into fewer sections for a more compact, standard iOS look.
+- **Hidden group headers when only General** — If no custom groups are defined, group headers are hidden on Today and My Nutrients for a cleaner, minimal look.
 
 ---
 

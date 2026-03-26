@@ -20,6 +20,10 @@ struct NutrientsListView: View {
         allGroups.first(where: { $0.isSystem })
     }
 
+    private var hasCustomGroups: Bool {
+        allGroups.contains(where: { !$0.isSystem })
+    }
+
     private var groupedSections: [(group: NutrientGroup, nutrients: [Nutrient])] {
         var sectionMap: [PersistentIdentifier: [Nutrient]] = [:]
         for nutrient in nutrients {
@@ -183,17 +187,19 @@ struct NutrientsListView: View {
                         }
                     }
                 } header: {
-                    GroupHeaderView(
-                        name: section.group.name,
-                        isCollapsed: section.group.isCollapsed,
-                        intakes: [], // No aggregate progress needed in My Nutrients
-                        onToggle: {
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                section.group.isCollapsed.toggle()
+                    if hasCustomGroups {
+                        GroupHeaderView(
+                            name: section.group.name,
+                            isCollapsed: section.group.isCollapsed,
+                            intakes: [], // No aggregate progress needed in My Nutrients
+                            onToggle: {
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    section.group.isCollapsed.toggle()
+                                }
                             }
-                        }
-                    )
-                    .padding(.vertical, 4)
+                        )
+                        .padding(.vertical, 4)
+                    }
                 }
             }
         }
