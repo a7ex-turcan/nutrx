@@ -57,8 +57,8 @@ all core tracking features remain free forever.
 ## Platform & Tech Stack
 
 - **Platform:** iOS (native Swift / SwiftUI)
-- **Persistence:** SwiftData (Apple's current recommended local persistence layer)
-- **Networking:** None — the app is fully offline
+- **Persistence:** SwiftData with CloudKit sync (iCloud.nutrx-labs.nutrx)
+- **Networking:** None — the app is fully offline (CloudKit sync is transparent/additive)
 - **Minimum iOS target:** Latest stable iOS (always target the most recent release)
 - **Bundle ID convention:** nutrx-labs.nutrx
 
@@ -101,111 +101,78 @@ nutrx/
 │   └── NutrientGroup.swift      # Named group for organising nutrients. System "General" group seeded on first launch.
 │
 ├── Features/
-│   │
-│   ├── Onboarding/              # Shown on first launch only. Mandatory before accessing the app.
+│   ├── Onboarding/              # Shown on first launch only. Two steps: personal info → first nutrient.
 │   │   ├── Views/
-│   │   │   ├── OnboardingFlow.swift              # Coordinator view using paged TabView to step through screens.
-│   │   │   ├── OnboardingPersonalInfoView.swift  # Step 1: name, birthday, weight, height on a single screen.
-│   │   │   └── OnboardingFirstNutrientView.swift # Step 2: create first nutrient(s). At least one required to proceed.
+│   │   │   ├── OnboardingFlow.swift
+│   │   │   ├── OnboardingPersonalInfoView.swift
+│   │   │   └── OnboardingFirstNutrientView.swift
 │   │   └── ViewModels/
-│   │       └── OnboardingViewModel.swift     # Holds draft state, validates inputs, writes UserProfile on step 1 completion.
+│   │       └── OnboardingViewModel.swift
 │   │
-│   ├── Today/                   # Tab 1 — the main daily logging screen. (Implemented)
+│   ├── Today/                   # Tab 1 — the main daily logging screen.
 │   │   ├── Views/
-│   │   │   ├── TodayView.swift              # List of NutrientRowView cards. Swipe right = Add Exact Amount,
-│   │   │   │                                # swipe left = Edit Nutrient. Long-press context menu. Refreshes on foreground.
-│   │   │   │                                # Shows NotificationBannerView and SyncBannerView at the top when applicable.
-│   │   │   ├── CustomAmountSheet.swift      # Half-sheet for entering a one-off custom intake amount.
-│   │   │   └── NotificationBannerView.swift # Dismissible banner prompting the user to enable the daily check-in reminder.
-│   │   │                                    # Shown once after onboarding; never shown again once dismissed or permission granted.
+│   │   │   ├── TodayView.swift              # Nutrient list with swipe actions, context menu, banners.
+│   │   │   │                                # Listens for NSPersistentStoreRemoteChange to refresh on CloudKit sync.
+│   │   │   ├── CustomAmountSheet.swift
+│   │   │   └── NotificationBannerView.swift
 │   │   └── ViewModels/
-│   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords for today's calendar day.
-│   │                                        # Handles +/−/custom by inserting IntakeRecords and updating totals in-place
-│   │                                        # (avoids re-fetching from SwiftData which can reorder items).
+│   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords.
+│   │                                        # Updates totals in-place on +/−/custom (avoids re-fetch reordering).
 │   │                                        # Explicitly saves context after every intake mutation.
 │   │
-│   ├── Nutrients/               # Tab 2 — manage the nutrient list. (Implemented)
+│   ├── Nutrients/               # Tab 2 — manage the nutrient list.
 │   │   └── Views/
-│   │       ├── NutrientsListView.swift      # Reorderable list with add/edit/delete + confirmation alerts.
-│   │       ├── NutrientFormView.swift       # Sheet for creating and editing a nutrient. Delete button shown in edit mode.
-│   │       │                                # Includes a group picker with inline "New Group…" option for creating groups without leaving the form.
-│   │       │                                # In edit mode, shows a "Reminders" section linking to NutrientRemindersSheet.
-│   │       └── NutrientRemindersSheet.swift # Half-sheet for managing per-nutrient dose reminders. Lists existing reminders
-│   │                                        # sorted by time, swipe-to-delete, compact DatePicker for adding new ones.
-│   │                                        # Uses @Query for reliable SwiftUI updates on insert/delete.
+│   │       ├── NutrientsListView.swift      # Reorderable list with add/edit/delete.
+│   │       ├── NutrientFormView.swift       # Create/edit form with group picker and reminders section.
+│   │       └── NutrientRemindersSheet.swift # Per-nutrient dose reminder management.
 │   │
-│   ├── History/                 # Tab 3 — read-only log of past days. (Implemented)
+│   ├── History/                 # Tab 3 — read-only log of past days.
 │   │   ├── Views/
-│   │   │   ├── HistoryListView.swift        # List of past days (most recent first) with nutrient preview summary.
-│   │   │   └── HistoryDayView.swift         # Day detail: read-only NutrientRowViews. Tap nutrient for intake entries sheet.
+│   │   │   ├── HistoryListView.swift        # Day list with monthly section headers and streak summary card.
+│   │   │   └── HistoryDayView.swift         # Day detail with intake drill-down.
 │   │   └── ViewModels/
-│   │       └── HistoryViewModel.swift       # Groups IntakeRecords by calendar day (excludes today), sums per nutrient.
+│   │       └── HistoryViewModel.swift
 │   │
-│   ├── About/                   # Accessed via Settings screen, not directly from the profile menu. (Implemented)
+│   ├── About/
 │   │   └── Views/
-│   │       └── AboutView.swift              # App info, privacy philosophy, how-it-works. Shown as a section at the
-│   │                                        # bottom of SettingsView (standard iOS convention).
+│   │       └── AboutView.swift              # Shown inside SettingsView.
 │   │
-│   ├── Settings/                # Accessed via profile menu flyout → "Settings". (Implemented)
+│   ├── Settings/
 │   │   └── Views/
-│   │       ├── SettingsView.swift           # Grouped list sheet. Sections: iCloud Sync, Manage Groups, Streaks,
-│   │       │                                # Notifications, About. Also contains sub-page views:
-│   │       │                                # ICloudSyncSettingsView, StreaksSettingsView, NotificationsSettingsView.
-│   │       └── ManageGroupsView.swift       # Reorderable group list. Create, rename (tap), reorder (drag),
-│   │                                        # delete (swipe) custom groups. System "General" group shown locked.
+│   │       ├── SettingsView.swift           # Sections: iCloud Sync, Manage Groups, Streaks, Notifications, About.
+│   │       └── ManageGroupsView.swift       # Create, rename, reorder, delete groups.
 │   │
-│   └── Profile/                 # Accessed via profile menu, not a tab. (Implemented)
+│   └── Profile/
 │       ├── Views/
-│       │   └── ProfileView.swift            # Editable form presented as a sheet. Cancel + Save toolbar, toast on save.
+│       │   └── ProfileView.swift
 │       └── ViewModels/
-│           └── ProfileViewModel.swift       # Loads UserProfile, tracks changes vs original, saves back.
+│           └── ProfileViewModel.swift
 │
-└── Shared/                      # Reusable components and utilities used across multiple features.
+└── Shared/
     ├── Extensions/
-    │   ├── Date+Calendar.swift              # Helpers for calendar-day comparisons (isToday, isSameDay(_:), startOfDay).
-    │   └── Double+Formatting.swift          # Consistent number display (strip trailing zeros, etc.).
+    │   ├── Date+Calendar.swift
+    │   └── Double+Formatting.swift
     ├── Components/
-    │   ├── FormField.swift                  # Labeled field wrapper with consistent card styling.
-    │   ├── NutrientFormFields.swift         # Reusable nutrient form (name, unit, step, target) + NutrientDraft observable.
-    │   ├── NutrientRowView.swift            # Card with name, intake label, progress bar. +/− buttons optional (nil = read-only).
-    │   ├── NutrientProgressBar.swift        # Progress bar: blue (in progress), green (complete), orange (exceeded).
-    │   ├── GroupHeaderView.swift            # Collapsible group section header with chevron and aggregate progress bar.
-    │   ├── MoveToGroupSheet.swift           # Half-sheet for moving a nutrient to a different group.
-    │   ├── SyncLoadingView.swift            # Minimal spinner shown during the 3-second CloudKit sync wait on new devices.
-    │   ├── SyncBannerView.swift             # Dismissible iCloud sync banner (restored / enabled variants) on Today screen.
-    │   ├── ProfileMenuButton.swift          # Profile icon with dropdown menu (Edit Profile / Settings / Log Out).
-    │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier — adds profile button + flyout menu (Edit Profile,
-    │                                        # Settings, Log Out) to any nav bar. Opens ProfileView or SettingsView as sheets.
+    │   ├── FormField.swift
+    │   ├── NutrientFormFields.swift         # Reusable nutrient form + NutrientDraft observable.
+    │   ├── NutrientRowView.swift            # Card with +/− buttons, progress bar.
+    │   ├── NutrientProgressBar.swift        # Blue (in progress), green (complete), orange (exceeded).
+    │   ├── GroupHeaderView.swift            # Collapsible group header with completion count.
+    │   ├── MoveToGroupSheet.swift
+    │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
+    │   ├── SyncBannerView.swift             # Dismissible iCloud sync banner.
+    │   ├── ProfileMenuButton.swift
+    │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier.
     ├── Persistence/
-    │   ├── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
-    │   │                                    # Uses CloudKit-backed config (iCloud.nutrx-labs.nutrx) with local-only fallback.
-    │   │                                    # Backs up local store before first CloudKit init and migrates data if the
-    │   │                                    # upgrade produces an empty store (prevents data loss on TestFlight updates).
-    │   │                                    # Includes singleton deduplication for General group, UserProfile, UserPreferences.
-    │   │                                    # Logs key decisions via os.log (subsystem: nutrx-labs.nutrx, category: ModelContainerFactory).
-    │   └── PreviewSampleData.swift          # previewContainer with seeded nutrients + intake for Xcode previews.
+    │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback.
+    │   │                                    # Backs up local store before first CloudKit init to prevent data loss.
+    │   │                                    # Singleton deduplication. Logs via os.log.
+    │   └── PreviewSampleData.swift
     └── Services/
-        ├── NotificationService.swift        # Wraps UNUserNotificationCenter. Responsibilities:
-        │                                    # - Request authorisation and return current permission status.
-        │                                    # - Schedule / cancel the daily check-in reminder (noon, id: daily-checkin-reminder).
-        │                                    # - Schedule / cancel per-nutrient dose reminders (id: nutrient-{id}-reminder-{HHmm}).
-        │                                    # - Smart suppression: cancel upcoming nutrient reminders after logging intake.
-        │                                    # - refreshAllNutrientReminders(context:) — called on every app foreground.
-        │                                    # Pure Swift class — no SwiftUI imports.
-        ├── StreakService.swift              # Computes current streak and best streak from IntakeRecord + Exclusion + Nutrient data.
-        │                                    # - compute(context:) → StreakResult (currentStreak: Int, bestStreak: Int)
-        │                                    # - Returns (0, 0) immediately if UserPreferences.streaksEnabled == false.
-        │                                    # - Called on every app foreground and after every intake action.
-        │                                    # Pure Swift class — no SwiftUI imports.
-        └── ReviewService.swift              # Manages App Store review prompt logic. Responsibilities:
-                                             # - maybeRequestReview(context:currentStreak:totalIntakeCount:scene:) — evaluates
-                                             #   all guard conditions and fires SKStoreReviewController if they pass.
-                                             # - Guard conditions: version not already prompted, last prompt > 90 days ago,
-                                             #   account age ≥ 3 days, and at least one trigger condition met.
-                                             # - Trigger conditions (OR logic): streak just hit 3, 7, or 14 days; OR total
-                                             #   IntakeRecord count just crossed 30.
-                                             # - On prompt: writes current app version + date to UserPreferences.
-                                             # Pure Swift class — no SwiftUI imports. Imports StoreKit.
+        ├── NotificationService.swift        # Daily check-in reminder + per-nutrient dose reminders.
+        │                                    # Smart scheduling and suppression after logging intake.
+        ├── StreakService.swift              # Computes current/best streak from IntakeRecord + Exclusion data.
+        └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30.
 ```
 
 ### Rules Claude Code must follow for file placement
@@ -222,951 +189,248 @@ nutrx/
 
 ## Onboarding
 
-Onboarding is **mandatory** on first launch. It must be completed before the user can access the main app. It is a two-step flow:
+Mandatory on first launch. Two-step flow:
 
-**Step 1 — Personal Info** (implemented in `OnboardingPersonalInfoView`): collects all fields on a single screen:
-- **Name**
-- **Birthday** (date picker)
-- **Weight** + **unit preference** (kg / lbs segmented picker)
-- **Height** + **unit preference** (cm / ft segmented picker)
+1. **Personal Info** — name, birthday, weight (kg/lbs), height (cm/ft) on a single screen
+2. **First Nutrient** — create at least one nutrient so the Today screen is never empty
 
-**Step 2 — First Nutrient**: the user is prompted to **create their first nutrient** so the Today screen is never empty on first use.
-
-Onboarding completion is tracked via `UserProfile.onboardingCompleted`. `ContentView` queries this flag to decide whether to show `OnboardingFlow` or the main app.
-
-These fields are stored locally (SwiftData) and are editable later from the Profile tab.
+Completion tracked via `UserProfile.onboardingCompleted`. On a new device with iCloud data, onboarding is skipped if a completed profile syncs within 3 seconds.
 
 ---
 
 ## Nutrient Configuration
 
-Users create and manage their own nutrients. There is no preset or suggested list — the slate is completely blank.
+Users create and manage their own nutrients. No preset list — fully user-defined. Each nutrient has: **name**, **unit**, **step** (increment per +/− tap), **daily target**, and optional **notes**. Nutrients can be reordered via drag-and-drop. Order in My Nutrients = order on Today screen.
 
-Each nutrient has:
-
-- **Name** – free text (e.g. "Vitamin D", "Caffeine", "Omega-3")
-- **Unit** – user-defined string (e.g. "mg", "g", "IU", "ml", "cups")
-- **Step** – the increment used when tapping + or − on the Today screen (e.g. 0.5, 1, 100). Must be a positive number.
-- **Daily target** – the goal for the day, expressed in the nutrient's own unit. Shown as the "full" value of the progress bar on the Today screen. Required.
-- **Notes** – optional free-form text (e.g. "doctor recommended for bone density", "read about sleep benefits"). Editable in the nutrient form. Shown as a single muted line below the nutrient name on the Today card; only rendered when non-empty.
-
-Nutrients can be reordered, edited, and deleted from the **My Nutrients** tab. Order is set by the user via **drag-and-drop** and is fully manual — no automatic sorting. The order defined in My Nutrients is the exact order nutrients appear on the Today screen. It never changes unless the user explicitly reorders them.
-
-### Reminders
-
-Each nutrient supports zero, one, or multiple dose reminders. See the **Per-nutrient notifications** section under Notifications for the full spec.
+Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Smart suppression cancels upcoming reminders after logging intake. Managed via the "Reminders" section in the Edit Nutrient form.
 
 ---
 
 ## Today Tab – Core Logging UX
 
-This is the central feature and main selling point of the app.
+The central feature. Each nutrient row shows: name, unit, progress bar, −/+ buttons. Haptic feedback on tap.
 
-Each nutrient is displayed as a **row** containing:
-- The nutrient name and unit
-- A **progress bar** showing current intake vs. daily target
-- A **− button** on the left
-- A **+ button** on the right
+- **Swipe right** → Add Exact Amount sheet
+- **Swipe left** → Edit Nutrient sheet
+- **Long press** → context menu: Edit step amount, Enter custom amount, Exclude for today, Move to Group
 
-### Tap behaviour
-- Tapping **+** increases the logged intake by the nutrient's configured step amount. Triggers subtle haptic feedback.
-- Tapping **−** decreases the logged intake by the step amount (floor at 0, never go negative). Triggers subtle haptic feedback.
+Progress bar: blue (in progress), green (at/above target), orange (exceeded). Exceeding a target is allowed.
 
-### Swipe actions
-- **Swipe right** — opens the "Add Exact Amount" sheet (same as the context menu option).
-- **Swipe left** — opens the "Edit Nutrient" sheet (same as the context menu option).
-
-### Long press on the progress bar
-Long pressing the progress bar opens a **context menu** with the following options:
-- **Edit step amount** – opens a small focused sheet showing **only the step field** for that nutrient (not the full edit form). The user updates the value and confirms. The change is permanent and persists going forward. This is intentionally lightweight — the user is mid-logging and should not be taken to the full My Nutrients edit screen.
-- **Enter custom amount** – opens a number input with an optional note field; the entered value is **added** to the current intake (not a replacement). e.g. if 200mg is already logged and the user enters 150, the new total is 350mg. Notes are stored on the `IntakeRecord` and displayed in the History intake detail sheet.
-- **Exclude for today** – hides this nutrient from today's view without deleting it (it comes back tomorrow)
-- *(further options may be added in future iterations)*
-
-### Visual states
-- Progress bar fills as intake approaches the daily target.
-- When the target is reached or exceeded, show a distinct visual state (e.g. filled colour, checkmark, or subtle animation).
-- Exceeding a target should be allowed and visually indicated (e.g. the bar overflows or changes colour) — some nutrients have soft targets.
-
----
-
-## Daily Reset Logic
-
-- At **midnight**, all daily intake values reset to 0.
-- In practice, the reset is checked **when the app is foregrounded** (not via a background task). If the stored date of the last session is before today's date, trigger the reset.
-- Resets are **non-destructive** — before zeroing out, the previous day's data is saved to the History store.
-- If a nutrient is marked "excluded for today", that exclusion is also reset at midnight (the nutrient reappears the next day by default).
+Intake is computed by summing `IntakeRecord` rows for today's calendar day. No explicit midnight reset needed.
 
 ---
 
 ## History Tab
 
-- Displays a **chronological list of past days**, most recent first.
-- Each entry shows the date and the intake logged for each nutrient that day.
-- Read-only — the user cannot edit past entries.
-- History is stored locally via SwiftData and is never deleted automatically.
-
-### Monthly section headers
-
-- The day list uses sticky section headers grouped by month (e.g. "March, 2026").
-- Grouping is computed in `HistoryViewModel.monthSections` and rendered as `Section` headers in `HistoryListView`.
-- Most recent month first; days within each month sorted most-recent-first.
+Chronological list of past days (most recent first), grouped by month. Read-only. Streak summary card at the top shows current and best streak when enabled.
 
 ---
 
 ## Notifications
 
-nutrx uses **local notifications only** — no push infrastructure, no server. All scheduling is done on-device via `UNUserNotificationCenter`.
+All local — no push infrastructure. Two notification types:
 
-### Daily check-in reminder
+1. **Daily check-in reminder** — fires at noon if no intake logged. Opt-in via Settings. Smart one-shot scheduling refreshed on foreground and after every intake action. ID: `daily-checkin-reminder`.
+2. **Per-nutrient dose reminders** — configurable times per nutrient. Smart suppression after logging. IDs: `nutrient-{id}-reminder-{HHmm}`.
 
-A single notification fires at **12:00 noon** if the user has not logged any intake that day. It is the only notification type in the current version.
-
-- Notification identifier: `daily-checkin-reminder` — use namespaced identifiers for all future notification types (e.g. `nutrient-{id}-reminder`) to avoid conflicts.
-- The reminder is **opt-in**. The app never schedules it without the user explicitly granting permission. The preference is stored in `UserPreferences.dailyReminderEnabled`.
-- Scheduling and cancellation logic lives in `NotificationService.swift` (see Shared layer).
-- **Smart scheduling**: uses one-shot (non-repeating) notifications instead of repeating ones. `NotificationService.refreshDailyReminder(context:)` checks whether the user has logged any intake today and schedules accordingly:
-  - No intake today + before noon → schedule for today at noon.
-  - No intake today + after noon → schedule for tomorrow at noon.
-  - Intake logged today → cancel today's notification, schedule for tomorrow.
-  - Reminder disabled or permissions revoked → cancel all pending.
-- **Refresh triggers**: `refreshDailyReminder` is called on every app foreground, after every intake action (increment/decrement/custom amount), and when the Settings toggle changes.
-
-### Permission flow
-
-iOS notification permission has three distinct states that the UI must handle differently:
-
-| State | What the UI does |
-|---|---|
-| **Not yet asked** | Trigger the OS permission prompt via `UNUserNotificationCenter.requestAuthorization` |
-| **Granted** | Show a confirmation / active status. Schedule the reminder if not already scheduled. |
-| **Denied** | Cannot re-prompt programmatically. Show a message explaining that notifications are disabled and provide a button that deep-links to iOS Settings via `UIApplication.openSettingsURLString`. |
-
-### Notification banner (Today screen)
-
-- A small dismissible banner is shown **at the top of the Today screen**, above the nutrient list, the first time the user lands on Today after completing onboarding.
-- It has two actions: **"Enable"** (triggers the OS permission prompt) and a dismiss button (×).
-- Once dismissed — or once the user grants or denies the OS prompt — the banner is **never shown again**. Persisted via `UserPreferences.hasSeenNotificationBanner`.
-- The banner is not shown if permission is already granted.
-
-### Settings screen (profile menu → Settings)
-
-- A grouped list sheet with items grouped into two sections:
-  - **Main section:** Manage Groups, Streaks (dedicated sub-page), Notifications (dedicated sub-page).
-  - **About section:** `AboutView` as a NavigationLink at the bottom (standard iOS convention).
-- The Settings sheet replaces the former direct "About" item in the profile flyout menu.
-
-### Per-nutrient notifications
-
-Each nutrient can have zero, one, or multiple **dose reminders** — each reminder is a time of day that fires daily.
-
-**User-facing behaviour:**
-- Notification message: *"Time to log your [Nutrient Name]"*
-- **Smart suppression:** if the user has already logged that nutrient since the previous reminder fired, the upcoming notification is cancelled silently and rescheduled for the following day. Implemented via `NotificationService.suppressRemindersAfterLogging(for:)`, called on every intake action.
-- Fully local — no server, no network.
-
-**Where it lives:**
-- A dedicated **"Reminders" section** at the bottom of `NutrientFormView` (edit mode only — shown when a `nutrient` is passed).
-- The section shows a summary (e.g. "3 reminders" or "No reminders") and opens `NutrientRemindersSheet` on tap.
-- The Reminders sheet lists all configured times sorted chronologically, with swipe-to-delete and a compact DatePicker for adding new reminders.
-- Uses `@Query private var allReminders: [NutrientReminder]` (not relationship reads) for reliable SwiftUI view updates on insert/delete.
-
-**SwiftData model: `NutrientReminder`** (see Data Models section).
-
-**Notification IDs:** use the namespaced pattern `nutrient-{id}-reminder-{HHmm}` (e.g. `nutrient-abc123-reminder-0900`). When the user logs an intake for a nutrient, call `UNUserNotificationCenter.removePendingNotificationRequests(withIdentifiers:)` for that nutrient's reminders. On every app foreground, `NotificationService.refreshAllNutrientReminders(context:)` reschedules all reminders.
-
-**Permission handling in sheets:** The OS notification permission prompt can be swallowed when triggered from within a presented sheet. The pattern used is a two-stage approach: show an in-app `.alert` first explaining why permissions are needed, then trigger the OS prompt from the alert's button action.
+Permission flow handles not-asked, granted, and denied states. A one-time notification banner appears on Today after onboarding.
 
 ---
 
 ## Nutrient Grouping
 
-Nutrients can be organised into named groups. Groups are collapsible on the Today screen and orderable. All grouping features are part of MVP 2.
+Nutrients are organised into named groups. Collapsible sections on Today and My Nutrients screens with completion counts and aggregate progress bars.
 
-### General group
-
-- Always exists as a real `NutrientGroup` row with `isSystem = true`.
-- Seeded by `ModelContainerFactory` on first launch if no groups exist (handles both fresh installs and upgrades).
-- Acts as the default home for all nutrients. Newly created nutrients are assigned to General.
-- Nutrients with `group = nil` are treated as belonging to General at query time — no backfill migration needed.
-- Cannot be renamed, deleted, or reordered above other groups.
-
-### Group management
-
-- Lives in **Settings → Manage Groups** — a section within the existing `SettingsView` sheet.
-- Renders a reorderable list of all non-system groups with drag handles (updates `NutrientGroup.sortOrder`).
-- General is shown at the bottom with a visual indicator that it is a system group; no drag handle or delete affordance.
-- **Create:** + toolbar button opens a name prompt. New group is appended to the bottom of the order.
-- **Rename:** tap a group row to edit its name inline or via a focused sheet.
-- **Delete (non-system groups only):** swipe-to-delete triggers a confirmation alert — *"[Name] will be deleted. Its X nutrients will move to General."* — then migrates all nutrients in that group (`nutrient.group = General`, `nutrient.groupSortOrder = max(General) + 1`) before deleting the row.
-
-### "Move to group" action
-
-- Exposed via **long-press context menu** on nutrient rows in both Today and My Nutrients.
-- Menu item: "Move to Group".
-- Opens a half-sheet listing all groups. The current group is shown with a checkmark.
-- Selecting a group sets `nutrient.group` to the target and assigns `nutrient.groupSortOrder = max(existing groupSortOrder in that group) + 1`.
-- A "New Group…" row at the bottom of the list lets the user create a group inline and immediately move the nutrient into it.
-
-### Today screen — collapsible group sections
-
-- Nutrients render in `NutrientGroup.sortOrder` order, each group as a named section.
-- Within a section, nutrients appear in `Nutrient.groupSortOrder` order.
-- **Section header contains:**
-  - Group name (left-aligned)
-  - Completion count showing how many nutrients have reached their daily target (e.g. "2 / 5")
-  - Collapse chevron (right-aligned, rotates on state change)
-  - When collapsed: aggregate progress bar spanning the full header width
-- **Aggregate progress bar colour logic:**
-  - All nutrients in group at or above target → green
-  - Any nutrient exceeded → orange
-  - Otherwise → blue (in progress)
-- Tapping the header toggles `NutrientGroup.isCollapsed` and persists the change immediately to SwiftData.
-- When collapsed, individual nutrient rows are hidden; only the header row is shown.
-- Drag-to-reorder within an expanded section updates `groupSortOrder`. Cross-group reordering via drag is not supported — users use "Move to group" instead.
-
-### My Nutrients screen
-
-- Same grouped section structure. Groups are also collapsible here (same `isCollapsed` property).
-- Drag-to-reorder within a section updates `groupSortOrder`.
-
-### Migration notes
-
-- On first launch after this update, `ModelContainerFactory` checks for the absence of any `NutrientGroup` rows and seeds the General group if none exist.
-- Existing `Nutrient` rows have `group = nil` — no migration required; they resolve to General at query time.
-- `groupSortOrder` for existing nutrients should be seeded from their legacy `sortOrder` value so relative order is preserved.
-- Both new fields on `Nutrient` (`group: NutrientGroup? = nil`, `groupSortOrder: Int = 0`) must have property-level defaults for SwiftData lightweight migration.
+- **General group** — system group (`isSystem = true`), always exists, cannot be renamed/deleted. Nutrients with `group = nil` resolve to General at query time.
+- **Group management** — Settings → Manage Groups. Create, rename, reorder, delete (moves nutrients to General).
+- **Move to Group** — via context menu on nutrient rows. Half-sheet with group list and inline "New Group" option.
+- Group headers hidden when only General group exists.
 
 ---
 
 ## Streaks
 
-nutrx tracks a daily streak to reward consistency. All streak logic is opt-in via `UserPreferences.streaksEnabled` (default `true`). When disabled, all streak UI is hidden and `StreakService` is never called.
+Daily streak tracking, opt-in via `UserPreferences.streaksEnabled` (default `true`). A streak day is a completed past day where all active non-excluded nutrients met their targets. Today is never counted. `Nutrient.createdAt` scopes each nutrient's streak window.
 
-### Definition
-
-A **streak day** is any completed calendar day (never today) where:
-- Every non-deleted nutrient that existed on that day — meaning `nutrient.createdAt`'s calendar day ≤ that day — reached or exceeded its `dailyTarget`
-- Nutrients with an `Exclusion` record matching that day are ignored entirely
-- Days where the active nutrient set is empty do not count (cannot streak before any nutrients are created)
-
-The **current streak** is the count of consecutive streak days ending on yesterday. If yesterday was not a streak day, current streak = 0.
-
-The **best streak** is the longest such consecutive run across all of history.
-
-### Key rules
-
-- **Today is never counted** — streak reflects completed past days only
-- **`createdAt` scopes each nutrient's streak window** — a nutrient only contributes to streak calculation from the calendar day it was created onward. Adding a new nutrient never retroactively breaks an existing streak.
-- **Soft-deleted nutrients** are excluded from all streak calculations, past and present
-- **Excluded nutrients** (via "Exclude for today") are ignored for that day — they do not count against the streak
-- **Gaps matter** — the algorithm walks day by day from yesterday, not just across days that have records. A day with zero intake records is a missed day and breaks the streak.
-- **No data if no history** — if the user has no completed days, streak = 0 and no UI is shown
-
-### StreakService
-
-Lives at `Shared/Services/StreakService.swift`. Pure Swift class, no SwiftUI imports.
-
-```swift
-struct StreakResult {
-    let currentStreak: Int
-    let bestStreak: Int
-}
-```
-
-**Algorithm (`compute(context:) → StreakResult`):**
-
-1. Check `UserPreferences.streaksEnabled` — if `false`, return `(0, 0)` immediately
-2. Fetch all non-deleted `Nutrient` records with their `createdAt` dates
-3. Fetch all `IntakeRecord` records (excluding today)
-4. Fetch all `Exclusion` records
-5. Walk backward day by day from yesterday:
-   - Determine the active nutrient set for the day: nutrients where `createdAt` calendar day ≤ current day
-   - If active set is empty, stop walking (no nutrients existed yet)
-   - Remove nutrients that have an `Exclusion` for the current day
-   - Sum `IntakeRecord.amount` values per nutrient for the current day
-   - If every remaining nutrient's sum ≥ its `dailyTarget` → day passes, increment current streak counter
-   - Otherwise → current streak is finalised, stop
-6. For best streak: make a separate full pass over all history using the same per-day logic, tracking the longest consecutive run
-
-Called on every app foreground and after every intake action (same triggers as `NotificationService`).
-
-### UI — Today screen
-
-Shown subtly below the date in the navigation bar area, only when `streaksEnabled == true` and `currentStreak ≥ 1`:
-
-```
-🔥 12-day streak
-```
-
-When streak = 0, show nothing — the absence is the message. Never show "0-day streak".
-
-### UI — History tab
-
-A summary card rendered at the top of `HistoryListView`, above the day entries. Shown only when `streaksEnabled == true` and at least one of `currentStreak` or `bestStreak` is > 0:
-
-| | |
-|---|---|
-| 🔥 Current streak | **12 days** |
-| 🏆 Best streak | **34 days** |
-
-Styled as a white card with a subtle border, consistent with the existing History UI.
-
-Individual day rows in the list also show a small visual indicator (e.g. a flame SF Symbol or subtle green dot) when that day qualified as a streak day. Unobtrusive — decorative only.
-
-### UI — Widgets
-
-- **Small widget:** compact `🔥 12` label below the main ring. Only shown when `streaksEnabled == true` and `currentStreak ≥ 1`.
-- **Medium widget:** `🔥 12` added to the header row between the "Today" label and the `"X / Y"` completion badge. Same conditions.
-- **Lock screen widgets:** no change — too space-constrained.
-
-The `WidgetEntry` struct must include `currentStreak: Int` and `streaksEnabled: Bool` so widget views can conditionally render the streak label.
-
-### Settings
-
-A dedicated **Settings → Streaks** page (`StreaksSettingsView`), accessed via NavigationLink from the main Settings list:
-
-- Single row: **"Track streaks"** — standard iOS `Toggle` bound to `UserPreferences.streaksEnabled`
-- Default: `true`
-- When toggled off: all streak UI disappears immediately; `StreakService` computation is skipped on all future triggers
-- When re-enabled: streaks recompute from scratch on next foreground — no data is lost
-- The page is designed for future streak-related settings (e.g. streak freeze, notifications)
-
-### Out of scope for this iteration
-
-- Per-nutrient streaks
-- Streak freeze / grace day mechanics
-- Streak-based notifications ("you're on a 7-day streak, keep it up!")
+**UI:** `🔥 X-day streak` on Today (when ≥ 1), summary card in History, streak labels in small/medium widgets. `StreakService.compute(context:) → StreakResult` runs on foreground and after intake actions.
 
 ---
 
 ## In-App Review Prompt
 
-nutrx uses Apple's native `SKStoreReviewController` API to invite users to rate the app at a natural high point in their experience. Apple renders the system dialog — there is no custom UI to build. The feature is entirely passive from the user's perspective: no banner, no interstitial, no custom modal.
-
-### Key rules
-
-- **No custom UI.** Apple owns the dialog. nutrx only decides *when* to call the API; it never builds its own rating screen.
-- **One attempt per app version.** Once the API has been called for the current version, it is never called again for that version — regardless of whether Apple actually showed the dialog (Apple controls final display frequency, capped at ~3 times per year).
-- **Cooldown between versions.** Even across version updates, do not prompt more than once every 90 days.
-- **Minimum account age.** Only prompt users whose `UserProfile` was created at least 3 days ago — new users have not yet formed an opinion.
-- **Never on cold launch.** The prompt must always be triggered by a user action, never on app open.
-
-### Trigger conditions
-
-The API is called when **any one** of the following conditions is met (OR logic), after all guard conditions pass:
-
-| Trigger | Value | Rationale |
-|---|---|---|
-| Streak milestone | Current streak just reached 3, 7, or 14 days | High-emotion moment — user just succeeded |
-| Intake volume | Total `IntakeRecord` count just crossed 30 | Demonstrates sustained engagement |
-
-The streak milestone trigger is preferred because it coincides with an existing UI celebration moment. The volume trigger catches engaged users who log frequently but haven't built a streak.
-
-### ReviewService
-
-**File:** `Shared/Services/ReviewService.swift`  
-**Pattern:** Pure Swift class, no SwiftUI imports. Mirrors `StreakService` and `NotificationService` in structure.
-
-```swift
-import StoreKit
-import SwiftData
-
-final class ReviewService {
-
-    /// Call this after every intake action (same call site as streak computation in TodayViewModel).
-    /// Evaluates all guard conditions and fires the review prompt if they pass.
-    func maybeRequestReview(
-        context: ModelContext,
-        currentStreak: Int,
-        totalIntakeCount: Int,
-        scene: UIWindowScene
-    ) {
-        guard shouldPrompt(context: context,
-                           currentStreak: currentStreak,
-                           totalIntakeCount: totalIntakeCount) else { return }
-        AppStore.requestReview(in: scene)
-        recordPrompt(context: context)
-    }
-
-    // MARK: — Private
-
-    private func shouldPrompt(
-        context: ModelContext,
-        currentStreak: Int,
-        totalIntakeCount: Int
-    ) -> Bool {
-        let prefs = fetchPreferences(context: context)
-        let profile = fetchProfile(context: context)
-
-        // Guard: version already prompted
-        let currentVersion = Bundle.main.appVersion  // see note below
-        if prefs.lastReviewRequestedVersion == currentVersion { return false }
-
-        // Guard: prompted too recently (across versions)
-        if let lastDate = prefs.lastReviewRequestedDate,
-           Calendar.current.dateComponents([.day], from: lastDate, to: .now).day ?? 0 < 90 {
-            return false
-        }
-
-        // Guard: account too new
-        if let created = profile?.createdAt,
-           Calendar.current.dateComponents([.day], from: created, to: .now).day ?? 0 < 3 {
-            return false
-        }
-
-        // Trigger: streak milestone
-        let streakMilestones = [3, 7, 14]
-        if streakMilestones.contains(currentStreak) { return true }
-
-        // Trigger: intake volume
-        if totalIntakeCount == 30 { return true }
-
-        return false
-    }
-
-    private func recordPrompt(context: ModelContext) {
-        guard let prefs = try? context.fetch(FetchDescriptor<UserPreferences>()).first else { return }
-        prefs.lastReviewRequestedVersion = Bundle.main.appVersion
-        prefs.lastReviewRequestedDate = .now
-        try? context.save()
-    }
-}
-```
-
-> **`Bundle.main.appVersion` helper:** add a small `Bundle+AppVersion.swift` extension in `Shared/Extensions/`:
-> ```swift
-> extension Bundle {
->     var appVersion: String {
->         infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
->     }
-> }
-```
-
-### Call site — TodayViewModel
-
-`ReviewService.maybeRequestReview` is called in `TodayViewModel` immediately after streak recomputation, which already fires after every intake action. The `UIWindowScene` reference is passed in from the view layer (available via `UIApplication.shared.connectedScenes`).
-
-```swift
-// In TodayViewModel, after streak recompute:
-let scene = UIApplication.shared.connectedScenes
-    .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
-if let scene {
-    reviewService.maybeRequestReview(
-        context: modelContext,
-        currentStreak: streakResult.currentStreak,
-        totalIntakeCount: totalIntakeCount,  // fetch count of all IntakeRecord rows
-        scene: scene
-    )
-}
-```
-
-`totalIntakeCount` is a lightweight `FetchDescriptor` count query — no need to load the actual records.
-
-### New fields on UserPreferences
-
-| Field | Type | Default | Purpose |
-|---|---|---|---|
-| `lastReviewRequestedVersion` | `String?` | `nil` | Prevents re-prompting on the same app version |
-| `lastReviewRequestedDate` | `Date?` | `nil` | Enforces the 90-day cooldown across versions |
-
-Both fields require property-level defaults (`= nil`) for SwiftData lightweight migration.
-
-### What Claude Code must not do
-
-- Do not build any custom rating UI (stars, thumbs, modal).
-- Do not call `AppStore.requestReview` on app launch or in any lifecycle method — only from the post-intake call site.
-- Do not add any "Rate us" button or menu item — the prompt is entirely automatic.
-- Do not add `@unchecked Sendable` to `ReviewService` — it holds no mutable state after the call.
+Uses `SKStoreReviewController` — no custom UI. Triggered after intake actions when any condition is met: streak hits 3/7/14 days, or total intake count crosses 30. Guards: once per app version, 90-day cooldown, account age ≥ 3 days, never on cold launch. Implemented in `ReviewService`.
 
 ---
 
 ## Widgets
 
-nutrx ships four widget configurations across three surfaces: small home screen, medium home screen, lock screen circular, and lock screen inline. Standby mode reuses the medium widget automatically — no separate implementation needed.
+Four widget configurations in `NutrxWidgetsExtension`:
 
-> ⚠️ **Build order — do these three things before writing any widget view code:**
-> 1. **Create the WidgetKit extension target first.** Add a new WidgetKit extension target (`NutrxWidgets`) to the Xcode project. Everything else depends on this existing.
-> 2. **Update `ModelContainerFactory` to use the App Group container URL.** This is the linchpin — without it the widget reads from a different store than the app and sees no data. Add `ModelContainerFactory.swift` to the widget extension's target membership so both targets share the same factory.
-> 3. **Set `LogNutrientIntent` target membership to include both the main app and the widget extension.** This will not happen automatically. It must be done explicitly in Xcode's target membership panel, otherwise the interactive + button will fail to compile in the widget extension.
+| Widget | Kind ID | Family | Content |
+|---|---|---|---|
+| Small | `NutrxSmallWidget` | `.systemSmall` | Completion ring with count |
+| Medium | `NutrxMediumWidget` | `.systemMedium` | 3 nutrient rows with interactive + buttons |
+| Circular | `NutrxCircularWidget` | `.accessoryCircular` | Lock screen ring gauge |
+| Inline | `NutrxInlineWidget` | `.accessoryInline` | Lock screen text: "3 / 6 on target" |
 
-### Infrastructure requirements
+**Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent) for interactive + buttons — target membership must include both app and widget extension. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`. Widgets refresh on intent completion and app foreground.
 
-- **WidgetKit extension target** — a separate target (e.g. `NutrxWidgets`) must be added to the Xcode project. This is a distinct binary from the main app.
-- **App Group** — both the main app target and the widget extension must share the App Group `group.nutrx-labs.nutrx`. This is the only way the widget can read the SwiftData store. Both targets must have the App Group entitlement configured in Xcode and on the provisioning profile.
-- **Shared ModelContainer** — `ModelContainerFactory` must be updated to initialise the container using the App Group's shared container URL rather than the default app sandbox location. The widget extension uses the same factory to open the same store read-only.
-- **AppIntent for logging** — interactive buttons require an `AppIntent` conforming type (`LogNutrientIntent`). This intent writes an `IntakeRecord` to the shared SwiftData store and triggers a widget timeline reload. It must be declared in a target-membership that includes both the main app and the widget extension (or in a shared framework).
-- **No `@Query` in widgets** — WidgetKit does not support SwiftData's `@Query` macro. Data must be fetched manually using a `ModelContext` inside the `TimelineProvider`.
+---
 
-### Widget 1 — Small (Home Screen)
+## iCloud Sync
 
-**Kind identifier:** `NutrxSmallWidget`
+Automatic CloudKit sync across all Apple devices. On by default, no setup required.
 
-**Content:**
-- nutrx app icon (small, top-left)
-- Large centre figure: number of nutrients that have reached or exceeded their daily target today (e.g. `3`)
-- Subtitle: `"of 6 on target"` (total non-deleted, non-excluded nutrient count)
-- A circular progress ring behind or around the figure representing overall completion ratio
-
-**Interaction:** entire widget is a `Link` that deep-links to the Today tab. No interactive elements.
-
-**States:**
-- **Empty (no nutrients defined):** ring at zero, label `"Add nutrients"`, tapping opens the app to My Nutrients
-- **Nothing logged yet:** ring at zero, `"0 of N on target"`, normal tap → Today tab
-- **All complete:** ring full, green tint on ring and figure
-- **Normal (partial):** blue ring, current count
-
-### Widget 2 — Medium (Home Screen)
-
-**Kind identifier:** `NutrxMediumWidget`
-
-**Content:**
-- Header row: `"Today"` label (left) + `"X / Y"` completion badge (right, grey pill)
-- 3 nutrient rows, drawn from the first 3 non-deleted nutrients ordered by `groupSortOrder` within their group, then `NutrientGroup.sortOrder` — i.e. the same order as the Today screen. If fewer than 3 nutrients exist, show only what is available.
-- Each nutrient row contains:
-  - Nutrient name (left, medium weight)
-  - Progress bar (full width, coloured by state — see colour logic below)
-  - Current / target label in the nutrient's unit (e.g. `"400 / 1000 IU"`)
-  - **+ button** (right-aligned, circular, tappable — triggers `LogNutrientIntent`)
-
-**Progress bar colour logic** (matches the main app):
-- Below target → blue
-- At or above target → green
-- Exceeded → orange (bar fills to edge, value shown in orange)
-
-**+ button states:**
-- Below target → `+` symbol, accent blue
-- At or above target → `✓` symbol, green — **still tappable**. Tapping logs another step (soft targets, same as in-app behaviour). The checkmark is a visual indicator only, not a lock.
-- The intent always inserts one `IntakeRecord` for that nutrient with `amount = nutrient.step`.
-
-**Interaction:**
-- Tapping the **+** button fires `LogNutrientIntent(nutrientID:)`, writes an `IntakeRecord` to the shared store, then calls `WidgetCenter.shared.reloadTimelines(ofKind:)` to refresh.
-- Tapping anywhere else (outside a + button) → deep-links to Today tab.
-
-**States:**
-- **Empty (no nutrients defined):** single centred label `"Open nutrx to add nutrients"`, tapping opens app
-- **Fewer than 3 nutrients:** show only the nutrients that exist, no placeholder rows
-
-**Standby:** the medium widget renders in Standby automatically at larger scale with a dark background. Ensure all colours use adaptive SwiftUI values (`.primary`, `.secondary`, or explicit dark-mode variants) so the widget looks correct on the dark Standby canvas.
-
-### Widget 3 — Lock Screen Circular
-
-**Kind identifier:** `NutrxCircularWidget`  
-**WidgetKit family:** `.accessoryCircular`
-
-**Content:**
-- Circular progress ring (`Gauge` with `.accessoryCircularCapacity` style, or a custom `Circle` arc)
-- Centre: integer count of nutrients on target today
-- No label text (space is too constrained)
-
-**Interaction:** read-only. Tap → Today tab.
-
-**States:** same as Small widget — empty shows `0`, all-complete shows full ring.
-
-### Widget 4 — Lock Screen Inline
-
-**Kind identifier:** `NutrxInlineWidget`  
-**WidgetKit family:** `.accessoryInline`
-
-**Content:**
-- Plain text string rendered above the clock face
-- Format: `"3 / 6 on target"` — always reflects today's completion at last refresh
-- When all complete: `"All done today ✓"`
-- When no nutrients: `"Open nutrx"`
-
-**Interaction:** read-only. Tap → Today tab.
-
-### Timeline & refresh strategy
-
-- Use a **non-repeating timeline** with a single entry valid until end of day (`Calendar.current.startOfDay` + 24 hours). WidgetKit will request a new timeline at that point automatically.
-- After `LogNutrientIntent` fires, call `WidgetCenter.shared.reloadAllTimelines()` to force an immediate refresh so the progress bar updates after a widget tap.
-- The main app calls `WidgetCenter.shared.reloadAllTimelines()` on every foreground (in `nutrxApp` via `.onReceive(NotificationCenter...willEnterForegroundNotification)`) so widgets always reflect the latest state after the user logs something in-app.
-- WidgetKit refresh budget is limited by iOS — do not schedule frequent periodic refreshes. Rely on the two triggers above (intent completion + app foreground).
-
-### AppIntent — LogNutrientIntent
-
-```swift
-// Sketch — Claude Code should implement fully
-struct LogNutrientIntent: AppIntent {
-    static var title: LocalizedStringResource = "Log Nutrient"
-    
-    @Parameter(title: "Nutrient ID")
-    var nutrientID: String  // the nutrient's persistent model ID as a string
-    
-    func perform() async throws -> some IntentResult {
-        // 1. Open shared ModelContainer via ModelContainerFactory
-        // 2. Fetch Nutrient by ID
-        // 3. Insert IntakeRecord(nutrient:, amount: nutrient.step, date: .now, note: nil)
-        // 4. Save context
-        // 5. WidgetCenter.shared.reloadAllTimelines()
-        return .result()
-    }
-}
-```
-
-**Important:** `LogNutrientIntent` must have its target membership set to include both the main app and the widget extension. Alternatively, place it in a shared Swift package or framework that both targets import. The `ModelContainerFactory` must also be accessible from both targets.
-
-### File placement
-
-```
-NutrxWidgets/                        # New WidgetKit extension target
-├── NutrxWidgets.swift               # @main entry point, declares all four widget kinds in a WidgetBundle
-├── Provider.swift                   # TimelineProvider — fetches data from shared SwiftData store, builds entries
-├── WidgetEntry.swift                # TimelineEntry — snapshot of data needed to render all widgets
-├── SmallWidgetView.swift            # View for NutrxSmallWidget
-├── MediumWidgetView.swift           # View for NutrxMediumWidget
-├── CircularWidgetView.swift         # View for NutrxCircularWidget (lock screen)
-├── InlineWidgetView.swift           # View for NutrxInlineWidget (lock screen)
-└── LogNutrientIntent.swift          # AppIntent for + button — must also be in main app target membership
-```
-
-`ModelContainerFactory.swift` (already in `Shared/Persistence/`) must be added to the widget extension's target membership so both targets share the same factory and open the same App Group store.
+**Key details:**
+- Container: `iCloud.nutrx-labs.nutrx`. Falls back to local-only if CloudKit unavailable.
+- Entitlements: both main app and widget extension need iCloud + CloudKit capability.
+- **New-device flow:** waits up to 3 seconds for CloudKit sync, skips onboarding if `UserProfile` found.
+- **Conflict resolution:** last-write-wins for most models. `IntakeRecord` is append-only, so concurrent logging from two devices produces two valid records (correct by design).
+- **Local → CloudKit upgrade:** on first CloudKit launch, backs up existing store before init. If CloudKit creates an empty store, migrates all data from backup (prevents TestFlight update data loss). Tracked via `UserDefaults` key `nutrx.hasCompletedCloudKitUpgrade`.
+- **Remote changes:** Today screen listens for `NSPersistentStoreRemoteChange` to auto-refresh on sync.
+- **Settings:** iCloud Sync section with toggle, status display, and "Delete iCloud Data" option.
+- **Banners:** one-time sync-restored and sync-enabled banners on Today screen (priority below notification banner).
+- **CloudKit model rules:** all relationships optional arrays (`[T]?`), no `@Attribute(.unique)`, all scalars need property-level defaults.
 
 ---
 
 ## Monetisation
 
-- The app is **free with no ads**.
-- A **Pro tier** is planned for MVP 4. It will only unlock AI-powered features. All core tracking features remain free forever.
-- **Indicative Pro pricing:** $2.99/month · $19.99/year · $49.99 lifetime one-time purchase.
-- **Planned Pro features:** daily AI insights, smart target suggestions, natural language logging, full history charts.
-- **AI architecture (MVP 4):** hybrid — on-device (Apple Intelligence / Foundation Models framework) for natural language logging and insight phrasing; third-party LLM API (Anthropic / OpenAI) for nutritional reasoning where on-device quality is insufficient. Only aggregated summaries are ever sent off-device — raw `IntakeRecord` data never leaves the device.
+- Free with no ads. **Pro tier** planned for MVP 4 — only AI-powered features (insights, smart targets, NLP logging, full history charts).
+- Indicative pricing: $2.99/month · $19.99/year · $49.99 lifetime.
 - Do not build any paywall, StoreKit, or AI infrastructure before MVP 4.
-
----
-
-## iCloud Sync (MVP 3)
-
-> ⚠️ **Before writing a single line of implementation, read these three rules:**
->
-> 1. **Do the full model audit before touching `ModelContainerFactory`.** A CloudKit-backed container initialised against a schema with invalid fields (missing defaults, non-optional without a default) will fail silently and produce extremely hard-to-debug sync issues. The audit comes first — no exceptions.
-> 2. **Test the new-device flow on a real device, not Simulator.** CloudKit behaves materially differently in Simulator — the initial sync delay, the onboarding-skip logic, and the banner trigger all require a real device with a real iCloud account to verify correctly.
-> 3. **The ~3 second loading window for the onboarding-skip check must be respected.** CloudKit's initial data pull on a slow connection can take longer, but blocking the user indefinitely is worse than occasionally showing onboarding to a returning user. Hard cap at 3 seconds, then assume new user and proceed.
-
----
-
-### Guiding principles
-
-- Sync is **on by default** — no setup required, no sign-in flow
-- The user is **informed but not burdened** — nudges are subtle, never blocking
-- The app **always works offline** — sync is additive, never a dependency
-- Opt-out is available in Settings but not prominent
-
----
-
-### Step 0 — Model audit (do this first)
-
-Before any other work, audit every `@Model` class for CloudKit compatibility. CloudKit requires every field to have a property-level default or be optional. Fields that currently need attention (illustrative, not exhaustive — do a full audit):
-
-- `UserProfile`: `name`, `weightUnit`, `heightUnit` → default to `""`
-- `UserProfile`: `weight`, `height` → default to `0.0`
-- `IntakeRecord.nutrient`, `Exclusion.nutrient`, `NutrientReminder.nutrient` → relationships need explicit `@Relationship` delete rules set (`.nullify` or `.cascade` as appropriate) so CloudKit can reason about them
-
-Any field that fails this check must be fixed before proceeding. Document every change made during the audit.
-
----
-
-### ModelContainerFactory changes
-
-Switch from a standard local `ModelConfiguration` to a CloudKit-backed one using container identifier `iCloud.nutrx-labs.nutrx`.
-
-The factory must handle two initialisation paths gracefully:
-- **CloudKit available** (signed into iCloud, storage not full) → initialise with CloudKit backing
-- **CloudKit unavailable** (not signed in, airplane mode, storage full) → fall back to local-only initialisation silently. The app must never fail to launch because CloudKit is unreachable.
-
-The App Group container URL stays unchanged — widgets continue reading from the shared store. Both paths must write to the same App Group location so widgets always have access regardless of sync state.
-
-### Local → CloudKit upgrade migration
-
-When a user updates from a pre-CloudKit build (e.g. via TestFlight), the CloudKit-backed `ModelConfiguration` may create a new empty store instead of upgrading the existing local store in-place. To prevent data loss:
-
-1. On first launch with CloudKit (tracked via `UserDefaults` key `nutrx.hasCompletedCloudKitUpgrade`), the factory backs up the existing store files to `pre-cloudkit-backup.store` before initialising the CloudKit container.
-2. After CloudKit container creation, if the container is empty (no `UserProfile`) but the backup has data, all records are migrated from the backup store into the CloudKit container: `UserProfile`, `UserPreferences`, `NutrientGroup`, `Nutrient` (preserving UUIDs), `IntakeRecord`, `Exclusion`, `NutrientReminder`.
-3. Backup files are cleaned up after migration completes.
-4. The upgrade flag is set so this only runs once.
-
-### Remote change handling
-
-The Today screen listens for `NSPersistentStoreRemoteChange` notifications (dispatched to the main thread) to auto-refresh when CloudKit imports data from other devices. This ensures synced changes appear without requiring the user to switch tabs or reopen the app.
-
----
-
-### Entitlements
-
-Both the main app target and the widget extension (`NutrxWidgets`) need:
-- iCloud capability with CloudKit enabled
-- Container identifier: `iCloud.nutrx-labs.nutrx`
-- Existing App Group entitlement (`group.nutrx-labs.nutrx`) stays unchanged
-
----
-
-### First launch on a new device
-
-When the app launches for the first time on a new device:
-
-1. Initialise the CloudKit container
-2. Wait up to **3 seconds** for initial sync to complete
-3. Query for a `UserProfile` with `onboardingCompleted = true`
-4. **If found** → skip onboarding, go straight to `MainTabView`, show the sync-restored banner (see Banners below)
-5. **If not found within 3 seconds** → assume new user, proceed with onboarding as normal
-
-Show a minimal loading state (spinner, no nutrx chrome) during the 3-second window.
-
----
-
-### Conflict resolution
-
-No custom conflict resolution logic is needed. Rely on CloudKit's default last-write-wins for all models except `IntakeRecord`.
-
-`IntakeRecord` is append-only by design — two devices logging simultaneously produces two valid records, both sync, both count toward the daily total. This is correct behaviour requiring no special handling.
-
-Soft deletes on `Nutrient` (`isDeleted = true`) mean a nutrient deleted on one device while another was offline will sync the deletion flag cleanly without orphaning historical `IntakeRecord` rows.
-
----
-
-### Settings UI
-
-Add a new **iCloud Sync** section to `SettingsView`, positioned above the Notifications section.
-
-**State: sync on and available**
-- Row icon: iCloud SF Symbol
-- Row title: "Sync with iCloud"
-- Toggle: ON
-- Footer text: "Your data syncs across all your Apple devices automatically."
-
-**State: sync on but iCloud unavailable** (not signed in or storage full)
-- Row icon: warning SF Symbol (orange tint)
-- Row title: "iCloud Unavailable"
-- Toggle: ON
-- Footer text: "Sign in to iCloud in Settings to enable sync." with a tappable link that opens iOS Settings via `UIApplication.openSettingsURLString`
-
-**State: sync off**
-- Row icon: iCloud SF Symbol (muted)
-- Row title: "Sync with iCloud"
-- Toggle: OFF
-- Footer text: "Your data is stored on this device only."
-
-Toggle state is stored in `UserPreferences.iCloudSyncEnabled` (default `true`). When toggled off, reinitialise the container as local-only. When toggled back on, reinitialise with CloudKit. No data is deleted in either direction — toggling off just stops syncing going forward.
-
----
-
-### Banners
-
-Two new one-time banners, styled consistently with the existing `NotificationBannerView` on the Today screen. Both are dismissible with ×, never shown again once dismissed. Shown below the notification permission banner if that is also visible — never stacked on top of each other, one at a time, notification banner takes priority.
-
-**Banner 1 — Sync restored** (new device, existing data found)
-Triggered when the new-device flow detects an existing `UserProfile`. Suppressed via `UserPreferences.hasSeenSyncRestoredBanner`.
-
-> *[iCloud icon] Your nutrx data has been restored from iCloud.*
-
-**Banner 2 — Sync enabled** (fresh install, shown after onboarding completes)
-Triggered once after onboarding completion on a brand new install. Suppressed via `UserPreferences.hasSeenSyncEnabledBanner`.
-
-> *[iCloud icon] Your data is syncing to iCloud. Reinstalling won't lose anything. You can turn this off in Settings.*
-
----
-
-### New fields on UserPreferences
-
-| Field | Type | Default | Purpose |
-|---|---|---|---|
-| `iCloudSyncEnabled` | `Bool` | `true` | Drives container initialisation mode |
-| `hasSeenSyncRestoredBanner` | `Bool` | `false` | One-time restore banner suppression |
-| `hasSeenSyncEnabledBanner` | `Bool` | `false` | One-time sync-enabled banner suppression |
-
-All three require property-level defaults for SwiftData lightweight migration.
-
----
-
-### App deletion behaviour
-
-When a user deletes nutrx from a device:
-- The local SwiftData store is removed with the app
-- The CloudKit data remains intact in iCloud
-- On reinstall, the new-device flow detects the existing `UserProfile`, skips onboarding, and restores all data — other devices are completely unaffected
-
-**The "Delete App and Data" edge case**
-
-When deleting an app, iOS may prompt the user with two options: "Delete App" and "Delete App and Data". If the user chooses "Delete App and Data", iOS wipes the CloudKit container for **all devices** — the other device will lose its data on next sync. This is an iOS system behaviour that nutrx cannot prevent or intercept.
-
-To minimise the risk of this prompt appearing or being misunderstood:
-- The sync-enabled banner copy should set the right expectation: reinforce that data is safe in iCloud, so the user understands the weight of choosing "Delete App and Data" if they ever see that prompt
-- During implementation, test which CloudKit container configuration (private database scope vs shared) triggers the "Delete App and Data" prompt more or less aggressively, and prefer the configuration that gives the user the clearest signal before wiping
-
-> ⚠️ **For Claude Code:** test the app deletion and reinstall flow on a real device. Verify that a plain "Delete App" (without "and Data") followed by reinstall correctly triggers the new-device restore path and shows the sync-restored banner.
-
----
-
-### Out of scope for this iteration
-
-- Merge conflict UI
-- Per-record sync status indicators
-- Manual "sync now" trigger
-- Handling two devices completing onboarding independently before syncing (edge case, acceptable to address in a follow-up)
 
 ---
 
 ## Out of Scope — Not Yet Built
 
-The following features are planned in future MVPs but must not be built or scaffolded until their target version.
+**MVP 3 (in progress):** Analytics & charts, Apple Health integration (HealthKit write)
 
-**MVP 3 (in progress):**
-- Analytics & charts (weekly/monthly breakdowns per nutrient)
-- Apple Health integration (HealthKit write, no read)
+**MVP 4:** Pro tier (StoreKit 2), AI features (on-device + third-party LLM)
 
-**MVP 4:**
-- Pro tier / in-app purchase (StoreKit 2)
-- AI features (on-device Foundation Models + third-party LLM API)
-
-**Indefinitely deferred:**
-- Localisation / internationalisation
-- iPad-specific layout optimisation
-- Data export
+**Deferred:** Localisation, iPad-specific layout, data export
 
 ---
 
 ## Data Models
 
-All persistence is handled via SwiftData. There are five models. No data is ever sent off-device.
+All persistence is handled via SwiftData. Seven model classes. No data is ever sent off-device.
 
 ### Design principles
-- **Everything is derived from raw records** — there are no pre-aggregated or cached totals stored. Today's intake for a nutrient is computed by summing all `IntakeRecord` rows for that nutrient whose `date` falls on today's calendar date. History is all `IntakeRecord` rows whose `date` falls on a past calendar date. This keeps the model simple and the source of truth unambiguous.
-- **Soft deletes on Nutrient** — nutrients are never hard-deleted. Setting `isDeleted = true` hides them from the UI while preserving all historical `IntakeRecord` data that references them.
-- **SwiftData relationships use navigation properties** — no manual ID fields. `IntakeRecord` holds a direct `var nutrient: Nutrient` reference; SwiftData manages the underlying foreign key. This is equivalent to EF Core navigation properties.
-- **Do not add `@unchecked Sendable`** to `@Model` classes — the `@Model` macro already synthesises `Sendable` conformance.
-- **Date comparisons must use calendar day, not timestamp equality** — `IntakeRecord.date` is a full `Date` (timestamp of the tap). Queries for "today" must compare using `Calendar.current` day components, not raw `Date` equality.
-- **Decrements are negative IntakeRecords** — tapping − inserts an `IntakeRecord` with a negative `amount`. The total is always computed by summing all records, and is floored at 0 in the UI. This keeps the record log append-only.
-- **No explicit midnight reset** — since intake is computed by summing records for today's calendar day, a new day naturally returns 0 with no reset action needed.
-- **Property-level defaults on @Model fields** — when adding new non-optional fields to an existing `@Model`, always assign a default value at the property declaration (e.g. `var flag: Bool = false`), not just in the initialiser. SwiftData's lightweight migration requires this to populate the column for existing rows.
-- **CloudKit compatibility** — all relationship arrays must be optional (`[T]?`, accessed via `?? []`). No `@Attribute(.unique)` constraints (CloudKit does not support them). All non-optional scalar fields must have property-level defaults.
+- **Everything is derived from raw records** — no pre-aggregated totals. Today's intake = SUM of `IntakeRecord` rows for today's calendar day.
+- **Soft deletes on Nutrient** — `isDeleted = true` hides from UI, preserves historical data.
+- **SwiftData relationships use navigation properties** — no manual ID fields.
+- **Do not add `@unchecked Sendable`** to `@Model` classes — the macro handles it.
+- **Date comparisons must use calendar day** — not timestamp equality.
+- **Decrements are negative IntakeRecords** — total is always SUM, floored at 0 in UI.
+- **No explicit midnight reset** — calendar-day scoping handles this naturally.
+- **Property-level defaults on @Model fields** — required for SwiftData lightweight migration.
+- **CloudKit compatibility** — optional relationship arrays (`[T]?`, access via `?? []`), no `@Attribute(.unique)`, all scalars default.
 
 ---
 
 ### UserProfile
 
-Stores the single user's personal information collected during onboarding.
+Single instance. Collected during onboarding, editable via Profile.
 
 | Field | Type | Notes |
 |---|---|---|
 | `name` | `String` | Free text |
-| `birthdate` | `Date` | Date only; time component ignored |
-| `weight` | `Double` | Stored in the user's chosen unit |
+| `birthdate` | `Date` | Date only |
+| `weight` | `Double` | In user's chosen unit |
 | `weightUnit` | `String` | `"kg"` or `"lbs"` |
-| `height` | `Double` | Stored in the user's chosen unit |
+| `height` | `Double` | In user's chosen unit |
 | `heightUnit` | `String` | `"cm"` or `"ft"` |
-| `onboardingCompleted` | `Bool` | Set to `true` when the full onboarding flow is finished |
-
-There is always exactly one `UserProfile` instance in the store.
+| `onboardingCompleted` | `Bool` | Gate for main app access |
 
 ---
 
 ### Nutrient
 
-Represents a user-defined nutrient that the user wants to track.
+User-defined nutrient to track.
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | `UUID = UUID()` | Stable unique identifier. Used by `LogNutrientIntent` for widget interactions. No unique constraint (CloudKit incompatible). |
-| `name` | `String` | e.g. "Vitamin D", "Caffeine" |
-| `unit` | `String` | e.g. "mg", "IU", "cups" |
-| `step` | `Double` | Increment per + / − tap. Must be > 0 |
-| `dailyTarget` | `Double` | The daily goal, in the nutrient's own unit |
-| `sortOrder` | `Int` | Legacy flat sort order. Still used as the initial seed for `groupSortOrder` on migration |
-| `groupSortOrder` | `Int = 0` | Display order within the nutrient's group. Property-level default required for SwiftData migration |
-| `isDeleted` | `Bool` | Soft delete flag. When `true`, hidden from all active UI but retained so historical `IntakeRecord` rows remain valid |
-| `notes` | `String?` | Optional free-form text capturing why the user tracks this nutrient. Shown as a muted single line on the Today card when non-empty. |
-| `group` | `NutrientGroup?` | Optional relationship to a `NutrientGroup`. `nil` resolves to the General group at query time. Property-level default `nil` required for SwiftData migration |
-| `createdAt` | `Date = Date()` | Timestamp of when the nutrient was created. Used by streak computation to determine which nutrients were active on any given past day. Property-level default required for SwiftData migration — existing nutrients receive the migration date, which is a safe approximation. |
+| `id` | `UUID = UUID()` | Used by `LogNutrientIntent` for widgets |
+| `name` | `String` | e.g. "Vitamin D" |
+| `unit` | `String` | e.g. "mg", "IU" |
+| `step` | `Double` | Increment per +/− tap, must be > 0 |
+| `dailyTarget` | `Double` | The daily goal |
+| `sortOrder` | `Int` | Legacy flat sort order, tiebreaker for groupSortOrder |
+| `groupSortOrder` | `Int = 0` | Order within group |
+| `isDeleted` | `Bool` | Soft delete flag |
+| `notes` | `String?` | Shown on Today card when non-empty |
+| `group` | `NutrientGroup?` | `nil` → General group |
+| `createdAt` | `Date = Date()` | Used by streak computation |
 
-**Relationships** (all optional arrays for CloudKit compatibility — access via `?? []`):
-- One `Nutrient` → many `IntakeRecord`? (inverse: `IntakeRecord.nutrient`)
-- One `Nutrient` → many `Exclusion`? (inverse: `Exclusion.nutrient`)
-- One `Nutrient` → many `NutrientReminder`? (inverse: `NutrientReminder.nutrient`)
-- Many `Nutrient` → one `NutrientGroup?` (inverse: `NutrientGroup.nutrients`)
+**Relationships:** → many `IntakeRecord`? (cascade), → many `Exclusion`? (cascade), → many `NutrientReminder`? (cascade), → one `NutrientGroup?` (nullify)
 
 ---
 
 ### IntakeRecord
 
-Represents a single logging event — one tap of + or a custom amount entry. To get the total intake for a nutrient on a given day, **SUM** all `IntakeRecord.amount` values where `nutrient` matches and `date` falls on that calendar day.
+Single logging event. Total = SUM of all records for a nutrient on a calendar day.
 
 | Field | Type | Notes |
 |---|---|---|
-| `nutrient` | `Nutrient` | Navigation property (SwiftData relationship) |
-| `amount` | `Double` | The amount logged in this single event, in the nutrient's unit. Always positive |
-| `date` | `Date` | Full timestamp of when the record was created. Use calendar-day comparison for grouping, not raw equality |
-| `note` | `String?` | Optional user-provided note (e.g. "with breakfast"). Only set via Add Exact Amount |
-
-**Query patterns:**
-- **Today's intake for a nutrient:** `SUM(amount)` where `nutrient == x` and `date` is today's calendar day
-- **Today's view:** all non-deleted, non-excluded nutrients, each with their summed intake for today
-- **History for a past day:** all `IntakeRecord` rows where `date` falls on that day, grouped by nutrient
+| `nutrient` | `Nutrient` | Relationship |
+| `amount` | `Double` | Can be negative (decrements) |
+| `date` | `Date` | Full timestamp, use calendar-day comparison for grouping |
+| `note` | `String?` | Optional, set via Add Exact Amount |
 
 ---
 
 ### UserPreferences
 
-Stores app-wide user preferences. There is always exactly one instance in the store.
+Single instance. App-wide settings.
 
-| Field | Type | Notes |
-|---|---|---|
-| `dailyReminderEnabled` | `Bool` | Whether the daily check-in notification is active. Default `false` |
-| `hasSeenNotificationBanner` | `Bool` | Whether the Today screen notification banner has been shown/dismissed. Default `false` |
-| `streaksEnabled` | `Bool = true` | Whether streak tracking is active. When `false`, all streak UI is hidden and `StreakService` computation is skipped entirely. |
-| `iCloudSyncEnabled` | `Bool = true` | Whether iCloud sync is active. Drives `ModelContainerFactory` configuration. |
-| `hasSeenSyncRestoredBanner` | `Bool = false` | Whether the sync-restored banner has been dismissed. |
-| `hasSeenSyncEnabledBanner` | `Bool = false` | Whether the sync-enabled banner has been dismissed. |
-| `lastReviewRequestedVersion` | `String? = nil` | The app version string (`CFBundleShortVersionString`) for which the review prompt was last fired. Prevents re-prompting on the same version. |
-| `lastReviewRequestedDate` | `Date? = nil` | Timestamp of the last review prompt attempt. Enforces the 90-day cross-version cooldown. |
+| Field | Type | Default | Notes |
+|---|---|---|---|
+| `dailyReminderEnabled` | `Bool` | `false` | Daily check-in notification |
+| `hasSeenNotificationBanner` | `Bool` | `false` | One-time banner suppression |
+| `streaksEnabled` | `Bool` | `true` | Streak tracking toggle |
+| `iCloudSyncEnabled` | `Bool` | `true` | CloudKit sync toggle |
+| `hasSeenSyncRestoredBanner` | `Bool` | `false` | One-time banner |
+| `hasSeenSyncEnabledBanner` | `Bool` | `false` | One-time banner |
+| `lastReviewRequestedVersion` | `String?` | `nil` | Review prompt version gate |
+| `lastReviewRequestedDate` | `Date?` | `nil` | Review prompt 90-day cooldown |
 
 ---
 
 ### Exclusion
 
-Records that a specific nutrient has been excluded from a specific day's Today view. Exclusions are created by the "Exclude for today" action and cleared automatically at midnight (the next day the nutrient reappears by default).
+Nutrient excluded from a specific day's Today view. Created by "Exclude for today", auto-cleared next day.
 
 | Field | Type | Notes |
 |---|---|---|
-| `nutrient` | `Nutrient` | Navigation property (SwiftData relationship) |
-| `date` | `Date` | The calendar day the exclusion applies to. Only the date component is meaningful; time is ignored |
-
-**Usage:** a nutrient is excluded from a given day's Today view if an `Exclusion` row exists for that nutrient where `date` matches that calendar day. At midnight (checked on foreground), any `Exclusion` rows for previous days can be purged — they are no longer needed since exclusions do not carry forward.
+| `nutrient` | `Nutrient` | Relationship |
+| `date` | `Date` | Calendar day only |
 
 ---
 
 ### NutrientGroup
 
-Represents a user-defined group that organises nutrients on the Today and My Nutrients screens.
+Named group for organising nutrients.
 
 | Field | Type | Notes |
 |---|---|---|
-| `name` | `String` | User-defined label, e.g. "Vitamins", "Minerals", "Supplements" |
-| `sortOrder` | `Int` | Controls the display order of groups. Lower = higher up |
-| `isSystem` | `Bool = false` | `true` only for the General group. Blocks rename and delete in the UI |
-| `isCollapsed` | `Bool = false` | Persisted collapsed state for Today and My Nutrients screens. Written back immediately on header tap |
+| `name` | `String` | User-defined label |
+| `sortOrder` | `Int` | Display order |
+| `isSystem` | `Bool = false` | `true` only for General group |
+| `isCollapsed` | `Bool = false` | Persisted collapsed state |
 
-**The General group:**
-- A physical `NutrientGroup` row with `isSystem = true` and `name = "General"`.
-- Seeded once by `ModelContainerFactory` on first launch if no `NutrientGroup` rows exist (covers both new installs and upgrades from pre-grouping versions).
-- Nutrients with `group = nil` resolve to General at query time — no data migration of existing rows is needed.
-- Cannot be renamed, deleted, or reordered above other groups. Rendered last in all group lists.
-
-**Relationships** (optional array for CloudKit compatibility — access via `?? []`):
-- One `NutrientGroup` → many `Nutrient`? (inverse: `Nutrient.group`)
+**Relationships:** → many `Nutrient`? (nullify)
 
 ---
 
 ### NutrientReminder
 
-Represents a single scheduled dose reminder for a nutrient. Each instance maps to one local notification that fires daily at the configured time.
+Scheduled dose reminder for a nutrient. Maps to one daily local notification.
 
 | Field | Type | Notes |
 |---|---|---|
-| `nutrient` | `Nutrient` | Navigation property (SwiftData relationship) |
-| `timeOfDay` | `Date` | Only the time component is meaningful; date is ignored |
-
-**Relationships:**
-- One `Nutrient` → many `NutrientReminder` (inverse: `NutrientReminder.nutrient`)
+| `nutrient` | `Nutrient` | Relationship |
+| `timeOfDay` | `Date` | Only time component used |
 
 ---
 
