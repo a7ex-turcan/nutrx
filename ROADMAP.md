@@ -36,6 +36,7 @@
 | Feature | Status |
 |---|---|
 | iCloud sync (CloudKit + SwiftData) | ✅ Shipped (v1.6) |
+| In-app review prompt | 📋 Planned |
 | Analytics & charts | 📋 Planned |
 | Apple Health integration (HealthKit write) | 📋 Planned |
 
@@ -160,6 +161,32 @@ The following are explicitly deferred to MVP 3 or later:
 **Status:** Shipped in v1.6
 
 Automatic CloudKit sync across all Apple devices. On by default, no setup. `ModelContainerFactory` uses `CloudKit.private("iCloud.nutrx-labs.nutrx")` with local-only fallback. All models audited for CloudKit compatibility (property-level defaults, optional relationships, no unique constraints). New-device flow waits up to 3 seconds for CloudKit data before falling back to onboarding. One-time sync banners on Today screen. Settings → iCloud Sync page with status, toggle, and "Delete iCloud Data" option. Singleton deduplication for General group, UserProfile, and UserPreferences. New `UserPreferences` fields: `iCloudSyncEnabled`, `hasSeenSyncRestoredBanner`, `hasSeenSyncEnabledBanner`. New components: `SyncLoadingView`, `SyncBannerView`.
+
+---
+
+### In-App Review Prompt 📋
+
+**Status:** Planned
+
+Nudges engaged users to leave an App Store review at a natural high point in their experience, using Apple's native `SKStoreReviewController` API. No custom UI — Apple renders the system dialog. The feature is entirely passive from the user's perspective.
+
+**Trigger conditions (OR logic — whichever comes first):**
+- Current streak just reached a milestone: **3, 7, or 14 days**
+- Total `IntakeRecord` count just crossed **30** (sustained engagement signal)
+
+**Guard conditions (all must pass):**
+- App version not already prompted (`lastReviewRequestedVersion` ≠ current version)
+- Last prompt was more than 90 days ago (`lastReviewRequestedDate`)
+- User account is at least 3 days old (compare `UserProfile.createdAt`)
+- Trigger must come from a user action — never on cold launch
+
+**Implementation surface:**
+- New `Shared/Services/ReviewService.swift` — pure Swift, imports `StoreKit`
+- Call site: `TodayViewModel`, immediately after streak recomputation (same triggers)
+- Two new fields on `UserPreferences`: `lastReviewRequestedVersion: String? = nil`, `lastReviewRequestedDate: Date? = nil`
+- New `Shared/Extensions/Bundle+AppVersion.swift` helper for `CFBundleShortVersionString`
+
+**What this is not:** no "Rate us" button, no custom modal, no star picker. Apple's system handles all display logic and frequency capping (~3 times per year maximum).
 
 ---
 

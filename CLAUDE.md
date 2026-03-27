@@ -187,11 +187,20 @@ nutrx/
         │                                    # - Smart suppression: cancel upcoming nutrient reminders after logging intake.
         │                                    # - refreshAllNutrientReminders(context:) — called on every app foreground.
         │                                    # Pure Swift class — no SwiftUI imports.
-        └── StreakService.swift              # Computes current streak and best streak from IntakeRecord + Exclusion + Nutrient data.
-                                             # - compute(context:) → StreakResult (currentStreak: Int, bestStreak: Int)
-                                             # - Returns (0, 0) immediately if UserPreferences.streaksEnabled == false.
-                                             # - Called on every app foreground and after every intake action.
-                                             # Pure Swift class — no SwiftUI imports.
+        ├── StreakService.swift              # Computes current streak and best streak from IntakeRecord + Exclusion + Nutrient data.
+        │                                    # - compute(context:) → StreakResult (currentStreak: Int, bestStreak: Int)
+        │                                    # - Returns (0, 0) immediately if UserPreferences.streaksEnabled == false.
+        │                                    # - Called on every app foreground and after every intake action.
+        │                                    # Pure Swift class — no SwiftUI imports.
+        └── ReviewService.swift              # Manages App Store review prompt logic. Responsibilities:
+                                             # - maybeRequestReview(context:currentStreak:totalIntakeCount:scene:) — evaluates
+                                             #   all guard conditions and fires SKStoreReviewController if they pass.
+                                             # - Guard conditions: version not already prompted, last prompt > 90 days ago,
+                                             #   account age ≥ 3 days, and at least one trigger condition met.
+                                             # - Trigger conditions (OR logic): streak just hit 3, 7, or 14 days; OR total
+                                             #   IntakeRecord count just crossed 30.
+                                             # - On prompt: writes current app version + date to UserPreferences.
+                                             # Pure Swift class — no SwiftUI imports. Imports StoreKit.
 ```
 
 ### Rules Claude Code must follow for file placement
@@ -523,6 +532,147 @@ A dedicated **Settings → Streaks** page (`StreaksSettingsView`), accessed via 
 - Per-nutrient streaks
 - Streak freeze / grace day mechanics
 - Streak-based notifications ("you're on a 7-day streak, keep it up!")
+
+---
+
+## In-App Review Prompt
+
+nutrx uses Apple's native `SKStoreReviewController` API to invite users to rate the app at a natural high point in their experience. Apple renders the system dialog — there is no custom UI to build. The feature is entirely passive from the user's perspective: no banner, no interstitial, no custom modal.
+
+### Key rules
+
+- **No custom UI.** Apple owns the dialog. nutrx only decides *when* to call the API; it never builds its own rating screen.
+- **One attempt per app version.** Once the API has been called for the current version, it is never called again for that version — regardless of whether Apple actually showed the dialog (Apple controls final display frequency, capped at ~3 times per year).
+- **Cooldown between versions.** Even across version updates, do not prompt more than once every 90 days.
+- **Minimum account age.** Only prompt users whose `UserProfile` was created at least 3 days ago — new users have not yet formed an opinion.
+- **Never on cold launch.** The prompt must always be triggered by a user action, never on app open.
+
+### Trigger conditions
+
+The API is called when **any one** of the following conditions is met (OR logic), after all guard conditions pass:
+
+| Trigger | Value | Rationale |
+|---|---|---|
+| Streak milestone | Current streak just reached 3, 7, or 14 days | High-emotion moment — user just succeeded |
+| Intake volume | Total `IntakeRecord` count just crossed 30 | Demonstrates sustained engagement |
+
+The streak milestone trigger is preferred because it coincides with an existing UI celebration moment. The volume trigger catches engaged users who log frequently but haven't built a streak.
+
+### ReviewService
+
+**File:** `Shared/Services/ReviewService.swift`  
+**Pattern:** Pure Swift class, no SwiftUI imports. Mirrors `StreakService` and `NotificationService` in structure.
+
+```swift
+import StoreKit
+import SwiftData
+
+final class ReviewService {
+
+    /// Call this after every intake action (same call site as streak computation in TodayViewModel).
+    /// Evaluates all guard conditions and fires the review prompt if they pass.
+    func maybeRequestReview(
+        context: ModelContext,
+        currentStreak: Int,
+        totalIntakeCount: Int,
+        scene: UIWindowScene
+    ) {
+        guard shouldPrompt(context: context,
+                           currentStreak: currentStreak,
+                           totalIntakeCount: totalIntakeCount) else { return }
+        AppStore.requestReview(in: scene)
+        recordPrompt(context: context)
+    }
+
+    // MARK: — Private
+
+    private func shouldPrompt(
+        context: ModelContext,
+        currentStreak: Int,
+        totalIntakeCount: Int
+    ) -> Bool {
+        let prefs = fetchPreferences(context: context)
+        let profile = fetchProfile(context: context)
+
+        // Guard: version already prompted
+        let currentVersion = Bundle.main.appVersion  // see note below
+        if prefs.lastReviewRequestedVersion == currentVersion { return false }
+
+        // Guard: prompted too recently (across versions)
+        if let lastDate = prefs.lastReviewRequestedDate,
+           Calendar.current.dateComponents([.day], from: lastDate, to: .now).day ?? 0 < 90 {
+            return false
+        }
+
+        // Guard: account too new
+        if let created = profile?.createdAt,
+           Calendar.current.dateComponents([.day], from: created, to: .now).day ?? 0 < 3 {
+            return false
+        }
+
+        // Trigger: streak milestone
+        let streakMilestones = [3, 7, 14]
+        if streakMilestones.contains(currentStreak) { return true }
+
+        // Trigger: intake volume
+        if totalIntakeCount == 30 { return true }
+
+        return false
+    }
+
+    private func recordPrompt(context: ModelContext) {
+        guard let prefs = try? context.fetch(FetchDescriptor<UserPreferences>()).first else { return }
+        prefs.lastReviewRequestedVersion = Bundle.main.appVersion
+        prefs.lastReviewRequestedDate = .now
+        try? context.save()
+    }
+}
+```
+
+> **`Bundle.main.appVersion` helper:** add a small `Bundle+AppVersion.swift` extension in `Shared/Extensions/`:
+> ```swift
+> extension Bundle {
+>     var appVersion: String {
+>         infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+>     }
+> }
+```
+
+### Call site — TodayViewModel
+
+`ReviewService.maybeRequestReview` is called in `TodayViewModel` immediately after streak recomputation, which already fires after every intake action. The `UIWindowScene` reference is passed in from the view layer (available via `UIApplication.shared.connectedScenes`).
+
+```swift
+// In TodayViewModel, after streak recompute:
+let scene = UIApplication.shared.connectedScenes
+    .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
+if let scene {
+    reviewService.maybeRequestReview(
+        context: modelContext,
+        currentStreak: streakResult.currentStreak,
+        totalIntakeCount: totalIntakeCount,  // fetch count of all IntakeRecord rows
+        scene: scene
+    )
+}
+```
+
+`totalIntakeCount` is a lightweight `FetchDescriptor` count query — no need to load the actual records.
+
+### New fields on UserPreferences
+
+| Field | Type | Default | Purpose |
+|---|---|---|---|
+| `lastReviewRequestedVersion` | `String?` | `nil` | Prevents re-prompting on the same app version |
+| `lastReviewRequestedDate` | `Date?` | `nil` | Enforces the 90-day cooldown across versions |
+
+Both fields require property-level defaults (`= nil`) for SwiftData lightweight migration.
+
+### What Claude Code must not do
+
+- Do not build any custom rating UI (stars, thumbs, modal).
+- Do not call `AppStore.requestReview` on app launch or in any lifecycle method — only from the post-intake call site.
+- Do not add any "Rate us" button or menu item — the prompt is entirely automatic.
+- Do not add `@unchecked Sendable` to `ReviewService` — it holds no mutable state after the call.
 
 ---
 
@@ -948,6 +1098,8 @@ Stores app-wide user preferences. There is always exactly one instance in the st
 | `iCloudSyncEnabled` | `Bool = true` | Whether iCloud sync is active. Drives `ModelContainerFactory` configuration. |
 | `hasSeenSyncRestoredBanner` | `Bool = false` | Whether the sync-restored banner has been dismissed. |
 | `hasSeenSyncEnabledBanner` | `Bool = false` | Whether the sync-enabled banner has been dismissed. |
+| `lastReviewRequestedVersion` | `String? = nil` | The app version string (`CFBundleShortVersionString`) for which the review prompt was last fired. Prevents re-prompting on the same version. |
+| `lastReviewRequestedDate` | `Date? = nil` | Timestamp of the last review prompt attempt. Enforces the 90-day cross-version cooldown. |
 
 ---
 
