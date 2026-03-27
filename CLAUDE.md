@@ -120,7 +120,9 @@ nutrx/
 │   │   │                                    # Shown once after onboarding; never shown again once dismissed or permission granted.
 │   │   └── ViewModels/
 │   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords for today's calendar day.
-│   │                                        # Handles +/−/custom by inserting IntakeRecords.
+│   │                                        # Handles +/−/custom by inserting IntakeRecords and updating totals in-place
+│   │                                        # (avoids re-fetching from SwiftData which can reorder items).
+│   │                                        # Explicitly saves context after every intake mutation.
 │   │
 │   ├── Nutrients/               # Tab 2 — manage the nutrient list. (Implemented)
 │   │   └── Views/
@@ -177,7 +179,10 @@ nutrx/
     ├── Persistence/
     │   ├── ModelContainerFactory.swift      # Creates and configures the shared SwiftData ModelContainer.
     │   │                                    # Uses CloudKit-backed config (iCloud.nutrx-labs.nutrx) with local-only fallback.
+    │   │                                    # Backs up local store before first CloudKit init and migrates data if the
+    │   │                                    # upgrade produces an empty store (prevents data loss on TestFlight updates).
     │   │                                    # Includes singleton deduplication for General group, UserProfile, UserPreferences.
+    │   │                                    # Logs key decisions via os.log (subsystem: nutrx-labs.nutrx, category: ModelContainerFactory).
     │   └── PreviewSampleData.swift          # previewContainer with seeded nutrients + intake for Xcode previews.
     └── Services/
         ├── NotificationService.swift        # Wraps UNUserNotificationCenter. Responsibilities:
@@ -870,6 +875,19 @@ The factory must handle two initialisation paths gracefully:
 - **CloudKit unavailable** (not signed in, airplane mode, storage full) → fall back to local-only initialisation silently. The app must never fail to launch because CloudKit is unreachable.
 
 The App Group container URL stays unchanged — widgets continue reading from the shared store. Both paths must write to the same App Group location so widgets always have access regardless of sync state.
+
+### Local → CloudKit upgrade migration
+
+When a user updates from a pre-CloudKit build (e.g. via TestFlight), the CloudKit-backed `ModelConfiguration` may create a new empty store instead of upgrading the existing local store in-place. To prevent data loss:
+
+1. On first launch with CloudKit (tracked via `UserDefaults` key `nutrx.hasCompletedCloudKitUpgrade`), the factory backs up the existing store files to `pre-cloudkit-backup.store` before initialising the CloudKit container.
+2. After CloudKit container creation, if the container is empty (no `UserProfile`) but the backup has data, all records are migrated from the backup store into the CloudKit container: `UserProfile`, `UserPreferences`, `NutrientGroup`, `Nutrient` (preserving UUIDs), `IntakeRecord`, `Exclusion`, `NutrientReminder`.
+3. Backup files are cleaned up after migration completes.
+4. The upgrade flag is set so this only runs once.
+
+### Remote change handling
+
+The Today screen listens for `NSPersistentStoreRemoteChange` notifications (dispatched to the main thread) to auto-refresh when CloudKit imports data from other devices. This ensures synced changes appear without requiring the user to switch tabs or reopen the app.
 
 ---
 

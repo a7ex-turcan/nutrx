@@ -15,6 +15,13 @@ All notable changes to nutrx are documented in this file.
 ### Improvements
 - **CloudKit-compatible models** — All data models updated with property-level defaults and optional relationships for CloudKit compatibility.
 - **Singleton deduplication** — Automatic deduplication of system records (General group, user profile, preferences) when syncing across multiple devices.
+- **Live sync refresh** — Today screen automatically refreshes when CloudKit imports remote data, so changes from other devices appear without switching tabs.
+- **Immediate persistence** — Intake records are explicitly saved to disk after every +/− tap, ensuring data survives app termination and reaches CloudKit faster.
+
+### Fixes
+- **Data preserved on CloudKit upgrade** — Existing local data is backed up before the first CloudKit-enabled launch and migrated into the new store if needed. Prevents data loss when updating from a pre-sync build (e.g. via TestFlight).
+- **Nutrient reordering on tap** — Fixed nutrients shuffling position after tapping +/− by updating totals in-place instead of re-fetching from SwiftData.
+- **Stable nutrient sort** — Added tiebreaker to nutrient sorting so items with the same group sort order maintain a consistent position.
 
 ---
 
