@@ -32,9 +32,14 @@ struct NutrientsListView: View {
             sectionMap[gid, default: []].append(nutrient)
         }
 
-        // Sort nutrients within each group by groupSortOrder
+        // Sort nutrients within each group by groupSortOrder, then sortOrder as tiebreaker
         for key in sectionMap.keys {
-            sectionMap[key]?.sort { $0.groupSortOrder < $1.groupSortOrder }
+            sectionMap[key]?.sort {
+                if $0.groupSortOrder != $1.groupSortOrder {
+                    return $0.groupSortOrder < $1.groupSortOrder
+                }
+                return $0.sortOrder < $1.sortOrder
+            }
         }
 
         return allGroups.compactMap { group in

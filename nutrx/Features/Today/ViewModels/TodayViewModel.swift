@@ -73,9 +73,14 @@ final class TodayViewModel {
             sectionsByGroupID[gid, default: []].append(NutrientIntake(nutrient: nutrient, total: total))
         }
 
-        // Sort intakes within each group by groupSortOrder
+        // Sort intakes within each group by groupSortOrder, then sortOrder as tiebreaker
         for key in sectionsByGroupID.keys {
-            sectionsByGroupID[key]?.sort { $0.nutrient.groupSortOrder < $1.nutrient.groupSortOrder }
+            sectionsByGroupID[key]?.sort {
+                if $0.nutrient.groupSortOrder != $1.nutrient.groupSortOrder {
+                    return $0.nutrient.groupSortOrder < $1.nutrient.groupSortOrder
+                }
+                return $0.nutrient.sortOrder < $1.nutrient.sortOrder
+            }
         }
 
         // Build sections in group sort order, only include groups that have nutrients
@@ -88,7 +93,8 @@ final class TodayViewModel {
     func increment(_ nutrient: Nutrient, context: ModelContext) {
         let record = IntakeRecord(nutrient: nutrient, amount: nutrient.step)
         context.insert(record)
-        refresh(context: context)
+        try? context.save()
+        updateTotal(for: nutrient, delta: nutrient.step)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.suppressRemindersAfterLogging(for: nutrient)
         WidgetCenter.shared.reloadAllTimelines()
@@ -97,7 +103,8 @@ final class TodayViewModel {
     func addCustomAmount(_ amount: Double, to nutrient: Nutrient, note: String? = nil, context: ModelContext) {
         let record = IntakeRecord(nutrient: nutrient, amount: amount, note: note)
         context.insert(record)
-        refresh(context: context)
+        try? context.save()
+        updateTotal(for: nutrient, delta: amount)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.suppressRemindersAfterLogging(for: nutrient)
         WidgetCenter.shared.reloadAllTimelines()
@@ -109,9 +116,31 @@ final class TodayViewModel {
             if newTotal >= 0 {
                 let record = IntakeRecord(nutrient: nutrient, amount: -nutrient.step)
                 context.insert(record)
-                refresh(context: context)
+                try? context.save()
+                updateTotal(for: nutrient, delta: -nutrient.step)
                 NotificationService.refreshDailyReminder(context: context)
                 WidgetCenter.shared.reloadAllTimelines()
+            }
+        }
+    }
+
+    // MARK: - In-place total update (avoids re-fetch reordering)
+
+    private func updateTotal(for nutrient: Nutrient, delta: Double) {
+        let id = nutrient.persistentModelID
+
+        // Update flat list
+        if let idx = nutrientIntakes.firstIndex(where: { $0.nutrient.persistentModelID == id }) {
+            let old = nutrientIntakes[idx]
+            nutrientIntakes[idx] = (nutrient: old.nutrient, total: max(0, old.total + delta))
+        }
+
+        // Update grouped sections
+        for sIdx in groupSections.indices {
+            if let iIdx = groupSections[sIdx].intakes.firstIndex(where: { $0.nutrient.persistentModelID == id }) {
+                let old = groupSections[sIdx].intakes[iIdx]
+                groupSections[sIdx].intakes[iIdx] = NutrientIntake(nutrient: old.nutrient, total: max(0, old.total + delta))
+                return
             }
         }
     }

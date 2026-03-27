@@ -1,3 +1,5 @@
+import Combine
+import CoreData
 import SwiftUI
 import SwiftData
 
@@ -111,6 +113,10 @@ struct TodayView: View {
                 NotificationService.refreshDailyReminder(context: modelContext)
                 NotificationService.refreshAllNutrientReminders(context: modelContext)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange).receive(on: DispatchQueue.main)) { _ in
+            viewModel.refresh(context: modelContext)
+            refreshStreak()
         }
         .sheet(item: $nutrientForCustomAmount) { nutrient in
             CustomAmountSheet(nutrient: nutrient) { amount, note in
