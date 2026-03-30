@@ -123,6 +123,7 @@ struct TodayView: View {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     viewModel.addCustomAmount(amount, to: nutrient, note: note, context: modelContext)
                 }
+                checkForReview()
             }
         }
         .sheet(item: $nutrientToEdit) { nutrient in
@@ -148,11 +149,13 @@ struct TodayView: View {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     viewModel.increment(entry.nutrient, context: modelContext)
                 }
+                checkForReview()
             },
             onDecrement: {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     viewModel.decrement(entry.nutrient, context: modelContext)
                 }
+                checkForReview()
             }
         )
         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
@@ -276,6 +279,16 @@ struct TodayView: View {
 
     private func refreshStreak() {
         streak = StreakService.compute(context: modelContext)
+    }
+
+    private func checkForReview() {
+        let currentStreak = StreakService.compute(context: modelContext).current
+        let totalIntakeCount = (try? modelContext.fetchCount(FetchDescriptor<IntakeRecord>())) ?? 0
+        ReviewService.maybeRequestReview(
+            context: modelContext,
+            currentStreak: currentStreak,
+            totalIntakeCount: totalIntakeCount
+        )
     }
 
     private func applyEdit(to nutrient: Nutrient) {

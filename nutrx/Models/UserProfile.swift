@@ -10,6 +10,7 @@ final class UserProfile {
     var height: Double = 0
     var heightUnit: String = "cm"
     var onboardingCompleted: Bool = false
+    var createdAt: Date = Date()
 
     init(
         name: String,

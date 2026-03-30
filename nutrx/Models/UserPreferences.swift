@@ -9,6 +9,8 @@ final class UserPreferences {
     var iCloudSyncEnabled: Bool = true
     var hasSeenSyncRestoredBanner: Bool = false
     var hasSeenSyncEnabledBanner: Bool = false
+    var lastReviewRequestedVersion: String? = nil
+    var lastReviewRequestedDate: Date? = nil
 
     init(
         dailyReminderEnabled: Bool = false,

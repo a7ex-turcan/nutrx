@@ -149,6 +149,7 @@ enum ModelContainerFactory {
                 height: old.height, heightUnit: old.heightUnit,
                 onboardingCompleted: old.onboardingCompleted
             )
+            new.createdAt = old.createdAt
             cloudContext.insert(new)
         }
 
@@ -163,6 +164,8 @@ enum ModelContainerFactory {
                 hasSeenSyncRestoredBanner: old.hasSeenSyncRestoredBanner,
                 hasSeenSyncEnabledBanner: old.hasSeenSyncEnabledBanner
             )
+            new.lastReviewRequestedVersion = old.lastReviewRequestedVersion
+            new.lastReviewRequestedDate = old.lastReviewRequestedDate
             cloudContext.insert(new)
         }
 
