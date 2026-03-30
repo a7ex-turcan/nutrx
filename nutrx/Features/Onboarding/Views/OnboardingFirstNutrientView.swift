@@ -146,6 +146,7 @@ struct OnboardingFirstNutrientView: View {
         }
 
         modelContext.insert(nutrient)
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         draft.reset()
     }
 
