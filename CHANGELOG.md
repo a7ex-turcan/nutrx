@@ -13,6 +13,7 @@ All notable changes to nutrx are documented in this file.
 - **iCloud Sync settings** — New Settings → iCloud Sync page showing sync status, a toggle to enable/disable sync, and a "Delete iCloud Data" option to permanently remove your data from iCloud while keeping local data intact.
 
 ### Improvements
+- **In-app review prompt** — Automatically invites engaged users to rate the app at natural high points (streak milestones or 30 total intake logs) using Apple's native review dialog. No custom UI — once per version, 90-day cooldown.
 - **CloudKit-compatible models** — All data models updated with property-level defaults and optional relationships for CloudKit compatibility.
 - **Singleton deduplication** — Automatic deduplication of system records (General group, user profile, preferences) when syncing across multiple devices.
 - **Live sync refresh** — Today screen automatically refreshes when CloudKit imports remote data, so changes from other devices appear without switching tabs.
@@ -22,6 +23,7 @@ All notable changes to nutrx are documented in this file.
 - **Data preserved on CloudKit upgrade** — Existing local data is backed up before the first CloudKit-enabled launch and migrated into the new store if needed. Prevents data loss when updating from a pre-sync build (e.g. via TestFlight).
 - **Nutrient reordering on tap** — Fixed nutrients shuffling position after tapping +/− by updating totals in-place instead of re-fetching from SwiftData.
 - **Stable nutrient sort** — Added tiebreaker to nutrient sorting so items with the same group sort order maintain a consistent position.
+- **Notification permission reset after reinstall** — Fixed stale notification flags synced from iCloud causing the daily reminder toggle and banner to show incorrect state after reinstalling the app or setting up a new device.
 
 ---
 

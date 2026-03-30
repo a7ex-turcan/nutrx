@@ -150,6 +150,7 @@ nutrx/
 │
 └── Shared/
     ├── Extensions/
+    │   ├── Bundle+AppVersion.swift         # CFBundleShortVersionString helper for ReviewService.
     │   ├── Date+Calendar.swift
     │   └── Double+Formatting.swift
     ├── Components/
@@ -234,6 +235,8 @@ All local — no push infrastructure. Two notification types:
 2. **Per-nutrient dose reminders** — configurable times per nutrient. Smart suppression after logging. IDs: `nutrient-{id}-reminder-{HHmm}`.
 
 Permission flow handles not-asked, granted, and denied states. A one-time notification banner appears on Today after onboarding.
+
+**Reinstall/new-device safety:** iOS resets notification permission on app delete, but CloudKit may sync stale `dailyReminderEnabled` and `hasSeenNotificationBanner` flags. On appear, both TodayView and NotificationsSettingsView check the actual iOS permission status — if `notDetermined`, they reset the synced flags so the banner reappears and the toggle reflects reality.
 
 ---
 
@@ -342,6 +345,7 @@ Single instance. Collected during onboarding, editable via Profile.
 | `height` | `Double` | In user's chosen unit |
 | `heightUnit` | `String` | `"cm"` or `"ft"` |
 | `onboardingCompleted` | `Bool` | Gate for main app access |
+| `createdAt` | `Date = Date()` | Used by ReviewService for account age guard |
 
 ---
 

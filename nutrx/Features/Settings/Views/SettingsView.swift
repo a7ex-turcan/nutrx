@@ -180,7 +180,7 @@ private struct NotificationsSettingsView: View {
     private func refreshPermissionState() {
         Task {
             let status = await NotificationService.permissionStatus()
-            if status == .denied && preferences.dailyReminderEnabled {
+            if (status == .denied || status == .notDetermined) && preferences.dailyReminderEnabled {
                 preferences.dailyReminderEnabled = false
                 NotificationService.cancelDailyReminder()
             }

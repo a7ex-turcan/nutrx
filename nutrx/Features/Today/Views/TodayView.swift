@@ -211,11 +211,24 @@ struct TodayView: View {
 
     private func refreshBannerVisibility() {
         Task {
+            let status = await NotificationService.permissionStatus()
+
+            // After reinstall, iOS permission resets but CloudKit may sync stale flags.
+            // If iOS hasn't been asked yet, reset the synced preferences so the banner
+            // reappears and the toggle reflects reality.
+            if status == .notDetermined {
+                if preferences.hasSeenNotificationBanner || preferences.dailyReminderEnabled {
+                    preferences.hasSeenNotificationBanner = false
+                    preferences.dailyReminderEnabled = false
+                }
+                showBanner = true
+                return
+            }
+
             if preferences.hasSeenNotificationBanner {
                 showBanner = false
                 return
             }
-            let status = await NotificationService.permissionStatus()
             showBanner = status != .granted
         }
     }
