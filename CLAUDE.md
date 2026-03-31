@@ -158,6 +158,8 @@ nutrx/
     │   ├── NutrientFormFields.swift         # Reusable nutrient form + NutrientDraft observable.
     │   ├── NutrientRowView.swift            # Card with +/− buttons, progress bar.
     │   ├── NutrientProgressBar.swift        # Blue (in progress), green (complete), orange (exceeded).
+    │   ├── ExpandableNutrientCard.swift     # Wraps NutrientRowView + NutrientIntakeHistoryView. Owns tap-to-expand toggle.
+    │   ├── NutrientIntakeHistoryView.swift  # Expanded intake list. @Query-fetches today's IntakeRecords for one nutrient.
     │   ├── GroupHeaderView.swift            # Collapsible group header with completion count.
     │   ├── MoveToGroupSheet.swift
     │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
@@ -218,6 +220,31 @@ The central feature. Each nutrient row shows: name, unit, progress bar, −/+ bu
 Progress bar: blue (in progress), green (at/above target), orange (exceeded). Exceeding a target is allowed.
 
 Intake is computed by summing `IntakeRecord` rows for today's calendar day. No explicit midnight reset needed.
+
+### Expandable Nutrient Cards
+
+Each nutrient card supports an expanded state that shows a chronological breakdown of all `IntakeRecord` entries for that nutrient today.
+
+**Toggle:** Tapping anywhere on the card body expands or collapses it. The `[−]` and `[+]` buttons remain visible in both states — expansion is informational only and does not alter the logging UX.
+
+**Expanded section:**
+- All `IntakeRecord` rows for that nutrient today, sorted chronologically (oldest first).
+- Each row: time (formatted as "HH:mm") + amount with unit. Positive amounts shown normally. **Negative amounts (decrements) are always shown**, styled in a muted destructive colour (system orange) so the user can understand the running total.
+- If `IntakeRecord.note` is non-empty, render it as a muted caption beneath that row.
+- Empty state (no intakes yet): show "No intakes logged yet" as a muted placeholder.
+- No cap on entries — render all. The screen is already in a `ScrollView`.
+
+**State:** `@State private var expandedNutrientIDs: Set<UUID> = []` in `TodayView`. Never persisted — resets on tab switch and app relaunch.
+
+**Multiple cards open:** Allowed. No accordion/auto-collapse behaviour.
+
+**Animation:** `withAnimation(.spring(response: 0.35, dampingFraction: 0.8))` wrapping the `expandedNutrientIDs` mutation. Expansion content is conditionally present in the view tree so SwiftUI animates automatically.
+
+**Gesture safety:** Apply `contentShape(Rectangle())` to the card tap target. Existing swipe-right / swipe-left actions take priority over tap naturally in SwiftUI — no `simultaneousGesture` override needed.
+
+**New components:**
+- `ExpandableNutrientCard` (`Shared/Components/`) — wraps `NutrientRowView` (unchanged) with the expansion section below it.
+- `NutrientIntakeHistoryView` (`Shared/Components/`) — the expanded list. Uses `@Query` filtered by nutrient ID and today's calendar date range to fetch `[IntakeRecord]` independently, keeping `NutrientRowView` free of intake-record data.
 
 ---
 

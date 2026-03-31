@@ -37,6 +37,7 @@
 |---|---|
 | iCloud sync (CloudKit + SwiftData) | ✅ Shipped (v1.6) |
 | In-app review prompt | ✅ Shipped (v1.6) |
+| Expandable nutrient cards (Today intake breakdown) | 📋 Planned |
 | Analytics & charts | 📋 Planned |
 | Apple Health integration (HealthKit write) | 📋 Planned |
 
@@ -172,7 +173,41 @@ Uses Apple's native `SKStoreReviewController` to invite engaged users to rate th
 
 ---
 
-### Analytics & Charts 📋
+### Expandable Nutrient Cards (Today Intake Breakdown) 📋
+
+**Status:** Planned
+
+Each nutrient card on the Today screen can be tapped to expand, revealing a chronological breakdown of every intake logged for that nutrient today. Gives users an auditable view of their day without navigating to History.
+
+**Behaviour:**
+- Tapping anywhere on the card body toggles expanded/collapsed state.
+- Expanded state slides open below the progress bar. The `[−]` and `[+]` buttons remain visible on the card in both states (expansion is purely informational — it does not change the logging UX).
+- Multiple cards can be open simultaneously. There is no accordion / auto-collapse behaviour.
+- Expanded state is transient UI state only — it is never persisted across tab switches or app sessions.
+
+**Expanded section contents:**
+- Each `IntakeRecord` for that nutrient today, sorted chronologically (oldest first).
+- Each row shows: **time** (e.g. "08:15") and **amount** with unit (e.g. "+200 IU"). Negative amounts (decrements) are displayed in a muted destructive colour (e.g. system orange or red) so users can understand why a total is lower than expected — they are never hidden.
+- If an `IntakeRecord` has a non-empty `note`, it is shown as a muted caption on a second line beneath that row.
+- Empty state (zero intakes logged yet): shows "No intakes logged yet" as a muted placeholder.
+
+**Design constraints:**
+- No cap on number of entries shown — render all of them. The Today screen is already in a `ScrollView` so tall cards are handled naturally.
+- No swipe-to-delete on individual intake rows in this view (that complexity is deferred).
+
+**New components:**
+- `ExpandableNutrientCard` — wrapper view composing the existing `NutrientRowView` with the new expansion section. Keeps `NutrientRowView` unchanged.
+- `NutrientIntakeHistoryView` — the expanded intake list. Fetches today's `[IntakeRecord]` for the given nutrient via `@Query` filtered by nutrient and today's calendar date range.
+
+**State:** `@State private var expandedNutrientIDs: Set<UUID> = []` in `TodayView`. Toggled on card tap via a callback or binding passed into `ExpandableNutrientCard`.
+
+**Animation:** `withAnimation(.spring(response: 0.35, dampingFraction: 0.8))` on the toggle. The expansion content is conditionally included in the view tree so SwiftUI animates insertion and removal automatically.
+
+**Gesture conflict note:** The existing swipe-right (Add Exact Amount) and swipe-left (Edit) actions live on the row. Apply `contentShape(Rectangle())` to the card tap target. SwiftUI prioritises swipe gestures over tap gestures naturally, so no explicit `simultaneousGesture` handling is required.
+
+---
+
+
 
 **Status:** Planned
 
