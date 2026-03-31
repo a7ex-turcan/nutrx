@@ -16,6 +16,8 @@ struct HistoryDayView: View {
                         nutrient: entry.nutrient,
                         currentIntake: entry.total
                     )
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
                     .onTapGesture {
                         selectedNutrient = entry.nutrient
                     }

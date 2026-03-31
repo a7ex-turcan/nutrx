@@ -17,6 +17,7 @@ struct TodayView: View {
     @State private var showSyncBanner = false
     @State private var syncBannerVariant: SyncBannerView.Variant = .enabled
     @State private var streak: StreakResult?
+    @State private var expandedNutrientIDs: Set<UUID> = []
     @AppStorage("wasSyncRestored") private var wasSyncRestored = false
 
     private var hasCustomGroups: Bool {
@@ -142,9 +143,17 @@ struct TodayView: View {
     }
 
     private func nutrientRow(_ entry: TodayViewModel.NutrientIntake) -> some View {
-        NutrientRowView(
+        ExpandableNutrientCard(
             nutrient: entry.nutrient,
             currentIntake: entry.total,
+            isExpanded: expandedNutrientIDs.contains(entry.nutrient.id),
+            onToggle: {
+                if expandedNutrientIDs.contains(entry.nutrient.id) {
+                    expandedNutrientIDs.remove(entry.nutrient.id)
+                } else {
+                    expandedNutrientIDs.insert(entry.nutrient.id)
+                }
+            },
             onIncrement: {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     viewModel.increment(entry.nutrient, context: modelContext)

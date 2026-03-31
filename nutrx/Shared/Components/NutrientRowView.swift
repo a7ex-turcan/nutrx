@@ -68,8 +68,6 @@ struct NutrientRowView: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
 }
@@ -82,10 +80,15 @@ struct NutrientRowView: View {
             onIncrement: {},
             onDecrement: {}
         )
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+
         NutrientRowView(
             nutrient: Nutrient(name: "Omega-3", unit: "mg", step: 500, dailyTarget: 2000, sortOrder: 1),
             currentIntake: 2000
         )
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
     .padding()
     .background(Color(.systemGroupedBackground))
