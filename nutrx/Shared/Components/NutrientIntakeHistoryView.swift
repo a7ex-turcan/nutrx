@@ -41,26 +41,24 @@ struct NutrientIntakeHistoryView: View {
     }
 
     private func recordRow(_ record: IntakeRecord) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack {
-                Text(record.date, format: .dateTime.hour().minute())
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Spacer()
-
-                let isNegative = record.amount < 0
-                Text("\(isNegative ? "" : "+")\(record.amount.displayString) \(unit)")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(isNegative ? .orange : .primary)
-            }
+        HStack {
+            Text(record.date, format: .dateTime.hour().minute())
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
             if let note = record.note, !note.isEmpty {
-                Text(note)
-                    .font(.caption2)
+                Text("· \(note)")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(1)
             }
+
+            Spacer()
+
+            let isNegative = record.amount < 0
+            Text("\(isNegative ? "" : "+")\(record.amount.displayString) \(unit)")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(isNegative ? .orange : .primary)
         }
     }
 }
