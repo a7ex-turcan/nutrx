@@ -253,6 +253,14 @@ struct NutrientsListView: View {
         }
 
         modelContext.insert(nutrient)
+
+        for time in addDraft.pendingReminderTimes {
+            let reminder = NutrientReminder(nutrient: nutrient, timeOfDay: time)
+            modelContext.insert(reminder)
+        }
+        if !addDraft.pendingReminderTimes.isEmpty {
+            NotificationService.scheduleReminders(for: nutrient)
+        }
     }
 
     private func applyEdit(to nutrient: Nutrient) {

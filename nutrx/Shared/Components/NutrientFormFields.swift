@@ -9,6 +9,7 @@ final class NutrientDraft {
     var step: String = ""
     var dailyTarget: String = ""
     var notes: String = ""
+    var pendingReminderTimes: [Date] = []
 
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -23,6 +24,7 @@ final class NutrientDraft {
         step = ""
         dailyTarget = ""
         notes = ""
+        pendingReminderTimes = []
     }
 
     func populate(from nutrient: Nutrient) {
