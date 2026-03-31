@@ -130,7 +130,11 @@ struct ManageGroupsView: View {
             Button("Cancel", role: .cancel) { groupToDelete = nil }
         } message: {
             let count = (groupToDelete?.nutrients ?? []).count
-            Text("\(groupToDelete?.name ?? "This group") will be deleted. Its \(count) nutrient\(count == 1 ? "" : "s") will move to General.")
+            if count == 0 {
+                Text("\(groupToDelete?.name ?? "This group") will be deleted.")
+            } else {
+                Text("\(groupToDelete?.name ?? "This group") will be deleted. Its \(count) nutrient\(count == 1 ? "" : "s") will move to General.")
+            }
         }
     }
 
