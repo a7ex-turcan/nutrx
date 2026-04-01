@@ -76,6 +76,11 @@ struct NutrientsListView: View {
                     }
                 }
             }
+            .navigationDestination(for: PersistentIdentifier.self) { id in
+                if let nutrient = nutrients.first(where: { $0.persistentModelID == id }) {
+                    NutrientAnalyticsView(nutrient: nutrient)
+                }
+            }
             .sheet(isPresented: $showAddSheet) {
                 NutrientFormView(
                     draft: addDraft,
@@ -144,12 +149,9 @@ struct NutrientsListView: View {
                 Section {
                     if !section.group.isCollapsed {
                         ForEach(section.nutrients, id: \.persistentModelID) { nutrient in
-                            nutrientRow(nutrient)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    editDraft.populate(from: nutrient)
-                                    nutrientToEdit = nutrient
-                                }
+                            NavigationLink(value: nutrient.persistentModelID) {
+                                nutrientRow(nutrient)
+                            }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                     Button(role: .destructive) {
                                         nutrientToDelete = nutrient
