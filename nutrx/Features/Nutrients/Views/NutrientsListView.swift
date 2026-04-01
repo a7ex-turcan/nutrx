@@ -213,9 +213,20 @@ struct NutrientsListView: View {
 
     private func nutrientRow(_ nutrient: Nutrient) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(nutrient.name)
-                    .font(.body.weight(.medium))
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(nutrient.name)
+                        .font(.body.weight(.medium))
+
+                    if let notes = nutrient.notes, !notes.isEmpty {
+                        Text("·")
+                            .foregroundStyle(.secondary)
+                        Text(notes)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
 
                 HStack(spacing: 0) {
                     HStack(spacing: 3) {

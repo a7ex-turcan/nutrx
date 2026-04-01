@@ -11,6 +11,8 @@ All notable changes to nutrx are documented in this file.
 - **Reminders during nutrient creation** — Set dose reminders while creating a new nutrient, making the feature more discoverable. Notification permission is requested gracefully on first use.
 
 ### Improvements
+- **Log button in expanded cards** — A quick-access + button at the bottom of expanded nutrient cards opens the exact amount sheet, encouraging logging directly from the breakdown view.
+- **Nutrient row summary in My Nutrients** — Each nutrient now shows daily target, reminder count, and step increment as three icon-labeled columns for better scannability and reminder discoverability. Nutrient notes are displayed inline next to the name.
 - **Keyboard dismiss after onboarding nutrient** — The keyboard now hides after adding a nutrient during onboarding so the Get Started button is visible.
 - **Empty group delete confirmation** — Deleting a group with no nutrients now shows a simpler confirmation without mentioning "0 nutrients will be moved".
 

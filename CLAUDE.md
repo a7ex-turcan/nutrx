@@ -122,7 +122,7 @@ nutrx/
 │   │
 │   ├── Nutrients/               # Tab 2 — manage the nutrient list.
 │   │   └── Views/
-│   │       ├── NutrientsListView.swift      # Reorderable list with add/edit/delete.
+│   │       ├── NutrientsListView.swift      # Reorderable list with add/edit/delete. Row shows note inline, summary with target/reminders/step.
 │   │       ├── NutrientFormView.swift       # Create/edit form with group picker and reminders section.
 │   │       └── NutrientRemindersSheet.swift # Per-nutrient dose reminder management.
 │   │
@@ -223,7 +223,7 @@ Intake is computed by summing `IntakeRecord` rows for today's calendar day. No e
 
 ### Expandable Nutrient Cards
 
-Tap any nutrient card to expand a chronological breakdown of all `IntakeRecord` entries for that nutrient today. Each row shows time, signed amount (decrements in orange), and optional note inline. Multiple cards can be open simultaneously. State is transient (`expandedNutrientIDs: Set<UUID>` in `TodayView`) — resets on tab switch. `ExpandableNutrientCard` wraps `NutrientRowView` and owns the card background/clip. `NutrientIntakeHistoryView` fetches records via `@Query`.
+Tap any nutrient card to expand a chronological breakdown of all `IntakeRecord` entries for that nutrient today. Each row shows time, signed amount (decrements in orange), and optional note inline. A centered + button at the bottom opens the exact amount sheet. Multiple cards can be open simultaneously. State is transient (`expandedNutrientIDs: Set<UUID>` in `TodayView`) — resets on tab switch. `ExpandableNutrientCard` wraps `NutrientRowView` and owns the card background/clip. `NutrientIntakeHistoryView` fetches records via `@Query`.
 
 ---
 

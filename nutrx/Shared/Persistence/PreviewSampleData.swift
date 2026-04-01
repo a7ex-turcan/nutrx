@@ -35,16 +35,19 @@ let previewContainer: ModelContainer = {
     let tenDaysAgo = Calendar.current.date(byAdding: .day, value: -10, to: .now)!
 
     let vitD = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 4000, sortOrder: 0)
+    vitD.notes = "Take with fatty meal"
     vitD.group = vitamins
     vitD.groupSortOrder = 0
     vitD.createdAt = tenDaysAgo
 
     let omega3 = Nutrient(name: "Omega-3", unit: "mg", step: 500, dailyTarget: 2000, sortOrder: 1)
+    omega3.notes = "Fish oil capsules"
     omega3.group = supplements
     omega3.groupSortOrder = 0
     omega3.createdAt = tenDaysAgo
 
     let caffeine = Nutrient(name: "Caffeine", unit: "mg", step: 100, dailyTarget: 400, sortOrder: 2)
+    caffeine.notes = "Max 4 cups of coffee"
     caffeine.group = general
     caffeine.groupSortOrder = 0
     caffeine.createdAt = tenDaysAgo
@@ -55,6 +58,7 @@ let previewContainer: ModelContainer = {
     water.createdAt = tenDaysAgo
 
     let protein = Nutrient(name: "Protein", unit: "g", step: 10, dailyTarget: 150, sortOrder: 4)
+    protein.notes = "Include post-workout shake"
     protein.group = supplements
     protein.groupSortOrder = 1
     protein.createdAt = tenDaysAgo
