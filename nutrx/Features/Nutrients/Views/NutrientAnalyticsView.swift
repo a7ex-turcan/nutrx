@@ -22,6 +22,20 @@ struct NutrientAnalyticsView: View {
                             }
                         )
                     )
+
+                    PeriodStatsCard(
+                        hitRate: vm.hitRate,
+                        average: vm.periodAverage,
+                        dailyTarget: nutrient.dailyTarget,
+                        unit: nutrient.unit,
+                        period: vm.selectedPeriod
+                    )
+
+                    DayOfWeekCard(
+                        dayOfWeekAverages: vm.dayOfWeekAverages,
+                        dailyTarget: nutrient.dailyTarget,
+                        unit: nutrient.unit
+                    )
                 }
             }
             .padding(16)

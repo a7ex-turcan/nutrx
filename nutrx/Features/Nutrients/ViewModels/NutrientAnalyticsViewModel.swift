@@ -23,6 +23,7 @@ final class NutrientAnalyticsViewModel {
     var dailyTotals: [(date: Date, total: Double)] = []
     var hitRate: (onTarget: Int, total: Int) = (0, 0)
     var periodAverage: Double = 0
+    var dayOfWeekAverages: [(weekday: Int, label: String, average: Double)] = []
 
     private let nutrient: Nutrient
     private let modelContext: ModelContext
@@ -31,6 +32,7 @@ final class NutrientAnalyticsViewModel {
         self.nutrient = nutrient
         self.modelContext = modelContext
         refresh()
+        refreshDayOfWeek()
     }
 
     func refresh() {
@@ -74,5 +76,48 @@ final class NutrientAnalyticsViewModel {
 
         let sum = result.reduce(0.0) { $0 + $1.total }
         periodAverage = result.isEmpty ? 0 : sum / Double(result.count)
+    }
+
+    private func refreshDayOfWeek() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let startDate = calendar.date(byAdding: .day, value: -28, to: today)!
+
+        let nutrientID = nutrient.id
+        let descriptor = FetchDescriptor<IntakeRecord>(
+            predicate: #Predicate<IntakeRecord> {
+                $0.nutrient?.id == nutrientID
+                    && $0.date >= startDate
+                    && $0.date < today
+            }
+        )
+
+        let records = (try? modelContext.fetch(descriptor)) ?? []
+
+        // Group by calendar day, then aggregate by weekday
+        var dayMap: [Date: Double] = [:]
+        for record in records {
+            let day = calendar.startOfDay(for: record.date)
+            dayMap[day, default: 0] += record.amount
+        }
+
+        // Only include days that have at least one record
+        var weekdaySums: [Int: Double] = [:]
+        var weekdayCounts: [Int: Int] = [:]
+        for (day, total) in dayMap {
+            let wd = calendar.component(.weekday, from: day)
+            weekdaySums[wd, default: 0] += max(0, total)
+            weekdayCounts[wd, default: 0] += 1
+        }
+
+        // Build Mon–Sun ordered array (weekday 2=Mon ... 7=Sat, 1=Sun)
+        let weekdayOrder = [2, 3, 4, 5, 6, 7, 1]
+        let symbols = calendar.shortWeekdaySymbols // ["Sun", "Mon", ...]
+        dayOfWeekAverages = weekdayOrder.map { wd in
+            let avg = weekdayCounts[wd, default: 0] > 0
+                ? weekdaySums[wd, default: 0] / Double(weekdayCounts[wd]!)
+                : 0
+            return (weekday: wd, label: symbols[wd - 1], average: avg)
+        }
     }
 }
