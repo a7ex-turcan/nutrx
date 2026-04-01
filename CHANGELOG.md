@@ -4,6 +4,18 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v1.8 — 2026-04-01
+
+### Features
+- **Per-nutrient analytics** — Tap any nutrient in My Nutrients to see a dedicated analytics screen with three cards: a daily intake bar chart (7D/30D/90D), period stats (hit rate, daily average, target), and day-of-week patterns (4-week averages with strongest day highlighted).
+- **Profile picture** — Set a profile photo from your library or camera in Edit Profile. Your photo appears in the navigation bar across all tabs.
+
+### Improvements
+- **Save dismisses profile sheet** — Tapping Save in Edit Profile now closes the sheet immediately instead of showing a toast.
+- **Edit button removed from My Nutrients** — Tap navigates to analytics; editing remains available via swipe-left and context menu.
+
+---
+
 ## v1.7 — 2026-04-01
 
 ### Features

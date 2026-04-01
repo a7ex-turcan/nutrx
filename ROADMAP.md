@@ -38,7 +38,7 @@
 | iCloud sync (CloudKit + SwiftData) | ✅ Shipped (v1.6) |
 | In-app review prompt | ✅ Shipped (v1.6) |
 | Expandable nutrient cards (Today intake breakdown) | ✅ Shipped (v1.7) |
-| Analytics & charts (per-nutrient) | 📋 Specced, ready to build |
+| Analytics & charts (per-nutrient) | ✅ Shipped (v1.8) |
 | Apple Health integration (HealthKit write) | 📋 Planned |
 
 ### MVP 4 — Pro Tier & AI 📋
@@ -181,11 +181,11 @@ Tap any nutrient card on Today to expand a chronological breakdown of all intake
 
 ---
 
-### Analytics & Charts 📋
+### Analytics & Charts ✅
 
-**Status:** Specced, ready to build
+**Status:** Shipped in v1.8
 
-Per-nutrient analytics screen accessible by tapping any row in the My Nutrients tab. Editing is preserved via swipe-left and long-press, which were already the primary edit gestures. The tap gesture was previously unassigned on this screen.
+Per-nutrient analytics screen accessible by tapping any row in the My Nutrients tab. Editing is preserved via swipe-left and long-press context menu.
 
 #### Navigation
 

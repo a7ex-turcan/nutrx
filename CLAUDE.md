@@ -168,6 +168,7 @@ nutrx/
     │   ├── NutrientIntakeHistoryView.swift  # Expanded intake list. @Query-fetches today's IntakeRecords for one nutrient.
     │   ├── GroupHeaderView.swift            # Collapsible group header with completion count.
     │   ├── MoveToGroupSheet.swift
+    │   ├── CameraView.swift                 # UIImagePickerController wrapper for camera capture.
     │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
     │   ├── SyncBannerView.swift             # Dismissible iCloud sync banner.
     │   ├── ProfileMenuButton.swift
@@ -377,7 +378,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 
 ## Out of Scope — Not Yet Built
 
-**MVP 3 (in progress):** Analytics & charts, Apple Health integration (HealthKit write)
+**MVP 3 (in progress):** Apple Health integration (HealthKit write)
 
 **MVP 4:** Pro tier (StoreKit 2), AI features (on-device + third-party LLM)
 
@@ -416,6 +417,7 @@ Single instance. Collected during onboarding, editable via Profile.
 | `heightUnit` | `String` | `"cm"` or `"ft"` |
 | `onboardingCompleted` | `Bool` | Gate for main app access |
 | `createdAt` | `Date = Date()` | Used by ReviewService for account age guard |
+| `profileImageData` | `Data?` | JPEG profile photo, `@Attribute(.externalStorage)` |
 
 ---
 
