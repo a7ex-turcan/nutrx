@@ -205,7 +205,7 @@ Completion tracked via `UserProfile.onboardingCompleted`. On a new device with i
 
 Users create and manage their own nutrients. No preset list — fully user-defined. Each nutrient has: **name**, **unit**, **step** (increment per +/− tap), **daily target**, and optional **notes**. Nutrients can be reordered via drag-and-drop. Order in My Nutrients = order on Today screen.
 
-Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Smart suppression cancels upcoming reminders after logging intake. Managed via the "Reminders" section in the Edit Nutrient form.
+Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Smart suppression cancels upcoming reminders after logging intake. Reminders can be configured both during nutrient creation (inline in the form) and via the "Reminders" section in the Edit Nutrient form. Notification permission is requested on first reminder add if not yet granted.
 
 ---
 
@@ -223,28 +223,7 @@ Intake is computed by summing `IntakeRecord` rows for today's calendar day. No e
 
 ### Expandable Nutrient Cards
 
-Each nutrient card supports an expanded state that shows a chronological breakdown of all `IntakeRecord` entries for that nutrient today.
-
-**Toggle:** Tapping anywhere on the card body expands or collapses it. The `[−]` and `[+]` buttons remain visible in both states — expansion is informational only and does not alter the logging UX.
-
-**Expanded section:**
-- All `IntakeRecord` rows for that nutrient today, sorted chronologically (oldest first).
-- Each row: time (formatted as "HH:mm") + amount with unit. Positive amounts shown normally. **Negative amounts (decrements) are always shown**, styled in a muted destructive colour (system orange) so the user can understand the running total.
-- If `IntakeRecord.note` is non-empty, render it as a muted caption beneath that row.
-- Empty state (no intakes yet): show "No intakes logged yet" as a muted placeholder.
-- No cap on entries — render all. The screen is already in a `ScrollView`.
-
-**State:** `@State private var expandedNutrientIDs: Set<UUID> = []` in `TodayView`. Never persisted — resets on tab switch and app relaunch.
-
-**Multiple cards open:** Allowed. No accordion/auto-collapse behaviour.
-
-**Animation:** `withAnimation(.spring(response: 0.35, dampingFraction: 0.8))` wrapping the `expandedNutrientIDs` mutation. Expansion content is conditionally present in the view tree so SwiftUI animates automatically.
-
-**Gesture safety:** Apply `contentShape(Rectangle())` to the card tap target. Existing swipe-right / swipe-left actions take priority over tap naturally in SwiftUI — no `simultaneousGesture` override needed.
-
-**New components:**
-- `ExpandableNutrientCard` (`Shared/Components/`) — wraps `NutrientRowView` (unchanged) with the expansion section below it.
-- `NutrientIntakeHistoryView` (`Shared/Components/`) — the expanded list. Uses `@Query` filtered by nutrient ID and today's calendar date range to fetch `[IntakeRecord]` independently, keeping `NutrientRowView` free of intake-record data.
+Tap any nutrient card to expand a chronological breakdown of all `IntakeRecord` entries for that nutrient today. Each row shows time, signed amount (decrements in orange), and optional note inline. Multiple cards can be open simultaneously. State is transient (`expandedNutrientIDs: Set<UUID>` in `TodayView`) — resets on tab switch. `ExpandableNutrientCard` wraps `NutrientRowView` and owns the card background/clip. `NutrientIntakeHistoryView` fetches records via `@Query`.
 
 ---
 

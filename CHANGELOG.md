@@ -4,6 +4,18 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v1.7 — 2026-04-01
+
+### Features
+- **Expandable nutrient cards** — Tap any nutrient card on the Today screen to see a chronological breakdown of every intake logged for that nutrient today, including times, amounts, and notes.
+- **Reminders during nutrient creation** — Set dose reminders while creating a new nutrient, making the feature more discoverable. Notification permission is requested gracefully on first use.
+
+### Improvements
+- **Keyboard dismiss after onboarding nutrient** — The keyboard now hides after adding a nutrient during onboarding so the Get Started button is visible.
+- **Empty group delete confirmation** — Deleting a group with no nutrients now shows a simpler confirmation without mentioning "0 nutrients will be moved".
+
+---
+
 ## v1.6 — 2026-03-26
 
 ### Features
