@@ -7,6 +7,7 @@ struct ExpandableNutrientCard: View {
     var onToggle: () -> Void
     var onIncrement: (() -> Void)?
     var onDecrement: (() -> Void)?
+    var onLogExactAmount: (() -> Void)?
 
     @State private var contentVisible = false
 
@@ -23,10 +24,24 @@ struct ExpandableNutrientCard: View {
                 Divider()
                     .padding(.horizontal, 16)
 
-                NutrientIntakeHistoryView(nutrientID: nutrient.id, unit: nutrient.unit)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .opacity(contentVisible ? 1 : 0)
+                VStack(spacing: 8) {
+                    NutrientIntakeHistoryView(nutrientID: nutrient.id, unit: nutrient.unit)
+
+                    Button {
+                        onLogExactAmount?()
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.caption.weight(.semibold))
+                            .padding(6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .clipShape(Circle())
+                    .controlSize(.mini)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .opacity(contentVisible ? 1 : 0)
             }
         }
         .background(Color(.secondarySystemGroupedBackground))

@@ -165,6 +165,9 @@ struct TodayView: View {
                     viewModel.decrement(entry.nutrient, context: modelContext)
                 }
                 checkForReview()
+            },
+            onLogExactAmount: {
+                nutrientForCustomAmount = entry.nutrient
             }
         )
         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
