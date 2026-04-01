@@ -213,13 +213,32 @@ struct NutrientsListView: View {
 
     private func nutrientRow(_ nutrient: Nutrient) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(nutrient.name)
                     .font(.body.weight(.medium))
 
-                Text("\(nutrient.dailyTarget.displayString) \(nutrient.unit)/day  ·  step \(nutrient.step.displayString)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 0) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "target")
+                            .font(.caption2)
+                        Text("\(nutrient.dailyTarget.displayString) \(nutrient.unit)/day")
+                    }
+                    Spacer()
+                    HStack(spacing: 3) {
+                        Image(systemName: "bell.fill")
+                            .font(.caption2)
+                        let count = nutrient.reminders?.count ?? 0
+                        Text("\(count) Reminder\(count == 1 ? "" : "s")")
+                    }
+                    Spacer()
+                    HStack(spacing: 3) {
+                        Image(systemName: "plus.forwardslash.minus")
+                            .font(.caption2)
+                        Text("\(nutrient.step.displayString)")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             Spacer()
