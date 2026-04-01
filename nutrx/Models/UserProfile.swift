@@ -11,6 +11,7 @@ final class UserProfile {
     var heightUnit: String = "cm"
     var onboardingCompleted: Bool = false
     var createdAt: Date = Date()
+    @Attribute(.externalStorage) var profileImageData: Data? = nil
 
     init(
         name: String,

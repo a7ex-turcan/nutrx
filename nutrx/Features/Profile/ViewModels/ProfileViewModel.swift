@@ -9,6 +9,7 @@ final class ProfileViewModel {
     var weightUnit: String = "kg"
     var height: String = ""
     var heightUnit: String = "cm"
+    var profileImageData: Data?
 
     private var profile: UserProfile?
 
@@ -20,6 +21,7 @@ final class ProfileViewModel {
             || weightUnit != profile.weightUnit
             || height != formattedValue(profile.height)
             || heightUnit != profile.heightUnit
+            || profileImageData != profile.profileImageData
     }
 
     var isValid: Bool {
@@ -38,6 +40,7 @@ final class ProfileViewModel {
         weightUnit = profile.weightUnit
         height = formattedValue(profile.height)
         heightUnit = profile.heightUnit
+        profileImageData = profile.profileImageData
     }
 
     func save() {
@@ -51,6 +54,7 @@ final class ProfileViewModel {
         profile.weightUnit = weightUnit
         profile.height = heightValue
         profile.heightUnit = heightUnit
+        profile.profileImageData = profileImageData
     }
 
     private func formattedValue(_ value: Double) -> String {
