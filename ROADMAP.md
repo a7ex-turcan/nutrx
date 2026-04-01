@@ -38,7 +38,7 @@
 | iCloud sync (CloudKit + SwiftData) | ✅ Shipped (v1.6) |
 | In-app review prompt | ✅ Shipped (v1.6) |
 | Expandable nutrient cards (Today intake breakdown) | ✅ Shipped (v1.7) |
-| Analytics & charts | 📋 Planned |
+| Analytics & charts (per-nutrient) | 📋 Specced, ready to build |
 | Apple Health integration (HealthKit write) | 📋 Planned |
 
 ### MVP 4 — Pro Tier & AI 📋
@@ -181,11 +181,62 @@ Tap any nutrient card on Today to expand a chronological breakdown of all intake
 
 ---
 
+### Analytics & Charts 📋
 
+**Status:** Specced, ready to build
 
-**Status:** Planned
+Per-nutrient analytics screen accessible by tapping any row in the My Nutrients tab. Editing is preserved via swipe-left and long-press, which were already the primary edit gestures. The tap gesture was previously unassigned on this screen.
 
-Weekly and monthly breakdowns of intake per nutrient. Trend lines. "Best day" / "worst day" summaries. Free tier gets last 30 days; Pro tier gets full history charts (first Pro-gated feature).
+#### Navigation
+
+`NutrientAnalyticsView` is pushed onto the My Nutrients `NavigationStack` when the user taps a nutrient row. It receives the `Nutrient` model object. The screen title is the nutrient name.
+
+#### Period picker
+
+Segmented control at the top of the screen: **7D · 30D · 90D**. Defaults to 7D. Controls data range for Cards 1 and 2. Card 3 is always fixed at 4 weeks.
+
+#### Card 1 — Daily Intake Chart
+
+Built with Swift Charts (native, no third-party dependency — consistent with the app's no-external-libs policy). One `BarMark` per calendar day in the selected period. Bar height = SUM of `IntakeRecord.amount` for that nutrient on that calendar day, floored at 0 in the UI. A dashed `RuleMark` at `nutrient.dailyTarget` is the target line. Bars are color-coded: blue (below target), green (at or above target), orange (exceeded). Days with zero intake still render as a zero-height bar so the x-axis is continuous and gaps are visible. Card title: "Daily intake". Period picker sits in the card header trailing position.
+
+#### Card 2 — Period Stats
+
+Title: "This period". Three stats in a horizontal row:
+
+| Stat | Label | Value |
+|---|---|---|
+| Hit rate | "On target" | "X / Y days" where X = days ≥ dailyTarget, Y = days in period |
+| Average | "Daily avg" | Mean of all daily totals across the period, with unit |
+| Target | "Target" | `nutrient.dailyTarget` with unit — static reference |
+
+Responds to the period picker alongside Card 1.
+
+#### Card 3 — Day of Week Patterns
+
+Title: "Patterns". Subtitle: "Last 4 weeks". Always fixed — does not respond to the period picker. Seven bars, one per weekday (Mon–Sun). Bar height = average daily intake for that weekday over the last 28 days. Only days that have at least one `IntakeRecord` for this nutrient count toward the average — days with no data are excluded from the denominator. A dashed `RuleMark` at `nutrient.dailyTarget` is shown for reference. The highest bar is highlighted in accent blue; the rest are neutral grey.
+
+#### ViewModel
+
+`NutrientAnalyticsViewModel` holds `@Published var selectedPeriod: AnalyticsPeriod` (enum: `.week`, `.month`, `.quarter`). Fetches all `IntakeRecord` rows for the given nutrient within the date window via manual `ModelContext` fetch (no `@Query` in the VM — same pattern as widget `TimelineProvider`). Exposes:
+
+- `dailyTotals: [Date: Double]` — keyed by start-of-day, covering every calendar day in the window including zeros
+- `hitRate: (onTarget: Int, total: Int)`
+- `periodAverage: Double`
+- `dayOfWeekAverages: [Int: Double]` — keyed by `Calendar.weekday`
+
+All amounts summed per day and floored at 0 before exposure to the view layer.
+
+#### New files
+
+```
+Features/Nutrients/Views/NutrientAnalyticsView.swift
+Features/Nutrients/Views/DailyIntakeChartCard.swift
+Features/Nutrients/Views/PeriodStatsCard.swift
+Features/Nutrients/Views/DayOfWeekCard.swift
+Features/Nutrients/ViewModels/NutrientAnalyticsViewModel.swift
+```
+
+No new SwiftData models. No new services. No network requests.
 
 ---
 

@@ -121,10 +121,16 @@ nutrx/
 │   │                                        # Explicitly saves context after every intake mutation.
 │   │
 │   ├── Nutrients/               # Tab 2 — manage the nutrient list.
-│   │   └── Views/
-│   │       ├── NutrientsListView.swift      # Reorderable list with add/edit/delete. Row shows note inline, summary with target/reminders/step.
-│   │       ├── NutrientFormView.swift       # Create/edit form with group picker and reminders section.
-│   │       └── NutrientRemindersSheet.swift # Per-nutrient dose reminder management.
+│   │   ├── Views/
+│   │   │   ├── NutrientsListView.swift          # Reorderable list with add/edit/delete. Row shows note inline, summary with target/reminders/step.
+│   │   │   ├── NutrientFormView.swift           # Create/edit form with group picker and reminders section.
+│   │   │   ├── NutrientRemindersSheet.swift     # Per-nutrient dose reminder management.
+│   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics screen. Three cards: bar chart, stats, day-of-week. Pushed onto NavigationStack on row tap.
+│   │   │   ├── DailyIntakeChartCard.swift       # Card 1 — bar chart with period picker (7D/30D/90D) and target RuleMark.
+│   │   │   ├── PeriodStatsCard.swift            # Card 2 — hit rate, average, target stats derived from selected period.
+│   │   │   └── DayOfWeekCard.swift              # Card 3 — fixed 4-week average broken down by weekday.
+│   │   └── ViewModels/
+│   │       └── NutrientAnalyticsViewModel.swift # Fetches and aggregates IntakeRecords for the selected nutrient and period. Exposes dailyTotals, hitRate, average, dayOfWeekAverages.
 │   │
 │   ├── History/                 # Tab 3 — read-only log of past days.
 │   │   ├── Views/
@@ -230,6 +236,64 @@ Tap any nutrient card to expand a chronological breakdown of all `IntakeRecord` 
 ## History Tab
 
 Chronological list of past days (most recent first), grouped by month. Read-only. Streak summary card at the top shows current and best streak when enabled.
+
+---
+
+## Nutrient Analytics
+
+Accessed by tapping any nutrient row in the My Nutrients tab. Replaces the previous tap-to-edit behaviour — editing is still available via swipe-left on the row or long-press context menu, both of which were already shipped.
+
+`NutrientAnalyticsView` is pushed onto the My Nutrients `NavigationStack`. It receives the `Nutrient` model object and hosts `NutrientAnalyticsViewModel`.
+
+### Period picker
+
+A segmented control at the top of the screen with three options: **7D · 30D · 90D**. Defaults to 7D on open. Controls the data range for Cards 1 and 2. Card 3 is always fixed at 4 weeks regardless of this selection.
+
+### Card 1 — Daily Intake Chart
+
+Built with **Swift Charts** (native, no third-party dependency). One `BarMark` per calendar day in the selected period. Bar height = total intake for that day (SUM of `IntakeRecord.amount` for that nutrient, same aggregation logic as `TodayViewModel` — floored at 0 in the UI, never negative). A dashed `RuleMark` at `nutrient.dailyTarget` acts as the target line. Bars are color-coded using the same three-state logic as `NutrientProgressBar`: blue (below target), green (at or above target), orange (exceeded by more than 0%). Card title: "Daily intake". Period picker lives in the card header trailing position.
+
+**Important:** days with zero intake must still render as a zero-height bar so the x-axis is continuous and the user can see gaps clearly.
+
+### Card 2 — Period Stats
+
+Title: "This period" (updates label to reflect "Last 7 days" / "Last 30 days" / "Last 90 days" as a subtitle). Three stat items displayed in a horizontal row:
+
+| Stat | Label | Derivation |
+|---|---|---|
+| Hit rate | "On target" | Days where total ≥ dailyTarget ÷ total days in period, displayed as "X / Y days" |
+| Average | "Daily avg" | Sum of all daily totals ÷ number of days in period, displayed with unit |
+| Target | "Target" | `nutrient.dailyTarget` with unit — static, for quick reference |
+
+### Card 3 — Day of Week Patterns
+
+Title: "Patterns". Subtitle: "Last 4 weeks" — always fixed, does not respond to the period picker. Seven small bars, one per weekday (Mon–Sun). Each bar height = average daily intake for that weekday over the last 28 days (only days that have at least one `IntakeRecord` for this nutrient count toward the average — days with no data are excluded from the denominator so the average isn't dragged down by days the user simply didn't log). A dashed `RuleMark` at `nutrient.dailyTarget` is shown for reference. The highest bar is highlighted in accent blue; the rest are neutral grey. This lets the user instantly spot their strongest and weakest days of the week.
+
+### ViewModel — NutrientAnalyticsViewModel
+
+Holds `@Published var selectedPeriod: AnalyticsPeriod` (enum: `.week`, `.month`, `.quarter`). On init and on period change, fetches all `IntakeRecord` rows for the given nutrient within the date window using a manual `ModelContext` fetch (same pattern as widget `TimelineProvider` — no `@Query` in the VM). Computes and exposes:
+
+- `dailyTotals: [Date: Double]` — keyed by calendar day (start-of-day), covering every day in the window including zeros
+- `hitRate: (Int, Int)` — (daysOnTarget, totalDays)
+- `periodAverage: Double`
+- `dayOfWeekAverages: [Int: Double]` — keyed by `Calendar.weekday` (1 = Sunday … 7 = Saturday)
+
+All aggregation uses calendar-day comparison, consistent with the rest of the app. Amounts are summed per day and floored at 0 before being exposed to the view layer.
+
+### File placement summary
+
+```
+Features/Nutrients/Views/
+  NutrientAnalyticsView.swift       ← screen shell, hosts the three cards + period picker
+  DailyIntakeChartCard.swift        ← Card 1
+  PeriodStatsCard.swift             ← Card 2
+  DayOfWeekCard.swift               ← Card 3
+
+Features/Nutrients/ViewModels/
+  NutrientAnalyticsViewModel.swift  ← data fetching + aggregation
+```
+
+No new SwiftData models required. No new services. No network requests.
 
 ---
 
