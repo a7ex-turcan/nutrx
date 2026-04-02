@@ -257,11 +257,6 @@ struct NutrientsListView: View {
                 .foregroundStyle(.secondary)
             }
 
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
         }
     }
 
