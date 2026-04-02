@@ -70,7 +70,8 @@ enum NotificationService {
     /// Schedules all reminders for a given nutrient. Cancels existing ones first.
     static func scheduleReminders(for nutrient: Nutrient) {
         let center = UNUserNotificationCenter.current()
-        let prefix = "\(nutrientReminderPrefix)\(nutrient.persistentModelID)-reminder-"
+        let nutrientUUID = nutrient.id.uuidString
+        let prefix = "\(nutrientReminderPrefix)\(nutrientUUID)-reminder-"
 
         // Collect the IDs we're about to schedule so we can cancel stale ones synchronously
         var newIDs: Set<String> = []
@@ -78,7 +79,7 @@ enum NotificationService {
 
         for reminder in nutrient.reminders ?? [] {
             let (hour, minute) = reminder.timeComponents
-            let id = nutrientReminderID(nutrientID: nutrient.persistentModelID, hour: hour, minute: minute)
+            let id = "\(nutrientReminderPrefix)\(nutrientUUID)-reminder-\(String(format: "%02d%02d", hour, minute))"
             newIDs.insert(id)
 
             let content = UNMutableNotificationContent()
@@ -117,7 +118,7 @@ enum NotificationService {
 
     /// Cancels all pending reminders for a given nutrient.
     static func cancelReminders(for nutrient: Nutrient) {
-        let prefix = "\(nutrientReminderPrefix)\(nutrient.persistentModelID)-reminder-"
+        let prefix = "\(nutrientReminderPrefix)\(nutrient.id.uuidString)-reminder-"
         let center = UNUserNotificationCenter.current()
 
         Task {
@@ -135,7 +136,7 @@ enum NotificationService {
     /// reminders for that nutrient scheduled for later today, then reschedules
     /// them so they fire again tomorrow.
     static func suppressRemindersAfterLogging(for nutrient: Nutrient) {
-        let prefix = "\(nutrientReminderPrefix)\(nutrient.persistentModelID)-reminder-"
+        let prefix = "\(nutrientReminderPrefix)\(nutrient.id.uuidString)-reminder-"
         let center = UNUserNotificationCenter.current()
 
         Task {
@@ -154,22 +155,41 @@ enum NotificationService {
 
     /// Reschedules all nutrient reminders for all non-deleted nutrients.
     /// Call on app foreground to ensure reminders are fresh.
+    /// Also cleans up orphaned notifications from old ID formats.
     static func refreshAllNutrientReminders(context: ModelContext) {
         let descriptor = FetchDescriptor<Nutrient>(
             predicate: #Predicate { !$0.isDeleted }
         )
         guard let nutrients = try? context.fetch(descriptor) else { return }
 
+        // Collect all valid UUID-based prefixes
+        let validPrefixes = Set(nutrients.compactMap { nutrient -> String? in
+            guard !(nutrient.reminders ?? []).isEmpty else { return nil }
+            return "\(nutrientReminderPrefix)\(nutrient.id.uuidString)-reminder-"
+        })
+
+        // Schedule fresh reminders for each nutrient
         for nutrient in nutrients where !(nutrient.reminders ?? []).isEmpty {
             scheduleReminders(for: nutrient)
+        }
+
+        // Clean up any orphaned notifications (e.g. from old persistentModelID-based IDs)
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let pending = await center.pendingNotificationRequests()
+            let orphanedIDs = pending
+                .map(\.identifier)
+                .filter { id in
+                    id.hasPrefix(nutrientReminderPrefix)
+                        && !validPrefixes.contains(where: { id.hasPrefix($0) })
+                }
+            if !orphanedIDs.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: orphanedIDs)
+            }
         }
     }
 
     // MARK: - Private Helpers
-
-    private static func nutrientReminderID(nutrientID: PersistentIdentifier, hour: Int, minute: Int) -> String {
-        "\(nutrientReminderPrefix)\(nutrientID)-reminder-\(String(format: "%02d%02d", hour, minute))"
-    }
 
     private static func scheduleReminder(for date: Date) {
         cancelDailyReminder()

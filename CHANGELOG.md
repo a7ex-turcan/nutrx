@@ -14,6 +14,9 @@ All notable changes to nutrx are documented in this file.
 - **Save dismisses profile sheet** — Tapping Save in Edit Profile now closes the sheet immediately instead of showing a toast.
 - **Edit button removed from My Nutrients** — Tap navigates to analytics; editing remains available via swipe-left and context menu.
 
+### Fixes
+- **Duplicate nutrient reminders** — Fixed multiple notifications firing at the same time for a single reminder. Notification IDs now use the stable nutrient UUID instead of SwiftData's internal identifier, which could change across app launches and CloudKit syncs. Orphaned notifications from the old format are cleaned up automatically.
+
 ---
 
 ## v1.7 — 2026-04-01
