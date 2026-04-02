@@ -15,6 +15,7 @@ struct NutrientsListView: View {
     @State private var nutrientToEdit: Nutrient?
     @State private var nutrientToDelete: Nutrient?
     @State private var nutrientToMove: Nutrient?
+    @Query private var allPreferences: [UserPreferences]
 
     private var generalGroup: NutrientGroup? {
         allGroups.first(where: { $0.isSystem })
@@ -140,6 +141,13 @@ struct NutrientsListView: View {
 
     private var nutrientList: some View {
         List {
+            if let prefs = allPreferences.first, !prefs.hasSeenAnalyticsBanner {
+                analyticsBanner
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
             ForEach(groupedSections, id: \.group.persistentModelID) { section in
                 Section {
                     if !section.group.isCollapsed {
@@ -255,6 +263,41 @@ struct NutrientsListView: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
         }
+    }
+
+    // MARK: - Analytics Banner
+
+    private var analyticsBanner: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "chart.bar.fill")
+                .font(.title3)
+                .foregroundStyle(.blue)
+                .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Tap a nutrient to see your stats")
+                    .font(.subheadline.weight(.medium))
+                Text("Swipe or long-press to edit, move, or delete.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                withAnimation {
+                    allPreferences.first?.hasSeenAnalyticsBanner = true
+                }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Actions

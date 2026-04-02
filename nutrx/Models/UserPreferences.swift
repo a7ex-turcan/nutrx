@@ -11,6 +11,7 @@ final class UserPreferences {
     var hasSeenSyncEnabledBanner: Bool = false
     var lastReviewRequestedVersion: String? = nil
     var lastReviewRequestedDate: Date? = nil
+    var hasSeenAnalyticsBanner: Bool = false
 
     init(
         dailyReminderEnabled: Bool = false,
