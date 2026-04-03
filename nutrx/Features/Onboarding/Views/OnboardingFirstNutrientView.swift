@@ -135,7 +135,9 @@ struct OnboardingFirstNutrientView: View {
             unit: draft.unit.trimmingCharacters(in: .whitespaces),
             step: stepValue,
             dailyTarget: targetValue,
-            sortOrder: nutrients.count
+            sortOrder: nutrients.count,
+            goalType: draft.goalType,
+            upperBound: draft.goalType == .range ? draft.upperBound.parsedDouble : nil
         )
         let notes = draft.notes.trimmingCharacters(in: .whitespaces)
         nutrient.notes = notes.isEmpty ? nil : notes

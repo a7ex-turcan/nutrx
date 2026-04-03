@@ -324,6 +324,8 @@ struct TodayView: View {
         nutrient.unit = editDraft.unit.trimmingCharacters(in: .whitespaces)
         nutrient.step = stepValue
         nutrient.dailyTarget = targetValue
+        nutrient.goalType = editDraft.goalType
+        nutrient.upperBound = editDraft.goalType == .range ? editDraft.upperBound.parsedDouble : nil
         let notes = editDraft.notes.trimmingCharacters(in: .whitespaces)
         nutrient.notes = notes.isEmpty ? nil : notes
         viewModel.refresh(context: modelContext)

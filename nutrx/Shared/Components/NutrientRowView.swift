@@ -11,7 +11,25 @@ struct NutrientRowView: View {
     }
 
     private var isComplete: Bool {
-        nutrient.dailyTarget > 0 && currentIntake >= nutrient.dailyTarget
+        switch nutrient.goalType {
+        case .minimum:
+            return nutrient.dailyTarget > 0 && currentIntake >= nutrient.dailyTarget
+        case .maximum:
+            return currentIntake <= nutrient.dailyTarget
+        case .range:
+            guard let upper = nutrient.upperBound else { return false }
+            return currentIntake >= nutrient.dailyTarget && currentIntake <= upper
+        }
+    }
+
+    private var valueLabel: String {
+        switch nutrient.goalType {
+        case .minimum, .maximum:
+            return "\(currentIntake.displayString) / \(nutrient.dailyTarget.displayString) \(nutrient.unit)"
+        case .range:
+            let upper = nutrient.upperBound ?? nutrient.dailyTarget
+            return "\(currentIntake.displayString) / \(nutrient.dailyTarget.displayString)–\(upper.displayString) \(nutrient.unit)"
+        }
     }
 
     var body: some View {
@@ -32,7 +50,7 @@ struct NutrientRowView: View {
 
                 Spacer()
 
-                Text("\(currentIntake.displayString) / \(nutrient.dailyTarget.displayString) \(nutrient.unit)")
+                Text(valueLabel)
                     .font(.caption)
                     .foregroundStyle(isComplete ? .green : .secondary)
             }
@@ -52,7 +70,7 @@ struct NutrientRowView: View {
                     .buttonStyle(.plain)
                 }
 
-                NutrientProgressBar(current: currentIntake, target: nutrient.dailyTarget)
+                NutrientProgressBar(current: currentIntake, target: nutrient.dailyTarget, goalType: nutrient.goalType, upperBound: nutrient.upperBound)
 
                 if showButtons {
                     Button {

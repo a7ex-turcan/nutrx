@@ -61,13 +61,23 @@ final class NutrientAnalyticsViewModel {
         // Build continuous array of days
         var result: [(date: Date, total: Double)] = []
         var onTarget = 0
+        let target = nutrient.dailyTarget
+        let goalType = nutrient.goalType
+        let upper = nutrient.upperBound
+
         for offset in (0..<selectedPeriod.days).reversed() {
             let day = calendar.date(byAdding: .day, value: -(offset + 1), to: today)!
             let startOfDay = calendar.startOfDay(for: day)
             let total = max(0, dayMap[startOfDay] ?? 0)
             result.append((date: startOfDay, total: total))
-            if total >= nutrient.dailyTarget {
-                onTarget += 1
+
+            switch goalType {
+            case .minimum:
+                if total >= target { onTarget += 1 }
+            case .maximum:
+                if total <= target { onTarget += 1 }
+            case .range:
+                if let ub = upper, total >= target && total <= ub { onTarget += 1 }
             }
         }
 

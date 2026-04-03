@@ -14,6 +14,8 @@ struct NutrientAnalyticsView: View {
                         dailyTotals: vm.dailyTotals,
                         dailyTarget: nutrient.dailyTarget,
                         unit: nutrient.unit,
+                        goalType: nutrient.goalType,
+                        upperBound: nutrient.upperBound,
                         selectedPeriod: Binding(
                             get: { vm.selectedPeriod },
                             set: {
@@ -28,13 +30,17 @@ struct NutrientAnalyticsView: View {
                         average: vm.periodAverage,
                         dailyTarget: nutrient.dailyTarget,
                         unit: nutrient.unit,
-                        period: vm.selectedPeriod
+                        period: vm.selectedPeriod,
+                        goalType: nutrient.goalType,
+                        upperBound: nutrient.upperBound
                     )
 
                     DayOfWeekCard(
                         dayOfWeekAverages: vm.dayOfWeekAverages,
                         dailyTarget: nutrient.dailyTarget,
-                        unit: nutrient.unit
+                        unit: nutrient.unit,
+                        goalType: nutrient.goalType,
+                        upperBound: nutrient.upperBound
                     )
                 }
             }

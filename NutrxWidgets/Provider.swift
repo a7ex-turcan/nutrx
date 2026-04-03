@@ -99,7 +99,9 @@ struct NutrxTimelineProvider: TimelineProvider {
                 unit: n.unit,
                 current: max(0, totals[n.persistentModelID] ?? 0),
                 target: n.dailyTarget,
-                step: n.step
+                step: n.step,
+                goalTypeRaw: n.goalTypeRaw,
+                upperBound: n.upperBound
             )
         }
 

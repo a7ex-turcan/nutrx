@@ -5,6 +5,8 @@ struct DailyIntakeChartCard: View {
     let dailyTotals: [(date: Date, total: Double)]
     let dailyTarget: Double
     let unit: String
+    var goalType: GoalType = .minimum
+    var upperBound: Double? = nil
     @Binding var selectedPeriod: AnalyticsPeriod
 
     var body: some View {
@@ -25,6 +27,15 @@ struct DailyIntakeChartCard: View {
             }
 
             Chart {
+                // Range zone background
+                if goalType == .range, let upper = upperBound {
+                    RectangleMark(
+                        yStart: .value("Min", dailyTarget),
+                        yEnd: .value("Max", upper)
+                    )
+                    .foregroundStyle(.green.opacity(0.08))
+                }
+
                 ForEach(dailyTotals, id: \.date) { entry in
                     BarMark(
                         x: .value("Date", entry.date, unit: .day),
@@ -34,14 +45,47 @@ struct DailyIntakeChartCard: View {
                     .cornerRadius(2)
                 }
 
-                RuleMark(y: .value("Target", dailyTarget))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                    .foregroundStyle(.secondary)
-                    .annotation(position: .top, alignment: .trailing) {
-                        Text("\(dailyTarget.displayString) \(unit)")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                // Rule marks based on goal type
+                switch goalType {
+                case .minimum:
+                    RuleMark(y: .value("Target", dailyTarget))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                        .foregroundStyle(.secondary)
+                        .annotation(position: .top, alignment: .trailing) {
+                            Text("\(dailyTarget.displayString) \(unit)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                case .maximum:
+                    RuleMark(y: .value("Max", dailyTarget))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                        .foregroundStyle(.orange)
+                        .annotation(position: .top, alignment: .trailing) {
+                            Text("Max \(dailyTarget.displayString)")
+                                .font(.caption2)
+                                .foregroundStyle(.orange)
+                        }
+                case .range:
+                    if let upper = upperBound {
+                        RuleMark(y: .value("Min", dailyTarget))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                            .foregroundStyle(.green)
+                            .annotation(position: .bottom, alignment: .trailing) {
+                                Text("Min")
+                                    .font(.caption2)
+                                    .foregroundStyle(.green)
+                            }
+
+                        RuleMark(y: .value("Max", upper))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                            .foregroundStyle(.orange)
+                            .annotation(position: .top, alignment: .trailing) {
+                                Text("Max")
+                                    .font(.caption2)
+                                    .foregroundStyle(.orange)
+                            }
                     }
+                }
             }
             .chartYAxis {
                 AxisMarks(position: .leading)
@@ -60,12 +104,34 @@ struct DailyIntakeChartCard: View {
     }
 
     private func barColor(for total: Double) -> Color {
-        if total <= 0 {
-            return .blue.opacity(0.3)
-        } else if total >= dailyTarget {
-            return .green
-        } else {
-            return .blue
+        switch goalType {
+        case .minimum:
+            if total <= 0 {
+                return .blue.opacity(0.3)
+            } else if total >= dailyTarget {
+                return .green
+            } else {
+                return .blue
+            }
+        case .maximum:
+            if total <= 0 {
+                return .orange.opacity(0.3)
+            } else if total > dailyTarget {
+                return Color(.systemRed).opacity(0.85)
+            } else {
+                return .orange
+            }
+        case .range:
+            guard let upper = upperBound else { return .blue }
+            if total <= 0 {
+                return .blue.opacity(0.3)
+            } else if total > upper {
+                return .orange
+            } else if total >= dailyTarget {
+                return .green
+            } else {
+                return .blue
+            }
         }
     }
 

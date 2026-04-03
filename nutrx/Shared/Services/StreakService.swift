@@ -74,10 +74,20 @@ enum StreakService {
 
             let dayTotals = intakeByDayNutrient[day] ?? [:]
 
-            // Every non-excluded nutrient must meet its target
+            // Every non-excluded nutrient must meet its goal
             return nonExcluded.allSatisfy { nutrient in
                 let total = dayTotals[nutrient.persistentModelID] ?? 0
-                return total >= nutrient.dailyTarget
+                switch nutrient.goalType {
+                case .minimum:
+                    return total >= nutrient.dailyTarget
+                case .maximum:
+                    return total <= nutrient.dailyTarget
+                case .range:
+                    guard let upper = nutrient.upperBound else {
+                        return total >= nutrient.dailyTarget
+                    }
+                    return total >= nutrient.dailyTarget && total <= upper
+                }
             }
         }
 

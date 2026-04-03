@@ -6,12 +6,24 @@ struct PeriodStatsCard: View {
     let dailyTarget: Double
     let unit: String
     let period: AnalyticsPeriod
+    var goalType: GoalType = .minimum
+    var upperBound: Double? = nil
 
     private var periodLabel: String {
         switch period {
         case .week: "Last 7 days"
         case .month: "Last 30 days"
         case .quarter: "Last 90 days"
+        }
+    }
+
+    private var targetDisplay: String {
+        switch goalType {
+        case .minimum, .maximum:
+            return "\(dailyTarget.displayString) \(unit)"
+        case .range:
+            let upper = upperBound ?? dailyTarget
+            return "\(dailyTarget.displayString)–\(upper.displayString) \(unit)"
         }
     }
 
@@ -42,7 +54,7 @@ struct PeriodStatsCard: View {
 
                 statItem(
                     label: "Target",
-                    value: "\(dailyTarget.displayString) \(unit)"
+                    value: targetDisplay
                 )
             }
         }

@@ -5,6 +5,8 @@ struct DayOfWeekCard: View {
     let dayOfWeekAverages: [(weekday: Int, label: String, average: Double)]
     let dailyTarget: Double
     let unit: String
+    var goalType: GoalType = .minimum
+    var upperBound: Double? = nil
 
     private var maxAverage: Double {
         dayOfWeekAverages.map(\.average).max() ?? 0
@@ -21,6 +23,15 @@ struct DayOfWeekCard: View {
             }
 
             Chart {
+                // Range zone background
+                if goalType == .range, let upper = upperBound {
+                    RectangleMark(
+                        yStart: .value("Min", dailyTarget),
+                        yEnd: .value("Max", upper)
+                    )
+                    .foregroundStyle(.green.opacity(0.08))
+                }
+
                 ForEach(dayOfWeekAverages, id: \.weekday) { entry in
                     BarMark(
                         x: .value("Day", entry.label),
@@ -30,9 +41,27 @@ struct DayOfWeekCard: View {
                     .cornerRadius(3)
                 }
 
-                RuleMark(y: .value("Target", dailyTarget))
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
-                    .foregroundStyle(.secondary)
+                // Rule marks based on goal type
+                switch goalType {
+                case .minimum:
+                    RuleMark(y: .value("Target", dailyTarget))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                        .foregroundStyle(.secondary)
+                case .maximum:
+                    RuleMark(y: .value("Max", dailyTarget))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                        .foregroundStyle(.orange)
+                case .range:
+                    if let upper = upperBound {
+                        RuleMark(y: .value("Min", dailyTarget))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                            .foregroundStyle(.green)
+
+                        RuleMark(y: .value("Max", upper))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 3]))
+                            .foregroundStyle(.orange)
+                    }
+                }
             }
             .chartYAxis {
                 AxisMarks(position: .leading)

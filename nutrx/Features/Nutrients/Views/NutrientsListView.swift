@@ -237,7 +237,12 @@ struct NutrientsListView: View {
                     HStack(spacing: 3) {
                         Image(systemName: "target")
                             .font(.caption2)
-                        Text("\(nutrient.dailyTarget.displayString) \(nutrient.unit)/day")
+                        switch nutrient.goalType {
+                        case .range:
+                            Text("\(nutrient.dailyTarget.displayString)–\((nutrient.upperBound ?? nutrient.dailyTarget).displayString) \(nutrient.unit)/day")
+                        case .minimum, .maximum:
+                            Text("\(nutrient.dailyTarget.displayString) \(nutrient.unit)/day")
+                        }
                     }
                     Spacer()
                     HStack(spacing: 3) {
@@ -306,7 +311,9 @@ struct NutrientsListView: View {
             unit: addDraft.unit.trimmingCharacters(in: .whitespaces),
             step: stepValue,
             dailyTarget: targetValue,
-            sortOrder: nutrients.count
+            sortOrder: nutrients.count,
+            goalType: addDraft.goalType,
+            upperBound: addDraft.goalType == .range ? addDraft.upperBound.parsedDouble : nil
         )
         let notes = addDraft.notes.trimmingCharacters(in: .whitespaces)
         nutrient.notes = notes.isEmpty ? nil : notes
@@ -336,6 +343,8 @@ struct NutrientsListView: View {
         nutrient.unit = editDraft.unit.trimmingCharacters(in: .whitespaces)
         nutrient.step = stepValue
         nutrient.dailyTarget = targetValue
+        nutrient.goalType = editDraft.goalType
+        nutrient.upperBound = editDraft.goalType == .range ? editDraft.upperBound.parsedDouble : nil
         let notes = editDraft.notes.trimmingCharacters(in: .whitespaces)
         nutrient.notes = notes.isEmpty ? nil : notes
     }

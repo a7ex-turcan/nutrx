@@ -7,12 +7,53 @@ struct NutrientSnapshot {
     let current: Double
     let target: Double
     let step: Double
+    let goalTypeRaw: String
+    let upperBound: Double?
 
-    var isOnTarget: Bool { current >= target }
-    var isExceeded: Bool { current > target }
+    init(id: String, name: String, unit: String, current: Double, target: Double, step: Double, goalTypeRaw: String = "minimum", upperBound: Double? = nil) {
+        self.id = id
+        self.name = name
+        self.unit = unit
+        self.current = current
+        self.target = target
+        self.step = step
+        self.goalTypeRaw = goalTypeRaw
+        self.upperBound = upperBound
+    }
+
+    private var goalType: GoalType {
+        GoalType(rawValue: goalTypeRaw) ?? .minimum
+    }
+
+    var isOnTarget: Bool {
+        switch goalType {
+        case .minimum: return current >= target
+        case .maximum: return current <= target
+        case .range:
+            guard let ub = upperBound else { return current >= target }
+            return current >= target && current <= ub
+        }
+    }
+
+    var isExceeded: Bool {
+        switch goalType {
+        case .minimum: return current > target
+        case .maximum: return current > target
+        case .range:
+            guard let ub = upperBound else { return current > target }
+            return current > ub
+        }
+    }
+
     var progress: Double {
-        guard target > 0 else { return 0 }
-        return current / target
+        switch goalType {
+        case .minimum, .maximum:
+            guard target > 0 else { return 0 }
+            return current / target
+        case .range:
+            guard let ub = upperBound, ub > 0 else { return 0 }
+            return current / ub
+        }
     }
 }
 
