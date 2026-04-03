@@ -106,27 +106,33 @@ struct NutrientFormFields: View {
                 .padding(.horizontal, 4)
             }
 
-            HStack(spacing: 12) {
-                FormField(label: "Step") {
-                    TextField("e.g. 1, 0.5, 100", text: $draft.step)
-                        .keyboardType(.decimalPad)
-                        .focused($focusedField, equals: .step)
-                }
+            FormField(label: "Step") {
+                TextField("e.g. 1, 0.5, 100", text: $draft.step)
+                    .keyboardType(.decimalPad)
+                    .focused($focusedField, equals: .step)
+            }
 
-                FormField(label: draft.goalType == .range ? "Minimum" : "Daily Target") {
+            if draft.goalType == .range {
+                HStack(spacing: 12) {
+                    FormField(label: "Minimum") {
+                        TextField("e.g. 1000", text: $draft.dailyTarget)
+                            .keyboardType(.decimalPad)
+                            .focused($focusedField, equals: .dailyTarget)
+                    }
+
+                    FormField(label: "Maximum") {
+                        TextField("e.g. 2000", text: $draft.upperBound)
+                            .keyboardType(.decimalPad)
+                            .focused($focusedField, equals: .upperBound)
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            } else {
+                FormField(label: "Daily Target") {
                     TextField("e.g. 2000", text: $draft.dailyTarget)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .dailyTarget)
                 }
-            }
-
-            if draft.goalType == .range {
-                FormField(label: "Maximum") {
-                    TextField("e.g. 4000", text: $draft.upperBound)
-                        .keyboardType(.decimalPad)
-                        .focused($focusedField, equals: .upperBound)
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
             FormField(label: "Notes") {
