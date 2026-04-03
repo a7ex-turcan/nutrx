@@ -4,6 +4,19 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v1.9 — 2026-04-03
+
+### Features
+- **Nutrient goal types** — Each nutrient can now be configured as "At least" (minimum), "At most" (maximum), or "Between" (range). Progress bars, analytics charts, streaks, and widgets all adapt to the selected goal type.
+- **Goal type picker in nutrient form** — Segmented control with plain-English labels, a dynamic caption explaining the behavior, and a live mini progress bar preview so you see the exact colors before saving.
+- **Range target fields** — When "Between" is selected, Minimum and Maximum fields appear side by side for quick entry.
+
+### Improvements
+- **Gradual color transitions** — Progress bars and chart bars now blend colors smoothly: blue→green for minimum nutrients, orange→red for maximum, and yellow→red when exceeding limits — instead of abrupt color switches.
+- **Visible overflow on progress bars** — Maximum and range progress bars scale the limit tick mark to 85% of the bar width, so exceeding the limit is immediately obvious as the fill extends past the mark.
+
+---
+
 ## v1.8 — 2026-04-01
 
 ### Features

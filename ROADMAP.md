@@ -45,7 +45,7 @@
 
 | Feature | Status |
 |---|---|
-| Nutrient goal types (minimum / maximum / range) | 📋 Planned |
+| Nutrient goal types (minimum / maximum / range) | ✅ Shipped (v1.9) |
 | Data export (CSV) | 📋 Planned |
 | Quick-log stacks / templates | 📋 Planned |
 | Siri & App Shortcuts | 📋 Planned |
@@ -270,9 +270,9 @@ Read from Health (Health → nutrx ongoing sync) is out of scope for MVP3. Consi
 
 ---
 
-### 1. Nutrient Goal Types (Minimum / Maximum / Range) 📋
+### 1. Nutrient Goal Types (Minimum / Maximum / Range) ✅
 
-**Status:** Planned
+**Status:** Shipped in v1.9
 
 Today every nutrient implicitly targets a minimum ("hit at least X"). Real-world use cases require more: caffeine should stay *under* 200 mg, sodium within a range. This is a data model change — the longer it's deferred, the harder the migration becomes.
 

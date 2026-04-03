@@ -320,23 +320,21 @@ enum GoalType: String, Codable {
 
 ### NutrientProgressBar — color and fill logic
 
-`NutrientProgressBar` is the single source of truth for color state. It must be updated before any other surface since Today, widgets, and Analytics all depend on it. Refactor its signature to accept `goalType` and `upperBound` alongside the existing `current` and `target` parameters.
+`NutrientProgressBar` is the single source of truth for color state. Accepts `goalType` and `upperBound` alongside `current` and `target`. All colors use gradual blending (UIColor interpolation) rather than discrete switches. Maximum and range bars scale the limit to 85% of bar width so overflow is visually obvious.
 
-**`.minimum` (existing behaviour, no change):**
-- Bar fill maps `current / dailyTarget`, capped at 100% visually (overflow shown as solid orange)
-- Blue → green when `current ≥ dailyTarget` → orange when `current > dailyTarget`
+**`.minimum`:**
+- Bar fill maps `current / dailyTarget`, capped at 100%
+- Gradual blue → green as `current` approaches `dailyTarget`. Green at exactly 100%. Yellow → red when exceeded (fully red at 2× target).
 
 **`.maximum`:**
-- Bar fill maps `current / dailyTarget`, capped at 100%
-- Orange from the first tap (any consumption is "spending" a budget)
-- Transitions to a brighter/darker orange-red when `current > dailyTarget`
-- A small tick mark rendered at the 100% position reinforces the ceiling
+- Bar fill maps `current / dailyTarget × 0.85` — limit tick mark sits at 85%
+- Gradual orange → red as `current` approaches `dailyTarget`. Stays red when exceeded. Tick mark at the 85% position reinforces the ceiling.
 
 **`.range`:**
-- Bar fill maps `current / upperBound` (0–100% spans the full range)
-- Background track renders a subtle green-tinted band between `dailyTarget / upperBound` and `upperBound / upperBound` positions — this zone is visible even at zero intake
-- Two small tick marks on the track at `dailyTarget / upperBound`% and at 100%
-- Fill color: blue when `current < dailyTarget` · green when `dailyTarget ≤ current ≤ upperBound` · orange when `current > upperBound`
+- Bar fill maps `current / upperBound × 0.85` — upper tick mark at 85%
+- Background track renders a subtle green-tinted band between the lower and upper tick marks
+- Two tick marks: one at `dailyTarget / upperBound × 0.85`, one at 85%
+- Gradual blue → green as `current` approaches `dailyTarget`. Solid green within range. Yellow → red when `current > upperBound` (fully red at 2× upper).
 
 ---
 
