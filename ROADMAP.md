@@ -31,7 +31,7 @@
 | Nutrient grouping / categories | ✅ Shipped (v1.2) |
 | Group UX polish (completion counts, inline creation, haptics) | ✅ Shipped (v1.3) |
 
-### MVP 3 — Ecosystem & Sync 🔨
+### MVP 3 — Ecosystem & Sync ✅
 
 | Feature | Status |
 |---|---|
@@ -41,6 +41,15 @@
 | Analytics & charts (per-nutrient) | ✅ Shipped (v1.8) |
 | Apple Health integration (HealthKit write) | 📋 Planned |
 
+### Pre-Pro Sprint — Polish & Retention 📋
+
+| Feature | Status |
+|---|---|
+| Nutrient goal types (minimum / maximum / range) | 📋 Planned |
+| Data export (CSV) | 📋 Planned |
+| Quick-log stacks / templates | 📋 Planned |
+| Siri & App Shortcuts | 📋 Planned |
+
 ### MVP 4 — Pro Tier & AI 📋
 
 | Feature | Status |
@@ -49,7 +58,8 @@
 | Daily AI insights | 📋 Planned |
 | Smart target suggestions | 📋 Planned |
 | Natural language logging | 📋 Planned |
-| Full history charts | 📋 Planned |
+| Streak freeze / grace period | 📋 Planned |
+| Shareable streak card | 📋 Planned |
 
 ---
 
@@ -151,7 +161,7 @@ The following are explicitly deferred to MVP 3 or later:
 
 ---
 
-## MVP 3 — Ecosystem & Sync 🔨
+## MVP 3 — Ecosystem & Sync ✅
 
 **Goal:** Make nutrx work seamlessly across a user's Apple devices and surface richer historical insight.
 
@@ -252,9 +262,135 @@ Read from Health (Health → nutrx ongoing sync) is out of scope for MVP3. Consi
 
 ---
 
+## Pre-Pro Sprint — Polish & Retention 📋
+
+**Goal:** Close any gaps that would cause churn or reduce Pro conversion before the paywall exists. Features here are chosen because they either carry a model-migration risk (better done before millions of iCloud records exist) or directly improve daily retention. Nothing here is gated behind Pro — this sprint strengthens the free tier so users are engaged and trusting when Pro launches.
+
+**Sequencing:** Ship in the order listed. Goal types first because it touches the most existing code.
+
+---
+
+### 1. Nutrient Goal Types (Minimum / Maximum / Range) 📋
+
+**Status:** Planned
+
+Today every nutrient implicitly targets a minimum ("hit at least X"). Real-world use cases require more: caffeine should stay *under* 200 mg, sodium within a range. This is a data model change — the longer it's deferred, the harder the migration becomes.
+
+#### New field on `Nutrient`
+
+```swift
+enum GoalType: String, Codable {
+    case minimum   // default — progress counts up, green = at/above target
+    case maximum   // progress counts down, orange = exceeded
+    case range     // two bounds: lowerBound and upperBound
+}
+
+var goalType: GoalType = .minimum
+var upperBound: Double? = nil   // only used when goalType == .range
+```
+
+`dailyTarget` is repurposed as the lower bound for `.range` and the single bound for `.minimum` / `.maximum`. `upperBound` is only non-nil for `.range`.
+
+#### UI impact
+
+- **NutrientProgressBar** — color logic changes per goal type:
+  - `.minimum`: blue → green (at target) → orange (exceeded, allowed)
+  - `.maximum`: blue → orange (exceeded, not desired)
+  - `.range`: blue (below lower) → green (within range) → orange (above upper)
+- **NutrientFormView** — goal type picker (segmented or menu) replaces the current implicit minimum framing. Reveal `upperBound` field when `.range` is selected.
+- **Analytics** — bar color logic in `DailyIntakeChartCard` and hit-rate computation in `PeriodStatsCard` must respect goal type. A `.maximum` day is "on target" when total ≤ dailyTarget.
+- **StreakService** — streak day logic: a day counts if *all* active nutrients met their respective goal type conditions.
+- **Widgets** — `NutrientProgressBar` is already shared; widget rendering inherits the change automatically.
+
+#### Migration
+
+SwiftData lightweight migration handles the new fields via property-level defaults (`GoalType.minimum`, `nil`). No explicit migration plan needed — existing nutrients silently become `.minimum`, which matches current behaviour exactly.
+
+---
+
+### 2. Data Export (CSV) 📋
+
+**Status:** Planned
+
+Export the full `IntakeRecord` history as a CSV file, shareable via the iOS share sheet. This is a trust and retention feature — users who know they can get their data out are more willing to commit to the app long-term. Especially important for the privacy-conscious audience nutrx targets.
+
+#### Scope
+
+- Accessible via Settings → Export Data
+- One row per `IntakeRecord`: `date, time, nutrient_name, amount, unit, note`
+- Sorted by date descending (most recent first)
+- Filename: `nutrx-export-YYYY-MM-DD.csv`
+- Shared via `ShareLink` / `UIActivityViewController` — no file saved to disk permanently
+
+#### Implementation notes
+
+- Pure in-memory generation — fetch all `IntakeRecord` rows, build a `String`, convert to `Data`, wrap in a temp file URL for the share sheet
+- No new SwiftData models, no new services
+- New file: `Shared/Services/ExportService.swift`
+- New view: `Features/Settings/Views/ExportView.swift` (or inline sheet from SettingsView)
+
+---
+
+### 3. Quick-Log Stacks / Templates 📋
+
+**Status:** Planned
+
+A stack is a named, ordered collection of nutrients with pre-set amounts. Tapping "Log stack" creates one `IntakeRecord` per nutrient in the stack, in a single action. Targets users who take the same set of supplements every morning — the most common churn point is daily logging becoming tedious.
+
+#### Model
+
+```swift
+@Model
+class LogStack {
+    var name: String
+    var sortOrder: Int = 0
+    var entries: [LogStackEntry]? = nil
+}
+
+@Model
+class LogStackEntry {
+    var stack: LogStack
+    var nutrient: Nutrient
+    var amount: Double       // default amount to log
+    var sortOrder: Int = 0
+}
+```
+
+#### UI
+
+- **Today tab** — "Stacks" button or section above the nutrient list (only shown when ≥ 1 stack exists). Tapping a stack shows a confirmation sheet listing what will be logged, with per-entry amount editable inline before confirming.
+- **Manage Stacks** — Settings → Manage Stacks. Create, rename, reorder, delete stacks. Each stack has an entry list (add nutrients, set amounts, reorder).
+- **Logging** — on confirm, one `IntakeRecord` per entry is inserted, context saved, widgets refreshed, haptic fired. Same path as a normal +/− tap.
+
+#### CloudKit compatibility
+
+Both new models follow the same CloudKit rules as existing models: optional relationship arrays, property-level defaults, no `@Attribute(.unique)`.
+
+---
+
+### 4. Siri & App Shortcuts 📋
+
+**Status:** Planned
+
+Expose `LogNutrientIntent` (already exists for widgets) to Siri and the Shortcuts app. Users can say "Hey Siri, log my magnesium in nutrx" or build automations. Low implementation lift relative to discoverability payoff — the `AppIntent` infrastructure is already in place.
+
+#### Scope
+
+- Donate `LogNutrientIntent` to Siri with a `NutrientEntity` parameter (name-resolvable)
+- Add `perform()` implementation that resolves the nutrient by name and logs one step increment
+- Provide a `PredictableIntent` / suggested phrase per nutrient: "Log [nutrient name]"
+- Surface in Settings → Siri & Shortcuts with a per-nutrient "Add to Siri" button
+
+#### Out of scope for this sprint
+
+- Custom Shortcuts actions beyond logging (viewing history, checking progress) — deferred
+- Focus filters — deferred
+
+---
+
 ## MVP 4 — Pro Tier & AI 📋
 
-**Goal:** Introduce the Pro subscription. Monetise with AI-powered features that are genuinely useful without compromising the free tier.
+**Goal:** Introduce the Pro subscription. Monetise with AI-powered features that are genuinely useful without compromising the free tier. Pro launch is also the moment to ship two high-visibility engagement features (streak freeze, shareable card) as launch content.
 
 ### Pricing (indicative)
 | Option | Price |
@@ -264,14 +400,16 @@ Read from Health (Health → nutrx ongoing sync) is out of scope for MVP3. Consi
 | Lifetime | $49.99 one-time |
 
 ### What's gated behind Pro
-All core tracking features remain **free forever**. Pro only unlocks AI-powered extras:
+All core tracking features remain **free forever**. Pro only unlocks AI-powered extras and engagement boosters:
 
 | Feature | Description |
 |---|---|
-| **Daily insights** | Short natural-language summary of patterns (e.g. "You've been consistently under your Magnesium target on weekdays") |
+| **Daily AI insights** | Short natural-language summary of patterns (e.g. "You've been consistently under your Magnesium target on weekdays") |
 | **Smart target suggestions** | Based on profile (age, weight) suggest reasonable starting daily targets for common nutrients |
 | **Natural language logging** | Type "had a protein shake and two eggs" → app maps it to the user's defined nutrients |
-| **Full history charts** | Trend charts beyond 30 days (also gated here if not included in MVP 3 free tier) |
+| **Full history charts** | Trend charts beyond 90 days |
+| **Streak freeze** | One mulligan per week — miss a day without breaking your streak. Duolingo-style. Reduces churn from accidental streak breaks. |
+| **Shareable streak card** | Generated image of your current streak and daily summary, shareable to social. Zero-cost word-of-mouth marketing. |
 
 ### AI architecture
 - **On-device (Apple Intelligence / Foundation Models framework):** used for natural language logging and insight phrasing. Preserves the "nothing leaves your device" story for these features.
