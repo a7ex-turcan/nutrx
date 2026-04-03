@@ -6,14 +6,20 @@ struct NutrientProgressBar: View {
     var goalType: GoalType = .minimum
     var upperBound: Double? = nil
 
+    // For range, upperBound maps to 85% of bar width so overflow is visible
+    private static let rangeScale: Double = 0.85
+
     private var progress: Double {
         switch goalType {
-        case .minimum, .maximum:
+        case .minimum:
             guard target > 0 else { return 0 }
             return current / target
+        case .maximum:
+            guard target > 0 else { return 0 }
+            return (current / target) * Self.rangeScale
         case .range:
             guard let upper = upperBound, upper > 0 else { return 0 }
-            return current / upper
+            return (current / upper) * Self.rangeScale
         }
     }
 
@@ -50,7 +56,7 @@ struct NutrientProgressBar: View {
     // Range zone positions (as fractions of full bar)
     private var rangeZone: (start: Double, end: Double)? {
         guard goalType == .range, let upper = upperBound, upper > 0 else { return nil }
-        return (start: target / upper, end: 1.0)
+        return (start: (target / upper) * Self.rangeScale, end: Self.rangeScale)
     }
 
     // Tick mark positions (as fractions of full bar)
@@ -59,10 +65,10 @@ struct NutrientProgressBar: View {
         case .minimum:
             return []
         case .maximum:
-            return [1.0]
+            return [Self.rangeScale]
         case .range:
             guard let upper = upperBound, upper > 0 else { return [] }
-            return [target / upper, 1.0]
+            return [(target / upper) * Self.rangeScale, Self.rangeScale]
         }
     }
 
