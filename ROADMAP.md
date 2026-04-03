@@ -276,35 +276,87 @@ Read from Health (Health → nutrx ongoing sync) is out of scope for MVP3. Consi
 
 Today every nutrient implicitly targets a minimum ("hit at least X"). Real-world use cases require more: caffeine should stay *under* 200 mg, sodium within a range. This is a data model change — the longer it's deferred, the harder the migration becomes.
 
-#### New field on `Nutrient`
+#### New fields on `Nutrient`
 
 ```swift
 enum GoalType: String, Codable {
     case minimum   // default — progress counts up, green = at/above target
     case maximum   // progress counts down, orange = exceeded
-    case range     // two bounds: lowerBound and upperBound
+    case range     // two bounds: dailyTarget = lower, upperBound = upper
 }
 
 var goalType: GoalType = .minimum
 var upperBound: Double? = nil   // only used when goalType == .range
 ```
 
-`dailyTarget` is repurposed as the lower bound for `.range` and the single bound for `.minimum` / `.maximum`. `upperBound` is only non-nil for `.range`.
+SwiftData lightweight migration handles both new fields via property-level defaults. Existing nutrients silently become `.minimum` — no migration script needed.
 
-#### UI impact
+#### Progress bar
 
-- **NutrientProgressBar** — color logic changes per goal type:
-  - `.minimum`: blue → green (at target) → orange (exceeded, allowed)
-  - `.maximum`: blue → orange (exceeded, not desired)
-  - `.range`: blue (below lower) → green (within range) → orange (above upper)
-- **NutrientFormView** — goal type picker (segmented or menu) replaces the current implicit minimum framing. Reveal `upperBound` field when `.range` is selected.
-- **Analytics** — bar color logic in `DailyIntakeChartCard` and hit-rate computation in `PeriodStatsCard` must respect goal type. A `.maximum` day is "on target" when total ≤ dailyTarget.
-- **StreakService** — streak day logic: a day counts if *all* active nutrients met their respective goal type conditions.
-- **Widgets** — `NutrientProgressBar` is already shared; widget rendering inherits the change automatically.
+`NutrientProgressBar` is the single source of truth for color state. Refactor its signature first — Today, widgets, and Analytics all depend on it.
 
-#### Migration
+| Goal type | Fill behavior | Colors |
+|---|---|---|
+| `.minimum` | `current / target`, capped | Blue → green at target → orange if exceeded |
+| `.maximum` | `current / target`, capped | Orange from tap one → brighter orange-red if exceeded. Tick mark at 100%. |
+| `.range` | `current / upperBound` (full scale) | Blue below lower · green within range · orange above upper. Green-tinted background band between lower and upper. Two tick marks at lower% and 100%. |
 
-SwiftData lightweight migration handles the new fields via property-level defaults (`GoalType.minimum`, `nil`). No explicit migration plan needed — existing nutrients silently become `.minimum`, which matches current behaviour exactly.
+The green background band for `.range` is visible even at zero intake — the user can see the target window before they log anything.
+
+#### Value label on Today
+
+| Goal type | Label |
+|---|---|
+| `.minimum` | `current / target unit` |
+| `.maximum` | `current / target unit` |
+| `.range` | `current / lower–upper unit` e.g. "1.2 / 1.0–2.0 g" |
+
+#### Nutrient form setup UX
+
+The goal type picker uses plain-English labels, not enum names:
+
+| Display | Enum |
+|---|---|
+| At least | `.minimum` |
+| At most | `.maximum` |
+| Between | `.range` |
+
+Placed as a segmented control at the top of the target section.
+
+**Dynamic caption** — updates live as the user picks a goal type or edits values. Uses their actual typed values so it reads as a real description, not generic help text:
+- At least: *"Your bar fills green when you hit [target] [unit] or more."*
+- At most: *"Your bar turns orange if you go over [target] [unit]."*
+- Between: *"Your bar is green when you stay between [lower] and [upper] [unit]."*
+
+**Live mini progress bar preview** — a small non-interactive `NutrientProgressBar` below the caption, pre-filled to a representative value so the user sees the exact color and fill they'll get on Today before saving (~20 lines of SwiftUI). `.minimum` → 60%, `.maximum` → 70%, `.range` → mid-range (green).
+
+**For `.range`:** reveal a second `upperBound` field below `dailyTarget` with a smooth animation. Label them "Minimum" and "Maximum". Validate `upperBound > dailyTarget` on save.
+
+#### Analytics
+
+**Rule marks** on DailyIntakeChartCard and DayOfWeekCard:
+- `.minimum` → single neutral dashed line at `dailyTarget`, labeled "Target"
+- `.maximum` → single orange dashed line at `dailyTarget`, labeled "Max"
+- `.range` → two dashed lines: green at `dailyTarget` ("Min"), orange at `upperBound` ("Max"). Subtle filled area between them reinforces the target window. Check labels don't overlap on narrow widths.
+
+**Bar colors** mirror `NutrientProgressBar` logic exactly — blue / green / orange — so Today and Analytics feel consistent.
+
+**Hit rate** on PeriodStatsCard changes silently by goal type (label stays "On target"):
+- `.minimum` — total ≥ `dailyTarget`
+- `.maximum` — total ≤ `dailyTarget`
+- `.range` — `dailyTarget` ≤ total ≤ `upperBound`
+
+**Target stat** for `.range` displays as `"lower–upper unit"` e.g. "1,000–2,000 mg".
+
+#### Streak impact
+
+`StreakService` must evaluate each nutrient's `goalType` when deciding whether a day is complete. Same conditions as the hit rate logic above.
+
+#### Files touched
+
+`Models/Nutrient.swift` · `NutrientProgressBar.swift` · `NutrientFormFields.swift` · `DailyIntakeChartCard.swift` · `PeriodStatsCard.swift` · `DayOfWeekCard.swift` · `NutrientAnalyticsViewModel.swift` · `StreakService.swift`
+
+No new files, models, or services required.
 
 ---
 

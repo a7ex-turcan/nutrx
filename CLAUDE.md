@@ -298,7 +298,138 @@ No new SwiftData models required. No new services. No network requests.
 
 ---
 
-## Notifications
+## Nutrient Goal Types
+
+Every nutrient has a `GoalType` that controls how progress, colors, streaks, and analytics are computed. This is a first-class concept across the entire app — every surface that reads `dailyTarget` must also read `goalType`.
+
+### The enum
+
+```swift
+enum GoalType: String, Codable {
+    case minimum   // hit at least X — default, matches legacy behaviour
+    case maximum   // stay under X
+    case range     // stay between dailyTarget (lower) and upperBound (upper)
+}
+```
+
+`GoalType` is stored as a `String` on `Nutrient` with a property-level default of `"minimum"` for SwiftData lightweight migration. Existing nutrients silently become `.minimum` — no data loss, no migration script needed.
+
+`dailyTarget` is repurposed as the lower bound when `goalType == .range`. `upperBound` is only non-nil for `.range`. All other goal types ignore `upperBound`.
+
+---
+
+### NutrientProgressBar — color and fill logic
+
+`NutrientProgressBar` is the single source of truth for color state. It must be updated before any other surface since Today, widgets, and Analytics all depend on it. Refactor its signature to accept `goalType` and `upperBound` alongside the existing `current` and `target` parameters.
+
+**`.minimum` (existing behaviour, no change):**
+- Bar fill maps `current / dailyTarget`, capped at 100% visually (overflow shown as solid orange)
+- Blue → green when `current ≥ dailyTarget` → orange when `current > dailyTarget`
+
+**`.maximum`:**
+- Bar fill maps `current / dailyTarget`, capped at 100%
+- Orange from the first tap (any consumption is "spending" a budget)
+- Transitions to a brighter/darker orange-red when `current > dailyTarget`
+- A small tick mark rendered at the 100% position reinforces the ceiling
+
+**`.range`:**
+- Bar fill maps `current / upperBound` (0–100% spans the full range)
+- Background track renders a subtle green-tinted band between `dailyTarget / upperBound` and `upperBound / upperBound` positions — this zone is visible even at zero intake
+- Two small tick marks on the track at `dailyTarget / upperBound`% and at 100%
+- Fill color: blue when `current < dailyTarget` · green when `dailyTarget ≤ current ≤ upperBound` · orange when `current > upperBound`
+
+---
+
+### Today Tab — value label
+
+The value label to the right of the progress bar (e.g. "400 / 1000 IU") should adapt:
+
+| Goal type | Label format |
+|---|---|
+| `.minimum` | `current / target unit` (existing) |
+| `.maximum` | `current / target unit` |
+| `.range` | `current / lower–upper unit` e.g. "1.2 / 1.0–2.0 g" |
+
+For `.maximum`, consider prefixing with "Max:" on the nutrient form but keeping the Today label identical in format to minimum for scannability.
+
+---
+
+### NutrientFormView — setup UX
+
+The goal type picker is a segmented control with plain-English labels, not enum names:
+
+| Display label | Maps to |
+|---|---|
+| At least | `.minimum` |
+| At most | `.maximum` |
+| Between | `.range` |
+
+Place the segmented control at the top of the target section, above the target value field(s).
+
+**Dynamic caption** — a single sentence directly below the segmented control that updates live as the user changes goal type or edits values:
+- At least: *"Your bar fills green when you hit [target] [unit] or more."*
+- At most: *"Your bar turns orange if you go over [target] [unit]."*
+- Between: *"Your bar is green when you stay between [lower] and [upper] [unit]."*
+
+Use the actual typed values so the caption reads as a real description of their specific nutrient. Fall back to placeholder text (e.g. "your target") if the value field is empty.
+
+**Live mini progress bar preview** — a small non-interactive `NutrientProgressBar` directly below the caption, pre-filled to a representative value so the user sees the exact color and fill they'll get on Today before saving:
+- `.minimum`: preview at 60% of target (blue, in progress)
+- `.maximum`: preview at 70% of target (orange, spending budget)
+- `.range`: preview at a value inside the range (green, on target)
+
+This is ~20 lines of SwiftUI. It eliminates the most common confusion about what each goal type means in practice.
+
+**Field layout for `.range`:** reveal a second `upperBound` field below `dailyTarget` with a smooth animation when "Between" is selected. Label them "Minimum" and "Maximum" (not "Lower bound / Upper bound"). Validate that `upperBound > dailyTarget` before allowing save — show an inline error if not.
+
+---
+
+### Analytics — DailyIntakeChartCard and DayOfWeekCard
+
+**Rule marks:**
+- `.minimum` → single dashed `RuleMark` at `dailyTarget`, neutral color, labeled "Target"
+- `.maximum` → single dashed `RuleMark` at `dailyTarget`, orange tint, labeled "Max"
+- `.range` → two dashed `RuleMarks`: green at `dailyTarget` labeled "Min", orange at `upperBound` labeled "Max". A subtle filled area between the two lines reinforces the target window (use `AreaMark` or a background `RectangleMark` at low opacity). Check that labels don't overlap on narrow chart widths — offset vertically if needed.
+
+**Bar colors:** mirror `NutrientProgressBar` logic exactly — blue / green / orange based on goal type and the same threshold conditions. Consistency between Today and Analytics is critical.
+
+---
+
+### Analytics — PeriodStatsCard
+
+**Hit rate computation** changes silently by goal type (label stays "On target"):
+- `.minimum` — day counts if total ≥ `dailyTarget`
+- `.maximum` — day counts if total ≤ `dailyTarget`
+- `.range` — day counts if `dailyTarget ≤ total ≤ upperBound`
+
+**Target stat** (rightmost column):
+- `.minimum` / `.maximum` → `"target unit"` as today
+- `.range` → `"lower–upper unit"` e.g. `"1,000–2,000 mg"` — no line break, en dash between values
+
+---
+
+### StreakService
+
+`StreakService.compute` must evaluate each nutrient using its `goalType`. See the Streaks section above for the per-type conditions.
+
+---
+
+### File changes summary
+
+| File | Change |
+|---|---|
+| `Models/Nutrient.swift` | Add `goalType: GoalType = .minimum`, `upperBound: Double? = nil` |
+| `Shared/Components/NutrientProgressBar.swift` | Refactor signature + implement all three color/fill modes |
+| `Shared/Components/NutrientFormFields.swift` | Add goal type picker, dynamic caption, live preview bar, conditional `upperBound` field |
+| `Features/Today/ViewModels/TodayViewModel.swift` | No change — totals are still raw sums; color logic lives in the bar |
+| `Features/Nutrients/Views/NutrientAnalyticsView.swift` | Pass `goalType` + `upperBound` down to chart cards |
+| `Features/Nutrients/Views/DailyIntakeChartCard.swift` | Update `RuleMark`s + bar color logic |
+| `Features/Nutrients/Views/PeriodStatsCard.swift` | Update hit rate logic + target stat display for range |
+| `Features/Nutrients/Views/DayOfWeekCard.swift` | Update `RuleMark`s + bar color logic |
+| `Features/Nutrients/ViewModels/NutrientAnalyticsViewModel.swift` | Update hit rate derivation |
+| `Shared/Services/StreakService.swift` | Update per-nutrient completion check for all three goal types |
+
+No new SwiftData models, services, or files required beyond the above edits.
 
 All local — no push infrastructure. Two notification types:
 
@@ -325,6 +456,11 @@ Nutrients are organised into named groups. Collapsible sections on Today and My 
 ## Streaks
 
 Daily streak tracking, opt-in via `UserPreferences.streaksEnabled` (default `true`). A streak day is a completed past day where all active non-excluded nutrients met their targets. Today is never counted. `Nutrient.createdAt` scopes each nutrient's streak window.
+
+**Goal type awareness:** `StreakService` must evaluate each nutrient's `goalType` when deciding whether a day counts toward a streak:
+- `.minimum` — total ≥ `dailyTarget`
+- `.maximum` — total ≤ `dailyTarget`
+- `.range` — total ≥ `dailyTarget` AND total ≤ `upperBound`
 
 **UI:** `🔥 X-day streak` on Today (when ≥ 1), summary card in History, streak labels in small/medium widgets. `StreakService.compute(context:) → StreakResult` runs on foreground and after intake actions.
 
@@ -378,11 +514,13 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 
 ## Out of Scope — Not Yet Built
 
-**MVP 3 (in progress):** Apple Health integration (HealthKit write)
+**MVP 3 (remaining):** Apple Health integration (HealthKit write)
 
-**MVP 4:** Pro tier (StoreKit 2), AI features (on-device + third-party LLM)
+**Pre-Pro Sprint:** Nutrient goal types (min/max/range), data export (CSV), quick-log stacks, Siri & App Shortcuts — see ROADMAP.md for full specs
 
-**Deferred:** Localisation, iPad-specific layout, data export
+**MVP 4:** Pro tier (StoreKit 2), AI features (on-device + third-party LLM), streak freeze, shareable streak card
+
+**Deferred:** Localisation, iPad-specific layout
 
 ---
 
@@ -438,6 +576,8 @@ User-defined nutrient to track.
 | `notes` | `String?` | Shown on Today card when non-empty |
 | `group` | `NutrientGroup?` | `nil` → General group |
 | `createdAt` | `Date = Date()` | Used by streak computation |
+| `goalType` | `GoalType = .minimum` | `.minimum`, `.maximum`, or `.range` — see Nutrient Goal Types section |
+| `upperBound` | `Double? = nil` | Only non-nil when `goalType == .range`. `dailyTarget` acts as the lower bound. |
 
 **Relationships:** → many `IntakeRecord`? (cascade), → many `Exclusion`? (cascade), → many `NutrientReminder`? (cascade), → one `NutrientGroup?` (nullify)
 
