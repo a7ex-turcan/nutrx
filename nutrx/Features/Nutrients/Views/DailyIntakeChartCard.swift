@@ -108,31 +108,55 @@ struct DailyIntakeChartCard: View {
         case .minimum:
             if total <= 0 {
                 return .blue.opacity(0.3)
-            } else if total >= dailyTarget {
-                return .green
-            } else {
-                return .blue
             }
+            guard dailyTarget > 0 else { return .blue }
+            if total > dailyTarget {
+                let overFraction = min((total - dailyTarget) / dailyTarget, 1.0)
+                return blendColor(from: .systemYellow, to: .systemRed, fraction: overFraction)
+            } else if total == dailyTarget {
+                return .green
+            }
+            let fraction = total / dailyTarget
+            return blendColor(from: .systemBlue, to: .systemGreen, fraction: fraction)
+
         case .maximum:
             if total <= 0 {
                 return .orange.opacity(0.3)
             } else if total > dailyTarget {
-                return Color(.systemRed).opacity(0.85)
-            } else {
-                return .orange
+                return Color(.systemRed)
             }
+            guard dailyTarget > 0 else { return .orange }
+            let fraction = total / dailyTarget
+            return blendColor(from: .systemOrange, to: .systemRed, fraction: fraction)
+
         case .range:
             guard let upper = upperBound else { return .blue }
             if total <= 0 {
                 return .blue.opacity(0.3)
             } else if total > upper {
-                return .orange
+                let overFraction = min((total - upper) / upper, 1.0)
+                return blendColor(from: .systemYellow, to: .systemRed, fraction: overFraction)
             } else if total >= dailyTarget {
                 return .green
             } else {
-                return .blue
+                guard dailyTarget > 0 else { return .blue }
+                let fraction = min(total / dailyTarget, 1.0)
+                return blendColor(from: .systemBlue, to: .systemGreen, fraction: fraction)
             }
         }
+    }
+
+    private func blendColor(from: UIColor, to: UIColor, fraction: Double) -> Color {
+        var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+        var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+        from.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+        to.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+        let f = CGFloat(min(max(fraction, 0), 1))
+        return Color(
+            red: Double(r1 + (r2 - r1) * f),
+            green: Double(g1 + (g2 - g1) * f),
+            blue: Double(b1 + (b2 - b1) * f)
+        )
     }
 
     private var xAxisValues: AxisMarkValues {
