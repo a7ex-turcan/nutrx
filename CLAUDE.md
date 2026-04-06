@@ -230,7 +230,7 @@ Intake is computed by summing `IntakeRecord` rows for today's calendar day. No e
 
 ### Expandable Nutrient Cards
 
-Tap any nutrient card to expand a chronological breakdown of all `IntakeRecord` entries for that nutrient today. Each row shows time, signed amount (decrements in orange), and optional note inline. A centered + button at the bottom opens the exact amount sheet. Multiple cards can be open simultaneously. State is transient (`expandedNutrientIDs: Set<UUID>` in `TodayView`) — resets on tab switch. `ExpandableNutrientCard` wraps `NutrientRowView` and owns the card background/clip. `NutrientIntakeHistoryView` fetches records via `@Query`.
+Tap any nutrient card to expand a chronological breakdown of all `IntakeRecord` entries for that nutrient today. Each row shows time, signed amount (decrements in orange), and optional note inline. When more than 5 entries exist, only the 5 most recent are shown with a "Show all X entries" link at the top to reveal the rest. A centered + button at the bottom opens the exact amount sheet. Multiple cards can be open simultaneously. State is transient (`expandedNutrientIDs: Set<UUID>` in `TodayView`) — resets on tab switch. `ExpandableNutrientCard` wraps `NutrientRowView` and owns the card background/clip. `NutrientIntakeHistoryView` fetches records via `@Query`.
 
 ---
 

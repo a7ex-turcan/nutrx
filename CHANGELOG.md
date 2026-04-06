@@ -14,6 +14,7 @@ All notable changes to nutrx are documented in this file.
 ### Improvements
 - **Gradual color transitions** — Progress bars and chart bars now blend colors smoothly: blue→green for minimum nutrients, orange→red for maximum, and yellow→red when exceeding limits — instead of abrupt color switches.
 - **Visible overflow on progress bars** — Maximum and range progress bars scale the limit tick mark to 85% of the bar width, so exceeding the limit is immediately obvious as the fill extends past the mark.
+- **Collapsed intake history** — Expanded nutrient cards on Today now show only the 5 most recent entries by default, with a "Show all" link when there are more. Keeps the screen manageable on heavy logging days.
 
 ---
 
