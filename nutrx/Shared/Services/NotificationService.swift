@@ -132,9 +132,9 @@ enum NotificationService {
         }
     }
 
-    /// Called after a user logs intake for a nutrient. Suppresses any pending
-    /// reminders for that nutrient scheduled for later today, then reschedules
-    /// them so they fire again tomorrow.
+    /// Called after a user logs intake for a nutrient. Cancels all pending
+    /// reminders for that nutrient for the rest of today. They are restored
+    /// on the next app foreground by `refreshAllNutrientReminders`.
     static func suppressRemindersAfterLogging(for nutrient: Nutrient) {
         let prefix = "\(nutrientReminderPrefix)\(nutrient.id.uuidString)-reminder-"
         let center = UNUserNotificationCenter.current()
@@ -147,8 +147,6 @@ enum NotificationService {
 
             if !idsToCancel.isEmpty {
                 center.removePendingNotificationRequests(withIdentifiers: idsToCancel)
-                // Reschedule so they fire again tomorrow (repeating triggers restart on re-add)
-                scheduleReminders(for: nutrient)
             }
         }
     }
