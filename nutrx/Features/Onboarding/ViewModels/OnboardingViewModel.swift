@@ -36,5 +36,6 @@ final class OnboardingViewModel {
         let descriptor = FetchDescriptor<UserProfile>()
         guard let profile = try? context.fetch(descriptor).first else { return }
         profile.onboardingCompleted = true
+        UserDefaults.standard.set(true, forKey: "nutrx.onboardingCompletedOnce")
     }
 }

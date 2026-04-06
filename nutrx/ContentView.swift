@@ -15,6 +15,8 @@ struct ContentView: View {
         if isOnboardingComplete {
             MainTabView()
                 .onAppear {
+                    // Keep UserDefaults flag in sync for existing users
+                    UserDefaults.standard.set(true, forKey: "nutrx.onboardingCompletedOnce")
                     // Only mark as sync-restored on a genuinely new device:
                     // the profile arrived from iCloud during the loading wait.
                     // Once the flag is consumed, clear it so it never retriggers.
@@ -26,7 +28,13 @@ struct ContentView: View {
             SyncLoadingView()
                 .task {
                     hasStartedWaiting = true
-                    try? await Task.sleep(for: .seconds(3))
+                    // Only wait for iCloud sync if onboarding was previously completed
+                    // (reinstall or new device). Genuine first-time users skip straight
+                    // to onboarding with no delay.
+                    let hadPriorOnboarding = UserDefaults.standard.bool(forKey: "nutrx.onboardingCompletedOnce")
+                    if hadPriorOnboarding {
+                        try? await Task.sleep(for: .seconds(3))
+                    }
                     hasFinishedWaiting = true
                 }
         } else {
