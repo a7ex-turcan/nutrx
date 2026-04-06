@@ -24,6 +24,20 @@ struct NutrientIntakeHistoryView: View {
         )
     }
 
+    private static let collapsedLimit = 5
+    @State private var showAll = false
+
+    private var visibleRecords: [IntakeRecord] {
+        if showAll || records.count <= Self.collapsedLimit {
+            return records
+        }
+        return Array(records.suffix(Self.collapsedLimit))
+    }
+
+    private var hiddenCount: Int {
+        records.count - Self.collapsedLimit
+    }
+
     var body: some View {
         if records.isEmpty {
             Text("No intakes logged yet")
@@ -33,7 +47,20 @@ struct NutrientIntakeHistoryView: View {
                 .padding(.vertical, 4)
         } else {
             VStack(spacing: 6) {
-                ForEach(records, id: \.persistentModelID) { record in
+                if !showAll && records.count > Self.collapsedLimit {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showAll = true
+                        }
+                    } label: {
+                        Text("Show all \(records.count) entries")
+                            .font(.caption)
+                            .foregroundStyle(.blue)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                ForEach(visibleRecords, id: \.persistentModelID) { record in
                     recordRow(record)
                 }
             }
