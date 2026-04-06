@@ -79,7 +79,21 @@ struct HistoryListView: View {
 
     private func isStreakDay(_ day: HistoryViewModel.DaySummary) -> Bool {
         guard !day.nutrientTotals.isEmpty else { return false }
-        return day.nutrientTotals.allSatisfy { $0.total >= $0.nutrient.dailyTarget }
+        return day.nutrientTotals.allSatisfy { entry in
+            let total = entry.total
+            let nutrient = entry.nutrient
+            switch nutrient.goalType {
+            case .minimum:
+                return total >= nutrient.dailyTarget
+            case .maximum:
+                return total <= nutrient.dailyTarget
+            case .range:
+                guard let upper = nutrient.upperBound else {
+                    return total >= nutrient.dailyTarget
+                }
+                return total >= nutrient.dailyTarget && total <= upper
+            }
+        }
     }
 
     private func dayRow(_ day: HistoryViewModel.DaySummary) -> some View {
