@@ -7,9 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		46CE73B3C67E4CE7BA03B588 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 64702A8C2F72A89200C45D23 /* WidgetKit.framework */; };
+		56D297B70E464A939E983733 /* NutrxWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 02AAE38C1B8F4D32B41DA86B /* NutrxWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		64702A8D2F72A89200C45D23 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 64702A8C2F72A89200C45D23 /* WidgetKit.framework */; };
 		64702A8F2F72A89200C45D23 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 64702A8E2F72A89200C45D23 /* SwiftUI.framework */; };
 		64702A9E2F72A89300C45D23 /* NutrxWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 64702A8A2F72A89200C45D23 /* NutrxWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7334F86157A34CED8D297AF7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 64702A8E2F72A89200C45D23 /* SwiftUI.framework */; };
+		855BA80A49AF42D5BC881A01 /* nutrx Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F9F8D9C91BCC4002ACD5F55D /* nutrx Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -20,9 +24,34 @@
 			remoteGlobalIDString = 64702A892F72A89200C45D23;
 			remoteInfo = NutrxWidgetsExtension;
 		};
+		B15066DD20CC4944AB497938 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 64DE98632F60628D008EF50E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0502E6F679F34E15B8453146;
+			remoteInfo = "nutrx Watch App";
+		};
+		C0A84346D439442F82E8DDF0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 64DE98632F60628D008EF50E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BFE61EB901964DE89738FA46;
+			remoteInfo = NutrxWatchWidgets;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		3189863EBC8A4805A6B2A04C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				56D297B70E464A939E983733 /* NutrxWatchWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		64702AA32F72A89300C45D23 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -34,17 +63,45 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B8940A99E3F24302AEA74D29 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 16;
+			files = (
+				855BA80A49AF42D5BC881A01 /* nutrx Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		02AAE38C1B8F4D32B41DA86B /* NutrxWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NutrxWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		64702A8A2F72A89200C45D23 /* NutrxWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = NutrxWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		64702A8C2F72A89200C45D23 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		64702A8E2F72A89200C45D23 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		64702AA52F72A8E600C45D23 /* NutrxWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NutrxWidgetsExtension.entitlements; sourceTree = "<group>"; };
 		64DE986B2F60628D008EF50E /* nutrx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nutrx.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F9F8D9C91BCC4002ACD5F55D /* nutrx Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "nutrx Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		325DB481B20C43539DEA03AD /* Exceptions for "nutrx" folder in "nutrx Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/Exclusion.swift,
+				Models/IntakeRecord.swift,
+				Models/Nutrient.swift,
+				Models/NutrientGroup.swift,
+				Models/NutrientReminder.swift,
+				Models/UserPreferences.swift,
+				Models/UserProfile.swift,
+				"Shared/Extensions/Double+Formatting.swift",
+				Shared/Persistence/ModelContainerFactory.swift,
+			);
+			target = 0502E6F679F34E15B8453146 /* nutrx Watch App */;
+		};
 		64702A9F2F72A89300C45D23 /* Exceptions for "NutrxWidgets" folder in "NutrxWidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -76,9 +133,44 @@
 			);
 			target = 64DE986A2F60628D008EF50E /* nutrx */;
 		};
+		A81E9FA6DDBD4AB4B46DDAD3 /* Exceptions for "NutrxWatchWidgets" folder in "NutrxWatchWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BFE61EB901964DE89738FA46 /* NutrxWatchWidgets */;
+		};
+		D457C596FED54AAC9737808C /* Exceptions for "nutrx" folder in "NutrxWatchWidgets" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/Exclusion.swift,
+				Models/IntakeRecord.swift,
+				Models/Nutrient.swift,
+				Models/NutrientGroup.swift,
+				Models/NutrientReminder.swift,
+				Models/UserPreferences.swift,
+				Models/UserProfile.swift,
+				"Shared/Extensions/Double+Formatting.swift",
+				Shared/Persistence/ModelContainerFactory.swift,
+			);
+			target = BFE61EB901964DE89738FA46 /* NutrxWatchWidgets */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		1B89BC4058BE4BB8B828E88D /* nutrx Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "nutrx Watch App";
+			sourceTree = "<group>";
+		};
+		3ACA7CAEC3BA47A29F354908 /* NutrxWatchWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				A81E9FA6DDBD4AB4B46DDAD3 /* Exceptions for "NutrxWatchWidgets" folder in "NutrxWatchWidgets" target */,
+			);
+			path = NutrxWatchWidgets;
+			sourceTree = "<group>";
+		};
 		64702A902F72A89200C45D23 /* NutrxWidgets */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -92,6 +184,8 @@
 			exceptions = (
 				64AB21CD2F75596D004396D2 /* Exceptions for "nutrx" folder in "nutrx" target */,
 				64702AAD2F72ABD400C45D23 /* Exceptions for "nutrx" folder in "NutrxWidgetsExtension" target */,
+				325DB481B20C43539DEA03AD /* Exceptions for "nutrx" folder in "nutrx Watch App" target */,
+				D457C596FED54AAC9737808C /* Exceptions for "nutrx" folder in "NutrxWatchWidgets" target */,
 			);
 			path = nutrx;
 			sourceTree = "<group>";
@@ -99,6 +193,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		475D03276F584E07A265459F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		64702A872F72A89200C45D23 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -112,6 +213,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7BC57E45A2DE49F69AC8B330 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7334F86157A34CED8D297AF7 /* SwiftUI.framework in Frameworks */,
+				46CE73B3C67E4CE7BA03B588 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,6 +242,8 @@
 			children = (
 				64702AA52F72A8E600C45D23 /* NutrxWidgetsExtension.entitlements */,
 				64DE986D2F60628D008EF50E /* nutrx */,
+				1B89BC4058BE4BB8B828E88D /* nutrx Watch App */,
+				3ACA7CAEC3BA47A29F354908 /* NutrxWatchWidgets */,
 				64702A902F72A89200C45D23 /* NutrxWidgets */,
 				64702A8B2F72A89200C45D23 /* Frameworks */,
 				64DE986C2F60628D008EF50E /* Products */,
@@ -143,6 +255,8 @@
 			children = (
 				64DE986B2F60628D008EF50E /* nutrx.app */,
 				64702A8A2F72A89200C45D23 /* NutrxWidgetsExtension.appex */,
+				F9F8D9C91BCC4002ACD5F55D /* nutrx Watch App.app */,
+				02AAE38C1B8F4D32B41DA86B /* NutrxWatchWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -150,6 +264,30 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		0502E6F679F34E15B8453146 /* nutrx Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7B3ADF00B2DE49F29652CA19 /* Build configuration list for PBXNativeTarget "nutrx Watch App" */;
+			buildPhases = (
+				5E3A4870D7B541A29DF3DC48 /* Sources */,
+				475D03276F584E07A265459F /* Frameworks */,
+				9349771538D94562A98F9CCC /* Resources */,
+				3189863EBC8A4805A6B2A04C /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				ED1151252F9B4A7696108BA6 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1B89BC4058BE4BB8B828E88D /* nutrx Watch App */,
+			);
+			name = "nutrx Watch App";
+			packageProductDependencies = (
+			);
+			productName = "nutrx Watch App";
+			productReference = F9F8D9C91BCC4002ACD5F55D /* nutrx Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
 		64702A892F72A89200C45D23 /* NutrxWidgetsExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 64702AA02F72A89300C45D23 /* Build configuration list for PBXNativeTarget "NutrxWidgetsExtension" */;
@@ -180,11 +318,13 @@
 				64DE98682F60628D008EF50E /* Frameworks */,
 				64DE98692F60628D008EF50E /* Resources */,
 				64702AA32F72A89300C45D23 /* Embed Foundation Extensions */,
+				B8940A99E3F24302AEA74D29 /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				64702A9D2F72A89300C45D23 /* PBXTargetDependency */,
+				64B2C4FDA3F74C9DBB8108BD /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				64DE986D2F60628D008EF50E /* nutrx */,
@@ -196,6 +336,28 @@
 			productReference = 64DE986B2F60628D008EF50E /* nutrx.app */;
 			productType = "com.apple.product-type.application";
 		};
+		BFE61EB901964DE89738FA46 /* NutrxWatchWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 318280944AA9481093E93E72 /* Build configuration list for PBXNativeTarget "NutrxWatchWidgets" */;
+			buildPhases = (
+				104B5100B5F942C09A08B07A /* Sources */,
+				7BC57E45A2DE49F69AC8B330 /* Frameworks */,
+				FEE182742C344A19A2207235 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3ACA7CAEC3BA47A29F354908 /* NutrxWatchWidgets */,
+			);
+			name = NutrxWatchWidgets;
+			packageProductDependencies = (
+			);
+			productName = NutrxWatchWidgets;
+			productReference = 02AAE38C1B8F4D32B41DA86B /* NutrxWatchWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -206,10 +368,16 @@
 				LastSwiftUpdateCheck = 2630;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					0502E6F679F34E15B8453146 = {
+						CreatedOnToolsVersion = 26.3;
+					};
 					64702A892F72A89200C45D23 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 					64DE986A2F60628D008EF50E = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					BFE61EB901964DE89738FA46 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -230,6 +398,8 @@
 			targets = (
 				64DE986A2F60628D008EF50E /* nutrx */,
 				64702A892F72A89200C45D23 /* NutrxWidgetsExtension */,
+				0502E6F679F34E15B8453146 /* nutrx Watch App */,
+				BFE61EB901964DE89738FA46 /* NutrxWatchWidgets */,
 			);
 		};
 /* End PBXProject section */
@@ -249,9 +419,37 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9349771538D94562A98F9CCC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FEE182742C344A19A2207235 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		104B5100B5F942C09A08B07A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5E3A4870D7B541A29DF3DC48 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		64702A862F72A89200C45D23 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -274,9 +472,87 @@
 			target = 64702A892F72A89200C45D23 /* NutrxWidgetsExtension */;
 			targetProxy = 64702A9C2F72A89300C45D23 /* PBXContainerItemProxy */;
 		};
+		64B2C4FDA3F74C9DBB8108BD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0502E6F679F34E15B8453146 /* nutrx Watch App */;
+			targetProxy = B15066DD20CC4944AB497938 /* PBXContainerItemProxy */;
+		};
+		ED1151252F9B4A7696108BA6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BFE61EB901964DE89738FA46 /* NutrxWatchWidgets */;
+			targetProxy = C0A84346D439442F82E8DDF0 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		2CE25471FD734E34A07100AD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = NutrxWatchWidgets/NutrxWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6396A6L9J3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NutrxWatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "nutrx Complications";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.9;
+				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx.watchkitapp.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+		34AEED54022C465D92EC74F0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = NutrxWatchWidgets/NutrxWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6396A6L9J3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = NutrxWatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "nutrx Complications";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.9;
+				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx.watchkitapp.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
 		64702AA12F72A89300C45D23 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -538,9 +814,90 @@
 			};
 			name = Release;
 		};
+		A5F554AB76E84CFAA80341C4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "nutrx Watch App/nutrx Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6396A6L9J3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "nutrx-Watch-App-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = nutrx;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "nutrx-labs.nutrx";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.9;
+				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Release;
+		};
+		B2D8D08422A74332B0C44B38 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "nutrx Watch App/nutrx Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6396A6L9J3;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "nutrx-Watch-App-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = nutrx;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "nutrx-labs.nutrx";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.9;
+				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrx.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 11.0;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		318280944AA9481093E93E72 /* Build configuration list for PBXNativeTarget "NutrxWatchWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				34AEED54022C465D92EC74F0 /* Debug */,
+				2CE25471FD734E34A07100AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		64702AA02F72A89300C45D23 /* Build configuration list for PBXNativeTarget "NutrxWidgetsExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -564,6 +921,15 @@
 			buildConfigurations = (
 				64DE98772F60628E008EF50E /* Debug */,
 				64DE98782F60628E008EF50E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7B3ADF00B2DE49F29652CA19 /* Build configuration list for PBXNativeTarget "nutrx Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B2D8D08422A74332B0C44B38 /* Debug */,
+				A5F554AB76E84CFAA80341C4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
