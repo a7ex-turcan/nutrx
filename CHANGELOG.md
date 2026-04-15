@@ -4,6 +4,21 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v1.10 — 2026-04-15
+
+### Features
+- **Apple Watch companion app** — A focused wrist companion for logging intake. Shows today's active nutrients with goal-type-aware progress bars and a + button on each row to log one step increment. Reads from the same shared SwiftData store as the iPhone app via the existing App Group — no extra setup, data appears automatically.
+- **Watch complications** — WidgetKit-based complications for the Watch face: circular ring gauge, corner count, and inline text showing "X / Y on target" at a glance. Refresh after every log tap.
+
+### Improvements
+- **Faster first launch on a brand-new install** — Skip the 3-second CloudKit sync wait when the app has never launched on this device before and there's no prior iCloud data to restore. Onboarding appears instantly.
+
+### Fixes
+- **Reminder suppression re-firing notifications** — Fixed dose reminders firing again later the same day after being suppressed by a logged intake.
+- **History flame badges ignoring goal types** — Fixed the flame streak indicators on History days using minimum-only logic. They now correctly respect each nutrient's goal type (minimum / maximum / range), matching the rest of the app.
+
+---
+
 ## v1.9 — 2026-04-03
 
 ### Features

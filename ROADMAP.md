@@ -46,7 +46,7 @@
 | Feature | Status |
 |---|---|
 | Nutrient goal types (minimum / maximum / range) | ✅ Shipped (v1.9) |
-| Apple Watch companion app | 📋 Planned |
+| Apple Watch companion app | ✅ Shipped (v1.10) |
 | Data export (CSV) | 📋 Planned |
 | Quick-log stacks / templates | 📋 Planned |
 | Siri & App Shortcuts | 📋 Planned |
@@ -279,58 +279,17 @@ See CHANGELOG v1.9 for full details.
 
 ---
 
-### 2. Apple Watch Companion App 📋
+### 2. Apple Watch Companion App ✅
 
-**Status:** Planned
+**Status:** Shipped in v1.10
 
 A focused wrist companion for logging. The Watch app does one thing: lets the user log nutrient intake without reaching for their phone. No nutrient management, no history, no settings on Watch.
 
-#### What it includes
+Two Xcode targets: `nutrx Watch App` (Bundle ID `nutrx-labs.nutrx.watchkitapp`) and `NutrxWatchWidgets` (Bundle ID `nutrx-labs.nutrx.watchkitapp.widgets`). Both share the existing App Group SwiftData store (`group.nutrx-labs.nutrx`) and CloudKit container (`iCloud.nutrx-labs.nutrx`) — no new data layer. After logging, `WidgetCenter.shared.reloadAllTimelines()` refreshes complications. Goal-type-aware progress bar tinting matches the iPhone (blue/green/orange).
 
-- **WatchTodayView** — a scrollable list of today's active nutrients, each showing name, progress bar, current/target value, and a + button that logs one step increment
-- **Complication** — three Watch face families: circular ring gauge (`.accessoryCircular`), corner count (`.accessoryCorner`), and inline text (`.accessoryInline`). Shows "X / Y on target" at a glance.
+Explicitly out of scope: custom amount entry, nutrient creation/editing, history browsing, settings, group headers.
 
-#### How it works technically
-
-- New Xcode target: `nutrx Watch App` (Bundle ID: `nutrx-labs.nutrx.watchkitapp`)
-- Shares the existing App Group SwiftData store (`group.nutrx-labs.nutrx`) — no new data layer
-- `ModelContainerFactory`, all Model files, and `LogNutrientIntent` added to Watch target membership (not duplicated)
-- Complication uses WidgetKit (same API as iOS complications since watchOS 9)
-- After logging, calls `WidgetCenter.shared.reloadAllTimelines()` to refresh complications
-- No `WatchConnectivity` / `WCSession` needed — shared store handles sync automatically
-- Haptic feedback via `WKInterfaceDevice.current().play(.click)` on every log tap
-
-#### UI constraints
-
-- `List` with `.listStyle(.carousel)` for Digital Crown scrolling
-- Semantic font styles only (`.headline`, `.caption2`) — no hardcoded sizes
-- Empty state: `ContentUnavailableView` prompting user to open iPhone app if no nutrients exist
-- Goal-type-aware progress bar tinting: same three-state color logic as iPhone (blue/green/orange)
-
-#### File structure
-
-```
-nutrx Watch App/
-├── nutrxWatchApp.swift
-├── ContentView.swift
-├── Views/
-│   ├── WatchTodayView.swift
-│   └── WatchNutrientRowView.swift
-├── ViewModels/
-│   └── WatchTodayViewModel.swift
-└── Complications/
-    └── NutrxComplication.swift
-```
-
-#### What's explicitly out of scope for v1
-
-- Custom amount entry on Watch (step-only; one tap = one step)
-- Nutrient creation or editing on Watch
-- History browsing on Watch
-- Settings on Watch
-- Group headers or collapsing on Watch
-
-Full implementation spec: `WATCH_APP_SPEC.md`
+See CHANGELOG v1.10 for user-facing details. Full implementation spec: `WATCH_APP_SPEC.md`.
 
 ---
 

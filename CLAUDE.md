@@ -4,12 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Nutrx** is a native iOS/iPadOS SwiftUI application. Bundle ID: `nutrx-labs.nutrx`.
+**Nutrx** is a native iOS/iPadOS SwiftUI application with an Apple Watch companion. Bundle ID: `nutrx-labs.nutrx`.
 
 - **Language**: Swift 5.0
 - **UI Framework**: SwiftUI
 - **iOS Deployment Target**: 26.0
+- **watchOS Deployment Target**: 11.0
 - **Built with**: Xcode 26.3
+
+**Xcode targets:**
+- `nutrx` — iOS/iPadOS app (`nutrx-labs.nutrx`)
+- `NutrxWidgetsExtension` — iOS widgets (`nutrx-labs.nutrx.NutrxWidgets`)
+- `nutrx Watch App` — watchOS companion (`nutrx-labs.nutrx.watchkitapp`)
+- `NutrxWatchWidgets` — watchOS complications (`nutrx-labs.nutrx.watchkitapp.widgets`)
 
 ## Build & Run
 
@@ -194,6 +201,43 @@ nutrx/
 - **Date / number / string utilities** → `Shared/Extensions/`
 - **No files at the root of `Features/`** — everything must be inside a named feature folder
 - **No business logic in view files** — if a view needs to do anything beyond layout and user input forwarding, that logic belongs in the corresponding ViewModel
+
+---
+
+## Apple Watch App
+
+A focused wrist companion for logging. One job: log nutrient intake without reaching for the phone. No nutrient management, no history, no settings on Watch.
+
+### Directory structure
+
+```
+nutrx Watch App/
+├── nutrxWatchApp.swift                     # @main entry point. Boots the shared SwiftData container.
+├── ContentView.swift                       # Root view — hosts WatchTodayView.
+├── Views/
+│   ├── WatchTodayView.swift                # Scrollable list of today's active nutrients.
+│   └── WatchNutrientRowView.swift          # Single row: name, progress bar, current/target, + button.
+├── ViewModels/
+│   └── WatchTodayViewModel.swift           # Computes today's totals by summing IntakeRecords (same logic as iOS).
+└── nutrx Watch App.entitlements            # App Group + iCloud container matching iOS app.
+
+NutrxWatchWidgets/
+├── NutrxWatchWidgetsBundle.swift           # WidgetKit bundle entry point.
+├── NutrxComplication.swift                 # Circular, corner, and inline Watch face complications.
+├── Info.plist
+└── NutrxWatchWidgets.entitlements
+```
+
+### Key facts
+
+- Both watch targets share the existing App Group SwiftData store (`group.nutrx-labs.nutrx`) and CloudKit container (`iCloud.nutrx-labs.nutrx`) — no new data layer
+- `ModelContainerFactory`, all Model files, and `LogNutrientIntent` are added to the Watch target via target membership (not duplicated)
+- Complications use WidgetKit, same API as iOS widgets
+- After logging, `WidgetCenter.shared.reloadAllTimelines()` refreshes complications
+- No `WatchConnectivity` / `WCSession` — shared store handles cross-device sync
+- Haptic feedback via `WKInterfaceDevice.current().play(.click)` on every log tap
+- Goal-type-aware progress bar tinting matches the iPhone (blue/green/orange, minimum/maximum/range)
+- Explicitly out of scope: custom amount entry (step-only), nutrient creation/editing, history browsing, settings, group headers
 
 ---
 
