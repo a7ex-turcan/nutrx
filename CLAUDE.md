@@ -241,6 +241,53 @@ NutrxWatchWidgets/
 
 ---
 
+## Siri & App Shortcuts
+
+Expose `LogNutrientIntent` (already used for widgets) to Siri and the Shortcuts app. Primary use case: a multi-nutrient morning routine shortcut that logs several nutrients with specific amounts in one tap.
+
+### Intent design
+
+`LogNutrientIntent` gains two parameters:
+
+- **`nutrient: NutrientEntity`** — resolves by name, never by UUID. Conforming to `AppEntity` with an `EntityQuery` that fetches from the App Group SwiftData store (same container as widgets via `ModelContainerFactory`). The Shortcuts UI shows a picker populated from the user's nutrient list. Disambiguation is handled automatically by the framework if names conflict.
+- **`amount: Double?`** — optional. If `nil` → log one step increment (preserves existing widget behavior). If set → log that exact amount.
+
+### `perform()` implementation
+
+```swift
+func perform() async throws -> some IntentResult {
+    let container = ModelContainerFactory.shared
+    let context = ModelContext(container)
+    // resolve nutrient from entity ID
+    // let logAmount = amount ?? nutrient.step
+    // insert IntakeRecord(nutrient:, amount: logAmount, date: Date())
+    // try context.save()
+    // WidgetCenter.shared.reloadAllTimelines()
+    return .result()
+}
+```
+
+### Key rules
+
+- `NutrientEntity.EntityQuery` must use the App Group store — **not** the main app's in-process container. Same pattern as widget `TimelineProvider`.
+- Never expose raw UUIDs in the Shortcuts UI or suggested phrases.
+- Suggested phrase per nutrient: `"Log [nutrient name]"` — donate via `PredictableIntent` or `ShortcutsLink`.
+- Settings → Siri & Shortcuts: per-nutrient "Add to Siri" button using `SiriTipView` or `ShortcutsLink`.
+
+### File placement
+
+```
+Shared/Intents/
+  LogNutrientIntent.swift     ← already exists, extend with amount param + EntityQuery
+  NutrientEntity.swift        ← new: AppEntity + EntityQuery conformance
+Features/Settings/Views/
+  SiriShortcutsView.swift     ← new: per-nutrient "Add to Siri" list
+```
+
+`NutrientEntity` and `LogNutrientIntent` must have target membership in both `nutrx` and `NutrxWidgetsExtension` (same as today — widgets depend on `LogNutrientIntent`). Verify target membership hasn't drifted before implementing.
+
+---
+
 ## Onboarding
 
 Mandatory on first launch. Two-step flow:
@@ -558,7 +605,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 
 **MVP 3 (remaining):** Apple Health integration (HealthKit write)
 
-**Pre-Pro Sprint:** Nutrient goal types (min/max/range), data export (CSV), quick-log stacks, Siri & App Shortcuts — see ROADMAP.md for full specs
+**Pre-Pro Sprint:** Nutrient goal types (min/max/range), data export (CSV), quick-log stacks, Siri & App Shortcuts — see ROADMAP.md for full specs and the Siri & App Shortcuts section below for implementation details
 
 **MVP 4:** Pro tier (StoreKit 2), AI features (on-device + third-party LLM), streak freeze, shareable streak card
 

@@ -359,12 +359,21 @@ Both new models follow the same CloudKit rules as existing models: optional rela
 
 Expose `LogNutrientIntent` (already exists for widgets) to Siri and the Shortcuts app. Users can say "Hey Siri, log my magnesium in nutrx" or build automations. Low implementation lift relative to discoverability payoff — the `AppIntent` infrastructure is already in place.
 
+The primary user goal is multi-nutrient morning routine shortcuts: one shortcut that logs Vitamin A 800µg, Magnesium 400mg, Omega-3 1g etc. in a single tap. The intent design must support this cleanly.
+
 #### Scope
 
-- Donate `LogNutrientIntent` to Siri with a `NutrientEntity` parameter (name-resolvable)
-- Add `perform()` implementation that resolves the nutrient by name and logs one step increment
-- Provide a `PredictableIntent` / suggested phrase per nutrient: "Log [nutrient name]"
+- Expose `LogNutrientIntent` to Siri and the Shortcuts app
+- `NutrientEntity` parameter resolves nutrients **by name** via `EntityQuery` — never by raw UUID. The user picks from a list populated from the shared App Group SwiftData store (same container as widgets). Disambiguation shown automatically if names conflict.
+- Optional `amount: Double` parameter. If nil → log one step increment (default, preserves existing widget behavior). If set → log that exact amount. This is what makes multi-nutrient stacks practical.
+- Provide a suggested phrase per nutrient: "Log [nutrient name]"
 - Surface in Settings → Siri & Shortcuts with a per-nutrient "Add to Siri" button
+
+#### Implementation notes
+
+- `NutrientEntity` must conform to `AppEntity` with an `EntityQuery` that fetches from the App Group SwiftData store — the same container `ModelContainerFactory` provides to widgets. This is the only non-trivial part; the rest follows from existing `LogNutrientIntent` infrastructure.
+- `perform()` resolves the entity, applies `amount ?? nutrient.step`, inserts an `IntakeRecord`, saves context, calls `WidgetCenter.shared.reloadAllTimelines()`
+- Do not expose nutrient UUIDs anywhere in the Shortcuts UI
 
 #### Out of scope for this sprint
 
