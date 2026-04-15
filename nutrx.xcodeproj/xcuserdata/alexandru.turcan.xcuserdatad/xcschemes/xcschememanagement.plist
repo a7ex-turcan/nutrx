@@ -22,7 +22,30 @@
 		<key>nutrx.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>2</integer>
+			<integer>3</integer>
+		</dict>
+	</dict>
+	<key>SuppressBuildableAutocreation</key>
+	<dict>
+		<key>0502E6F679F34E15B8453146</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>64702A892F72A89200C45D23</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>64DE986A2F60628D008EF50E</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>BFE61EB901964DE89738FA46</key>
+		<dict>
+			<key>primary</key>
+			<true/>
 		</dict>
 	</dict>
 </dict>
