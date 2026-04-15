@@ -66,7 +66,7 @@
 		B8940A99E3F24302AEA74D29 /* Embed Watch Content */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "";
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
 				855BA80A49AF42D5BC881A01 /* nutrx Watch App.app in Embed Watch Content */,
