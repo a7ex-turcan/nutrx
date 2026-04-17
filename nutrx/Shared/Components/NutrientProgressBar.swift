@@ -40,10 +40,13 @@ struct NutrientProgressBar: View {
         case .maximum:
             guard target > 0 else { return .orange }
             if current > target {
-                return Color(.systemRed)
+                let overFraction = min((current - target) / target, 1.0)
+                return Self.blend(from: .systemYellow, to: .systemRed, fraction: overFraction)
+            } else if current == target {
+                return .green
             }
             let fraction = current / target
-            return Self.blend(from: .systemOrange, to: .systemRed, fraction: fraction)
+            return Self.blend(from: .systemGreen, to: .systemYellow, fraction: fraction)
 
         case .range:
             guard let upper = upperBound, upper > 0 else { return .blue }
