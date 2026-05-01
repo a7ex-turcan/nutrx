@@ -18,7 +18,7 @@ struct MainTabView: View {
             }
 
             Tab("History", systemImage: "chart.bar.xaxis") {
-                NavigationStack {1
+                NavigationStack {
                     HistoryListView()
                         .navigationTitle("History")
                         .navigationBarTitleDisplayMode(.inline)
