@@ -237,7 +237,8 @@ NutrxWatchWidgets/
 - No `WatchConnectivity` / `WCSession` — shared store handles cross-device sync
 - Haptic feedback via `WKInterfaceDevice.current().play(.click)` on every log tap
 - Goal-type-aware progress bar tinting matches the iPhone (blue/green/orange, minimum/maximum/range)
-- Explicitly out of scope: custom amount entry (step-only), nutrient creation/editing, history browsing, settings, group headers
+- Nutrient groups are shown with section headers on the Watch, matching the iPhone. Headers hidden when only General group exists.
+- Explicitly out of scope: custom amount entry (step-only), nutrient creation/editing, history browsing, settings
 
 ---
 

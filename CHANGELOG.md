@@ -4,6 +4,18 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v1.11 — 2026-04-17
+
+### Improvements
+- **Watch app group headers** — Nutrients on the Apple Watch are now split by group with section headers, matching the iPhone layout. Headers are hidden when only the default General group exists.
+- **Maximum goal progress bar** — "At most" nutrients now stay green at exactly 100% of the limit and only turn red when exceeded. The bar blends green→yellow as you approach the cap instead of the previous orange→red.
+
+### Fixes
+- **Watch app missing from TestFlight** — Fixed the Embed Watch Content build phase so the watch app is correctly placed inside the iOS archive. Previously the watch binary was built but dropped outside the app bundle.
+- **Watch CloudKit sync** — Added the missing `aps-environment` entitlement to both watch targets so CloudKit can deliver silent-push change notifications and nutrients sync from iPhone to Watch.
+
+---
+
 ## v1.10 — 2026-04-15
 
 ### Features
