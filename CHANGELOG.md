@@ -6,7 +6,13 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### Features
+- **Redesigned Today screen** — A day-score card shows how many goals you've met, your streak and your next reminder. Each nutrient gets a progress ring in its own colour and symbol, a clear status line ("2,000 IU to go", "80 mg left today", "Done") and bigger − / + buttons. Light and dark mode are both fully styled.
+- **Add a nutrient from Today** — When there's nothing to track, Today now has an "Add a nutrient" button.
+
 ### Improvements
+- **Profile avatar** — The profile button shows your photo or initial in a circle.
+- **Tapping a nutrient on Today** — Opens Add Exact Amount (replaces the expandable intake list; a fuller log sheet is coming next).
 - **Brand accent colour** — Buttons, toggles and other system controls now use nutrx forest green (bright green in dark mode) instead of the default blue.
 - **One rule for "goal met"** — Today, History, streaks and analytics now share a single goal check, so they can't disagree, and totals that land a rounding hair under the target (e.g. 0.1 + 0.7 of a 0.8 goal) now count as reached.
 

@@ -68,7 +68,7 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
-- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. **Next:** Phase 2 (Today).
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. **Next:** Phase 3 (Log sheet).
 - Where this file still describes the old UI (blue/green/orange progress bars, expandable cards, `CustomAmountSheet`, personal-info onboarding), DESIGN.md wins. Update this file as each phase lands.
 
 ---
@@ -131,7 +131,7 @@ nutrx/
 │   │
 │   ├── Today/                   # Tab 1 — the main daily logging screen.
 │   │   ├── Views/
-│   │   │   ├── TodayView.swift              # Nutrient list with swipe actions, context menu, banners.
+│   │   │   ├── TodayView.swift              # Day-score card, banners, grouped NutrientCards with swipe actions + context menu.
 │   │   │   │                                # Listens for NSPersistentStoreRemoteChange to refresh on CloudKit sync.
 │   │   │   ├── CustomAmountSheet.swift
 │   │   │   └── NotificationBannerView.swift
@@ -176,6 +176,7 @@ nutrx/
 │
 └── Shared/
     ├── DesignSystem/
+    │   ├── CardStyle.swift                 # .cardStyle(): card fill + radius, forest shadow (light) / hairline (dark).
     │   ├── Theme.swift                     # Brand colour tokens, NutrientTint colours, GoalStatus colours, spacing/radius constants.
     │   └── Colors.xcassets                 # Named colour sets (Any/Dark) for every token and tint. Shared with widget + Watch targets.
     ├── Extensions/
@@ -186,25 +187,31 @@ nutrx/
     │   ├── ProgressRing.swift               # Redesign ring: tint arc + track, centre symbol, check badge when met.
     │   ├── SegmentedDayRing.swift           # Day score ring, one segment per nutrient ("3/6 goals met").
     │   ├── NutrientIconTile.swift           # Rounded tile with a nutrient's symbol on its tint.
+    │   ├── DayScoreCard.swift               # Today header: forest card with SegmentedDayRing, headline, streak chip, next reminder.
+    │   ├── NutrientCard.swift               # Today row: ProgressRing, name, value, status line, − / + (44pt).
+    │   ├── GroupHeader.swift                # Today group header: name, met-count chip, collapse chevron.
     │   ├── FormField.swift
     │   ├── NutrientFormFields.swift         # Reusable nutrient form + NutrientDraft observable.
-    │   ├── NutrientRowView.swift            # Card with +/− buttons, progress bar.
+    │   ├── NutrientRowView.swift            # Old card with progress bar — History day only until phase 6.
     │   ├── NutrientProgressBar.swift        # Blue (in progress), green (complete), orange (exceeded).
-    │   ├── ExpandableNutrientCard.swift     # Wraps NutrientRowView + NutrientIntakeHistoryView. Owns tap-to-expand toggle.
-    │   ├── NutrientIntakeHistoryView.swift  # Expanded intake list. @Query-fetches today's IntakeRecords for one nutrient.
-    │   ├── GroupHeaderView.swift            # Collapsible group header with completion count.
+    │   ├── ExpandableNutrientCard.swift     # Unused since phase 2; deleted with LogSheet in phase 3.
+    │   ├── NutrientIntakeHistoryView.swift  # Only used by ExpandableNutrientCard; deleted in phase 3.
+    │   ├── GroupHeaderView.swift            # Old collapsible group header — My Nutrients only until phase 4.
     │   ├── MoveToGroupSheet.swift
     │   ├── CameraView.swift                 # UIImagePickerController wrapper for camera capture.
     │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
     │   ├── SyncBannerView.swift             # Dismissible iCloud sync banner.
-    │   ├── ProfileMenuButton.swift
+    │   ├── ProfileMenuButton.swift          # 44pt avatar circle (photo / initial / person symbol) with the profile menu.
     │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier.
     ├── Persistence/
     │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback.
     │   │                                    # Backs up local store before first CloudKit init to prevent data loss.
     │   │                                    # Singleton deduplication. Logs via os.log.
+    │   ├── NutrientDraft+Insert.swift       # Creates a nutrient (+ reminders) from a NutrientDraft. Used by My Nutrients and Today.
     │   └── PreviewSampleData.swift
     └── Services/
+        ├── DayScore.swift                   # Met / total + the day-score card headline.
+        ├── UpcomingReminder.swift           # Next dose reminder later today (for the day-score card).
         ├── GoalStatus.swift                 # GoalStatus + GoalProgress: status, ring fraction, status line, counts-as-met.
         │                                    # Single source of truth for "goal met" (streaks, History, analytics, Today).
         ├── NotificationService.swift        # Daily check-in reminder + per-nutrient dose reminders.
@@ -331,19 +338,19 @@ Each nutrient supports zero or more **dose reminders** — times of day that fir
 
 ## Today Tab – Core Logging UX
 
-The central feature. Each nutrient row shows: name, unit, progress bar, −/+ buttons. Haptic feedback on tap.
+The central feature (DESIGN.md §5.1). Large "Today" title with the date as the navigation subtitle, 44pt profile avatar top-right, `Surface/Ground` background.
 
-- **Swipe right** → Add Exact Amount sheet
-- **Swipe left** → Edit Nutrient sheet
-- **Long press** → context menu: Edit step amount, Enter custom amount, Exclude for today, Move to Group
+- **Day-score card** (`DayScoreCard`) on top: segmented ring ("3/6 goals met"), headline ("Halfway there — 3 to go"), flame streak chip when streaks are on and ≥ 1, and the next reminder later today for a nutrient not yet logged (only when notifications are allowed). Notification / sync banners render below it.
+- **Groups** with a `GroupHeader` (name, met-count chip, collapse chevron) — hidden when only the system group exists.
+- **Nutrient cards** (`NutrientCard`): ring in the nutrient's tint with its symbol (amber near/over a limit, check badge when met), name, "**2,000** / 4,000 IU" ("max 400 mg" for at-most), status line ("2,000 IU to go", "Done", "80 mg left today"). − / + log one step with a light haptic; − is disabled at 0. At accessibility text sizes the buttons move to their own row.
+- **Tap a card** → Add Exact Amount sheet for now (the full `LogSheet` replaces it in phase 3; the old tap-to-expand intake list is gone).
+- **Swipe right** → Add Exact Amount sheet; **swipe left** → Edit Nutrient sheet
+- **Long press** → context menu: Add Exact Amount, Edit Nutrient, Move to Group
+- **Empty state**: `ContentUnavailableView` with an "Add a nutrient" button that opens the new-nutrient form.
 
-Progress bar: blue (in progress), green (at/above target), orange (exceeded). Exceeding a target is allowed.
+Status and colours come from `GoalProgress` (see Nutrient Goal Types). Exceeding a target is allowed.
 
 Intake is computed by summing `IntakeRecord` rows for today's calendar day. No explicit midnight reset needed.
-
-### Expandable Nutrient Cards
-
-Tap any nutrient card to expand a chronological breakdown of all `IntakeRecord` entries for that nutrient today. Each row shows time, signed amount (decrements in orange), and optional note inline. When more than 5 entries exist, only the 5 most recent are shown with a "Show all X entries" link at the top to reveal the rest. A centered + button at the bottom opens the exact amount sheet. Multiple cards can be open simultaneously. State is transient (`expandedNutrientIDs: Set<UUID>` in `TodayView`) — resets on tab switch. `ExpandableNutrientCard` wraps `NutrientRowView` and owns the card background/clip. `NutrientIntakeHistoryView` fetches records via `@Query`.
 
 ---
 
@@ -577,7 +584,7 @@ Daily streak tracking, opt-in via `UserPreferences.streaksEnabled` (default `tru
 - `.maximum` — total ≤ `dailyTarget`
 - `.range` — total ≥ `dailyTarget` AND total ≤ `upperBound`
 
-**UI:** `🔥 X-day streak` on Today (when ≥ 1), summary card in History, streak labels in small/medium widgets. `StreakService.compute(context:) → StreakResult` runs on foreground and after intake actions.
+**UI:** flame streak chip in Today's day-score card (when ≥ 1), summary card in History, streak labels in small/medium widgets. `StreakService.compute(context:) → StreakResult` runs on foreground and after intake actions.
 
 ---
 
