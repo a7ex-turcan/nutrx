@@ -3,6 +3,7 @@ import SwiftData
 
 struct NutrientsListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<Nutrient> { !$0.isDeleted },
            sort: \Nutrient.sortOrder)
     private var nutrients: [Nutrient]
@@ -331,7 +332,7 @@ struct NutrientsListView: View {
             Spacer()
 
             Button {
-                withAnimation(.unlessReduceMotion()) {
+                withAnimation(.unlessReduceMotion(reduceMotion)) {
                     allPreferences.first?.hasSeenAnalyticsBanner = true
                 }
             } label: {

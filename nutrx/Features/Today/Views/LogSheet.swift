@@ -12,6 +12,7 @@ struct LogSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var records: [IntakeRecord]
     @State private var amountText: String
     /// The chip the user last tapped — wins when several chips share the current amount.
@@ -379,7 +380,7 @@ struct LogSheet: View {
 
             Button {
                 Haptics.deleted()
-                withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.2))) {
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) {
                     onDelete(record)
                 }
             } label: {

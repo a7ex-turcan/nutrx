@@ -109,6 +109,7 @@ struct NutrientFormFields<BeforeNotes: View>: View {
     @ViewBuilder var beforeNotes: BeforeNotes
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -140,8 +141,8 @@ struct NutrientFormFields<BeforeNotes: View>: View {
             notesField
                 .padding(.top, 6)
         }
-        .animation(.unlessReduceMotion(.easeInOut(duration: 0.25)), value: draft.goalType)
-        .animation(.unlessReduceMotion(.easeInOut(duration: 0.2)), value: rangeError)
+        .animation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25)), value: draft.goalType)
+        .animation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2)), value: rangeError)
     }
 
     // MARK: - Sections

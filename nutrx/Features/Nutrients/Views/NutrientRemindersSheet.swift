@@ -4,6 +4,7 @@ import SwiftData
 struct NutrientRemindersSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var allReminders: [NutrientReminder]
     let nutrient: Nutrient
 
@@ -80,7 +81,7 @@ struct NutrientRemindersSheet: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        withAnimation(.unlessReduceMotion()) {
+                        withAnimation(.unlessReduceMotion(reduceMotion)) {
                             showTimePicker.toggle()
                         }
                     } label: {
@@ -145,7 +146,7 @@ struct NutrientRemindersSheet: View {
         modelContext.insert(reminder)
         NotificationService.scheduleReminders(for: nutrient)
 
-        withAnimation(.unlessReduceMotion()) {
+        withAnimation(.unlessReduceMotion(reduceMotion)) {
             showTimePicker = false
             selectedTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now)!
         }

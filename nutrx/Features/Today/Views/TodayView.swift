@@ -6,6 +6,7 @@ import SwiftData
 struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
     @State private var viewModel = TodayViewModel()
@@ -115,7 +116,7 @@ struct TodayView: View {
             LogSheet(
                 nutrient: nutrient,
                 onLog: { amount, note in
-                    withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.2))) {
+                    withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) {
                         viewModel.addCustomAmount(amount, to: nutrient, note: note, context: modelContext)
                     }
                     checkForReview()
@@ -165,7 +166,7 @@ struct TodayView: View {
             total: score.total,
             isCollapsed: section.group.isCollapsed,
             onToggle: {
-                withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.25))) {
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
                     section.group.isCollapsed.toggle()
                 }
             }
@@ -184,13 +185,13 @@ struct TodayView: View {
                 nutrientToLog = entry.nutrient
             },
             onIncrement: {
-                withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.2))) {
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) {
                     viewModel.increment(entry.nutrient, context: modelContext)
                 }
                 checkForReview()
             },
             onDecrement: {
-                withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.2))) {
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) {
                     viewModel.decrement(entry.nutrient, context: modelContext)
                 }
                 checkForReview()
@@ -314,13 +315,13 @@ struct TodayView: View {
             }
 
             preferences.hasSeenNotificationBanner = true
-            withAnimation(.unlessReduceMotion()) { showBanner = false }
+            withAnimation(.unlessReduceMotion(reduceMotion)) { showBanner = false }
         }
     }
 
     private func dismissBanner() {
         preferences.hasSeenNotificationBanner = true
-        withAnimation(.unlessReduceMotion()) { showBanner = false }
+        withAnimation(.unlessReduceMotion(reduceMotion)) { showBanner = false }
     }
 
     private func refreshSyncBannerVisibility() {
@@ -347,7 +348,7 @@ struct TodayView: View {
         } else {
             preferences.hasSeenSyncEnabledBanner = true
         }
-        withAnimation(.unlessReduceMotion()) { showSyncBanner = false }
+        withAnimation(.unlessReduceMotion(reduceMotion)) { showSyncBanner = false }
     }
 
     private func refreshStreak() {
