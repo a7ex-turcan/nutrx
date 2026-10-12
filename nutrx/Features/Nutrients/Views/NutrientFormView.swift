@@ -1,12 +1,16 @@
 import SwiftUI
 import SwiftData
 
+/// New / edit nutrient sheet (DESIGN.md §5.7): Cancel / title / Add in the toolbar, then a live preview,
+/// the shared fields, Group and Reminders rows, and notes.
 struct NutrientFormView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Query private var allReminders: [NutrientReminder]
     @Query(sort: \NutrientGroup.sortOrder) private var allGroups: [NutrientGroup]
     @Bindable var draft: NutrientDraft
     let title: String
+    /// Toolbar confirm button, e.g. "Add" or "Save".
     let buttonLabel: String
     var nutrient: Nutrient?
     @Binding var selectedGroup: NutrientGroup?
@@ -15,11 +19,11 @@ struct NutrientFormView: View {
     let onSave: () -> Void
 
     @State private var showRemindersSheet = false
+    @State private var showPendingReminders = false
+    @State private var showGroupChooser = false
     @State private var showNewGroupAlert = false
     @State private var newGroupName = ""
-    @State private var showTimePicker = false
-    @State private var selectedTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now)!
-    @State private var showDeniedAlert = false
+    @FocusState private var focusedField: NutrientFormField?
 
     init(
         draft: NutrientDraft,
@@ -44,30 +48,12 @@ struct NutrientFormView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    NutrientFormFields(draft: draft)
+                VStack(spacing: Theme.Spacing.cardGap) {
+                    NutrientPreviewRow(draft: draft)
 
-                    if showGroupPicker {
-                        groupPickerSection
+                    NutrientFormFields(draft: draft, focusedField: $focusedField) {
+                        settingsRows
                     }
-
-                    if let nutrient {
-                        remindersSection(for: nutrient)
-                    } else {
-                        pendingRemindersSection
-                    }
-
-                    Button {
-                        onSave()
-                        dismiss()
-                    } label: {
-                        Text(buttonLabel)
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!draft.isValid)
 
                     if let onDelete {
                         Button(role: .destructive) {
@@ -76,21 +62,37 @@ struct NutrientFormView: View {
                         } label: {
                             Text("Delete Nutrient")
                                 .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
+                                .frame(maxWidth: .infinity, minHeight: 52)
                         }
                         .buttonStyle(.bordered)
+                        .buttonBorderShape(.roundedRectangle(radius: Theme.Radius.control))
+                        .padding(.top, Theme.Spacing.sectionTop)
                     }
                 }
-                .padding(24)
+                .padding(Theme.Spacing.screenMargin)
             }
             .scrollDismissesKeyboard(.interactively)
-            .background(Color(.systemGroupedBackground))
+            .background(Theme.surfaceGround)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(buttonLabel) {
+                        onSave()
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .buttonStyle(.glassProminent)
+                    .disabled(!draft.isValid)
+                }
+                // Done for the return-less .decimalPad fields.
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { focusedField = nil }
+                        .fontWeight(.semibold)
                 }
             }
             .sheet(isPresented: $showRemindersSheet) {
@@ -98,206 +100,119 @@ struct NutrientFormView: View {
                     NutrientRemindersSheet(nutrient: nutrient)
                 }
             }
+            .sheet(isPresented: $showPendingReminders) {
+                PendingRemindersSheet(draft: draft)
+            }
+            .alert("New Group", isPresented: $showNewGroupAlert) {
+                TextField("Group name", text: $newGroupName)
+                Button("Add") {
+                    if let group = NutrientGroup.create(named: newGroupName, among: allGroups, in: modelContext) {
+                        selectedGroup = group
+                    }
+                }
+                .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button("Cancel", role: .cancel) {}
+            }
         }
     }
 
-    private var groupPickerSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Group")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
+    // MARK: - Group / Reminders
 
-            HStack(spacing: 12) {
-                Picker("Group", selection: $selectedGroup) {
-                    ForEach(allGroups, id: \.persistentModelID) { group in
-                        Text(group.name).tag(Optional(group))
-                    }
-                }
-                .pickerStyle(.menu)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
+    private var settingsRows: some View {
+        VStack(spacing: 0) {
+            if showGroupPicker {
+                // A dialog rather than a Menu: a Menu with this custom row as its label crashes SwiftUI's
+                // layout ("accessing attribute in a different namespace") inside the form's stacks.
                 Button {
-                    newGroupName = ""
-                    showNewGroupAlert = true
+                    showGroupChooser = true
                 } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.green)
+                    settingsRow("Group", value: selectedGroup?.name ?? "General")
                 }
                 .buttonStyle(.plain)
-            }
-            .padding(12)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-        }
-        .alert("New Group", isPresented: $showNewGroupAlert) {
-            TextField("Group name", text: $newGroupName)
-            Button("Add") {
-                createGroup()
-            }
-            .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
-            Button("Cancel", role: .cancel) {}
-        }
-    }
-
-    @Environment(\.modelContext) private var modelContext
-
-    private func createGroup() {
-        let name = newGroupName.trimmingCharacters(in: .whitespaces)
-        guard !name.isEmpty else { return }
-
-        let maxOrder = allGroups.filter { !$0.isSystem }.map(\.sortOrder).max() ?? -1
-        let group = NutrientGroup(name: name, sortOrder: maxOrder + 1)
-        modelContext.insert(group)
-        selectedGroup = group
-    }
-
-    private var pendingRemindersSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Reminders")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 0) {
-                ForEach(draft.pendingReminderTimes, id: \.timeIntervalSinceReferenceDate) { time in
-                    HStack {
-                        Image(systemName: "bell.fill")
-                            .foregroundStyle(.blue)
-                            .font(.subheadline)
-
-                        Text(time, format: .dateTime.hour().minute())
-                            .font(.body)
-
-                        Spacer()
-
-                        Button {
-                            draft.pendingReminderTimes.removeAll { $0 == time }
-                        } label: {
-                            Image(systemName: "minus.circle.fill")
-                                .foregroundStyle(.red)
-                        }
-                        .buttonStyle(.plain)
+                .confirmationDialog("Group", isPresented: $showGroupChooser) {
+                    ForEach(allGroups, id: \.persistentModelID) { group in
+                        Button(group.name) { selectedGroup = group }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-
-                    if time != draft.pendingReminderTimes.last {
-                        Divider().padding(.leading, 12)
+                    Button("New Group…") {
+                        newGroupName = ""
+                        showNewGroupAlert = true
                     }
+                    Button("Cancel", role: .cancel) {}
                 }
 
-                if showTimePicker {
-                    if !draft.pendingReminderTimes.isEmpty {
-                        Divider().padding(.leading, 12)
-                    }
-
-                    VStack(spacing: 10) {
-                        DatePicker(
-                            "Time",
-                            selection: $selectedTime,
-                            displayedComponents: .hourAndMinute
-                        )
-
-                        Button {
-                            addPendingReminder()
-                        } label: {
-                            Text("Add Reminder")
-                                .font(.subheadline.weight(.medium))
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
-                    }
-                    .padding(12)
-                }
+                Rectangle().fill(Theme.lineHairline).frame(height: 1)
             }
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
 
             Button {
-                withAnimation { showTimePicker.toggle() }
-            } label: {
-                Label(
-                    showTimePicker ? "Cancel" : "Add Reminder",
-                    systemImage: showTimePicker ? "xmark" : "plus.circle"
-                )
-                .font(.subheadline)
-            }
-        }
-        .alert("Notifications Disabled", isPresented: $showDeniedAlert) {
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
+                if nutrient == nil {
+                    showPendingReminders = true
+                } else {
+                    showRemindersSheet = true
                 }
+            } label: {
+                settingsRow("Reminders", value: remindersSummary)
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("To set reminders, please enable notifications for nutrx in your device settings.")
+            .buttonStyle(.plain)
+        }
+        .background(Theme.surfaceCard, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+    }
+
+    private var remindersSummary: String {
+        let count: Int
+        if let nutrient {
+            count = allReminders.filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }.count
+        } else {
+            count = draft.pendingReminderTimes.count
+        }
+        switch count {
+        case 0: return "None"
+        case 1: return "1 reminder"
+        default: return "\(count) reminders"
         }
     }
 
-    private func addPendingReminder() {
-        Task {
-            let status = await NotificationService.permissionStatus()
-
-            switch status {
-            case .notDetermined:
-                let granted = await NotificationService.requestPermission()
-                guard granted else { return }
-
-            case .granted:
-                break
-
-            case .denied:
-                showDeniedAlert = true
-                return
-            }
-
-            draft.pendingReminderTimes.append(selectedTime)
-            draft.pendingReminderTimes.sort { lhs, rhs in
-                let lc = Calendar.current.dateComponents([.hour, .minute], from: lhs)
-                let rc = Calendar.current.dateComponents([.hour, .minute], from: rhs)
-                return (lc.hour!, lc.minute!) < (rc.hour!, rc.minute!)
-            }
-
-            withAnimation {
-                showTimePicker = false
-                selectedTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now)!
-            }
+    private func settingsRow(_ title: String, value: String) -> some View {
+        HStack(spacing: 10) {
+            Text(title)
+                .foregroundStyle(Theme.textPrimary)
+            Spacer(minLength: 8)
+            Text(value)
+                .foregroundStyle(Theme.textSecondary)
+                .lineLimit(1)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary.opacity(0.6))
+                .accessibilityHidden(true)
         }
-    }
-
-    private func remindersSection(for nutrient: Nutrient) -> some View {
-        Button {
-            showRemindersSheet = true
-        } label: {
-            HStack {
-                Label("Reminders", systemImage: "bell")
-                    .font(.subheadline.weight(.medium))
-
-                Spacer()
-
-                let count = allReminders.filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }.count
-                Text(count == 0 ? "None" : "\(count) reminder\(count == 1 ? "" : "s")")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(12)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-        }
-        .buttonStyle(.plain)
+        .padding(.horizontal, Theme.Spacing.cardPadding)
+        .frame(minHeight: 52)
+        .contentShape(Rectangle())
     }
 }
 
-#Preview {
-    NutrientFormView(
-        draft: NutrientDraft(),
-        title: "New Nutrient",
-        buttonLabel: "Add Nutrient"
-    ) {}
+private struct NutrientFormPreview: View {
+    @State private var draft: NutrientDraft = {
+        let draft = NutrientDraft()
+        draft.name = "Creatine"
+        draft.unit = "g"
+        draft.dailyTarget = "5"
+        draft.step = "5"
+        draft.tint = .teal
+        draft.symbolName = "waterbottle"
+        return draft
+    }()
+
+    var body: some View {
+        NutrientFormView(draft: draft, title: "New Nutrient", buttonLabel: "Add", showGroupPicker: true) {}
+            .modelContainer(previewContainer)
+    }
+}
+
+#Preview("Light") {
+    NutrientFormPreview()
+}
+
+#Preview("Dark") {
+    NutrientFormPreview()
+        .preferredColorScheme(.dark)
 }

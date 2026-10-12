@@ -9,6 +9,13 @@ enum NutrientTint: String, Codable, CaseIterable {
     /// or adding/reordering a case would recolour every nutrient whose tint was never chosen.
     private static let fallbackOrder: [NutrientTint] = [.green, .teal, .blue, .indigo, .pink, .coral, .amber, .brown]
 
+    /// Default for a new nutrient: the first tint (in the pinned order) nobody uses yet, so a list doesn't
+    /// end up all one colour. Once all are taken, the least-used one.
+    static func suggested(avoiding used: [NutrientTint]) -> NutrientTint {
+        let counts = Dictionary(used.map { ($0, 1) }, uniquingKeysWith: +)
+        return fallbackOrder.min { counts[$0, default: 0] < counts[$1, default: 0] } ?? .green
+    }
+
     /// Stable tint for a nutrient that has never had one chosen. Derived from its id, so it's the
     /// same on every device and survives reorders. (Not `hashValue` — that's reseeded every launch.)
     static func fallback(for id: UUID) -> NutrientTint {

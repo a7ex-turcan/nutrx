@@ -12,6 +12,10 @@ final class NutrientDraft {
     var pendingReminderTimes: [Date] = []
     var goalType: GoalType = .minimum
     var upperBound: String = ""
+    var tint: NutrientTint = .green
+    var symbolName: String = NutrientDraft.defaultSymbol
+
+    static let defaultSymbol = "pills"
 
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
@@ -37,162 +41,242 @@ final class NutrientDraft {
         pendingReminderTimes = []
         goalType = .minimum
         upperBound = ""
+        tint = .green
+        symbolName = Self.defaultSymbol
     }
 
     func populate(from nutrient: Nutrient) {
         name = nutrient.name
         unit = nutrient.unit
-        step = String(nutrient.step)
-        dailyTarget = String(nutrient.dailyTarget)
+        step = Self.editableText(nutrient.step)
+        dailyTarget = Self.editableText(nutrient.dailyTarget)
         notes = nutrient.notes ?? ""
         goalType = nutrient.goalType
-        if let ub = nutrient.upperBound {
-            upperBound = String(ub)
-        } else {
-            upperBound = ""
-        }
+        upperBound = nutrient.upperBound.map { Self.editableText($0) } ?? ""
+        tint = nutrient.tint
+        symbolName = nutrient.symbolName
+    }
+
+    /// A number as the user would type it: current locale's decimal separator, no grouping, no trailing ".0".
+    static func editableText(_ value: Double) -> String {
+        value.formatted(.number.grouping(.never).precision(.fractionLength(0...6)))
     }
 }
 
-/// Reusable form fields for creating or editing a nutrient.
-/// Consumers provide the container (sheet, inline section, etc.).
-struct NutrientFormFields: View {
-    @Bindable var draft: NutrientDraft
-    @FocusState private var focusedField: Field?
+/// The focusable fields of `NutrientFormFields`. Focus is owned by the container so it can put the keyboard's
+/// Done button at the root of its toolbar — declared inside the scroll view's content, a keyboard toolbar
+/// caused attribute-graph cycles when the keyboard first appeared.
+enum NutrientFormField: Hashable {
+    case name, unit, step, dailyTarget, upperBound, notes
+}
 
-    private enum Field: Hashable {
-        case name, unit, step, dailyTarget, upperBound, notes
-    }
+/// Reusable fields for creating or editing a nutrient (DESIGN.md §5.7): name + unit, "Look" (tint and
+/// symbol), "Daily goal" (goal type, target(s), step) and notes. Consumers provide the container.
+struct NutrientFormFields<BeforeNotes: View>: View {
+    @Bindable var draft: NutrientDraft
+    var focusedField: FocusState<NutrientFormField?>.Binding
+    /// Rows the container wants between the goal and the notes (the form sheet's Group / Reminders).
+    @ViewBuilder var beforeNotes: BeforeNotes
 
     var body: some View {
-        VStack(spacing: 16) {
-            FormField(label: "Name") {
-                TextField("e.g. Vitamin D, Caffeine", text: $draft.name)
-                    .autocorrectionDisabled()
-                    .focused($focusedField, equals: .name)
+        VStack(alignment: .leading, spacing: 8) {
+            nameAndUnit
+
+            sectionHeader("Look")
+            VStack(spacing: Theme.Spacing.cardPadding) {
+                TintPicker(selection: $draft.tint)
+                SymbolPicker(selection: $draft.symbolName, tint: draft.tint)
+            }
+            .padding(Theme.Spacing.cardPadding)
+            .background(Theme.surfaceCard, in: cardShape)
+
+            sectionHeader("Daily goal")
+            GoalTypePicker(selection: $draft.goalType, tint: draft.tint)
+            goalFields
+
+            if let rangeError {
+                Text(rangeError)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.textAmberInk)
+                    .padding(.horizontal, 4)
+                    .transition(.opacity)
             }
 
-            FormField(label: "Unit") {
-                TextField("e.g. mg, g, IU, cups", text: $draft.unit)
-                    .autocorrectionDisabled()
-                    .focused($focusedField, equals: .unit)
-            }
+            beforeNotes
+                .padding(.top, 6)
 
-            // Goal type section
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Goal type")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-
-                Picker("Goal type", selection: $draft.goalType) {
-                    Text("At least").tag(GoalType.minimum)
-                    Text("At most").tag(GoalType.maximum)
-                    Text("Between").tag(GoalType.range)
-                }
-                .pickerStyle(.segmented)
-
-                Text(goalCaption)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .animation(.none, value: draft.goalType)
-
-                NutrientProgressBar(
-                    current: previewCurrent,
-                    target: previewTarget,
-                    goalType: draft.goalType,
-                    upperBound: previewUpperBound
-                )
-                .frame(height: 10)
-                .padding(.horizontal, 4)
-            }
-
-            FormField(label: "Step") {
-                TextField("e.g. 1, 0.5, 100", text: $draft.step)
-                    .keyboardType(.decimalPad)
-                    .focused($focusedField, equals: .step)
-            }
-
-            if draft.goalType == .range {
-                HStack(spacing: 12) {
-                    FormField(label: "Minimum") {
-                        TextField("e.g. 1000", text: $draft.dailyTarget)
-                            .keyboardType(.decimalPad)
-                            .focused($focusedField, equals: .dailyTarget)
-                    }
-
-                    FormField(label: "Maximum") {
-                        TextField("e.g. 2000", text: $draft.upperBound)
-                            .keyboardType(.decimalPad)
-                            .focused($focusedField, equals: .upperBound)
-                    }
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            } else {
-                FormField(label: "Daily Target") {
-                    TextField("e.g. 2000", text: $draft.dailyTarget)
-                        .keyboardType(.decimalPad)
-                        .focused($focusedField, equals: .dailyTarget)
-                }
-            }
-
-            FormField(label: "Notes") {
-                TextField("Why you're tracking this, best time to take it…", text: $draft.notes)
-                    .focused($focusedField, equals: .notes)
-            }
+            notesField
+                .padding(.top, 6)
         }
         .animation(.easeInOut(duration: 0.25), value: draft.goalType)
+        .animation(.easeInOut(duration: 0.2), value: rangeError)
     }
 
-    // MARK: - Goal Caption
+    // MARK: - Sections
 
-    private var goalCaption: String {
-        let targetStr = draft.dailyTarget.parsedDouble?.displayString ?? "your target"
-        let unitStr = draft.unit.trimmingCharacters(in: .whitespaces).isEmpty ? "units" : draft.unit.trimmingCharacters(in: .whitespaces)
+    private var cardShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+    }
 
-        switch draft.goalType {
-        case .minimum:
-            return "Your bar fills green when you hit \(targetStr) \(unitStr) or more."
-        case .maximum:
-            return "Your bar turns orange if you go over \(targetStr) \(unitStr)."
-        case .range:
-            let upperStr = draft.upperBound.parsedDouble?.displayString ?? "your max"
-            return "Your bar is green when you stay between \(targetStr) and \(upperStr) \(unitStr)."
+    private var nameAndUnit: some View {
+        HStack(spacing: 0) {
+            labelled("Name") {
+                TextField("e.g. Vitamin D", text: $draft.name)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .focused(focusedField, equals: .name)
+            }
+            labelled("Unit") {
+                TextField("e.g. mg, IU", text: $draft.unit)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .focused(focusedField, equals: .unit)
+            }
+            .overlay(alignment: .leading) { columnDivider }
         }
+        .background(Theme.surfaceCard, in: cardShape)
     }
 
-    // MARK: - Preview Bar Values
-
-    private var previewTarget: Double {
-        draft.dailyTarget.parsedDouble ?? 100
-    }
-
-    private var previewUpperBound: Double? {
-        guard draft.goalType == .range else { return nil }
-        return draft.upperBound.parsedDouble ?? (previewTarget * 2)
-    }
-
-    private var previewCurrent: Double {
-        switch draft.goalType {
-        case .minimum:
-            return previewTarget * 0.6
-        case .maximum:
-            return previewTarget * 0.7
-        case .range:
-            // Mid-range value (green zone)
-            let upper = previewUpperBound ?? (previewTarget * 2)
-            return (previewTarget + upper) / 2
+    private var goalFields: some View {
+        VStack(spacing: 0) {
+            if draft.goalType == .range {
+                HStack(spacing: 0) {
+                    labelled("Minimum, per day") {
+                        amountField($draft.dailyTarget, focus: .dailyTarget)
+                    }
+                    labelled("Maximum") {
+                        amountField($draft.upperBound, focus: .upperBound)
+                    }
+                    .overlay(alignment: .leading) { columnDivider }
+                }
+                Rectangle().fill(Theme.lineHairline).frame(height: 1)
+                labelled("Each tap adds") {
+                    amountField($draft.step, focus: .step)
+                }
+            } else {
+                HStack(spacing: 0) {
+                    labelled("\(GoalTypePicker.label(for: draft.goalType)), per day") {
+                        amountField($draft.dailyTarget, focus: .dailyTarget)
+                    }
+                    labelled("Each tap adds") {
+                        amountField($draft.step, focus: .step)
+                    }
+                    .overlay(alignment: .leading) { columnDivider }
+                }
+            }
         }
+        .background(Theme.surfaceCard, in: cardShape)
     }
 
-    func dismissKeyboard() {
-        focusedField = nil
+    private var notesField: some View {
+        labelled("Notes") {
+            TextField("Why you take it, best time to take it…", text: $draft.notes, axis: .vertical)
+                .lineLimit(1...4)
+                .focused(focusedField, equals: .notes)
+        }
+        .background(Theme.surfaceCard, in: cardShape)
+    }
+
+    // MARK: - Pieces
+
+    private func sectionHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.footnote.weight(.bold))
+            .textCase(.uppercase)
+            .tracking(0.6)
+            .foregroundStyle(Theme.textSecondary)
+            .padding(.horizontal, 4)
+            .padding(.top, 10)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    /// Vertical hairline between two columns, drawn as an overlay so the row doesn't need
+    /// `fixedSize` (which fed back into the self-sizing text fields when the keyboard appeared).
+    private var columnDivider: some View {
+        Rectangle().fill(Theme.lineHairline).frame(width: 1)
+    }
+
+    private func labelled(_ label: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary)
+            content()
+                .foregroundStyle(Theme.textPrimary)
+        }
+        .padding(.horizontal, Theme.Spacing.cardPadding)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Big rounded number with the unit after it ("5 g").
+    private func amountField(_ text: Binding<String>, focus: NutrientFormField) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            TextField("0", text: text)
+                .keyboardType(.decimalPad)
+                .focused(focusedField, equals: focus)
+                .fixedSize()
+            Text(draft.unit.trimmingCharacters(in: .whitespaces))
+                .lineLimit(1)
+        }
+        .font(.system(.title3, design: .rounded, weight: .bold))
+        .monospacedDigit()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { focusedField.wrappedValue = focus }
+    }
+
+    /// Shown under the goal fields when a range's maximum isn't above its minimum.
+    private var rangeError: String? {
+        guard draft.goalType == .range,
+              let lower = draft.dailyTarget.parsedDouble,
+              let upper = draft.upperBound.parsedDouble,
+              upper <= lower else { return nil }
+        return "The maximum has to be more than the minimum."
     }
 }
 
-#Preview {
-    ScrollView {
-        NutrientFormFields(draft: NutrientDraft())
-            .padding(24)
+extension NutrientFormFields where BeforeNotes == EmptyView {
+    init(draft: NutrientDraft, focusedField: FocusState<NutrientFormField?>.Binding) {
+        self.init(draft: draft, focusedField: focusedField) { EmptyView() }
     }
-    .background(Color(.systemGroupedBackground))
+}
+
+private struct NutrientFormFieldsPreview: View {
+    @State private var draft: NutrientDraft = {
+        let draft = NutrientDraft()
+        draft.name = "Creatine"
+        draft.unit = "g"
+        draft.dailyTarget = "5"
+        draft.step = "5"
+        draft.tint = .teal
+        draft.symbolName = "waterbottle"
+        return draft
+    }()
+
+    @FocusState private var focusedField: NutrientFormField?
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                NutrientFormFields(draft: draft, focusedField: $focusedField)
+                    .padding(Theme.Spacing.screenMargin)
+            }
+            .background(Theme.surfaceGround)
+        }
+    }
+}
+
+#Preview("Light") {
+    NutrientFormFieldsPreview()
+}
+
+#Preview("Dark") {
+    NutrientFormFieldsPreview()
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Accessibility 3") {
+    NutrientFormFieldsPreview()
+        .environment(\.dynamicTypeSize, .accessibility3)
 }

@@ -9,6 +9,7 @@ struct OnboardingFirstNutrientView: View {
     @Query(filter: #Predicate<NutrientGroup> { $0.isSystem }) private var systemGroups: [NutrientGroup]
 
     @State private var draft = NutrientDraft()
+    @FocusState private var focusedField: NutrientFormField?
     var onFinish: () -> Void
 
     var body: some View {
@@ -51,7 +52,7 @@ struct OnboardingFirstNutrientView: View {
 
     private var formSection: some View {
         VStack(spacing: 16) {
-            NutrientFormFields(draft: draft)
+            NutrientFormFields(draft: draft, focusedField: $focusedField)
 
             Button {
                 addNutrient()
