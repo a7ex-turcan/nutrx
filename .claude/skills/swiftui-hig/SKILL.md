@@ -202,7 +202,7 @@ Use `.keyboardType(.decimalPad)` on numeric fields. Use `.onSubmit` or a toolbar
 ## Accessibility Basics
 
 - All interactive elements must have `.accessibilityLabel` if the visual label is ambiguous (e.g. icon-only buttons).
-- Progress bars: use `.accessibilityValue` to announce current / target values.
+- Rings and progress bars: use `.accessibilityValue` to announce current / target values.
 - Respect Dynamic Type — never clamp font sizes.
 - Support both light and dark mode via the asset-catalog tokens (covered above); check every new view in both.
 
@@ -240,7 +240,7 @@ Use `.animation(.default, value: someValue)` to scope animations to specific sta
 
 - ❌ No UIKit (`UIViewController`, `UITableView`, etc.) unless absolutely no SwiftUI equivalent exists.
 - ❌ No custom navigation bars built from scratch — use `NavigationStack` + `.toolbar`.
-- ❌ No hex colours or font sizes in view code — use `Theme` tokens and Dynamic Type styles (numbers: `.fontDesign(.rounded)` + `.monospacedDigit()`).
+- ❌ No hex colours, font sizes, or spacing/radius magic numbers in view code — use `Theme` tokens (colours, `Theme.Spacing`, `Theme.Radius` from DESIGN.md §1.4) and Dynamic Type styles (numbers: `.fontDesign(.rounded)` + `.monospacedDigit()`).
 - ❌ No emoji as UI glyphs (streak = `flame.fill`).
 - ❌ No custom tab bar — use SwiftUI `TabView`.
 - ❌ No loading spinners for local SwiftData operations (they're synchronous enough).

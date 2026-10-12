@@ -50,6 +50,7 @@ Put colours in `nutrx/Assets.xcassets` as named colour sets with **Any / Dark** 
 | `OnForest/Primary` | `#FFFFFF` | `#FFFFFF` | Text on forest |
 | `OnForest/Secondary` | `#B7CCBF` | `#B7CCBF` | Secondary text on forest |
 | `OnForest/Track` | `#FFFFFF` @ 13% | same | Unmet ring segments on forest |
+| `Watch/Cell` | `#1C2620` | `#1C2620` | Watch list row background (watchOS is always dark) |
 
 Set the app `AccentColor` to `Brand/Forest` (light) / `Brand/Green` (dark).
 
@@ -88,6 +89,8 @@ System fonts only, Dynamic Type styles only.
 
 ### 1.4 Shape, spacing, elevation
 
+Expose these as constants on `Theme` (e.g. `Theme.Radius.card`, `Theme.Spacing.screenMargin`) — no 16 / 10 / 14 / 22 literals in views.
+
 | Token | Value |
 |---|---|
 | Card corner radius | 22 (`.continuous`) |
@@ -108,7 +111,7 @@ System fonts only, Dynamic Type styles only.
 Create `Shared/Services/GoalStatus.swift` (pure logic, unit-tested) used by Today, widgets, Watch, History and the day score. Replace the duplicated `isComplete` / `isStreakDay` logic in `NutrientRowView`, `HistoryListView` etc.
 
 ```swift
-enum GoalStatus { case inProgress, met, nearingLimit, overLimit, under }  // under = range not reached
+enum GoalStatus { case inProgress, met, nearingLimit, overLimit }
 struct GoalProgress {
     let status: GoalStatus
     let ringFraction: Double     // 0…1 for drawing
@@ -123,6 +126,12 @@ struct GoalProgress {
 | **At most** (`maximum`) | `current / target` | `< 75%` → tint; `75–100%` → `Status/Amber` ring + amber text; `> target` → amber ring, full | "X left today" / "X over limit" | `current ≤ target` |
 | **Between** (`range`) | `current / upper` | `< lower` → tint; in range → tint + check; `> upper` → amber | "X to range" → "In range" → "X over range" | `lower ≤ current ≤ upper` |
 
+Edge cases (so the tests have one answer):
+- Below the lower bound of a range is `inProgress` — there is no separate "under" state.
+- Thresholds are inclusive as written: exactly `target` on At least is met; exactly 75% on At most is nearing; exactly `target` on At most is nearing (still counts as met), status line "Limit reached".
+- `current` is floored at 0 and `ringFraction` is clamped to 0…1.
+- A range with no `upperBound` (legacy data) behaves like At least `dailyTarget`.
+
 The colour blends of the old `NutrientProgressBar` (blue→green, yellow→red) go away.
 
 ---
@@ -133,11 +142,14 @@ All additive and CloudKit-safe (default values, no unique constraints, no rename
 
 ### `Nutrient`
 ```swift
-var tintRaw: String = NutrientTint.green.rawValue
+var tintRaw: String = ""          // "" = never chosen
 var symbolName: String = "pills"
-var tint: NutrientTint { get { NutrientTint(rawValue: tintRaw) ?? .green } set { tintRaw = newValue.rawValue } }
+var tint: NutrientTint {
+    get { NutrientTint(rawValue: tintRaw) ?? NutrientTint.fallback(for: id) }
+    set { tintRaw = newValue.rawValue }
+}
 ```
-- **Existing users:** on first launch after the update, if a nutrient still has the default `tintRaw`, assign tints round-robin in `sortOrder` (green, teal, blue, indigo, pink, coral, amber, brown) so their Today screen isn't uniformly green. Do it once, guarded by a `UserPreferences` flag (`hasAssignedNutrientTints`).
+- **Existing users — no migration, no flag.** A nutrient whose tint was never chosen (`tintRaw == ""`) resolves to a stable tint derived from its `id` (e.g. sum of the UUID bytes mod 8 — never `hashValue`, which is reseeded every launch). The colour is the same on every device, survives reorders, and their Today screen isn't uniformly green. Nothing is written until the user picks a tint, so a reinstall or a second device can never overwrite a tint the user chose (a "still default?" check can't tell an unassigned nutrient from one deliberately set to green).
 - **Symbol picker set** (SF Symbols — verify each in the SF Symbols app for the deployment target): `pills`, `sun.max`, `moon`, `drop`, `fish`, `leaf`, `carrot`, `flame`, `bolt`, `heart`, `dumbbell`, `cup.and.saucer`, `waterbottle`, `cross.vial`, `brain.head.profile`, `figure.run`.
 - `NutrientTint` enum lives in `Models/NutrientTint.swift` (pure enum, colours resolved in `Theme.swift`, not in the model).
 
@@ -186,7 +198,7 @@ Replaces `NutrientRowView` + `ExpandableNutrientCard` on Today.
 3. Quick chips (single-select): **½× step, 1× step, 2× step, "Fill to goal"**. "Fill to goal" = remaining to target (min goal) / to lower bound (range); hidden for "at most" goals and when already met.
 4. Note `TextField` ("e.g. with breakfast").
 5. Primary button "Log 1,000 IU" (full width, 56pt, `Control/Primary`).
-6. "Logged today" list: time (rounded), tint dot, amount, note (source "Widget"/"Watch" if logged there and you have that info — otherwise just the note), trash button (44pt) to delete the record. Deleting asks no confirmation but supports undo via a brief toast is **not** required — keep it simple: delete immediately with haptic.
+6. "Logged today" list: time (rounded), tint dot, amount, note (source "Widget"/"Watch" if logged there and you have that info — otherwise just the note), trash button (44pt) to delete the record. Delete immediately with a haptic — no confirmation and no undo toast.
 
 ### 4.7 `NutrientIconTile`
 Rounded square (40–42pt, radius 12–13), tile bg + glyph colour from §1.2. Used in My Nutrients, History day, onboarding, analytics header.
@@ -197,7 +209,7 @@ Rounded square (40–42pt, radius 12–13), tile bg + glyph colour from §1.2. U
 - `WeekdayHeatmap`: 7 rounded squares (Mon–Sun) filled by 4-week hit rate (100% = tint, ≥75% = tint 70%, ≥50% = 40%, else 15%), percentage inside, weekday letter below. Insight sentence below: if the weakest weekday's hit rate is ≥ 25 points below the average → "Sundays are your weakest day." (no sentence otherwise; never invent advice beyond that — the reminder suggestion in the mockup is optional, ship without it if in doubt).
 
 ### 4.9 `MonthCalendar` (History)
-7-column grid, Monday-first (respect `Calendar.current.firstWeekday`). Day cell 38pt circle:
+7-column grid starting on `Calendar.current.firstWeekday` (the mockup is Monday-first only because of its locale; Sunday-first locales get Sunday-first). Day cell 38pt circle:
 all goals met → `Brand/Green` fill, dark number; some met → green @ 25% fill; none / no data → no fill; today → 2pt `Brand/Forest` ring; future → secondary text, disabled. Month switcher with chevrons (next disabled on current month). Legend below. Tapping a past day pushes `HistoryDayView`.
 
 ### 4.10 Form pickers (Nutrient form)
@@ -271,7 +283,7 @@ Profile card at top (avatar initial in forest circle, name, "Edit profile" → P
 
 ### 5.11 Apple Watch — `13-watch.png`
 `nutrx Watch App/…`, `NutrxWatchWidgets/…`
-List rows on dark green-tinted cells (`#1C2620`): ring 30pt in tint, name, value, + button (`Brand/Green`, dark glyph). Header "Today" (`GreenSoft`) + "3/6". After a tap: confirmation view with a large ring, value, "+1,000 logged" pill in the tint, haptic. Complications: circular segmented ring with "3/6", rectangular "nutrx · 3/6" + 6 segment bar, inline "3/6 goals · 10 days".
+List rows on `Watch/Cell` backgrounds: ring 30pt in tint, name, value, + button (`Brand/Green`, dark glyph). Header "Today" (`GreenSoft`) + "3/6". After a tap: confirmation view with a large ring, value, "+1,000 logged" pill in the tint, haptic. Complications: circular segmented ring with "3/6", rectangular "nutrx · 3/6" + 6 segment bar, inline "3/6 goals · 10 days".
 
 ---
 
@@ -290,7 +302,7 @@ List rows on dark green-tinted cells (`#1C2620`): ring 30pt in tint, name, value
 
 Each phase ends with: builds clean (`xcodebuild … build`), previews for new views in light/dark, screenshots compared against the PNGs, `CHANGELOG.md` / `CLAUDE.md` updated (use the `update-docs` skill).
 
-1. **Foundations** — asset-catalog colours (§1), `Theme.swift`, `NutrientTint`, model fields + one-time tint assignment (§3), `GoalStatus` + unit tests (§2), `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`.
+1. **Foundations** — asset-catalog colours (§1), `Theme.swift` (colours + §1.4 spacing/radius constants), `NutrientTint`, model fields (§3), create the `nutrxTests` unit-test target (none exists yet), `GoalStatus` + unit tests (§2), `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`.
 2. **Today** — `DayScoreCard`, `NutrientCard`, `GroupHeader`, TodayView restyle (light + dark).
 3. **Log sheet** — `LogSheet`; delete `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` once nothing references them.
 4. **Nutrient form + My Nutrients** — pickers, live preview, list restyle.
