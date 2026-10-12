@@ -4,7 +4,7 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
-## Unreleased
+## v2.0 — Unreleased
 
 ### Features
 - **Redesigned Today screen** — A day-score card shows how many goals you've met, your streak and your next reminder. Each nutrient gets a progress ring in its own colour and symbol, a clear status line ("2,000 IU to go", "80 mg left today", "Done") and bigger − / + buttons. Light and dark mode are both fully styled.
