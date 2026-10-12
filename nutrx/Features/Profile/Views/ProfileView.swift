@@ -140,22 +140,31 @@ struct ProfileView: View {
     private var fields: some View {
         VStack(spacing: 20) {
             FormField(label: "Name") {
-                TextField("Your name", text: $viewModel.name)
+                TextField("Optional", text: $viewModel.name)
                     .textContentType(.name)
                     .autocorrectionDisabled()
                     .focused($focusedField, equals: .name)
             }
 
             FormField(label: "Birthday") {
-                DatePicker(
-                    "Birthday",
-                    selection: $viewModel.birthdate,
-                    in: ...Date.now,
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.compact)
-                .labelsHidden()
-                .frame(maxWidth: .infinity, alignment: .leading)
+                if let birthdate = viewModel.birthdate {
+                    HStack {
+                        DatePicker(
+                            "Birthday",
+                            selection: Binding(get: { birthdate }, set: { viewModel.birthdate = $0 }),
+                            in: ...Date.now,
+                            displayedComponents: .date
+                        )
+                        .datePickerStyle(.compact)
+                        .labelsHidden()
+                        Spacer()
+                        Button("Remove", role: .destructive) { viewModel.birthdate = nil }
+                            .font(.subheadline)
+                    }
+                } else {
+                    Button("Add birthday") { viewModel.birthdate = ProfileViewModel.suggestedBirthdate }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -164,7 +173,7 @@ struct ProfileView: View {
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 10) {
-                    TextField("0", text: $viewModel.weight)
+                    TextField("Optional", text: $viewModel.weight)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .weight)
                         .padding(12)
@@ -186,7 +195,7 @@ struct ProfileView: View {
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 10) {
-                    TextField("0", text: $viewModel.height)
+                    TextField("Optional", text: $viewModel.height)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .height)
                         .padding(12)

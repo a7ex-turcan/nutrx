@@ -1,161 +1,312 @@
 import SwiftUI
 import SwiftData
 
+/// Second onboarding screen (DESIGN.md §5.8): back, progress, Skip; "What do you want to track first?"; a grid of
+/// starting points and "Something else". A starting point pre-fills editable goal / step fields above Start
+/// tracking — nothing is created until that's tapped.
 struct OnboardingFirstNutrientView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(filter: #Predicate<Nutrient> { !$0.isDeleted },
-           sort: \Nutrient.sortOrder)
-    private var nutrients: [Nutrient]
-    @Query(filter: #Predicate<NutrientGroup> { $0.isSystem }) private var systemGroups: [NutrientGroup]
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Bindable var viewModel: OnboardingViewModel
+    let onBack: () -> Void
 
-    @State private var draft = NutrientDraft()
-    @FocusState private var focusedField: NutrientFormField?
-    var onFinish: () -> Void
+    @State private var showCustomForm = false
+    /// One draft for the screen's lifetime — reset, never replaced, so the form and its save action always share it.
+    @State private var customDraft = NutrientDraft()
+    @FocusState private var focusedField: GoalField?
+
+    private enum GoalField: Hashable {
+        case target, upperBound, step
+    }
+
+    private var draft: NutrientDraft { viewModel.draft }
+    private static let valueFont = Font.system(.title3, design: .rounded, weight: .bold)
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                header
-                formSection
-                if !nutrients.isEmpty {
-                    addedNutrientsList
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    topBar
+                        .padding(.bottom, 24)
+
+                    Text("What do you want to track first?")
+                        .font(.system(.largeTitle, weight: .heavy))
+                        .foregroundStyle(Theme.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Pick a starting point or make your own. Everything stays editable.")
+                        .font(.body)
+                        .foregroundStyle(Theme.textSecondary)
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
+
+                    LazyVGrid(columns: columns, spacing: Theme.Spacing.cardGap) {
+                        ForEach(StartingPoint.all) { point in
+                            startingPointCard(point)
+                        }
+                    }
+
+                    somethingElse
+                        .padding(.top, Theme.Spacing.cardGap)
                 }
-                finishButton
+                .padding(.horizontal, Theme.Spacing.screenMargin)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 40)
-            .padding(.bottom, 32)
-        }
-        .scrollDismissesKeyboard(.interactively)
-        .background(Color(.systemGroupedBackground))
-    }
-
-    // MARK: - Header
-
-    private var header: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 56))
-                .foregroundStyle(.green)
-
-            Text("Your Nutrients")
-                .font(.largeTitle.bold())
-
-            Text("Add at least one nutrient you'd like to track.\nYou can add more and configure reminders later.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-    }
-
-    // MARK: - Form
-
-    private var formSection: some View {
-        VStack(spacing: 16) {
-            NutrientFormFields(draft: draft, focusedField: $focusedField)
-
-            Button {
-                addNutrient()
-            } label: {
-                Label("Add Nutrient", systemImage: "plus.circle.fill")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) { bottomPanel }
+            .background(Theme.surfaceGround)
+            .toolbar(.hidden, for: .navigationBar)
+            .toolbar {
+                // At the root, not inside the scroll content — see NutrientFormField.
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") { focusedField = nil }
+                        .fontWeight(.semibold)
+                }
             }
-            .buttonStyle(.bordered)
-            .disabled(!draft.isValid)
-        }
-    }
-
-    // MARK: - Added Nutrients
-
-    private var addedNutrientsList: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Added (\(nutrients.count))")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-
-            VStack(spacing: 8) {
-                ForEach(nutrients) { nutrient in
-                    nutrientRow(nutrient)
+            .sheet(isPresented: $showCustomForm, onDismiss: {
+                viewModel.finishAfterCustomForm(context: modelContext)
+            }) {
+                // Save from the same instance the form edits, not whatever the state holds when Add is tapped.
+                let draft = customDraft
+                NutrientFormView(draft: draft, title: "New Nutrient", buttonLabel: "Add") {
+                    viewModel.createCustomNutrient(from: draft, context: modelContext)
                 }
             }
         }
     }
 
-    private func nutrientRow(_ nutrient: Nutrient) -> some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(nutrient.name)
-                    .font(.body.weight(.medium))
-
-                Text("\(nutrient.dailyTarget.displayString) \(nutrient.unit)/day  ·  step \(nutrient.step.displayString)")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            Button(role: .destructive) {
-                modelContext.delete(nutrient)
-            } label: {
-                Image(systemName: "trash")
-                    .font(.body)
-            }
-            .buttonStyle(.borderless)
-        }
-        .padding(12)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+    private var columns: [GridItem] {
+        let count = dynamicTypeSize.isAccessibilitySize ? 1 : 2
+        return Array(repeating: GridItem(.flexible(), spacing: Theme.Spacing.cardGap), count: count)
     }
 
-    // MARK: - Finish
+    // MARK: - Top bar
 
-    private var finishButton: some View {
-        Button {
-            onFinish()
-        } label: {
-            Text("Get Started")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+    private var topBar: some View {
+        HStack(spacing: 14) {
+            Button(action: onBack) {
+                Image(systemName: "chevron.left")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
+                    .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                    .background(Theme.surfaceCard, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Back")
+
+            HStack(spacing: 6) {
+                ForEach(0..<2, id: \.self) { _ in
+                    Capsule().fill(Theme.green).frame(height: 5)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Step 2 of 2")
+
+            Button("Skip") {
+                viewModel.complete(context: modelContext)
+            }
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Theme.textSecondary)
+            .accessibilityHint("Finishes setup without adding a nutrient")
         }
-        .buttonStyle(.borderedProminent)
-        .disabled(nutrients.isEmpty)
         .padding(.top, 8)
     }
 
-    // MARK: - Actions
+    // MARK: - Starting points
 
-    private func addNutrient() {
-        guard let stepValue = draft.step.parsedDouble,
-              let targetValue = draft.dailyTarget.parsedDouble else { return }
+    private func startingPointCard(_ point: StartingPoint) -> some View {
+        let isSelected = viewModel.selectedStartingPoint == point
 
-        let nutrient = Nutrient(
-            name: draft.name.trimmingCharacters(in: .whitespaces),
-            unit: draft.unit.trimmingCharacters(in: .whitespaces),
-            step: stepValue,
-            dailyTarget: targetValue,
-            sortOrder: nutrients.count,
-            goalType: draft.goalType,
-            upperBound: draft.goalType == .range ? draft.upperBound.parsedDouble : nil
-        )
-        let notes = draft.notes.trimmingCharacters(in: .whitespaces)
-        nutrient.notes = notes.isEmpty ? nil : notes
-
-        if let general = systemGroups.first {
-            nutrient.group = general
-            nutrient.groupSortOrder = ((general.nutrients ?? []).map(\.groupSortOrder).max() ?? -1) + 1
+        return Button {
+            focusedField = nil
+            withAnimation(.easeInOut(duration: 0.2)) { viewModel.select(point) }
+        } label: {
+            HStack(spacing: 10) {
+                NutrientIconTile(tint: point.tint, symbolName: point.symbolName, size: 40)
+                VStack(alignment: .leading, spacing: 2) {
+                    // One line in the two-column grid ("Magnesium" would hyphenate); the single column has room.
+                    Text(point.name)
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
+                        .minimumScaleFactor(0.85)
+                    Text(point.subtitle)
+                        .font(.footnote)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+            .cardStyle()
+            .overlay {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+                        .strokeBorder(Theme.controlPrimary, lineWidth: 2)
+                }
+            }
+            .contentShape(Rectangle())
         }
-
-        modelContext.insert(nutrient)
-        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-        draft.reset()
+        .buttonStyle(.plain)
+        .accessibilityLabel(point.name)
+        .accessibilityValue(point.subtitle)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
+    private var somethingElse: some View {
+        Button {
+            focusedField = nil
+            customDraft.reset()
+            showCustomForm = true
+        } label: {
+            Label("Something else", systemImage: "plus")
+                .font(.headline)
+                .foregroundStyle(Theme.controlPrimary)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .overlay {
+                    RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+                        .strokeBorder(Theme.controlGhostBorder, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens a blank nutrient form")
+    }
+
+    // MARK: - Bottom panel
+
+    private var bottomPanel: some View {
+        VStack(spacing: 10) {
+            if viewModel.selectedStartingPoint != nil {
+                goalFields
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                if let error = draft.rangeError {
+                    Text(error)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.textAmberInk)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 4)
+                }
+            }
+
+            Button {
+                focusedField = nil
+                viewModel.startTracking(context: modelContext)
+            } label: {
+                Text("Start tracking")
+                    .font(.headline)
+                    .foregroundStyle(Theme.controlOnPrimary)
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .background(Theme.controlPrimary,
+                                in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(!viewModel.canStartTracking)
+            .opacity(viewModel.canStartTracking ? 1 : 0.5)
+        }
+        .padding(.horizontal, Theme.Spacing.screenMargin)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        // Down to the screen edge: with the keyboard up, the floating Done bar below the panel is see-through
+        // and the grid would show between the panel and the keys.
+        .background { Theme.surfaceGround.ignoresSafeArea(edges: .bottom) }
+        .animation(.easeInOut(duration: 0.2), value: viewModel.selectedStartingPoint)
+    }
+
+    /// "Daily goal" + "Each tap adds" — or Minimum / Maximum / Each tap adds for a range.
+    private var goalFields: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(spacing: 0))
+            : AnyLayout(HStackLayout(spacing: 0))
+
+        return layout {
+            if draft.goalType == .range {
+                goalField("Minimum", text: Bindable(draft).dailyTarget, field: .target)
+                fieldDivider
+                goalField("Maximum", text: Bindable(draft).upperBound, field: .upperBound)
+            } else {
+                goalField(draft.goalType == .maximum ? "Daily limit" : "Daily goal",
+                          text: Bindable(draft).dailyTarget, field: .target)
+            }
+            fieldDivider
+            goalField("Each tap adds", text: Bindable(draft).step, field: .step)
+        }
+        .cardStyle()
+    }
+
+    private var fieldDivider: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                Divider()
+            } else {
+                Divider().frame(maxHeight: 44)
+            }
+        }
+        .overlay(Theme.lineHairline)
+    }
+
+    private func goalField(_ label: String, text: Binding<String>, field: GoalField) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                TextField("0", text: text)
+                    .font(Self.valueFont)
+                    .keyboardType(.decimalPad)
+                    .focused($focusedField, equals: field)
+                    .fixedSize()
+                    .accessibilityLabel(label)
+                Text(draft.unit)
+                    .font(Self.valueFont)
+                    .lineLimit(1)
+                    .accessibilityHidden(true)
+            }
+            .foregroundStyle(Theme.textPrimary)
+        }
+        .padding(.horizontal, Theme.Spacing.cardPadding)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture { focusedField = field }
+    }
 }
 
-#Preview {
-    OnboardingFirstNutrientView {}
-        .modelContainer(for: [Nutrient.self, IntakeRecord.self, Exclusion.self], inMemory: true)
+private struct OnboardingFirstNutrientPreview: View {
+    @State private var viewModel: OnboardingViewModel
+
+    /// - Parameter selected: index into `StartingPoint.all` to pre-select (before the first render, so the
+    ///   snapshot isn't caught mid-animation), or nil.
+    init(selected: Int? = 0) {
+        let viewModel = OnboardingViewModel()
+        if let selected { viewModel.select(StartingPoint.all[selected]) }
+        _viewModel = State(initialValue: viewModel)
+    }
+
+    var body: some View {
+        OnboardingFirstNutrientView(viewModel: viewModel, onBack: {})
+    }
+}
+
+#Preview("Light") {
+    OnboardingFirstNutrientPreview()
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+}
+
+#Preview("Dark, nothing picked") {
+    OnboardingFirstNutrientPreview(selected: nil)
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Range (Protein)") {
+    OnboardingFirstNutrientPreview(selected: 4)
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+}
+
+#Preview("Accessibility size") {
+    OnboardingFirstNutrientPreview()
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+        .dynamicTypeSize(.accessibility3)
 }

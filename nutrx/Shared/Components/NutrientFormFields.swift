@@ -25,6 +25,15 @@ final class NutrientDraft {
             && rangeIsValid
     }
 
+    /// Shown under the goal fields when a range's maximum isn't above its minimum.
+    var rangeError: String? {
+        guard goalType == .range,
+              let lower = dailyTarget.parsedDouble,
+              let upper = upperBound.parsedDouble,
+              upper <= lower else { return nil }
+        return "The maximum has to be more than the minimum."
+    }
+
     private var rangeIsValid: Bool {
         guard goalType == .range else { return true }
         guard let lower = dailyTarget.parsedDouble,
@@ -247,14 +256,7 @@ struct NutrientFormFields<BeforeNotes: View>: View {
         .onTapGesture { focusedField.wrappedValue = focus }
     }
 
-    /// Shown under the goal fields when a range's maximum isn't above its minimum.
-    private var rangeError: String? {
-        guard draft.goalType == .range,
-              let lower = draft.dailyTarget.parsedDouble,
-              let upper = draft.upperBound.parsedDouble,
-              upper <= lower else { return nil }
-        return "The maximum has to be more than the minimum."
-    }
+    private var rangeError: String? { draft.rangeError }
 }
 
 extension NutrientFormFields where BeforeNotes == EmptyView {

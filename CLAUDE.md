@@ -68,8 +68,8 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
-- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. **Next:** Phase 7 (Onboarding).
-- Where this file still describes the old UI (blue/green/orange progress bars, personal-info onboarding), DESIGN.md wins. Update this file as each phase lands.
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. Phase 7 (Onboarding) — `OnboardingWelcomeView`, first-nutrient restyle, `StartingPoint`, `BrandMark` image asset, optional profile fields; `OnboardingPersonalInfoView` deleted. **Next:** Phase 8 (Settings & Profile).
+- Where this file still describes the old UI (blue/green/orange progress bars), DESIGN.md wins. Update this file as each phase lands.
 
 ---
 
@@ -121,13 +121,14 @@ nutrx/
 │   └── NutrientTint.swift       # User-chosen nutrient colour (pure enum) + stable id-derived fallback.
 │
 ├── Features/
-│   ├── Onboarding/              # Shown on first launch only. Two steps: personal info → first nutrient.
+│   ├── Onboarding/              # Shown on first launch only. Two steps: welcome → first nutrient.
 │   │   ├── Views/
-│   │   │   ├── OnboardingFlow.swift
-│   │   │   ├── OnboardingPersonalInfoView.swift
-│   │   │   └── OnboardingFirstNutrientView.swift
+│   │   │   ├── OnboardingFlow.swift             # Switches welcome ↔ first nutrient (slide, or fade with Reduce Motion).
+│   │   │   ├── OnboardingWelcomeView.swift      # Forest: brand mark, "Track what you take. Nothing else.", benefits, Get started.
+│   │   │   └── OnboardingFirstNutrientView.swift # Back / progress / Skip, starting-point grid, "Something else", goal fields, Start tracking.
 │   │   └── ViewModels/
-│   │       └── OnboardingViewModel.swift
+│   │       ├── OnboardingViewModel.swift        # Step, selected starting point + draft; startTracking / complete (creates the empty profile).
+│   │       └── StartingPoint.swift              # The six DESIGN.md §5.8 pre-fills (Vitamin D … Creatine).
 │   │
 │   ├── Today/                   # Tab 1 — the main daily logging screen.
 │   │   ├── Views/
@@ -331,12 +332,14 @@ Features/Settings/Views/
 
 ## Onboarding
 
-Mandatory on first launch. Two-step flow:
+Redesigned in phase 7 (DESIGN.md §5.8). Shown on first launch. Two steps:
 
-1. **Personal Info** — name, birthday, weight (kg/lbs), height (cm/ft) on a single screen
-2. **First Nutrient** — create at least one nutrient so the Today screen is never empty
+1. **Welcome** (`OnboardingWelcomeView`) — full-bleed `Brand/Forest` in both appearances: the brand mark (`BrandMark` image asset — the app icon's "n+" extracted as a template image, tinted `Brand/Green`; never redraw the logo in code), "Track what you take. **Nothing else.**", three benefits, "Get started" (`Brand/Green`, `Text/OnTint`). Scrolls only when large text doesn't fit.
+2. **First nutrient** (`OnboardingFirstNutrientView`) — back, 2-step progress, **Skip**; "What do you want to track first?"; a 2-column grid (1 column at accessibility sizes) of `StartingPoint`s and a dashed **Something else** (opens the blank `NutrientFormView`). Picking a starting point fills an editable draft shown above the button: daily goal (or minimum / maximum for a range) and each-tap step. **Start tracking** creates it in General via `insertNutrient` — nothing is created until then.
 
-Completion tracked via `UserProfile.onboardingCompleted`. On a new device with iCloud data, onboarding is skipped if a completed profile syncs within 3 seconds.
+Starting points are pre-fills, not a preset list: Vitamin D, Magnesium, Omega-3, Water, Protein (a range), Creatine — amounts, tints and symbols from the DESIGN.md table, which marks the numbers as to be confirmed before release.
+
+Personal info is no longer asked for: finishing (Start tracking, Something else, or Skip) creates an empty `UserProfile` with `onboardingCompleted = true`; name, birthday, weight and height are edited later from Profile, where every field is optional. Completion is tracked via `UserProfile.onboardingCompleted`. On a new device with iCloud data, onboarding is skipped if a completed profile syncs within 3 seconds.
 
 ---
 
@@ -607,15 +610,15 @@ All persistence is handled via SwiftData. Seven model classes. No data is ever s
 
 ### UserProfile
 
-Single instance. Collected during onboarding, editable via Profile.
+Single instance, created empty when onboarding finishes; every field is optional and edited from Profile.
 
 | Field | Type | Notes |
 |---|---|---|
-| `name` | `String` | Free text |
-| `birthdate` | `Date` | Date only |
-| `weight` | `Double` | In user's chosen unit |
+| `name` | `String` | Free text; `""` = not set (avatar shows a person symbol) |
+| `birthdate` | `Date` | Date only; `Date.distantPast` = not set |
+| `weight` | `Double` | In user's chosen unit; 0 = not set |
 | `weightUnit` | `String` | `"kg"` or `"lbs"` |
-| `height` | `Double` | In user's chosen unit |
+| `height` | `Double` | In user's chosen unit; 0 = not set |
 | `heightUnit` | `String` | `"cm"` or `"ft"` |
 | `onboardingCompleted` | `Bool` | Gate for main app access |
 | `createdAt` | `Date = Date()` | Used by ReviewService for account age guard |
