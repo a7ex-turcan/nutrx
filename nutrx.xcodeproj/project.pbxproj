@@ -106,11 +106,14 @@
 				Models/NutrientTint.swift,
 				Models/UserPreferences.swift,
 				Models/UserProfile.swift,
+				Shared/Components/ProgressRing.swift,
 				Shared/DesignSystem/Colors.xcassets,
+				Shared/DesignSystem/ContrastColor.swift,
 				Shared/DesignSystem/Theme.swift,
 				"Shared/Extensions/Double+Formatting.swift",
 				Shared/Persistence/ModelContainerFactory.swift,
 				Shared/Services/GoalStatus.swift,
+				Shared/Services/WidgetSummary.swift,
 			);
 			target = 0502E6F679F34E15B8453146 /* nutrx Watch App */;
 		};
@@ -170,11 +173,14 @@
 				Models/NutrientTint.swift,
 				Models/UserPreferences.swift,
 				Models/UserProfile.swift,
+				Shared/Components/SegmentedDayRing.swift,
 				Shared/DesignSystem/Colors.xcassets,
 				Shared/DesignSystem/Theme.swift,
 				"Shared/Extensions/Double+Formatting.swift",
 				Shared/Persistence/ModelContainerFactory.swift,
 				Shared/Services/GoalStatus.swift,
+				Shared/Services/StreakService.swift,
+				Shared/Services/WidgetSummary.swift,
 			);
 			target = BFE61EB901964DE89738FA46 /* NutrxWatchWidgets */;
 		};

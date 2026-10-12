@@ -198,6 +198,12 @@ final class GoalProgressTests: XCTestCase {
         XCTAssertEqual(progress(0, .range, target: 120, upper: 160, unit: "g").goalAmountText(locale: enUS), "120–160 g")
     }
 
+    func testGoalCaptionForEachGoalType() {
+        XCTAssertEqual(progress(3000, .minimum, target: 4000, unit: "IU").goalCaption(locale: enUS), "of 4,000 IU")
+        XCTAssertEqual(progress(240, .maximum, target: 400).goalCaption(locale: enUS), "max 400 mg")
+        XCTAssertEqual(progress(92, .range, target: 120, upper: 160, unit: "g").goalCaption(locale: enUS), "of 120–160 g")
+    }
+
     func testAmountToGoalIsWhatsLeftOfAnAtLeastTarget() {
         XCTAssertEqual(progress(2000, .minimum, target: 4000).amountToGoal, 2000)
         XCTAssertNil(progress(4000, .minimum, target: 4000).amountToGoal)

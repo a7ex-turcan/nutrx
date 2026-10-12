@@ -18,6 +18,8 @@ All notable changes to nutrx are documented in this file.
 - **Redesigned Settings** — Your profile at the top, colourful rows that show each setting's current state at a glance (iCloud, notifications, streaks, groups), a Rate nutrx shortcut, and a refreshed About and Edit Profile.
 - **Redesigned widgets** — The small widget shows your day at a glance (goals met, streak, what's next) on nutrx green; the quick-log widget shows each nutrient's ring in its own colour with a + button; and the Lock Screen widgets show your goals as a ring and "3/6 goals · 10-day streak".
 - **New "Next up" Lock Screen widget** — The next nutrient you still need more of, with its progress. It never suggests something you've gone over the limit on.
+- **Redesigned Apple Watch app** — "Today" with your goals met at the top, then each nutrient's ring in its own colour and a green + button. Logging shows your new total and "+1,000 logged" for a moment, with a tap on your wrist (a stronger one when you reach a goal).
+- **Redesigned Watch complications** — Your goals as a segmented ring with "3/6", a new rectangular "nutrx · 3/6" bar, a curved gauge for corners, and "3/6 goals · 10 days" inline.
 
 ### Improvements
 - **No personal details needed to start** — Setup no longer asks for your name, birthday, weight or height. They're all optional now and live in Edit Profile.
@@ -25,7 +27,8 @@ All notable changes to nutrx are documented in this file.
 - **Fairer analytics** — Stats only count days since you added the nutrient and leave out today until it's over, so a nutrient you added this week isn't marked down for days before it existed.
 - **Profile avatar** — The profile button shows your photo or initial in a circle.
 - **Brand accent colour** — Buttons, toggles and other system controls now use nutrx forest green (bright green in dark mode) instead of the default blue.
-- **One rule for "goal met"** — Today, History, streaks and analytics now share a single goal check, so they can't disagree, and totals that land a rounding hair under the target (e.g. 0.1 + 0.7 of a 0.8 goal) now count as reached.
+- **Watch stays current** — The Watch app refreshes whenever you raise your wrist, so it picks up a new day and changes synced from your iPhone.
+- **One rule for "goal met"** — Today, History, streaks, analytics, widgets and the Watch now share a single goal check, so they can't disagree, and totals that land a rounding hair under the target (e.g. 0.1 + 0.7 of a 0.8 goal) now count as reached.
 
 ### Fixes
 - **Widget + button** — Tapping + on the quick-log widget could crash the widget, so it didn't refresh (the amount was still logged). The widget now saves without touching iCloud directly; the app syncs it.

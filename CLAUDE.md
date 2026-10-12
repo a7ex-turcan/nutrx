@@ -68,7 +68,7 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
-- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. Phase 7 (Onboarding) — `OnboardingWelcomeView`, first-nutrient restyle, `StartingPoint`, `BrandMark` image asset, optional profile fields; `OnboardingPersonalInfoView` deleted. Phase 8 (Settings & Profile) — Settings restyle (profile card, icon-tile rows with values, Rate nutrx, privacy footer), `ProfileAvatar`, `SettingsSummary`, Profile / About / Groups restyle, settings detail views split into files, dead Log Out removed. Phase 9 (Widgets) — Today / Quick log / Goals / Next up (new, rectangular) / Goals and streak restyle, `WidgetSummary`, snapshots on `GoalProgress`. **Next:** Phase 10 (Watch).
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. Phase 7 (Onboarding) — `OnboardingWelcomeView`, first-nutrient restyle, `StartingPoint`, `BrandMark` image asset, optional profile fields; `OnboardingPersonalInfoView` deleted. Phase 8 (Settings & Profile) — Settings restyle (profile card, icon-tile rows with values, Rate nutrx, privacy footer), `ProfileAvatar`, `SettingsSummary`, Profile / About / Groups restyle, settings detail views split into files, dead Log Out removed. Phase 9 (Widgets) — Today / Quick log / Goals / Next up (new, rectangular) / Goals and streak restyle, `WidgetSummary`, snapshots on `GoalProgress`. Phase 10 (Watch) — Watch list restyle (ring rows on `Watch/Cell`, "Today" + score header), `WatchLogConfirmationView`, complications (segmented ring, corner gauge, new rectangular bar, inline with streak), `GoalProgress.goalCaption`, `ContrastColor.ink(on:in:)`. **Next:** Phase 11 (Polish).
 - Where this file still describes the old UI (blue/green/orange progress bars), DESIGN.md wins. Update this file as each phase lands.
 
 ---
@@ -193,7 +193,7 @@ nutrx/
 └── Shared/
     ├── DesignSystem/
     │   ├── CardStyle.swift                 # .cardStyle(): card fill + radius, forest shadow on the card shape only (light) / hairline (dark).
-    │   ├── ContrastColor.swift             # WCAG contrast maths on resolved colours — picks legible ink on runtime fills (heatmap).
+    │   ├── ContrastColor.swift             # WCAG contrast maths on resolved colours — picks legible ink on runtime fills (heatmap, Watch pill).
     │   ├── Theme.swift                     # Brand colour tokens, NutrientTint colours, GoalStatus colours, spacing/radius constants.
     │   └── Colors.xcassets                 # Named colour sets (Any/Dark) for every token and tint. Shared with widget + Watch targets.
     ├── Extensions/
@@ -222,7 +222,7 @@ nutrx/
     │   ├── ProfileMenuButton.swift          # 44pt ProfileAvatar with the Edit Profile / Settings menu.
     │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier.
     ├── Persistence/
-    │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback; createForExtension() for widgets (no CloudKit).
+    │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback; createForExtension() for widgets / complications (no CloudKit).
     │   │                                    # Backs up local store before first CloudKit init to prevent data loss.
     │   │                                    # Singleton deduplication. Logs via os.log.
     │   ├── NutrientDraft+Persistence.swift  # insertNutrient / apply(to:) — the only writers of a draft to a Nutrient.
@@ -262,15 +262,17 @@ nutrx Watch App/
 ├── nutrxWatchApp.swift                     # @main entry point. Boots the shared SwiftData container.
 ├── ContentView.swift                       # Root view — hosts WatchTodayView.
 ├── Views/
-│   ├── WatchTodayView.swift                # Scrollable list of today's active nutrients.
-│   └── WatchNutrientRowView.swift          # Single row: name, progress bar, current/target, + button.
+│   ├── WatchTodayView.swift                # "Today" + "3/6" header, rows by group on Watch/Cell; shows the confirmation after a + tap.
+│   ├── WatchNutrientRowView.swift          # Row: 30pt ProgressRing in the tint, name, "2,000 / 4,000 IU", 34pt green + button.
+│   └── WatchLogConfirmationView.swift      # Large ring with the new total, "of 4,000 IU", name, "+1,000 logged" pill in the tint.
 ├── ViewModels/
-│   └── WatchTodayViewModel.swift           # Computes today's totals by summing IntakeRecords (same logic as iOS).
+│   ├── WatchTodayViewModel.swift           # Today's totals by summing IntakeRecords (same logic as iOS); met count; confirmation.
+│   └── WatchPreviewData.swift              # DEBUG-only sample items for previews.
 └── nutrx Watch App.entitlements            # App Group + iCloud container matching iOS app.
 
 NutrxWatchWidgets/
 ├── NutrxWatchWidgetsBundle.swift           # WidgetKit bundle entry point.
-├── NutrxComplication.swift                 # Circular, corner, and inline Watch face complications.
+├── NutrxComplication.swift                 # Circular, corner, rectangular and inline complications + their provider.
 ├── Info.plist
 └── NutrxWatchWidgets.entitlements
 ```
@@ -278,12 +280,14 @@ NutrxWatchWidgets/
 ### Key facts
 
 - Both watch targets share the existing App Group SwiftData store (`group.nutrx-labs.nutrx`) and CloudKit container (`iCloud.nutrx-labs.nutrx`) — no new data layer
-- `ModelContainerFactory`, all Model files, `LogNutrientIntent`, and the design system (`Theme.swift`, `Colors.xcassets`, `GoalStatus.swift`) are added to the Watch targets via target membership (not duplicated)
-- Complications use WidgetKit, same API as iOS widgets
+- `ModelContainerFactory`, all Model files and the design system (`Theme.swift`, `Colors.xcassets`, `GoalStatus.swift`) are added to the Watch targets via target membership exceptions (not duplicated) — plus `ProgressRing`, `ContrastColor`, `WidgetSummary` for the app and `SegmentedDayRing`, `StreakService`, `WidgetSummary` for the complications
+- **watchOS only reads an asset colour's "Any" appearance** (the Watch is always dark, but asset dark variants are ignored). Tokens that are the same in both (`Brand/*`, `OnForest/*`, `Watch/Cell`, tints, `Text/OnTint`; tint tracks are just a little fainter) are fine; for primary text use the system `.primary` (white), never `Theme.textPrimary`, and pass `badgeBorderColor` to `ProgressRing` (`Watch/Cell` in rows, black on the confirmation) — its default `Surface/Card` is white there
+- Rows (DESIGN.md §5.11): ring, status and text from `GoalProgress`, the same as Today. The "Today" + "3/6" header is the first section's header (list rows have a tall minimum height on watchOS; don't set `defaultMinListRowHeight` to 0 — rows disappear)
+- Tapping + logs one step, then `WatchLogConfirmationView` covers the list for 1.5s (tap to dismiss) with a VoiceOver announcement; haptic `.click`, or `.success` when that tap met the goal
+- The list refreshes on appear and whenever the app becomes active (new day, CloudKit changes)
+- Complications use WidgetKit, same API as iOS widgets. Their provider opens the store with `ModelContainerFactory.createForExtension(allowsSave: false)` — never `create()`. Kind IDs never change: `NutrxCircularComplication` (segmented ring + "3/6"), `NutrxCornerComplication` ("3/6" + curved gauge), `NutrxRectangularComplication` ("nutrx · 3/6" + segment bar, one segment per goal up to 12), `NutrxInlineComplication` ("3/6 goals · 10 days")
 - After logging, `WidgetCenter.shared.reloadAllTimelines()` refreshes complications
 - No `WatchConnectivity` / `WCSession` — shared store handles cross-device sync
-- Haptic feedback via `WKInterfaceDevice.current().play(.click)` on every log tap
-- Goal-type-aware progress bar tinting matches the iPhone (blue/green/orange, minimum/maximum/range)
 - Nutrient groups are shown with section headers on the Watch, matching the iPhone. Headers hidden when only General group exists.
 - Explicitly out of scope: custom amount entry (step-only), nutrient creation/editing, history browsing, settings
 
@@ -486,7 +490,7 @@ Hit rate, the chart's met/missed bars and the heatmap all judge a day with `Goal
 
 ### GoalProgress — the shared "met" rule
 
-`GoalProgress` (`Shared/Services/GoalStatus.swift`) owns the per-type conditions above: `StreakService`, History streak days, the analytics hit rate and the Today row all read `countsAsMet` instead of re-implementing them. Comparisons tolerate float drift from summed steps; a range with no `upperBound` behaves like `.minimum`. The redesigned UI also takes `status`, `ringFraction` and `remainingText` from it (DESIGN.md §2). Widgets use it via `NutrientSnapshot.progress` (phase 9); the Watch snapshot code still has its own copy until phase 10.
+`GoalProgress` (`Shared/Services/GoalStatus.swift`) owns the per-type conditions above: `StreakService`, History streak days, the analytics hit rate and the Today row all read `countsAsMet` instead of re-implementing them. Comparisons tolerate float drift from summed steps; a range with no `upperBound` behaves like `.minimum`. The redesigned UI also takes `status`, `ringFraction` and `remainingText` from it (DESIGN.md §2). Widgets use it via `NutrientSnapshot.progress` (phase 9) and the Watch app and complications since phase 10.
 
 ---
 
@@ -569,7 +573,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 
 **Key details:**
 - Container: `iCloud.nutrx-labs.nutrx`. Falls back to local-only if CloudKit unavailable.
-- Entitlements: the app has iCloud + CloudKit; the widget extension has only the App Group. Extensions open the shared store with `ModelContainerFactory.createForExtension()` (no CloudKit, none of `create()`'s upgrade / backup / seeding steps) — `LogNutrientIntent` does this when running in the widget, and the app's CloudKit mirroring exports what the widget wrote when the app next runs. Never call `create()` from an extension: without the entitlement the CloudKit setup can crash it, and its one-off upgrade steps key off the extension's own `UserDefaults`.
+- Entitlements: the app has iCloud + CloudKit; the widget extension has only the App Group. Extensions open the shared store with `ModelContainerFactory.createForExtension()` (no CloudKit, none of `create()`'s upgrade / backup / seeding steps) — `LogNutrientIntent` does this when running in the widget, the Watch complications read-only (`allowsSave: false`), and the app's CloudKit mirroring exports what the widget wrote when the app next runs. Never call `create()` from an extension: without the entitlement the CloudKit setup can crash it, and its one-off upgrade steps key off the extension's own `UserDefaults`.
 - **New-device flow:** waits up to 3 seconds for CloudKit sync, skips onboarding if `UserProfile` found.
 - **Conflict resolution:** last-write-wins for most models. `IntakeRecord` is append-only, so concurrent logging from two devices produces two valid records (correct by design).
 - **Local → CloudKit upgrade:** on first CloudKit launch, backs up existing store before init. If CloudKit creates an empty store, migrates all data from backup (prevents TestFlight update data loss). Tracked via `UserDefaults` key `nutrx.hasCompletedCloudKitUpgrade`.

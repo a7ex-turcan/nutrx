@@ -4,17 +4,28 @@ import SwiftData
 
 struct ComplicationEntry: TimelineEntry {
     let date: Date
-    let onTarget: Int
-    let total: Int
+    let metCount: Int
+    let totalCount: Int
+    let currentStreak: Int
+    let streaksEnabled: Bool
+
+    var fraction: Double { totalCount > 0 ? Double(metCount) / Double(totalCount) : 0 }
+    var score: String { WidgetSummary.score(met: metCount, total: totalCount) }
+    var accessibilityLabel: String { "\(metCount) of \(totalCount) goals met" }
+
+    static let placeholder = ComplicationEntry(date: .now, metCount: 3, totalCount: 6,
+                                               currentStreak: 10, streaksEnabled: true)
+    static let empty = ComplicationEntry(date: .now, metCount: 0, totalCount: 0,
+                                         currentStreak: 0, streaksEnabled: true)
 }
 
 struct ComplicationProvider: TimelineProvider {
     func placeholder(in context: Context) -> ComplicationEntry {
-        ComplicationEntry(date: .now, onTarget: 3, total: 6)
+        .placeholder
     }
 
     func getSnapshot(in context: Context, completion: @escaping (ComplicationEntry) -> Void) {
-        completion(makeEntry())
+        completion(context.isPreview ? .placeholder : makeEntry())
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<ComplicationEntry>) -> Void) {
@@ -25,7 +36,10 @@ struct ComplicationProvider: TimelineProvider {
 
     @MainActor
     private func makeEntry() -> ComplicationEntry {
-        let container = ModelContainerFactory.create()
+        // The extension-safe container: no CloudKit, none of `create()`'s one-off steps.
+        guard let container = try? ModelContainerFactory.createForExtension(allowsSave: false) else {
+            return .empty
+        }
         let context = container.mainContext
 
         let startOfDay = Calendar.current.startOfDay(for: .now)
@@ -55,76 +69,120 @@ struct ComplicationProvider: TimelineProvider {
         }
 
         let active = nutrients.filter { !excludedIDs.contains($0.persistentModelID) }
-        var onTarget = 0
-        for nutrient in active {
-            let total = max(0, totalsByID[nutrient.persistentModelID] ?? 0)
-            let hit: Bool
-            switch nutrient.goalType {
-            case .minimum:
-                hit = total >= nutrient.dailyTarget
-            case .maximum:
-                hit = total <= nutrient.dailyTarget
-            case .range:
-                if let upper = nutrient.upperBound {
-                    hit = total >= nutrient.dailyTarget && total <= upper
-                } else {
-                    hit = total >= nutrient.dailyTarget
-                }
-            }
-            if hit { onTarget += 1 }
-        }
+        let metCount = active.filter { nutrient in
+            GoalProgress(nutrient: nutrient, current: totalsByID[nutrient.persistentModelID] ?? 0).countsAsMet
+        }.count
 
-        return ComplicationEntry(date: .now, onTarget: onTarget, total: active.count)
+        let streaksEnabled = (try? context.fetch(FetchDescriptor<UserPreferences>()))?.first?.streaksEnabled ?? true
+        let streak = streaksEnabled ? StreakService.compute(context: context).current : 0
+
+        return ComplicationEntry(date: .now, metCount: metCount, totalCount: active.count,
+                                 currentStreak: streak, streaksEnabled: streaksEnabled)
     }
 }
 
-// MARK: - Circular Complication (Ring Gauge)
+// MARK: - Circular (segmented ring)
 
+/// One segment per goal, met ones green, with "3/6" in the middle (DESIGN.md §5.11).
 struct CircularComplicationView: View {
     let entry: ComplicationEntry
 
-    private var progress: Double {
-        guard entry.total > 0 else { return 0 }
-        return Double(entry.onTarget) / Double(entry.total)
-    }
-
     var body: some View {
-        Gauge(value: progress) {
-            Image(systemName: "pill.fill")
-        } currentValueLabel: {
-            Text("\(entry.onTarget)")
-                .font(.system(.title3, design: .rounded, weight: .bold))
+        ZStack {
+            SegmentedDayRing(met: entry.metCount, total: entry.totalCount, style: .onForest, showsLabel: false)
+            Text(entry.score)
+                .font(.headline).fontDesign(.rounded)
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+                .padding(.horizontal, 8)
         }
-        .gaugeStyle(.accessoryCircular)
-        .tint(.blue)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(entry.accessibilityLabel)
     }
 }
 
-// MARK: - Corner Complication (Count)
+// MARK: - Corner (count + curved gauge)
 
 struct CornerComplicationView: View {
     let entry: ComplicationEntry
 
     var body: some View {
-        Text("\(entry.onTarget)/\(entry.total)")
-            .font(.system(.caption, design: .rounded, weight: .semibold))
+        Text(entry.score)
+            .font(.title3.weight(.bold)).fontDesign(.rounded)
+            .minimumScaleFactor(0.6)
+            .widgetCurvesContent()
             .widgetLabel {
-                Text("on target")
+                // A progress view fills the curve up to the share met; a gauge there only draws a marker.
+                ProgressView(value: entry.fraction) {
+                    Text("Goals")
+                }
+                .tint(Theme.green)
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(entry.accessibilityLabel)
     }
 }
 
-// MARK: - Inline Complication (Text)
+// MARK: - Rectangular ("nutrx · 3/6" + segment bar)
+
+struct RectangularComplicationView: View {
+    let entry: ComplicationEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(entry.totalCount > 0 ? "nutrx · \(entry.score)" : "nutrx")
+                .font(.headline)
+                .foregroundStyle(Theme.greenSoft)
+                .widgetAccentable()
+
+            if entry.totalCount > 0 {
+                Spacer(minLength: 0)
+                SegmentBar(met: entry.metCount, total: entry.totalCount)
+            } else {
+                Text(WidgetSummary.nextLine(firstUnmetName: nil, total: 0))
+                    .font(.footnote)
+                    .foregroundStyle(Theme.onForestSecondary)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(entry.totalCount > 0 ? entry.accessibilityLabel : "nutrx, no goals yet")
+    }
+}
+
+/// A row of capsules, one per goal (scaled down past 12), met ones first in green.
+private struct SegmentBar: View {
+    let met: Int
+    let total: Int
+
+    var body: some View {
+        let segments = WidgetSummary.segments(met: met, total: total)
+        HStack(spacing: 3) {
+            ForEach(0..<segments.count, id: \.self) { index in
+                if index < segments.filled {
+                    Capsule().fill(Theme.green).widgetAccentable()
+                } else {
+                    Capsule().fill(Theme.onForestTrack)
+                }
+            }
+        }
+        .frame(height: 6)
+    }
+}
+
+// MARK: - Inline
 
 struct InlineComplicationView: View {
     let entry: ComplicationEntry
 
     var body: some View {
-        Text("\(entry.onTarget) / \(entry.total) on target")
+        Text(WidgetSummary.watchInline(met: entry.metCount, total: entry.totalCount,
+                                       streakDays: entry.currentStreak, streaksEnabled: entry.streaksEnabled))
     }
 }
 
 // MARK: - Widget Configurations
+// Kind IDs never change — complications people have placed would disappear.
 
 struct NutrxCircularComplication: Widget {
     let kind = "NutrxCircularComplication"
@@ -134,8 +192,8 @@ struct NutrxCircularComplication: Widget {
             CircularComplicationView(entry: entry)
                 .containerBackground(.clear, for: .widget)
         }
-        .configurationDisplayName("nutrx Progress")
-        .description("Shows how many nutrients are on target today.")
+        .configurationDisplayName("Goals")
+        .description("Goals met today, one segment each.")
         .supportedFamilies([.accessoryCircular])
     }
 }
@@ -148,9 +206,23 @@ struct NutrxCornerComplication: Widget {
             CornerComplicationView(entry: entry)
                 .containerBackground(.clear, for: .widget)
         }
-        .configurationDisplayName("nutrx Count")
-        .description("Shows nutrient count on target today.")
+        .configurationDisplayName("Goals gauge")
+        .description("Goals met today, along the corner.")
         .supportedFamilies([.accessoryCorner])
+    }
+}
+
+struct NutrxRectangularComplication: Widget {
+    let kind = "NutrxRectangularComplication"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: ComplicationProvider()) { entry in
+            RectangularComplicationView(entry: entry)
+                .containerBackground(.clear, for: .widget)
+        }
+        .configurationDisplayName("Goals bar")
+        .description("Goals met today, as a bar.")
+        .supportedFamilies([.accessoryRectangular])
     }
 }
 
@@ -162,8 +234,35 @@ struct NutrxInlineComplication: Widget {
             InlineComplicationView(entry: entry)
                 .containerBackground(.clear, for: .widget)
         }
-        .configurationDisplayName("nutrx Inline")
-        .description("Shows nutrients on target as inline text.")
+        .configurationDisplayName("Goals and streak")
+        .description("Goals met today and your streak.")
         .supportedFamilies([.accessoryInline])
     }
+}
+
+// MARK: - Previews
+
+#Preview("Circular", as: .accessoryCircular) {
+    NutrxCircularComplication()
+} timeline: {
+    ComplicationEntry.placeholder
+}
+
+#Preview("Corner", as: .accessoryCorner) {
+    NutrxCornerComplication()
+} timeline: {
+    ComplicationEntry.placeholder
+}
+
+#Preview("Rectangular", as: .accessoryRectangular) {
+    NutrxRectangularComplication()
+} timeline: {
+    ComplicationEntry.placeholder
+    ComplicationEntry.empty
+}
+
+#Preview("Inline", as: .accessoryInline) {
+    NutrxInlineComplication()
+} timeline: {
+    ComplicationEntry.placeholder
 }

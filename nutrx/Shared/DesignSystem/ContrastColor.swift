@@ -47,3 +47,14 @@ struct ContrastColor: Equatable {
                              blue: mix(blue, background.blue))
     }
 }
+
+extension ContrastColor {
+    /// `Text/OnTint` or white, whichever contrasts more with an opaque `fill` — e.g. the Watch's
+    /// "+1,000 logged" pill in a nutrient's tint.
+    static func ink(on fill: Color, in environment: EnvironmentValues) -> (color: Color, contrast: Double) {
+        let background = ContrastColor(fill, in: environment)
+        let dark = background.contrast(with: ContrastColor(Theme.textOnTint, in: environment))
+        let light = background.contrast(with: .white)
+        return dark >= light ? (Theme.textOnTint, dark) : (.white, light)
+    }
+}
