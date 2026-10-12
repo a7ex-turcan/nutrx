@@ -4,6 +4,14 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## Unreleased
+
+### Improvements
+- **Brand accent colour** — Buttons, toggles and other system controls now use nutrx forest green (bright green in dark mode) instead of the default blue.
+- **One rule for "goal met"** — Today, History, streaks and analytics now share a single goal check, so they can't disagree, and totals that land a rounding hair under the target (e.g. 0.1 + 0.7 of a 0.8 goal) now count as reached.
+
+---
+
 ## v1.11 — 2026-04-17
 
 ### Improvements
