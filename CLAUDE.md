@@ -17,6 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `NutrxWidgetsExtension` — iOS widgets (`nutrx-labs.nutrx.NutrxWidgets`)
 - `nutrx Watch App` — watchOS companion (`nutrx-labs.nutrx.watchkitapp`)
 - `NutrxWatchWidgets` — watchOS complications (`nutrx-labs.nutrx.watchkitapp.widgets`)
+- `nutrxTests` — XCTest unit tests, hosted in the `nutrx` app (`@testable import nutrx`)
 
 ## Build & Run
 
@@ -30,9 +31,9 @@ Build from command line (skip signing for CLI-only builds):
 xcodebuild -scheme nutrx -configuration Debug -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 ```
 
-Run tests:
+Run tests (the `nutrx` scheme's test action runs `nutrxTests`):
 ```bash
-xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 16'
+xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
 ## Swift Configuration
@@ -67,6 +68,7 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. **Next:** Phase 2 (Today).
 - Where this file still describes the old UI (blue/green/orange progress bars, expandable cards, `CustomAmountSheet`, personal-info onboarding), DESIGN.md wins. Update this file as each phase lands.
 
 ---
@@ -115,7 +117,8 @@ nutrx/
 │   ├── IntakeRecord.swift
 │   ├── Exclusion.swift
 │   ├── NutrientReminder.swift   # One row per dose reminder per nutrient.
-│   └── NutrientGroup.swift      # Named group for organising nutrients. System "General" group seeded on first launch.
+│   ├── NutrientGroup.swift      # Named group for organising nutrients. System "General" group seeded on first launch.
+│   └── NutrientTint.swift       # User-chosen nutrient colour (pure enum) + stable id-derived fallback.
 │
 ├── Features/
 │   ├── Onboarding/              # Shown on first launch only. Two steps: personal info → first nutrient.
@@ -172,11 +175,17 @@ nutrx/
 │           └── ProfileViewModel.swift
 │
 └── Shared/
+    ├── DesignSystem/
+    │   ├── Theme.swift                     # Brand colour tokens, NutrientTint colours, GoalStatus colours, spacing/radius constants.
+    │   └── Colors.xcassets                 # Named colour sets (Any/Dark) for every token and tint. Shared with widget + Watch targets.
     ├── Extensions/
     │   ├── Bundle+AppVersion.swift         # CFBundleShortVersionString helper for ReviewService.
     │   ├── Date+Calendar.swift
     │   └── Double+Formatting.swift
     ├── Components/
+    │   ├── ProgressRing.swift               # Redesign ring: tint arc + track, centre symbol, check badge when met.
+    │   ├── SegmentedDayRing.swift           # Day score ring, one segment per nutrient ("3/6 goals met").
+    │   ├── NutrientIconTile.swift           # Rounded tile with a nutrient's symbol on its tint.
     │   ├── FormField.swift
     │   ├── NutrientFormFields.swift         # Reusable nutrient form + NutrientDraft observable.
     │   ├── NutrientRowView.swift            # Card with +/− buttons, progress bar.
@@ -196,6 +205,8 @@ nutrx/
     │   │                                    # Singleton deduplication. Logs via os.log.
     │   └── PreviewSampleData.swift
     └── Services/
+        ├── GoalStatus.swift                 # GoalStatus + GoalProgress: status, ring fraction, status line, counts-as-met.
+        │                                    # Single source of truth for "goal met" (streaks, History, analytics, Today).
         ├── NotificationService.swift        # Daily check-in reminder + per-nutrient dose reminders.
         │                                    # Smart scheduling and suppression after logging intake.
         ├── StreakService.swift              # Computes current/best streak from IntakeRecord + Exclusion data.
@@ -241,7 +252,7 @@ NutrxWatchWidgets/
 ### Key facts
 
 - Both watch targets share the existing App Group SwiftData store (`group.nutrx-labs.nutrx`) and CloudKit container (`iCloud.nutrx-labs.nutrx`) — no new data layer
-- `ModelContainerFactory`, all Model files, and `LogNutrientIntent` are added to the Watch target via target membership (not duplicated)
+- `ModelContainerFactory`, all Model files, `LogNutrientIntent`, and the design system (`Theme.swift`, `Colors.xcassets`, `GoalStatus.swift`) are added to the Watch targets via target membership (not duplicated)
 - Complications use WidgetKit, same API as iOS widgets
 - After logging, `WidgetCenter.shared.reloadAllTimelines()` refreshes complications
 - No `WatchConnectivity` / `WCSession` — shared store handles cross-device sync
@@ -512,6 +523,10 @@ This is ~20 lines of SwiftUI. It eliminates the most common confusion about what
 
 `StreakService.compute` must evaluate each nutrient using its `goalType`. See the Streaks section above for the per-type conditions.
 
+### GoalProgress — the shared "met" rule
+
+`GoalProgress` (`Shared/Services/GoalStatus.swift`) owns the per-type conditions above: `StreakService`, History streak days, the analytics hit rate and the Today row all read `countsAsMet` instead of re-implementing them. Comparisons tolerate float drift from summed steps; a range with no `upperBound` behaves like `.minimum`. The redesigned UI also takes `status`, `ringFraction` and `remainingText` from it (DESIGN.md §2). Widget and Watch snapshot code still has its own copy until phases 9–10.
+
 ---
 
 ### File changes summary
@@ -678,6 +693,8 @@ User-defined nutrient to track.
 | `createdAt` | `Date = Date()` | Used by streak computation |
 | `goalType` | `GoalType = .minimum` | `.minimum`, `.maximum`, or `.range` — see Nutrient Goal Types section |
 | `upperBound` | `Double? = nil` | Only non-nil when `goalType == .range`. `dailyTarget` acts as the lower bound. |
+| `tintRaw` | `String = ""` | `""` = never chosen. Read via `tint: NutrientTint`, which falls back to a stable id-derived tint (no migration). |
+| `symbolName` | `String = "pills"` | SF Symbol shown in the nutrient's ring and icon tile. |
 
 **Relationships:** → many `IntakeRecord`? (cascade), → many `Exclusion`? (cascade), → many `NutrientReminder`? (cascade), → one `NutrientGroup?` (nullify)
 
