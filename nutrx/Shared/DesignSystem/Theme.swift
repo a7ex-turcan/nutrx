@@ -39,6 +39,10 @@ enum Theme {
     // MARK: - Watch
     static let watchCell = color(.watchCell)
 
+    // MARK: - Profile avatar
+    static let avatarFill = color(.avatarFill)
+    static let avatarInk = color(.avatarInk)
+
     // MARK: - Shape & spacing (§1.4)
     enum Spacing {
         static let screenMargin: CGFloat = 16
@@ -81,6 +85,8 @@ enum Theme {
         case onForestSecondary = "OnForest/Secondary"
         case onForestTrack = "OnForest/Track"
         case watchCell = "Watch/Cell"
+        case avatarFill = "Avatar/Fill"
+        case avatarInk = "Avatar/Ink"
     }
 
     private static func color(_ asset: ColorAsset) -> Color {

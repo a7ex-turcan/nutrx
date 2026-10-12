@@ -303,36 +303,7 @@ struct NutrientsListView: View {
     // MARK: - Actions
 
     private func addNutrient() {
-        guard let stepValue = addDraft.step.parsedDouble,
-              let targetValue = addDraft.dailyTarget.parsedDouble else { return }
-
-        let nutrient = Nutrient(
-            name: addDraft.name.trimmingCharacters(in: .whitespaces),
-            unit: addDraft.unit.trimmingCharacters(in: .whitespaces),
-            step: stepValue,
-            dailyTarget: targetValue,
-            sortOrder: nutrients.count,
-            goalType: addDraft.goalType,
-            upperBound: addDraft.goalType == .range ? addDraft.upperBound.parsedDouble : nil
-        )
-        let notes = addDraft.notes.trimmingCharacters(in: .whitespaces)
-        nutrient.notes = notes.isEmpty ? nil : notes
-
-        let targetGroup = selectedGroupForAdd ?? generalGroup
-        if let group = targetGroup {
-            nutrient.group = group
-            nutrient.groupSortOrder = ((group.nutrients ?? []).map(\.groupSortOrder).max() ?? -1) + 1
-        }
-
-        modelContext.insert(nutrient)
-
-        for time in addDraft.pendingReminderTimes {
-            let reminder = NutrientReminder(nutrient: nutrient, timeOfDay: time)
-            modelContext.insert(reminder)
-        }
-        if !addDraft.pendingReminderTimes.isEmpty {
-            NotificationService.scheduleReminders(for: nutrient)
-        }
+        addDraft.insertNutrient(into: modelContext, group: selectedGroupForAdd ?? generalGroup, sortOrder: nutrients.count)
     }
 
     private func applyEdit(to nutrient: Nutrient) {

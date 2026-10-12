@@ -63,6 +63,14 @@ let previewContainer: ModelContainer = {
     protein.groupSortOrder = 1
     protein.createdAt = tenDaysAgo
 
+    // Tints and symbols as in the redesign mockups
+    for (nutrient, tint, symbol) in [(vitD, NutrientTint.amber, "sun.max"), (omega3, .teal, "fish"),
+                                     (caffeine, .brown, "cup.and.saucer"), (water, .blue, "drop"),
+                                     (protein, .coral, "dumbbell")] {
+        nutrient.tint = tint
+        nutrient.symbolName = symbol
+    }
+
     for nutrient in [vitD, omega3, caffeine, water, protein] {
         context.insert(nutrient)
     }

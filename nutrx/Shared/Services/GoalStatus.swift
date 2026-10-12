@@ -103,6 +103,12 @@ struct GoalProgress: Equatable {
     /// Current against the goal: "2,000 of 4,000 IU", "130 of 120–160 g". Used for VoiceOver values.
     var progressText: String { progressText(locale: .current) }
 
+    /// The day's total on its own, for the bold part of a value line: "2,000".
+    var currentText: String { currentText(locale: .current) }
+
+    /// The goal after the bold total: "/ 4,000 IU", "max 400 mg", "/ 120–160 g".
+    var goalText: String { goalText(locale: .current) }
+
     func remainingText(locale: Locale) -> String {
         switch goal {
         case .atLeast(let target):
@@ -126,6 +132,21 @@ struct GoalProgress: Equatable {
             return "\(value) of \(amount(target, locale))"
         case .between(let lower, let upper):
             return "\(value) of \(Self.number(lower, locale))–\(amount(upper, locale))"
+        }
+    }
+
+    func currentText(locale: Locale) -> String {
+        Self.number(current, locale)
+    }
+
+    func goalText(locale: Locale) -> String {
+        switch goal {
+        case .atLeast(let target):
+            return "/ \(amount(target, locale))"
+        case .atMost(let limit):
+            return "max \(amount(limit, locale))"
+        case .between(let lower, let upper):
+            return "/ \(Self.number(lower, locale))–\(amount(upper, locale))"
         }
     }
 

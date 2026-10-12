@@ -175,6 +175,21 @@ final class GoalProgressTests: XCTestCase {
         XCTAssertEqual(p.remainingText(locale: Locale(identifier: "de_DE")), "2.000 IU to go")
     }
 
+    // MARK: - Value line
+
+    func testValueLinePartsForEachGoalType() {
+        let atLeast = progress(2000, .minimum, target: 4000, unit: "IU")
+        XCTAssertEqual(atLeast.currentText(locale: enUS), "2,000")
+        XCTAssertEqual(atLeast.goalText(locale: enUS), "/ 4,000 IU")
+
+        let atMost = progress(320, .maximum, target: 400)
+        XCTAssertEqual(atMost.currentText(locale: enUS), "320")
+        XCTAssertEqual(atMost.goalText(locale: enUS), "max 400 mg")
+
+        let between = progress(92, .range, target: 120, upper: 160, unit: "g")
+        XCTAssertEqual(between.goalText(locale: enUS), "/ 120–160 g")
+    }
+
     // MARK: - Nutrient convenience
 
     func testNutrientInitializerReadsGoalFromTheModel() throws {

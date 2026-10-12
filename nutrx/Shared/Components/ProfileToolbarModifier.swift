@@ -10,6 +10,7 @@ struct ProfileToolbarModifier: ViewModifier {
                 ToolbarItem(placement: .topBarTrailing) {
                     ProfileMenuButton(showEditProfile: $showEditProfile, showSettings: $showSettings)
                 }
+                .sharedBackgroundVisibility(.hidden)
             }
             .sheet(isPresented: $showEditProfile) {
                 NavigationStack {

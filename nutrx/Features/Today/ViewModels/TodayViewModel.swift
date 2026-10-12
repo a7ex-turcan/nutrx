@@ -7,6 +7,8 @@ final class TodayViewModel {
     struct NutrientIntake {
         let nutrient: Nutrient
         let total: Double
+
+        var progress: GoalProgress { GoalProgress(nutrient: nutrient, current: total) }
     }
 
     struct GroupSection: Identifiable {
@@ -17,6 +19,25 @@ final class TodayViewModel {
 
     private(set) var nutrientIntakes: [(nutrient: Nutrient, total: Double)] = []
     private(set) var groupSections: [GroupSection] = []
+    /// Nutrients with at least one intake logged today — their reminders are suppressed for the rest of the day.
+    private(set) var loggedTodayIDs: Set<PersistentIdentifier> = []
+
+    /// Met vs. total across every nutrient shown today (collapsed groups included).
+    var dayScore: DayScore {
+        DayScore(progresses: groupSections.flatMap(\.intakes).map(\.progress))
+    }
+
+    /// The next reminder later today for a nutrient that hasn't been logged yet
+    /// (logging suppresses the rest of that nutrient's reminders for the day).
+    func nextReminder(after now: Date = .now) -> UpcomingReminder? {
+        let candidates = groupSections
+            .flatMap(\.intakes)
+            .filter { !loggedTodayIDs.contains($0.nutrient.persistentModelID) }
+            .flatMap { intake in
+                (intake.nutrient.reminders ?? []).map { (nutrientName: intake.nutrient.name, timeOfDay: $0.timeOfDay) }
+            }
+        return UpcomingReminder.next(after: now, among: candidates)
+    }
 
     func refresh(context: ModelContext) {
         let startOfDay = Calendar.current.startOfDay(for: .now)
@@ -56,6 +77,7 @@ final class TodayViewModel {
                 totalsByID[id, default: 0] += record.amount
             }
         }
+        loggedTodayIDs = Set(totalsByID.keys)
 
         // Build flat list (kept for backward compat with decrement lookup)
         let activeNutrients = nutrients.filter { !excludedNutrientIDs.contains($0.persistentModelID) }
@@ -95,6 +117,7 @@ final class TodayViewModel {
         context.insert(record)
         try? context.save()
         updateTotal(for: nutrient, delta: nutrient.step)
+        loggedTodayIDs.insert(nutrient.persistentModelID)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.suppressRemindersAfterLogging(for: nutrient)
         WidgetCenter.shared.reloadAllTimelines()
@@ -105,6 +128,7 @@ final class TodayViewModel {
         context.insert(record)
         try? context.save()
         updateTotal(for: nutrient, delta: amount)
+        loggedTodayIDs.insert(nutrient.persistentModelID)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.suppressRemindersAfterLogging(for: nutrient)
         WidgetCenter.shared.reloadAllTimelines()
