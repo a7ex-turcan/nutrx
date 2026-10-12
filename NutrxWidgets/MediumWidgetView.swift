@@ -8,213 +8,150 @@ struct NutrxMediumWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: NutrxTimelineProvider()) { entry in
             MediumWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(Theme.surfaceCard, for: .widget)
         }
-        .configurationDisplayName("nutrx — Today")
-        .description("Track your top nutrients with quick-log buttons.")
+        .configurationDisplayName("Quick log")
+        .description("Log your nutrients without opening the app.")
+        // Small and large stay supported so widgets people already placed keep working.
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
+/// Rows of ring + name + value + interactive "+" (DESIGN.md §5.10): 3 in medium, 2 in small, 6 in large.
 struct MediumWidgetView: View {
-    @Environment(\.widgetFamily) var family
+    @Environment(\.widgetFamily) private var family
     let entry: NutrxWidgetEntry
+
+    private var rowLimit: Int {
+        switch family {
+        case .systemSmall: 2
+        case .systemLarge: 6
+        default: 3
+        }
+    }
 
     var body: some View {
         if entry.totalCount == 0 {
-            Text("Open nutrx to add nutrients")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .widgetURL(URL(string: "nutrx://nutrients"))
+            VStack(spacing: 6) {
+                Image(systemName: "leaf")
+                    .font(.title2)
+                    .foregroundStyle(Theme.green)
+                Text("Add a nutrient in nutrx")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .multilineTextAlignment(.center)
+            }
+            .widgetURL(URL(string: "nutrx://nutrients"))
         } else {
-            switch family {
-            case .systemSmall:
-                smallLayout
-            case .systemLarge:
-                largeLayout
-            default:
-                mediumLayout
+            VStack(alignment: .leading, spacing: family == .systemSmall ? 14 : 6) {
+                if family == .systemLarge {
+                    header
+                }
+                ForEach(entry.nutrients.prefix(rowLimit)) { nutrient in
+                    WidgetNutrientRow(nutrient: nutrient, compact: family == .systemSmall)
+                }
+                if family == .systemLarge {
+                    Spacer(minLength: 0)
+                }
             }
+            .frame(maxHeight: .infinity, alignment: family == .systemLarge ? .top : .center)
+            .widgetURL(URL(string: "nutrx://today"))
         }
     }
 
-    // MARK: - Streak label helper
-
-    @ViewBuilder
-    private var streakLabel: some View {
-        if entry.streaksEnabled && entry.currentStreak >= 1 {
-            Text("🔥 \(entry.currentStreak)")
-                .font(.caption2.weight(.medium))
+    private var header: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text("Today")
+                .font(.headline)
+                .foregroundStyle(Theme.textPrimary)
+            Spacer()
+            Text("\(WidgetSummary.score(met: entry.metCount, total: entry.totalCount)) goals")
+                .font(.subheadline.weight(.semibold)).fontDesign(.rounded)
+                .foregroundStyle(Theme.textSecondary)
         }
-    }
-
-    // MARK: - Small Layout (2 nutrients, compact)
-
-    private var smallLayout: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Today")
-                    .font(.caption.weight(.semibold))
-
-                streakLabel
-
-                Spacer()
-
-                Text("\(entry.completedCount)/\(entry.totalCount)")
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-
-            ForEach(Array(entry.nutrients.prefix(2).enumerated()), id: \.offset) { _, nutrient in
-                CompactNutrientRow(nutrient: nutrient)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .widgetURL(URL(string: "nutrx://today"))
-    }
-
-    // MARK: - Large Layout (up to 6 nutrients)
-
-    private var largeLayout: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Today")
-                    .font(.headline)
-
-                streakLabel
-
-                Spacer()
-
-                Text("\(entry.completedCount) / \(entry.totalCount)")
-                    .font(.caption.weight(.medium))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color(.systemGray5), in: Capsule())
-            }
-
-            ForEach(Array(entry.nutrients.prefix(6).enumerated()), id: \.offset) { _, nutrient in
-                NutrientWidgetRow(nutrient: nutrient)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .widgetURL(URL(string: "nutrx://today"))
-    }
-
-    // MARK: - Medium Layout (3 nutrients, full)
-
-    private var mediumLayout: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Today")
-                    .font(.headline)
-
-                streakLabel
-
-                Spacer()
-
-                Text("\(entry.completedCount) / \(entry.totalCount)")
-                    .font(.caption.weight(.medium))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Color(.systemGray5), in: Capsule())
-            }
-
-            ForEach(Array(entry.nutrients.prefix(3).enumerated()), id: \.offset) { _, nutrient in
-                NutrientWidgetRow(nutrient: nutrient)
-            }
-        }
-        .widgetURL(URL(string: "nutrx://today"))
+        .padding(.bottom, 2)
     }
 }
 
-// MARK: - Compact Row (Small Widget)
-
-private struct CompactNutrientRow: View {
+/// A nutrient's ring in its tint, its name and value, and a "+" that logs one step via `LogNutrientIntent`.
+/// The small family has no room for a ring next to the text, so it shows a tint dot instead.
+private struct WidgetNutrientRow: View {
     let nutrient: NutrientSnapshot
+    var compact = false
 
     var body: some View {
-        VStack(spacing: 3) {
-            HStack {
-                Text(nutrient.name)
-                    .font(.caption2.weight(.medium))
-                    .lineLimit(1)
+        let progress = nutrient.progress
 
-                Spacer()
-
-                Button(intent: LogNutrientIntent(nutrientID: nutrient.id)) {
-                    Image(systemName: nutrient.isOnTarget ? "checkmark.circle.fill" : "plus.circle.fill")
-                        .font(.body)
-                        .foregroundStyle(nutrient.isOnTarget ? .green : .blue)
-                }
-                .buttonStyle(.plain)
+        HStack(spacing: compact ? 8 : 10) {
+            if !compact {
+                ProgressRing(fraction: progress.ringFraction,
+                             color: progress.status.ringColor(tint: nutrient.tint),
+                             trackColor: nutrient.tint.trackColor,
+                             lineWidth: 5,
+                             symbolName: nutrient.symbolName,
+                             symbolColor: nutrient.tint.color,
+                             showsCheck: nutrient.isMet)
+                    .frame(width: 36, height: 36)
             }
 
-            // Progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color(.systemGray5))
-
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(barColor)
-                        .frame(width: min(geo.size.width, geo.size.width * nutrient.progress))
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 5) {
+                    if compact {
+                        Image(systemName: nutrient.isMet ? "checkmark.circle.fill" : "circle.fill")
+                            .font(.system(size: nutrient.isMet ? 10 : 7))
+                            .foregroundStyle(nutrient.tint.color)
+                            .accessibilityHidden(true)
+                    }
+                    Text(nutrient.name)
+                        .font((compact ? Font.subheadline : .body).weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
-            }
-            .frame(height: 4)
-        }
-    }
-
-    private var barColor: Color {
-        if nutrient.isExceeded { return .orange }
-        if nutrient.isOnTarget { return .green }
-        return .blue
-    }
-}
-
-// MARK: - Full Row (Medium Widget)
-
-private struct NutrientWidgetRow: View {
-    let nutrient: NutrientSnapshot
-
-    var body: some View {
-        HStack(spacing: 8) {
-            Text(nutrient.name)
-                .font(.caption.weight(.medium))
+                // Separate texts: fonts set inside an interpolated Text don't apply in widgets.
+                HStack(alignment: .firstTextBaseline, spacing: compact ? 2 : 4) {
+                    Text(progress.currentText)
+                        .font((compact ? Font.caption : .subheadline).weight(.bold)).fontDesign(.rounded)
+                        .foregroundStyle(Theme.textPrimary)
+                    Text(progress.goalText)
+                        .font(compact ? .caption : .subheadline)
+                        .foregroundStyle(Theme.textSecondary)
+                }
                 .lineLimit(1)
-                .frame(width: 70, alignment: .leading)
-
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(Color(.systemGray5))
-
-                    RoundedRectangle(cornerRadius: 3)
-                        .fill(barColor)
-                        .frame(width: min(geo.size.width, geo.size.width * nutrient.progress))
-                }
+                .minimumScaleFactor(0.7)
             }
-            .frame(height: 6)
-
-            Text("\(nutrient.current.displayString)/\(nutrient.target.displayString)")
-                .font(.system(.caption2, design: .monospaced))
-                .foregroundStyle(nutrient.isExceeded ? .orange : .secondary)
-                .lineLimit(1)
-                .frame(width: 60, alignment: .trailing)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             Button(intent: LogNutrientIntent(nutrientID: nutrient.id)) {
-                Image(systemName: nutrient.isOnTarget ? "checkmark.circle.fill" : "plus.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(nutrient.isOnTarget ? .green : .blue)
+                Image(systemName: "plus")
+                    .font((compact ? Font.footnote : .body).weight(.bold))
+                    .foregroundStyle(Theme.controlOnPrimary)
+                    .frame(width: compact ? 34 : 44, height: compact ? 34 : 36)
+                    .background(Theme.controlPrimary, in: Capsule())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Add one step of \(nutrient.name)")
         }
+        // Name and value as one element (not the dot / check), then the "+" button.
+        .accessibilityElement(children: .contain)
     }
+}
 
-    private var barColor: Color {
-        if nutrient.isExceeded { return .orange }
-        if nutrient.isOnTarget { return .green }
-        return .blue
-    }
+#Preview("Medium", as: .systemMedium) {
+    NutrxMediumWidget()
+} timeline: {
+    NutrxWidgetEntry.placeholder
+    NutrxWidgetEntry.empty
+}
+
+#Preview("Small", as: .systemSmall) {
+    NutrxMediumWidget()
+} timeline: {
+    NutrxWidgetEntry.placeholder
+}
+
+#Preview("Large", as: .systemLarge) {
+    NutrxMediumWidget()
+} timeline: {
+    NutrxWidgetEntry.placeholder
 }

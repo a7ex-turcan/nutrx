@@ -16,6 +16,8 @@ All notable changes to nutrx are documented in this file.
 - **Redesigned History** — A streak card with your current and best streak, a month calendar coloured by how many goals you met each day (all, some or none) that you can page back through, and your most recent days with a dot per nutrient. Tap a day to see each nutrient's total against its goal, who you missed, and every entry you logged.
 - **New welcome and first-nutrient setup** — A new welcome screen, then pick a starting point (Vitamin D, Magnesium, Omega-3, Water, Protein or Creatine) whose goal and step you can adjust before you start, or make your own. You can also skip and add nutrients later.
 - **Redesigned Settings** — Your profile at the top, colourful rows that show each setting's current state at a glance (iCloud, notifications, streaks, groups), a Rate nutrx shortcut, and a refreshed About and Edit Profile.
+- **Redesigned widgets** — The small widget shows your day at a glance (goals met, streak, what's next) on nutrx green; the quick-log widget shows each nutrient's ring in its own colour with a + button; and the Lock Screen widgets show your goals as a ring and "3/6 goals · 10-day streak".
+- **New "Next up" Lock Screen widget** — The next nutrient you haven't hit yet, with its progress.
 
 ### Improvements
 - **No personal details needed to start** — Setup no longer asks for your name, birthday, weight or height. They're all optional now and live in Edit Profile.
@@ -26,6 +28,7 @@ All notable changes to nutrx are documented in this file.
 - **One rule for "goal met"** — Today, History, streaks and analytics now share a single goal check, so they can't disagree, and totals that land a rounding hair under the target (e.g. 0.1 + 0.7 of a 0.8 goal) now count as reached.
 
 ### Fixes
+- **Widget + button** — Tapping + on the quick-log widget could crash the widget, so it didn't refresh (the amount was still logged). The widget now saves without touching iCloud directly; the app syncs it.
 - **Group counts** — Manage Groups no longer counts nutrients you've deleted.
 - **Removed "Log Out"** — The profile menu had a Log Out item that did nothing (nutrx has no accounts). It's gone.
 

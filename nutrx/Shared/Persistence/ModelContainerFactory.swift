@@ -9,10 +9,8 @@ enum ModelContainerFactory {
     static let cloudKitContainerID = "iCloud.nutrx-labs.nutrx"
     private static let cloudKitUpgradeKey = "nutrx.hasCompletedCloudKitUpgrade"
 
-    static func create() -> ModelContainer {
-        migrateStoreToAppGroupIfNeeded()
-
-        let schema = Schema([
+    static var schema: Schema {
+        Schema([
             UserProfile.self,
             Nutrient.self,
             IntakeRecord.self,
@@ -21,6 +19,23 @@ enum ModelContainerFactory {
             NutrientReminder.self,
             NutrientGroup.self,
         ])
+    }
+
+    /// The shared App Group store without CloudKit, for app extensions (the widget's "+" buttons).
+    ///
+    /// Extensions have no iCloud entitlement — a CloudKit configuration there can crash — and must not run the
+    /// app's one-off steps in `create()` (store move, CloudKit-upgrade backup / migration keyed on their own
+    /// `UserDefaults`, seeding, dedup). What they write lands in the shared store's history, and the app's
+    /// CloudKit mirroring exports it the next time the app runs.
+    static func createForExtension() throws -> ModelContainer {
+        let configuration = ModelConfiguration(schema: schema, url: sharedStoreURL(), cloudKitDatabase: .none)
+        return try ModelContainer(for: schema, configurations: [configuration])
+    }
+
+    static func create() -> ModelContainer {
+        migrateStoreToAppGroupIfNeeded()
+
+        let schema = Self.schema
 
         let storeURL = sharedStoreURL()
         let needsCloudKitUpgrade = !UserDefaults.standard.bool(forKey: cloudKitUpgradeKey)

@@ -36,7 +36,7 @@ struct NutrxTimelineProvider: TimelineProvider {
             let configuration = ModelConfiguration(schema: schema, url: storeURL, allowsSave: false)
             container = try ModelContainer(for: schema, configurations: [configuration])
         } catch {
-            return NutrxWidgetEntry(date: .now, nutrients: [], isPlaceholder: false, currentStreak: 0, streaksEnabled: false)
+            return .empty
         }
 
         let context = container.mainContext
@@ -89,7 +89,8 @@ struct NutrxTimelineProvider: TimelineProvider {
                 let aGroupOrder = (a.group ?? generalGroup)?.sortOrder ?? Int.max
                 let bGroupOrder = (b.group ?? generalGroup)?.sortOrder ?? Int.max
                 if aGroupOrder != bGroupOrder { return aGroupOrder < bGroupOrder }
-                return a.groupSortOrder < b.groupSortOrder
+                if a.groupSortOrder != b.groupSortOrder { return a.groupSortOrder < b.groupSortOrder }
+                return a.sortOrder < b.sortOrder  // same tiebreak as Today
             }
 
         let snapshots = activeNutrients.map { n in
@@ -100,8 +101,10 @@ struct NutrxTimelineProvider: TimelineProvider {
                 current: max(0, totals[n.persistentModelID] ?? 0),
                 target: n.dailyTarget,
                 step: n.step,
-                goalTypeRaw: n.goalTypeRaw,
-                upperBound: n.upperBound
+                goalType: n.goalType,
+                upperBound: n.upperBound,
+                tint: n.tint,
+                symbolName: n.symbolName
             )
         }
 

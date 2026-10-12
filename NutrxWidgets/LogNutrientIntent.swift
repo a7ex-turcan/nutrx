@@ -17,7 +17,14 @@ struct LogNutrientIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        let container = ModelContainerFactory.create()
+        // Widget buttons run this in the widget extension, which must use the extension-safe container.
+        let container: ModelContainer
+        if Bundle.main.bundlePath.hasSuffix(".appex") {
+            guard let extensionContainer = try? ModelContainerFactory.createForExtension() else { return .result() }
+            container = extensionContainer
+        } else {
+            container = ModelContainerFactory.create()
+        }
         let context = container.mainContext
 
         guard let nutrientUUID = UUID(uuidString: nutrientID) else { return .result() }
