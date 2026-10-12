@@ -22,10 +22,17 @@ final class Nutrient {
     var createdAt: Date = Date()
     var goalTypeRaw: String = GoalType.minimum.rawValue
     var upperBound: Double? = nil
+    var tintRaw: String = ""  // "" = never chosen; `tint` falls back to an id-derived tint
+    var symbolName: String = "pills"
 
     var goalType: GoalType {
         get { GoalType(rawValue: goalTypeRaw) ?? .minimum }
         set { goalTypeRaw = newValue.rawValue }
+    }
+
+    var tint: NutrientTint {
+        get { NutrientTint(rawValue: tintRaw) ?? .fallback(for: id) }
+        set { tintRaw = newValue.rawValue }
     }
 
     @Relationship(deleteRule: .cascade, inverse: \IntakeRecord.nutrient)

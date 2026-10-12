@@ -11,15 +11,7 @@ struct NutrientRowView: View {
     }
 
     private var isComplete: Bool {
-        switch nutrient.goalType {
-        case .minimum:
-            return nutrient.dailyTarget > 0 && currentIntake >= nutrient.dailyTarget
-        case .maximum:
-            return currentIntake <= nutrient.dailyTarget
-        case .range:
-            guard let upper = nutrient.upperBound else { return false }
-            return currentIntake >= nutrient.dailyTarget && currentIntake <= upper
-        }
+        GoalProgress(nutrient: nutrient, current: currentIntake).countsAsMet
     }
 
     private var valueLabel: String {
