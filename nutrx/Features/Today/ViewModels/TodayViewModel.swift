@@ -19,10 +19,10 @@ final class TodayViewModel {
 
     private(set) var nutrientIntakes: [(nutrient: Nutrient, total: Double)] = []
     private(set) var groupSections: [GroupSection] = []
-    /// Nutrients whose reminders `suppressRemindersAfterLogging` has cancelled since the last full reschedule.
-    /// Mirrors the scheduler: logging here cancels a nutrient's reminders, and `rescheduleReminders`
-    /// (every foreground) restores all of them — so this is not "logged today".
-    private(set) var suppressedReminderIDs: Set<PersistentIdentifier> = []
+    /// Reminders that `suppressRemindersAfterLogging` cancelled since the last full reschedule, per nutrient.
+    /// Mirrors the scheduler rather than "logged today": `rescheduleReminders` (every foreground) restores
+    /// all of them, and adding or deleting a reminder reschedules that nutrient — see `isSuppressed(_:)`.
+    private(set) var suppressedReminders: [PersistentIdentifier: Set<PersistentIdentifier>] = [:]
 
     /// Met vs. total across every nutrient shown today (collapsed groups included).
     var dayScore: DayScore {
@@ -34,7 +34,7 @@ final class TodayViewModel {
     func nextReminder(after now: Date = .now) -> UpcomingReminder? {
         let candidates = groupSections
             .flatMap(\.intakes)
-            .filter { !suppressedReminderIDs.contains($0.nutrient.persistentModelID) }
+            .filter { !isSuppressed($0.nutrient) }
             .flatMap { intake in
                 (intake.nutrient.reminders ?? []).map { (nutrientName: intake.nutrient.name, timeOfDay: $0.timeOfDay) }
             }
@@ -150,12 +150,22 @@ final class TodayViewModel {
     /// Reschedules every nutrient's reminders (call on foreground), which also lifts today's suppressions.
     func rescheduleReminders(context: ModelContext) {
         NotificationService.refreshAllNutrientReminders(context: context)
-        suppressedReminderIDs.removeAll()
+        suppressedReminders.removeAll()
     }
 
     private func suppressReminders(for nutrient: Nutrient) {
         NotificationService.suppressRemindersAfterLogging(for: nutrient)
-        suppressedReminderIDs.insert(nutrient.persistentModelID)
+        suppressedReminders[nutrient.persistentModelID] = reminderIDs(of: nutrient)
+    }
+
+    /// Still suppressed only while the nutrient has exactly the reminders that were cancelled: every add or
+    /// delete goes through `NotificationService.scheduleReminders(for:)`, which puts them back.
+    private func isSuppressed(_ nutrient: Nutrient) -> Bool {
+        suppressedReminders[nutrient.persistentModelID] == reminderIDs(of: nutrient)
+    }
+
+    private func reminderIDs(of nutrient: Nutrient) -> Set<PersistentIdentifier> {
+        Set((nutrient.reminders ?? []).map(\.persistentModelID))
     }
 
     // MARK: - In-place total update (avoids re-fetch reordering)

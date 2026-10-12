@@ -70,4 +70,18 @@ final class TodayViewModelTests: XCTestCase {
         viewModel.rescheduleReminders(context: context)
         XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Vitamin D")
     }
+
+    func testChangingRemindersAfterLoggingShowsThemAgain() throws {
+        let vitaminD = makeNutrient("Vitamin D", target: 4000, reminderHours: [9], sortOrder: 0)
+        let viewModel = try refreshedViewModel()
+        viewModel.increment(vitaminD, context: context)
+        XCTAssertNil(viewModel.nextReminder(after: startOfToday))
+
+        // Adding a reminder (Edit Nutrient → Reminders) reschedules all of that nutrient's reminders.
+        let tenOClock = Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: .now)!
+        context.insert(NutrientReminder(nutrient: vitaminD, timeOfDay: tenOClock))
+        try context.save()
+        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.time,
+                       Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now))
+    }
 }
