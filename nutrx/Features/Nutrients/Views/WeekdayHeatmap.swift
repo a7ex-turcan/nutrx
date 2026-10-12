@@ -66,7 +66,8 @@ struct WeekdayHeatmap: View {
 
 extension WeekdayHeatmap {
     /// Dark ink (`Text/OnTint`) or white, whichever stands out more on a square's fill — the tint at `opacity`
-    /// over the card. Every tint at every fill level gets ≥ 4.5:1 this way, light and dark (WeekdayHeatmapInkTests).
+    /// over the card. Every tint at every fill level gets ≥ 4.5:1 this way, light and dark
+    /// (`ContrastColorTests.testHeatmapInkMeetsAAForEveryTintAndFill`).
     static func ink(on tint: NutrientTint, opacity: Double,
                     in environment: EnvironmentValues) -> (color: Color, contrast: Double) {
         let card = ContrastColor(Theme.surfaceCard, in: environment)

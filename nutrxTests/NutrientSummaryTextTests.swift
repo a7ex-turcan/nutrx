@@ -10,7 +10,7 @@ final class NutrientSummaryTextTests: XCTestCase {
         return calendar
     }
 
-    private let enGB = Locale(identifier: "en_GB")  // 24-hour clock
+    private let enGB = Locale(identifier: "en_GB")
 
     private func time(_ hour: Int, _ minute: Int = 0) -> Date {
         calendar.date(from: DateComponents(year: 2026, month: 10, day: 12, hour: hour, minute: minute))!
@@ -48,15 +48,23 @@ final class NutrientSummaryTextTests: XCTestCase {
 
     // MARK: - Reminders
 
+    /// The time as the summary formats it. Built from the same style so these tests check order, joining and
+    /// the count rules — not the platform's locale data ("8:30" vs "08:30" differs across ICU versions).
+    private func shortTime(_ date: Date) -> String {
+        var style = Date.FormatStyle(date: .omitted, time: .shortened, locale: enGB, calendar: calendar)
+        style.timeZone = calendar.timeZone
+        return date.formatted(style)
+    }
+
     func testNoReminders() {
         XCTAssertEqual(NutrientSummaryText.reminderSummary(times: [], calendar: calendar, locale: enGB), "None")
     }
 
     func testOneOrTwoRemindersListTheirTimesInOrder() {
         XCTAssertEqual(NutrientSummaryText.reminderSummary(times: [time(13)], calendar: calendar, locale: enGB),
-                       "13:00")
+                       shortTime(time(13)))
         XCTAssertEqual(NutrientSummaryText.reminderSummary(times: [time(20), time(8, 30)], calendar: calendar, locale: enGB),
-                       "8:30, 20:00")
+                       "\(shortTime(time(8, 30))), \(shortTime(time(20)))")
     }
 
     func testThreeOrMoreRemindersAreCounted() {
