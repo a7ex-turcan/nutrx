@@ -98,6 +98,7 @@ Expose these as constants on `Theme` (e.g. `Theme.Radius.card`, `Theme.Spacing.s
 | Card corner radius | 22 (`.continuous`) |
 | Hero / streak card radius | 28 |
 | Icon tile radius | 12–13 (40–42pt tile) |
+| Control radius (text field, full-width primary button) | 16 |
 | Sheet corner radius | system |
 | Screen horizontal margin | 16 |
 | Gap between cards | 10 |

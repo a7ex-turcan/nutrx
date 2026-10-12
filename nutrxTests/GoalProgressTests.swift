@@ -190,6 +190,44 @@ final class GoalProgressTests: XCTestCase {
         XCTAssertEqual(between.goalText(locale: enUS), "/ 120–160 g")
     }
 
+    // MARK: - Log sheet
+
+    func testGoalAmountTextForEachGoalType() {
+        XCTAssertEqual(progress(0, .minimum, target: 4000, unit: "IU").goalAmountText(locale: enUS), "4,000 IU")
+        XCTAssertEqual(progress(0, .maximum, target: 400).goalAmountText(locale: enUS), "400 mg")
+        XCTAssertEqual(progress(0, .range, target: 120, upper: 160, unit: "g").goalAmountText(locale: enUS), "120–160 g")
+    }
+
+    func testAmountToGoalIsWhatsLeftOfAnAtLeastTarget() {
+        XCTAssertEqual(progress(2000, .minimum, target: 4000).amountToGoal, 2000)
+        XCTAssertNil(progress(4000, .minimum, target: 4000).amountToGoal)
+    }
+
+    func testAmountToGoalIsWhatsLeftToARangesLowerBound() {
+        XCTAssertEqual(progress(92, .range, target: 120, upper: 160).amountToGoal, 28)
+        XCTAssertNil(progress(130, .range, target: 120, upper: 160).amountToGoal)  // in range
+        XCTAssertNil(progress(170, .range, target: 120, upper: 160).amountToGoal)  // over
+    }
+
+    func testAmountToGoalIsNilForAtMost() {
+        XCTAssertNil(progress(0, .maximum, target: 400).amountToGoal)
+    }
+
+    func testFormattedAmountGroupsAndKeepsUpToTwoDecimals() {
+        XCTAssertEqual(1000.0.formattedAmount(locale: enUS), "1,000")
+        XCTAssertEqual(0.25.formattedAmount(locale: enUS), "0.25")
+        XCTAssertEqual(1.5.formattedAmount(locale: Locale(identifier: "de_DE")), "1,5")
+    }
+
+    func testFormattedAmountKeepsExtraPrecisionWhenAskedFor() {
+        // The log sheet edits and logs amounts at 6 decimals so a 0.125 step isn't rounded to 2.
+        XCTAssertNotEqual(0.125.formattedAmount(locale: enUS), "0.125")
+        XCTAssertEqual(0.125.formattedAmount(locale: enUS, maxFractionDigits: 6), "0.125")
+        // The sheet formats and parses in the current locale, so the round trip must be lossless there.
+        XCTAssertEqual(0.125.formattedAmount(maxFractionDigits: 6).parsedDouble, 0.125)
+        XCTAssertEqual(1234.5.formattedAmount(maxFractionDigits: 6).parsedDouble, 1234.5)
+    }
+
     // MARK: - Nutrient convenience
 
     func testNutrientInitializerReadsGoalFromTheModel() throws {

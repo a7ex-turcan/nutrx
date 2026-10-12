@@ -9,7 +9,7 @@ struct TodayView: View {
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
     @State private var viewModel = TodayViewModel()
-    @State private var nutrientForCustomAmount: Nutrient?
+    @State private var nutrientToLog: Nutrient?
     @State private var nutrientToEdit: Nutrient?
     @State private var nutrientToMove: Nutrient?
     @State private var editDraft = NutrientDraft()
@@ -111,13 +111,19 @@ struct TodayView: View {
             viewModel.refresh(context: modelContext)
             refreshStreak()
         }
-        .sheet(item: $nutrientForCustomAmount) { nutrient in
-            CustomAmountSheet(nutrient: nutrient) { amount, note in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    viewModel.addCustomAmount(amount, to: nutrient, note: note, context: modelContext)
+        .sheet(item: $nutrientToLog) { nutrient in
+            LogSheet(
+                nutrient: nutrient,
+                onLog: { amount, note in
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        viewModel.addCustomAmount(amount, to: nutrient, note: note, context: modelContext)
+                    }
+                    checkForReview()
+                },
+                onDelete: { record in
+                    viewModel.deleteRecord(record, context: modelContext)
                 }
-                checkForReview()
-            }
+            )
         }
         .sheet(item: $nutrientToEdit) { nutrient in
             NutrientFormView(
@@ -174,9 +180,8 @@ struct TodayView: View {
         NutrientCard(
             nutrient: entry.nutrient,
             currentIntake: entry.total,
-            // LogSheet arrives in phase 3; until then the card opens the exact-amount sheet.
             onOpen: {
-                nutrientForCustomAmount = entry.nutrient
+                nutrientToLog = entry.nutrient
             },
             onIncrement: {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -196,7 +201,7 @@ struct TodayView: View {
         .listRowBackground(Color.clear)
         .contextMenu {
             Button {
-                nutrientForCustomAmount = entry.nutrient
+                nutrientToLog = entry.nutrient
             } label: {
                 Label("Add Exact Amount", systemImage: "number")
             }
@@ -216,7 +221,7 @@ struct TodayView: View {
         }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button {
-                nutrientForCustomAmount = entry.nutrient
+                nutrientToLog = entry.nutrient
             } label: {
                 Image(systemName: "number")
             }
