@@ -22,41 +22,14 @@ struct ProfileMenuButton: View {
             } label: {
                 Label("Settings", systemImage: "gearshape")
             }
-
-            Button(role: .destructive) {
-                // TODO: Implement log out
-            } label: {
-                Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right")
-            }
         } label: {
-            avatar
-                .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
-                .background(Theme.avatarFill, in: Circle())
-                .clipShape(Circle())
+            ProfileAvatar(image: cachedImage, name: profiles.first?.name ?? "", size: Theme.minTouchTarget)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
         .accessibilityLabel("Profile menu")
         .onAppear(perform: updateCachedImage)
         .onChange(of: profiles.first?.profileImageData) { _, _ in
             updateCachedImage()
-        }
-    }
-
-    /// Profile photo, else the name's initial, else a person symbol (DESIGN.md §3, §5.1).
-    @ViewBuilder
-    private var avatar: some View {
-        if let cachedImage {
-            Image(uiImage: cachedImage)
-                .resizable()
-                .scaledToFill()
-        } else if let initial = profiles.first?.name.trimmingCharacters(in: .whitespacesAndNewlines).first {
-            Text(String(initial).uppercased())
-                .font(.system(.title3, design: .rounded, weight: .semibold))
-                .foregroundStyle(Theme.avatarInk)
-        } else {
-            Image(systemName: "person.crop.circle")
-                .font(.title2)
-                .foregroundStyle(Theme.avatarInk)
         }
     }
 

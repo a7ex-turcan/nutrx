@@ -63,6 +63,10 @@ enum Theme {
         static let control: CGFloat = 16
         /// Small tags such as "AT LEAST".
         static let tag: CGFloat = 6
+        /// Settings-style 32pt icon tiles.
+        static let settingsTile: CGFloat = 9
+        /// The app-icon-style brand tile in About (88pt).
+        static let appIcon: CGFloat = 20
     }
 
     /// Minimum hit area for anything tappable.

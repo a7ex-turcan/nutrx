@@ -101,6 +101,8 @@ Expose these as constants on `Theme` (e.g. `Theme.Radius.card`, `Theme.Spacing.s
 | Icon tile radius | 12–13 (40–42pt tile) |
 | Control radius (text field, full-width primary button, goal-type card) | 16 |
 | Tag radius ("AT LEAST" chips) | 6 |
+| Settings icon tile radius (32pt tile) | 9 (`Theme.Radius.settingsTile`) |
+| App-icon tile radius (About, 88pt) | 20 (`Theme.Radius.appIcon`) |
 | Sheet corner radius | system |
 | Screen horizontal margin | 16 |
 | Gap between cards | 10 |

@@ -11,6 +11,8 @@ struct ProfileView: View {
     @State private var showPhotoPicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?
     @FocusState private var focusedField: Field?
+    /// The photo decoded once per change, not on every body pass.
+    @State private var avatarImage: UIImage?
 
     private enum Field: Hashable {
         case name, weight, height
@@ -29,20 +31,21 @@ struct ProfileView: View {
             .padding(.bottom, 32)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(Color(.systemGroupedBackground))
+        .background(Theme.surfaceGround)
         .navigationTitle("Edit Profile")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") { dismiss() }
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
                     focusedField = nil
                     viewModel.save()
                     dismiss()
                 }
                 .fontWeight(.semibold)
+                .buttonStyle(.glassProminent)
                 .disabled(!viewModel.hasChanges || !viewModel.isValid)
             }
         }
@@ -54,6 +57,9 @@ struct ProfileView: View {
         .onAppear {
             viewModel.load(context: modelContext)
         }
+        .onChange(of: viewModel.profileImageData, initial: true) { _, data in
+            avatarImage = data.flatMap(UIImage.init(data:))
+        }
     }
 
     // MARK: - Profile Icon
@@ -63,25 +69,19 @@ struct ProfileView: View {
             showImageSourcePicker = true
         } label: {
             ZStack(alignment: .bottomTrailing) {
-                if let data = viewModel.profileImageData,
-                   let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 100, height: 100)
-                        .clipShape(Circle())
-                } else {
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 100))
-                        .foregroundStyle(.secondary)
-                }
+                ProfileAvatar(image: avatarImage, name: viewModel.name, size: 100, style: .forest)
 
-                Image(systemName: "camera.circle.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(.white, .blue)
+                Image(systemName: "camera.fill")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Theme.controlOnPrimary)
+                    .frame(width: 32, height: 32)
+                    .background(Theme.controlPrimary, in: Circle())
+                    .overlay { Circle().strokeBorder(Theme.surfaceGround, lineWidth: 3) }
             }
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("Profile photo")
+        .accessibilityHint("Choose or take a photo")
         .confirmationDialog("Profile Photo", isPresented: $showImageSourcePicker) {
             Button("Choose from Library") {
                 showPhotoPicker = true
@@ -170,15 +170,15 @@ struct ProfileView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Weight")
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary)
 
                 HStack(spacing: 10) {
                     TextField("Optional", text: $viewModel.weight)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .weight)
                         .padding(12)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .background(Theme.surfaceCard,
+                                    in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
 
                     Picker("Unit", selection: $viewModel.weightUnit) {
                         Text("kg").tag("kg")
@@ -192,15 +192,15 @@ struct ProfileView: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Height")
                     .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary)
 
                 HStack(spacing: 10) {
                     TextField("Optional", text: $viewModel.height)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .height)
                         .padding(12)
-                        .background(Color(.secondarySystemGroupedBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .background(Theme.surfaceCard,
+                                    in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
 
                     Picker("Unit", selection: $viewModel.heightUnit) {
                         Text("cm").tag("cm")

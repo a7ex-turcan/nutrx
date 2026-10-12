@@ -1,334 +1,203 @@
 import SwiftUI
 import SwiftData
-import CloudKit
+import StoreKit
 
+/// Settings sheet (DESIGN.md §5.9): profile card, then rows with Settings-style icon tiles — iCloud Sync,
+/// Notifications, Streaks, Groups; Rate nutrx, About — and the privacy footer.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.requestReview) private var requestReview
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query private var allPreferences: [UserPreferences]
+    @Query private var profiles: [UserProfile]
+    @Query(filter: #Predicate<NutrientGroup> { !$0.isSystem }) private var userGroups: [NutrientGroup]
 
-    private var preferences: UserPreferences {
-        if let existing = allPreferences.first {
-            return existing
-        }
-        let new = UserPreferences()
-        modelContext.insert(new)
-        return new
-    }
+    @State private var showProfile = false
+    /// Decoded once per photo change, not on every body pass.
+    @State private var profileImage: UIImage?
+
+    private var preferences: UserPreferences? { allPreferences.first }
+    private var profile: UserProfile? { profiles.first }
+    private var hasICloudAccount: Bool { FileManager.default.ubiquityIdentityToken != nil }
 
     var body: some View {
         List {
+            Section {
+                profileCard
+            }
+            .listRowBackground(Theme.surfaceCard)
+
             Section {
                 NavigationLink {
                     ICloudSyncSettingsView()
                         .navigationTitle("iCloud Sync")
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    Label("iCloud Sync", systemImage: "icloud")
+                    row("iCloud Sync", symbol: "icloud", color: NutrientTint.blue.color,
+                        value: SettingsSummary.iCloud(hasAccount: hasICloudAccount,
+                                                      syncEnabled: preferences?.iCloudSyncEnabled ?? true))
                 }
-
-                NavigationLink {
-                    ManageGroupsView()
-                        .navigationTitle("Manage Groups")
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    Label("Manage Groups", systemImage: "folder")
-                }
-
-                NavigationLink {
-                    StreaksSettingsView()
-                        .navigationTitle("Streaks")
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    Label("Streaks", systemImage: "flame")
-                }
-
                 NavigationLink {
                     NotificationsSettingsView()
                         .navigationTitle("Notifications")
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    Label("Notifications", systemImage: "bell")
+                    row("Notifications", symbol: "bell", color: NutrientTint.coral.color,
+                        value: SettingsSummary.notifications(dailyReminderEnabled: preferences?.dailyReminderEnabled ?? false))
+                }
+                NavigationLink {
+                    StreaksSettingsView()
+                        .navigationTitle("Streaks")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    row("Streaks", symbol: "flame", color: NutrientTint.green.color,
+                        value: SettingsSummary.streaks(enabled: preferences?.streaksEnabled ?? true))
+                }
+                NavigationLink {
+                    ManageGroupsView()
+                        .navigationTitle("Groups")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    row("Groups", symbol: "folder", color: NutrientTint.indigo.color,
+                        value: SettingsSummary.groups(userGroupCount: userGroups.count))
                 }
             }
+            .listRowBackground(Theme.surfaceCard)
 
             Section {
+                Button {
+                    requestReview()
+                    // Counts as this version's prompt, so ReviewService won't also ask right after.
+                    ReviewService.recordPrompt(context: modelContext)
+                } label: {
+                    HStack {
+                        row("Rate nutrx", symbol: "star", color: NutrientTint.amber.color, value: nil)
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())  // the whole row, not just the icon and title
+                }
+                .buttonStyle(.plain)
                 NavigationLink {
                     AboutView()
                         .navigationTitle("About")
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    Label("About", systemImage: "info.circle")
+                    row("About", symbol: "info.circle", color: Color(.systemGray), value: nil)
                 }
+            } footer: {
+                privacyFooter
             }
+            .listRowBackground(Theme.surfaceCard)
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(Theme.surfaceGround)
         .navigationTitle("Settings")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
+            ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }
             }
         }
+        .sheet(isPresented: $showProfile) {
+            NavigationStack {
+                ProfileView()
+            }
+        }
+        .onChange(of: profile?.profileImageData, initial: true) { _, data in
+            profileImage = data.flatMap(UIImage.init(data:))
+        }
+    }
+
+    // MARK: - Profile card
+
+    private var profileCard: some View {
+        Button {
+            showProfile = true
+        } label: {
+            HStack(spacing: 16) {
+                ProfileAvatar(image: profileImage, name: profile?.name ?? "", size: 56, style: .forest)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(SettingsSummary.profileTitle(name: profile?.name ?? ""))
+                        .font(.title3.bold())
+                        .foregroundStyle(Theme.textPrimary)
+                    Text("Edit profile")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint("Opens your profile")
+    }
+
+    // MARK: - Rows
+
+    /// A coloured 32pt icon tile, the title, and the current value in secondary text.
+    private func row(_ title: String, symbol: String, color: Color, value: String?) -> some View {
+        HStack(spacing: 14) {
+            // Fixed glyph size: the tile doesn't grow with Dynamic Type (like iOS Settings), so neither does the symbol.
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 32, height: 32)
+                .background(color, in: RoundedRectangle(cornerRadius: Theme.Radius.settingsTile, style: .continuous))
+                .accessibilityHidden(true)
+            // Value beside the title; under it at accessibility sizes, where both wouldn't fit on one line.
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+                : AnyLayout(HStackLayout(spacing: 8))
+            layout {
+                Text(title)
+                    .foregroundStyle(Theme.textPrimary)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                if let value {
+                    Text(value)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(minHeight: Theme.minTouchTarget)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var privacyFooter: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "lock")
+                .font(.title3)
+            Text("Private by design. No accounts, no servers, no tracking. Your data lives on your devices and your iCloud.")
+                .multilineTextAlignment(.center)
+        }
+        .font(.subheadline)
+        .foregroundStyle(Theme.textSecondary)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 24)
+        .accessibilityElement(children: .combine)
     }
 }
 
-private struct StreaksSettingsView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var allPreferences: [UserPreferences]
-
-    private var preferences: UserPreferences {
-        if let existing = allPreferences.first {
-            return existing
-        }
-        let new = UserPreferences()
-        modelContext.insert(new)
-        return new
-    }
-
-    var body: some View {
-        List {
-            Section {
-                Toggle(isOn: Binding(
-                    get: { preferences.streaksEnabled },
-                    set: { preferences.streaksEnabled = $0 }
-                )) {
-                    Text("Track streaks")
-                }
-            } footer: {
-                Text("Show your daily completion streak on the Today and History screens.")
-            }
-        }
-        .listStyle(.insetGrouped)
-    }
-}
-
-private struct NotificationsSettingsView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var allPreferences: [UserPreferences]
-    @State private var showDeniedAlert = false
-
-    private var preferences: UserPreferences {
-        if let existing = allPreferences.first {
-            return existing
-        }
-        let new = UserPreferences()
-        modelContext.insert(new)
-        return new
-    }
-
-    var body: some View {
-        List {
-            Section {
-                Toggle("Daily check-in reminder", isOn: Binding(
-                    get: { preferences.dailyReminderEnabled },
-                    set: { newValue in
-                        if newValue {
-                            enableReminder()
-                        } else {
-                            disableReminder()
-                        }
-                    }
-                ))
-            } footer: {
-                Text("Receive a reminder at noon if you haven't logged any intake for the day.")
-            }
-        }
-        .listStyle(.insetGrouped)
-        .onAppear {
-            refreshPermissionState()
-        }
-        .alert("Notifications Disabled", isPresented: $showDeniedAlert) {
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("You've previously denied notification permissions for nutrx. To enable reminders, please turn on notifications in your device settings.")
-        }
-    }
-
-    private func enableReminder() {
-        Task {
-            let status = await NotificationService.permissionStatus()
-
-            switch status {
-            case .notDetermined:
-                let granted = await NotificationService.requestPermission()
-                if granted {
-                    preferences.dailyReminderEnabled = true
-                    NotificationService.refreshDailyReminder(context: modelContext)
-                }
-
-            case .granted:
-                preferences.dailyReminderEnabled = true
-                NotificationService.refreshDailyReminder(context: modelContext)
-
-            case .denied:
-                showDeniedAlert = true
-            }
-        }
-    }
-
-    private func disableReminder() {
-        preferences.dailyReminderEnabled = false
-        NotificationService.cancelDailyReminder()
-    }
-
-    private func refreshPermissionState() {
-        Task {
-            let status = await NotificationService.permissionStatus()
-            if (status == .denied || status == .notDetermined) && preferences.dailyReminderEnabled {
-                preferences.dailyReminderEnabled = false
-                NotificationService.cancelDailyReminder()
-            }
-            if status == .granted && preferences.dailyReminderEnabled {
-                NotificationService.refreshDailyReminder(context: modelContext)
-            }
-        }
-    }
-}
-
-private struct ICloudSyncSettingsView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var allPreferences: [UserPreferences]
-    @State private var showDeleteConfirmation = false
-    @State private var isDeleting = false
-    @State private var deleteError: String?
-
-    private var preferences: UserPreferences {
-        if let existing = allPreferences.first {
-            return existing
-        }
-        let new = UserPreferences()
-        modelContext.insert(new)
-        return new
-    }
-
-    private var hasICloudAccount: Bool {
-        FileManager.default.ubiquityIdentityToken != nil
-    }
-
-    private var statusIcon: String {
-        if !hasICloudAccount {
-            return "xmark.icloud"
-        }
-        return preferences.iCloudSyncEnabled ? "checkmark.icloud" : "icloud.slash"
-    }
-
-    private var statusText: String {
-        if !hasICloudAccount {
-            return "No iCloud account"
-        }
-        return preferences.iCloudSyncEnabled ? "Syncing" : "Disabled"
-    }
-
-    private var statusColor: Color {
-        if !hasICloudAccount {
-            return .secondary
-        }
-        return preferences.iCloudSyncEnabled ? .green : .secondary
-    }
-
-    var body: some View {
-        List {
-            Section {
-                HStack {
-                    Label {
-                        Text("Status")
-                    } icon: {
-                        Image(systemName: statusIcon)
-                            .foregroundStyle(statusColor)
-                    }
-                    Spacer()
-                    Text(statusText)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if hasICloudAccount {
-                Section {
-                    Toggle(isOn: Binding(
-                        get: { preferences.iCloudSyncEnabled },
-                        set: { preferences.iCloudSyncEnabled = $0 }
-                    )) {
-                        Text("iCloud Sync")
-                    }
-                } footer: {
-                    Text("Your data syncs via your private iCloud container. No one else can see it.")
-                }
-
-                Section {
-                    Button(role: .destructive) {
-                        showDeleteConfirmation = true
-                    } label: {
-                        HStack {
-                            Label("Delete iCloud Data", systemImage: "trash")
-                            if isDeleting {
-                                Spacer()
-                                ProgressView()
-                            }
-                        }
-                    }
-                    .disabled(isDeleting)
-                } footer: {
-                    Text("Permanently removes your data from iCloud. Data on this device is not affected.")
-                }
-            } else {
-                Section {
-                    Button {
-                        if let url = URL(string: UIApplication.openSettingsURLString) {
-                            UIApplication.shared.open(url)
-                        }
-                    } label: {
-                        Label("Sign in to iCloud in Settings", systemImage: "arrow.up.forward.app")
-                    }
-                } footer: {
-                    Text("Sign in to an iCloud account to sync your data across devices.")
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .alert("Delete iCloud Data?", isPresented: $showDeleteConfirmation) {
-            Button("Delete", role: .destructive) {
-                deleteICloudData()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This will permanently delete all your nutrx data from iCloud. Your local data on this device will not be affected. This cannot be undone.")
-        }
-        .alert("Delete Failed", isPresented: Binding(
-            get: { deleteError != nil },
-            set: { if !$0 { deleteError = nil } }
-        )) {
-            Button("OK") { deleteError = nil }
-        } message: {
-            Text(deleteError ?? "An unknown error occurred.")
-        }
-    }
-
-    private func deleteICloudData() {
-        isDeleting = true
-        Task {
-            do {
-                let container = CKContainer(identifier: ModelContainerFactory.cloudKitContainerID)
-                let zoneID = CKRecordZone.ID(zoneName: "com.apple.coredata.cloudkit.zone", ownerName: CKCurrentUserDefaultName)
-                try await container.privateCloudDatabase.deleteRecordZone(withID: zoneID)
-                preferences.iCloudSyncEnabled = false
-                isDeleting = false
-            } catch {
-                isDeleting = false
-                deleteError = error.localizedDescription
-            }
-        }
-    }
-}
-
-#Preview {
+#Preview("Light") {
     NavigationStack {
         SettingsView()
     }
     .modelContainer(previewContainer)
+}
+
+#Preview("Dark") {
+    NavigationStack {
+        SettingsView()
+    }
+    .modelContainer(previewContainer)
+    .preferredColorScheme(.dark)
 }
