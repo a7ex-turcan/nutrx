@@ -41,21 +41,33 @@ final class TodayViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.dayScore, DayScore(met: 2, total: 3))  // Vitamin D met, Caffeine under its limit
     }
 
-    func testNextReminderSkipsNutrientsAlreadyLoggedToday() throws {
-        let vitaminD = makeNutrient("Vitamin D", target: 4000, reminderHours: [9], sortOrder: 0)
-        _ = makeNutrient("Magnesium", target: 400, reminderHours: [21], sortOrder: 1)
-        context.insert(IntakeRecord(nutrient: vitaminD, amount: 100))
+    func testPicksTheEarliestReminderAmongShownNutrients() throws {
+        _ = makeNutrient("Magnesium", target: 400, reminderHours: [21], sortOrder: 0)
+        _ = makeNutrient("Vitamin D", target: 4000, reminderHours: [9, 13], sortOrder: 1)
 
-        let viewModel = try refreshedViewModel()
-        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Magnesium")
-    }
-
-    func testLoggingFromTodayHidesThatNutrientsReminder() throws {
-        let vitaminD = makeNutrient("Vitamin D", target: 4000, reminderHours: [9], sortOrder: 0)
         let viewModel = try refreshedViewModel()
         XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Vitamin D")
+    }
+
+    func testIntakeLoggedOutsideTodayDoesNotHideTheReminder() throws {
+        // Widget / Watch / another device: nothing suppressed this device's notification.
+        let vitaminD = makeNutrient("Vitamin D", target: 4000, reminderHours: [9], sortOrder: 0)
+        context.insert(IntakeRecord(nutrient: vitaminD, amount: 1000))
+
+        let viewModel = try refreshedViewModel()
+        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Vitamin D")
+    }
+
+    func testLoggingFromTodayHidesTheReminderUntilTheNextReschedule() throws {
+        let vitaminD = makeNutrient("Vitamin D", target: 4000, reminderHours: [9], sortOrder: 0)
+        _ = makeNutrient("Magnesium", target: 400, reminderHours: [21], sortOrder: 1)
+        let viewModel = try refreshedViewModel()
 
         viewModel.increment(vitaminD, context: context)
-        XCTAssertNil(viewModel.nextReminder(after: startOfToday))
+        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Magnesium")
+
+        // Foreground reschedule restores every reminder, so the card shows Vitamin D again.
+        viewModel.rescheduleReminders(context: context)
+        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Vitamin D")
     }
 }

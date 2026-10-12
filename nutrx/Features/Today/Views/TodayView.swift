@@ -42,11 +42,14 @@ struct TodayView: View {
                 emptyState
             } else {
                 List {
-                    DayScoreCard(
-                        score: viewModel.dayScore,
-                        streak: preferences.streaksEnabled ? streak?.current : nil,
-                        nextReminder: notificationsAllowed ? viewModel.nextReminder() : nil
-                    )
+                    // Re-evaluated every minute so a reminder drops off once its time passes.
+                    TimelineView(.everyMinute) { timeline in
+                        DayScoreCard(
+                            score: viewModel.dayScore,
+                            streak: preferences.streaksEnabled ? streak?.current : nil,
+                            nextReminder: notificationsAllowed ? viewModel.nextReminder(after: timeline.date) : nil
+                        )
+                    }
                     .listRowInsets(EdgeInsets(top: 8, leading: Theme.Spacing.screenMargin,
                                               bottom: Theme.Spacing.cardGap / 2, trailing: Theme.Spacing.screenMargin))
                     .listRowSeparator(.hidden)
@@ -101,7 +104,7 @@ struct TodayView: View {
                 refreshStreak()
                 refreshNotificationPermission()
                 NotificationService.refreshDailyReminder(context: modelContext)
-                NotificationService.refreshAllNutrientReminders(context: modelContext)
+                viewModel.rescheduleReminders(context: modelContext)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange).receive(on: DispatchQueue.main)) { _ in

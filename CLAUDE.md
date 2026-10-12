@@ -340,9 +340,9 @@ Each nutrient supports zero or more **dose reminders** — times of day that fir
 
 The central feature (DESIGN.md §5.1). Large "Today" title with the date as the navigation subtitle, 44pt profile avatar top-right, `Surface/Ground` background.
 
-- **Day-score card** (`DayScoreCard`) on top: segmented ring ("3/6 goals met"), headline ("Halfway there — 3 to go"), flame streak chip when streaks are on and ≥ 1, and the next reminder later today for a nutrient not yet logged (only when notifications are allowed). Notification / sync banners render below it.
+- **Day-score card** (`DayScoreCard`) on top: segmented ring ("3/6 goals met"), headline ("Halfway there — 3 to go"), flame streak chip when streaks are on and ≥ 1, and the next reminder still scheduled later today (only when notifications are allowed; refreshed every minute). Logging from Today suppresses that nutrient's reminders until the next foreground reschedule, and the card mirrors that. Notification / sync banners render below it.
 - **Groups** with a `GroupHeader` (name, met-count chip, collapse chevron) — hidden when only the system group exists.
-- **Nutrient cards** (`NutrientCard`): ring in the nutrient's tint with its symbol (amber near/over a limit, check badge when met), name, "**2,000** / 4,000 IU" ("max 400 mg" for at-most), status line ("2,000 IU to go", "Done", "80 mg left today"). − / + log one step with a light haptic; − is disabled at 0. At accessibility text sizes the buttons move to their own row.
+- **Nutrient cards** (`NutrientCard`): ring in the nutrient's tint with its symbol (amber near/over a limit, check badge when met), name, "**2,000** / 4,000 IU" ("max 400 mg" for at-most), status line ("2,000 IU to go", "Done", "80 mg left today"). − / + log one step with a light haptic; − is disabled when a step would take the total below 0. At accessibility text sizes the buttons move to their own row.
 - **Tap a card** → Add Exact Amount sheet for now (the full `LogSheet` replaces it in phase 3; the old tap-to-expand intake list is gone).
 - **Swipe right** → Add Exact Amount sheet; **swipe left** → Edit Nutrient sheet
 - **Long press** → context menu: Add Exact Amount, Edit Nutrient, Move to Group
@@ -695,7 +695,7 @@ User-defined nutrient to track.
 | `sortOrder` | `Int` | Legacy flat sort order, tiebreaker for groupSortOrder |
 | `groupSortOrder` | `Int = 0` | Order within group |
 | `isDeleted` | `Bool` | Soft delete flag |
-| `notes` | `String?` | Shown on Today card when non-empty |
+| `notes` | `String?` | Shown in My Nutrients and in reminder notifications; not on the redesigned Today card |
 | `group` | `NutrientGroup?` | `nil` → General group |
 | `createdAt` | `Date = Date()` | Used by streak computation |
 | `goalType` | `GoalType = .minimum` | `.minimum`, `.maximum`, or `.range` — see Nutrient Goal Types section |

@@ -69,6 +69,11 @@ struct NutrientCard: View {
         .accessibilityHint("Opens logging options")
     }
 
+    /// Same rule as `TodayViewModel.decrement`, which ignores a step that would take the total below zero.
+    private var canDecrement: Bool {
+        currentIntake - nutrient.step >= 0
+    }
+
     private var stepButtons: some View {
         HStack(spacing: 10) {
             Button {
@@ -82,8 +87,8 @@ struct NutrientCard: View {
                     .overlay(Circle().strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5))
                     .contentShape(Circle())
             }
-            .disabled(currentIntake <= 0)
-            .opacity(currentIntake <= 0 ? 0.4 : 1)
+            .disabled(!canDecrement)
+            .opacity(canDecrement ? 1 : 0.4)
             .accessibilityLabel("Remove one step of \(nutrient.name)")
 
             Button {

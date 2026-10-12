@@ -19,20 +19,22 @@ final class TodayViewModel {
 
     private(set) var nutrientIntakes: [(nutrient: Nutrient, total: Double)] = []
     private(set) var groupSections: [GroupSection] = []
-    /// Nutrients with at least one intake logged today — their reminders are suppressed for the rest of the day.
-    private(set) var loggedTodayIDs: Set<PersistentIdentifier> = []
+    /// Nutrients whose reminders `suppressRemindersAfterLogging` has cancelled since the last full reschedule.
+    /// Mirrors the scheduler: logging here cancels a nutrient's reminders, and `rescheduleReminders`
+    /// (every foreground) restores all of them — so this is not "logged today".
+    private(set) var suppressedReminderIDs: Set<PersistentIdentifier> = []
 
     /// Met vs. total across every nutrient shown today (collapsed groups included).
     var dayScore: DayScore {
         DayScore(progresses: groupSections.flatMap(\.intakes).map(\.progress))
     }
 
-    /// The next reminder later today for a nutrient that hasn't been logged yet
-    /// (logging suppresses the rest of that nutrient's reminders for the day).
+    /// The next reminder still scheduled later today: any shown nutrient's reminder, unless logging
+    /// from Today has suppressed it since the last reschedule.
     func nextReminder(after now: Date = .now) -> UpcomingReminder? {
         let candidates = groupSections
             .flatMap(\.intakes)
-            .filter { !loggedTodayIDs.contains($0.nutrient.persistentModelID) }
+            .filter { !suppressedReminderIDs.contains($0.nutrient.persistentModelID) }
             .flatMap { intake in
                 (intake.nutrient.reminders ?? []).map { (nutrientName: intake.nutrient.name, timeOfDay: $0.timeOfDay) }
             }
@@ -77,7 +79,6 @@ final class TodayViewModel {
                 totalsByID[id, default: 0] += record.amount
             }
         }
-        loggedTodayIDs = Set(totalsByID.keys)
 
         // Build flat list (kept for backward compat with decrement lookup)
         let activeNutrients = nutrients.filter { !excludedNutrientIDs.contains($0.persistentModelID) }
@@ -117,9 +118,8 @@ final class TodayViewModel {
         context.insert(record)
         try? context.save()
         updateTotal(for: nutrient, delta: nutrient.step)
-        loggedTodayIDs.insert(nutrient.persistentModelID)
         NotificationService.refreshDailyReminder(context: context)
-        NotificationService.suppressRemindersAfterLogging(for: nutrient)
+        suppressReminders(for: nutrient)
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -128,9 +128,8 @@ final class TodayViewModel {
         context.insert(record)
         try? context.save()
         updateTotal(for: nutrient, delta: amount)
-        loggedTodayIDs.insert(nutrient.persistentModelID)
         NotificationService.refreshDailyReminder(context: context)
-        NotificationService.suppressRemindersAfterLogging(for: nutrient)
+        suppressReminders(for: nutrient)
         WidgetCenter.shared.reloadAllTimelines()
     }
 
@@ -146,6 +145,17 @@ final class TodayViewModel {
                 WidgetCenter.shared.reloadAllTimelines()
             }
         }
+    }
+
+    /// Reschedules every nutrient's reminders (call on foreground), which also lifts today's suppressions.
+    func rescheduleReminders(context: ModelContext) {
+        NotificationService.refreshAllNutrientReminders(context: context)
+        suppressedReminderIDs.removeAll()
+    }
+
+    private func suppressReminders(for nutrient: Nutrient) {
+        NotificationService.suppressRemindersAfterLogging(for: nutrient)
+        suppressedReminderIDs.insert(nutrient.persistentModelID)
     }
 
     // MARK: - In-place total update (avoids re-fetch reordering)
