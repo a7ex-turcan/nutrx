@@ -246,7 +246,6 @@ struct TodayView: View {
         } actions: {
             Button("Add a nutrient") {
                 addDraft.reset()
-                addDraft.tint = .suggested(avoiding: [])
                 selectedGroupForAdd = allGroups.first(where: \.isSystem)
                 showAddSheet = true
             }

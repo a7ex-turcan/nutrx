@@ -57,6 +57,21 @@ final class NutrientDraft {
         symbolName = nutrient.symbolName
     }
 
+    /// Adds a reminder time for a not-yet-saved nutrient, keeping the list sorted by time of day.
+    /// Returns false (and adds nothing) if that hour and minute is already there — two would map to the
+    /// same `nutrient-…-reminder-HHmm` notification.
+    @discardableResult
+    func addPendingReminder(_ time: Date, calendar: Calendar = .current) -> Bool {
+        func hourMinute(_ date: Date) -> (Int, Int) {
+            let parts = calendar.dateComponents([.hour, .minute], from: date)
+            return (parts.hour ?? 0, parts.minute ?? 0)
+        }
+        guard !pendingReminderTimes.contains(where: { hourMinute($0) == hourMinute(time) }) else { return false }
+        pendingReminderTimes.append(time)
+        pendingReminderTimes.sort { hourMinute($0) < hourMinute($1) }
+        return true
+    }
+
     /// A number as the user would type it: current locale's decimal separator, no grouping, no trailing ".0".
     static func editableText(_ value: Double) -> String {
         value.formatted(.number.grouping(.never).precision(.fractionLength(0...6)))

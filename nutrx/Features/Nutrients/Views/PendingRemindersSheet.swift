@@ -69,12 +69,7 @@ struct PendingRemindersSheet: View {
                 return
             }
 
-            draft.pendingReminderTimes.append(selectedTime)
-            draft.pendingReminderTimes.sort { lhs, rhs in
-                let lc = Calendar.current.dateComponents([.hour, .minute], from: lhs)
-                let rc = Calendar.current.dateComponents([.hour, .minute], from: rhs)
-                return (lc.hour!, lc.minute!) < (rc.hour!, rc.minute!)
-            }
+            draft.addPendingReminder(selectedTime)
         }
     }
 }

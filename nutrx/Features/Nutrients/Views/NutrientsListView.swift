@@ -274,7 +274,7 @@ struct NutrientsListView: View {
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
-                        .background(Theme.surfaceChip, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                        .background(Theme.surfaceChip, in: RoundedRectangle(cornerRadius: Theme.Radius.tag, style: .continuous))
 
                     Text(goal.goalAmountText)
                         .font(.subheadline)

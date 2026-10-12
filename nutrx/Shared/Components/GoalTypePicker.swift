@@ -40,7 +40,7 @@ struct GoalTypePicker: View {
     private func card(_ goalType: GoalType) -> some View {
         let isSelected = goalType == selection
         let bar = illustration(for: goalType)
-        let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
 
         return Button {
             selection = goalType

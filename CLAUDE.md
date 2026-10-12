@@ -685,7 +685,7 @@ User-defined nutrient to track.
 | `sortOrder` | `Int` | Legacy flat sort order, tiebreaker for groupSortOrder |
 | `groupSortOrder` | `Int = 0` | Order within group |
 | `isDeleted` | `Bool` | Soft delete flag |
-| `notes` | `String?` | Shown in My Nutrients and in reminder notifications; not on the redesigned Today card |
+| `notes` | `String?` | Shown in the edit form and as the reminder notification body; not on the redesigned Today or My Nutrients rows |
 | `group` | `NutrientGroup?` | `nil` → General group |
 | `createdAt` | `Date = Date()` | Used by streak computation |
 | `goalType` | `GoalType = .minimum` | `.minimum`, `.maximum`, or `.range` — see Nutrient Goal Types section |

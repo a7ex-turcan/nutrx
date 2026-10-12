@@ -103,6 +103,22 @@ final class NutrientFormTests: XCTestCase {
         XCTAssertEqual(draft.symbolName, "pills")
     }
 
+    // MARK: - Pending reminders
+
+    func testPendingRemindersSkipADuplicateTimeAndStaySorted() {
+        let calendar = Calendar(identifier: .gregorian)
+        func time(_ hour: Int, _ minute: Int, day: Int = 12) -> Date {
+            calendar.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour, minute: minute))!
+        }
+        let draft = NutrientDraft()
+
+        XCTAssertTrue(draft.addPendingReminder(time(13, 0), calendar: calendar))
+        XCTAssertTrue(draft.addPendingReminder(time(9, 30), calendar: calendar))
+        XCTAssertFalse(draft.addPendingReminder(time(13, 0, day: 1), calendar: calendar), "same hour and minute")
+
+        XCTAssertEqual(draft.pendingReminderTimes, [time(9, 30), time(13, 0)])
+    }
+
     // MARK: - Groups
 
     func testNewGroupGoesAfterUserGroupsBeforeGeneral() throws {
