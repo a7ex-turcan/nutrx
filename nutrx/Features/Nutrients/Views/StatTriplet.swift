@@ -61,3 +61,17 @@ struct StatTriplet: View {
     .frame(maxHeight: .infinity)
     .background(Theme.surfaceGround)
 }
+
+#Preview("Accessibility size") {
+    StatTriplet(stats: [
+        AnalyticsStat(label: "Hit rate", value: "83", suffix: "%", caption: "5 of 6 days"),
+        AnalyticsStat(label: "Daily avg", value: "3,830", caption: "IU"),
+        AnalyticsStat(label: "Peak day", value: "5,000", caption: "Friday"),
+    ])
+    .padding(18)
+    .cardStyle()
+    .padding()
+    .frame(maxHeight: .infinity)
+    .background(Theme.surfaceGround)
+    .dynamicTypeSize(.accessibility3)
+}

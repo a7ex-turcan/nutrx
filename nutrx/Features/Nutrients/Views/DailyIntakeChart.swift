@@ -8,6 +8,7 @@ struct DailyIntakeChart: View {
     let goal: AnalyticsGoal
     let tint: NutrientTint
     let nutrientName: String
+    let unit: String
 
     private var isWeek: Bool { days.count <= 7 }
     private var barRadius: CGFloat { isWeek ? 10 : (days.count <= 30 ? 4 : 2) }
@@ -36,6 +37,8 @@ struct DailyIntakeChart: View {
                 )
                 .cornerRadius(barRadius)
                 .foregroundStyle(day.countsAsMet ? tint.color : tint.color.opacity(0.35))
+                .accessibilityLabel(day.date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                .accessibilityValue(accessibilityValue(for: day))
             }
 
             if let today {
@@ -46,6 +49,9 @@ struct DailyIntakeChart: View {
                 )
                 .cornerRadius(barRadius)
                 .foregroundStyle(tint.color.opacity(today.total > 0 ? 0.25 : 0.08))
+                // The bar is drawn at least a sliver tall; VoiceOver and Audio Graph get the real total.
+                .accessibilityLabel("Today")
+                .accessibilityValue("\(today.total.formattedAmount()) \(unit) so far")
             }
 
             goalRules
@@ -78,6 +84,12 @@ struct DailyIntakeChart: View {
         }
         .frame(height: 170)
         .accessibilityLabel("Daily \(nutrientName) intake, last \(days.count) days")
+    }
+
+    private func accessibilityValue(for day: AnalyticsDay) -> String {
+        guard day.isTracked else { return "Not tracked yet" }
+        let amount = "\(day.total.formattedAmount()) \(unit)"
+        return day.countsAsMet ? "\(amount), on target" : amount
     }
 
     private struct GoalLabel {
@@ -163,7 +175,7 @@ private struct DailyIntakeChartPreview: View {
         })
         let summary = AnalyticsSummary(dayCount: days, totals: totals, goal: goal,
                                        createdAt: calendar.date(byAdding: .day, value: -120, to: today)!, today: .now)
-        return DailyIntakeChart(days: summary.days, goal: goal, tint: .amber, nutrientName: "Vitamin D")
+        return DailyIntakeChart(days: summary.days, goal: goal, tint: .amber, nutrientName: "Vitamin D", unit: "IU")
             .padding(18)
             .cardStyle()
             .padding()

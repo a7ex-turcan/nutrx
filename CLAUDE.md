@@ -154,7 +154,8 @@ nutrx/
 │   │       ├── NutrientAnalyticsViewModel.swift # Fetches day totals for the nutrient; exposes goal, summary, stats, weekdayPattern for the selected period.
 │   │       ├── AnalyticsSummary.swift           # AnalyticsDay / AnalyticsGoal / AnalyticsSummary — period days, hit rate, average, best day (pure).
 │   │       ├── WeekdayPattern.swift             # Per-weekday hit rate over the last 28 days, weakest-day insight, heatmap fill levels (pure).
-│   │       └── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
+│   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
+│   │       └── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │
 │   ├── History/                 # Tab 3 — read-only log of past days.
 │   │   ├── Views/
@@ -181,6 +182,7 @@ nutrx/
 └── Shared/
     ├── DesignSystem/
     │   ├── CardStyle.swift                 # .cardStyle(): card fill + radius, forest shadow on the card shape only (light) / hairline (dark).
+    │   ├── ContrastColor.swift             # WCAG contrast maths on resolved colours — picks legible ink on runtime fills (heatmap).
     │   ├── Theme.swift                     # Brand colour tokens, NutrientTint colours, GoalStatus colours, spacing/radius constants.
     │   └── Colors.xcassets                 # Named colour sets (Any/Dark) for every token and tint. Shared with widget + Watch targets.
     ├── Extensions/
@@ -375,8 +377,9 @@ Redesigned in phase 5 (DESIGN.md §4.8, §5.3). Tapping a nutrient row in My Nut
 - **Header** — 52pt `NutrientIconTile`, name (`.title.bold`), "At least 4,000 IU a day · Morning stack" (group only when it isn't General). The bar shows the name once the header scrolls away. Toolbar **Edit** opens `NutrientFormView`; saving refreshes the stats.
 - **Period picker** — native segmented `Picker`: 7 / 30 / 90 days (default 7). Drives the stats and the chart; the heatmap is always the last 4 weeks.
 - **Stats + chart card** — `StatTriplet`: Hit rate ("83 %", "5 of 6 days"), Daily avg (unit), Best day (weekday name for 7 days, a date for 30/90; "Peak day" for at-most and range goals, where the highest day isn't the best). Below it `DailyIntakeChart`: one bar per day in the nutrient's tint — met days full tint, missed days tint @ 35% — today as a dashed outline (with a faint fill), and dashed goal rules: "Goal X", "Limit X", or "Min" / "Max" for a range. Goal labels are drawn in the chart overlay because Swift Charts draws later bars over mark annotations.
-- **Weekday heatmap card** — `WeekdayHeatmap`: seven squares from `Calendar.current.firstWeekday`, filled by hit rate (100% full tint, ≥ 75% @ 70%, ≥ 50% @ 40%, else 15%), percentage inside (`Text/OnTint` on the strong fills), weekday letter below. One sentence when a single weekday is ≥ 25 points below the average ("Sundays are your weakest day.") — no advice beyond that.
-- **Reminders row** — times ("13:00", "8:00, 20:00", "3 a day" or "None"); opens `NutrientRemindersSheet`.
+- **Weekday heatmap card** — `WeekdayHeatmap`: seven squares from `Calendar.current.firstWeekday`, filled by hit rate (100% full tint, ≥ 75% @ 70%, ≥ 50% @ 40%, else 15%), percentage inside in `Text/OnTint` or white — whichever contrasts more with that square's fill (≥ 4.5:1 for every tint and level, light and dark; `ContrastColorTests`), weekday letter below. One sentence when a single weekday is ≥ 25 points below the average and every rated weekday has at least 2 days ("Sundays are your weakest day.") — no advice beyond that.
+- **Reminders row** — times ("13:00", "8:00, 20:00", "3 a day" or "None"; `NutrientSummaryText`); opens `NutrientRemindersSheet`.
+- **VoiceOver / Audio Graph** — each bar is labelled with its date and real total ("30 Mg, on target"); today reads "… so far" (its bar is drawn at least a sliver tall, but the value is the true total).
 
 **Counting rules** (`AnalyticsSummary`, `WeekdayPattern`): a day's total is the SUM of its `IntakeRecord`s floored at 0, and "met" comes from `GoalProgress.countsAsMet`. Stats count only *completed, tracked* days — today is drawn but not counted until it's over, and days before `Nutrient.createdAt` don't count (same scoping as streaks). No counted days → "—". Best day is the highest total among counted days (earliest wins a tie; nothing logged → none).
 

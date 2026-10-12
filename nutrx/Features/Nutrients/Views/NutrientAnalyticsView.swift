@@ -56,8 +56,8 @@ private struct NutrientAnalyticsContent: View {
                 if let summary = viewModel.summary {
                     VStack(alignment: .leading, spacing: 22) {
                         StatTriplet(stats: viewModel.stats)
-                        DailyIntakeChart(days: summary.days, goal: viewModel.goal,
-                                         tint: nutrient.tint, nutrientName: nutrient.name)
+                        DailyIntakeChart(days: summary.days, goal: viewModel.goal, tint: nutrient.tint,
+                                         nutrientName: nutrient.name, unit: nutrient.unit)
                     }
                     .padding(cardPadding)
                     .cardStyle()
@@ -109,20 +109,13 @@ private struct NutrientAnalyticsContent: View {
                 Text(nutrient.name)
                     .font(.title.bold())
                     .foregroundStyle(Theme.textPrimary)
-                Text(goalLine)
+                Text(NutrientSummaryText.goalLine(for: nutrient))
                     .font(.subheadline)
                     .foregroundStyle(Theme.textSecondary)
             }
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isHeader)
-    }
-
-    /// "At least 4,000 IU a day · Morning stack" — the group only when it isn't General.
-    private var goalLine: String {
-        let goal = "\(GoalTypePicker.label(for: nutrient.goalType)) \(GoalProgress(nutrient: nutrient, current: 0).goalAmountText) a day"
-        guard let group = nutrient.group, !group.isSystem else { return goal }
-        return "\(goal) · \(group.name)"
     }
 
     private var remindersRow: some View {
@@ -136,7 +129,7 @@ private struct NutrientAnalyticsContent: View {
                 Text("Reminders")
                     .foregroundStyle(Theme.textPrimary)
                 Spacer(minLength: 8)
-                Text(reminderSummary)
+                Text(NutrientSummaryText.reminderSummary(for: nutrient))
                     .monospacedDigit()
                     .foregroundStyle(Theme.textSecondary)
                     .lineLimit(1)
@@ -150,20 +143,6 @@ private struct NutrientAnalyticsContent: View {
         }
         .buttonStyle(.plain)
         .cardStyle()
-    }
-
-    /// "13:00", "8:00, 20:00", or "3 a day" once the times stop fitting.
-    private var reminderSummary: String {
-        let reminders = (nutrient.reminders ?? []).sorted { lhs, rhs in
-            let (lh, lm) = lhs.timeComponents
-            let (rh, rm) = rhs.timeComponents
-            return lh < rh || (lh == rh && lm < rm)
-        }
-        switch reminders.count {
-        case 0: return "None"
-        case 1...2: return reminders.map(\.formattedTime).joined(separator: ", ")
-        default: return "\(reminders.count) a day"
-        }
     }
 }
 

@@ -6,6 +6,7 @@ struct WeekdayHeatmap: View {
     let pattern: WeekdayPattern
     let tint: NutrientTint
 
+    @Environment(\.self) private var environment
     private let calendar = Calendar.current
 
     var body: some View {
@@ -36,6 +37,7 @@ struct WeekdayHeatmap: View {
 
     private func day(_ entry: WeekdayPattern.Entry) -> some View {
         let opacity = WeekdayPattern.fillOpacity(for: entry.hitRate)
+        let ink = Self.ink(on: tint, opacity: opacity, in: environment).color
         let percent = entry.hitRate.map { $0.formatted(.percent.precision(.fractionLength(0))) } ?? "–"
 
         return VStack(spacing: 6) {
@@ -46,8 +48,7 @@ struct WeekdayHeatmap: View {
                     Text(percent)
                         .font(.system(.caption2, design: .rounded, weight: .bold))
                         .monospacedDigit()
-                        // Dark ink on the strong fills; normal text on the faint ones (light in dark mode).
-                        .foregroundStyle(opacity >= 0.7 ? Theme.textOnTint : Theme.textPrimary)
+                        .foregroundStyle(ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                         .padding(2)
@@ -63,7 +64,22 @@ struct WeekdayHeatmap: View {
     }
 }
 
+extension WeekdayHeatmap {
+    /// Dark ink (`Text/OnTint`) or white, whichever stands out more on a square's fill — the tint at `opacity`
+    /// over the card. Every tint at every fill level gets ≥ 4.5:1 this way, light and dark (WeekdayHeatmapInkTests).
+    static func ink(on tint: NutrientTint, opacity: Double,
+                    in environment: EnvironmentValues) -> (color: Color, contrast: Double) {
+        let card = ContrastColor(Theme.surfaceCard, in: environment)
+        let fill = ContrastColor(tint.color, in: environment).blended(opacity: opacity, over: card)
+        let dark = fill.contrast(with: ContrastColor(Theme.textOnTint, in: environment))
+        let light = fill.contrast(with: .white)
+        return dark >= light ? (Theme.textOnTint, dark) : (.white, light)
+    }
+}
+
 private struct WeekdayHeatmapPreview: View {
+    var tint: NutrientTint = .amber
+
     var body: some View {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: .now)
@@ -76,7 +92,7 @@ private struct WeekdayHeatmapPreview: View {
         })
         let pattern = WeekdayPattern(totals: totals, goal: goal,
                                      createdAt: calendar.date(byAdding: .day, value: -60, to: today)!, today: .now)
-        return WeekdayHeatmap(pattern: pattern, tint: .amber)
+        return WeekdayHeatmap(pattern: pattern, tint: tint)
             .padding(18)
             .cardStyle()
             .padding()
@@ -87,3 +103,4 @@ private struct WeekdayHeatmapPreview: View {
 
 #Preview("Light") { WeekdayHeatmapPreview() }
 #Preview("Dark") { WeekdayHeatmapPreview().preferredColorScheme(.dark) }
+#Preview("Indigo — white ink") { WeekdayHeatmapPreview(tint: .indigo) }

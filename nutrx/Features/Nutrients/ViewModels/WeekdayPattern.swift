@@ -13,12 +13,15 @@ struct WeekdayPattern: Equatable {
 
     /// One entry per weekday, starting at the calendar's first weekday.
     let entries: [Entry]
-    /// The weekday to call out — the single weakest one, if it's at least 25 points below the average.
+    /// The weekday to call out — the single weakest one, if it's at least 25 points below the average and
+    /// every rated weekday has been seen at least twice (so one bad day isn't a "pattern").
     let weakestWeekday: Int?
 
     static let windowDays = 28
     /// How far below the average the weakest weekday has to be before we mention it.
     static let insightGap = 0.25
+    /// Days of each rated weekday needed before we mention a weakest one.
+    static let insightMinimumDays = 2
 
     init(totals: [Date: Double], goal: AnalyticsGoal, createdAt: Date, today: Date,
          calendar: Calendar = .current) {
@@ -42,7 +45,8 @@ struct WeekdayPattern: Equatable {
         }
 
         let rated = entries.compactMap { entry in entry.hitRate.map { (entry.weekday, $0) } }
-        if rated.count > 1, let weakest = rated.min(by: { $0.1 < $1.1 }),
+        let enoughDays = counted.values.allSatisfy { $0 >= Self.insightMinimumDays }
+        if rated.count > 1, enoughDays, let weakest = rated.min(by: { $0.1 < $1.1 }),
            rated.filter({ $0.1 == weakest.1 }).count == 1 {
             let average = rated.reduce(0) { $0 + $1.1 } / Double(rated.count)
             weakestWeekday = average - weakest.1 >= Self.insightGap - 1e-9 ? weakest.0 : nil

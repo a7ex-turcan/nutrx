@@ -110,6 +110,24 @@ final class WeekdayPatternTests: XCTestCase {
         XCTAssertNil(pattern([:], createdDaysAgo: 1, calendar: calendar).weakestWeekday)
     }
 
+    func testNoInsightFromASingleDayPerWeekday() {
+        let calendar = calendar()
+        // Created two days ago: Sunday met, Saturday missed.
+        let totals = [day(1, calendar): 1.0, day(2, calendar): 0]
+        let pattern = pattern(totals, createdDaysAgo: 2, calendar: calendar)
+        XCTAssertEqual(rate(pattern, 7), 0)
+        XCTAssertNil(pattern.weakestWeekday)
+    }
+
+    func testInsightOnceEveryWeekdayIsSeenTwice() {
+        let calendar = calendar()
+        let totals = totals(calendar: calendar) { calendar.component(.weekday, from: $0) == 1 }
+        // 13 days back: Sunday twice, Monday only once → still quiet.
+        XCTAssertNil(pattern(totals, createdDaysAgo: 13, calendar: calendar).weakestWeekday)
+        // 14 days back: every weekday twice → Sundays called out.
+        XCTAssertEqual(pattern(totals, createdDaysAgo: 14, calendar: calendar).weakestWeekday, 1)
+    }
+
     // MARK: - Fill
 
     func testFillOpacityLevels() {
