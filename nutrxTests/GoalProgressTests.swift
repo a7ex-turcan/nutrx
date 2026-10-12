@@ -204,6 +204,20 @@ final class GoalProgressTests: XCTestCase {
         XCTAssertEqual(progress(92, .range, target: 120, upper: 160, unit: "g").goalCaption(locale: enUS), "of 120–160 g")
     }
 
+    func testReachesGoalOnlyWhenTheLogCrossesIntoMet() {
+        XCTAssertTrue(progress(3000, .minimum, target: 4000).reachesGoal(adding: 1000))
+        XCTAssertTrue(progress(0.7, .minimum, target: 0.8).reachesGoal(adding: 0.1))  // float drift
+        XCTAssertFalse(progress(2000, .minimum, target: 4000).reachesGoal(adding: 1000))
+        XCTAssertFalse(progress(4000, .minimum, target: 4000).reachesGoal(adding: 1000))  // already met
+    }
+
+    func testReachesGoalForRangesAndLimits() {
+        XCTAssertTrue(progress(100, .range, target: 120, upper: 160).reachesGoal(adding: 20))
+        XCTAssertFalse(progress(150, .range, target: 120, upper: 160).reachesGoal(adding: 20))  // already in range
+        XCTAssertFalse(progress(100, .range, target: 120, upper: 160).reachesGoal(adding: 80))  // jumps past it
+        XCTAssertFalse(progress(0, .maximum, target: 400).reachesGoal(adding: 80))  // met from the start
+    }
+
     func testAmountToGoalIsWhatsLeftOfAnAtLeastTarget() {
         XCTAssertEqual(progress(2000, .minimum, target: 4000).amountToGoal, 2000)
         XCTAssertNil(progress(4000, .minimum, target: 4000).amountToGoal)

@@ -18,6 +18,7 @@ struct StreakCard: View {
             HStack(spacing: 16) {
                 Image(systemName: "flame.fill")
                     .font(.title3)
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // the 52pt circle doesn't grow with text
                     .foregroundStyle(Theme.greenSoft)
                     .frame(width: 52, height: 52)
                     .background(Theme.onForestPrimary.opacity(0.10), in: Circle())

@@ -115,7 +115,7 @@ struct TodayView: View {
             LogSheet(
                 nutrient: nutrient,
                 onLog: { amount, note in
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.2))) {
                         viewModel.addCustomAmount(amount, to: nutrient, note: note, context: modelContext)
                     }
                     checkForReview()
@@ -165,7 +165,7 @@ struct TodayView: View {
             total: score.total,
             isCollapsed: section.group.isCollapsed,
             onToggle: {
-                withAnimation(.easeInOut(duration: 0.25)) {
+                withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.25))) {
                     section.group.isCollapsed.toggle()
                 }
             }
@@ -184,13 +184,13 @@ struct TodayView: View {
                 nutrientToLog = entry.nutrient
             },
             onIncrement: {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.2))) {
                     viewModel.increment(entry.nutrient, context: modelContext)
                 }
                 checkForReview()
             },
             onDecrement: {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.2))) {
                     viewModel.decrement(entry.nutrient, context: modelContext)
                 }
                 checkForReview()
@@ -223,7 +223,7 @@ struct TodayView: View {
             Button {
                 nutrientToLog = entry.nutrient
             } label: {
-                Image(systemName: "number")
+                Label("Add Exact Amount", systemImage: "number")
             }
             .tint(.blue)
         }
@@ -232,7 +232,7 @@ struct TodayView: View {
                 editDraft.populate(from: entry.nutrient)
                 nutrientToEdit = entry.nutrient
             } label: {
-                Image(systemName: "pencil")
+                Label("Edit Nutrient", systemImage: "pencil")
             }
             .tint(.orange)
         }
@@ -314,13 +314,13 @@ struct TodayView: View {
             }
 
             preferences.hasSeenNotificationBanner = true
-            withAnimation { showBanner = false }
+            withAnimation(.unlessReduceMotion()) { showBanner = false }
         }
     }
 
     private func dismissBanner() {
         preferences.hasSeenNotificationBanner = true
-        withAnimation { showBanner = false }
+        withAnimation(.unlessReduceMotion()) { showBanner = false }
     }
 
     private func refreshSyncBannerVisibility() {
@@ -347,7 +347,7 @@ struct TodayView: View {
         } else {
             preferences.hasSeenSyncEnabledBanner = true
         }
-        withAnimation { showSyncBanner = false }
+        withAnimation(.unlessReduceMotion()) { showSyncBanner = false }
     }
 
     private func refreshStreak() {

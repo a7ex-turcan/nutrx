@@ -32,8 +32,12 @@ struct SyncBannerView: View {
                 Image(systemName: "xmark")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
+                    .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .padding(-12)  // keep the visual layout; only the hit area grows
+            .accessibilityLabel("Dismiss")
         }
         .padding(16)
         .background(Color(.secondarySystemGroupedBackground))

@@ -13,18 +13,18 @@ final class DayScoreTests: XCTestCase {
     }
 
     func testHalfMetIsHalfwayThere() {
-        XCTAssertEqual(DayScore(met: 3, total: 6).title, "Halfway there — 3 to go")
+        XCTAssertEqual(DayScore(met: 3, total: 6).title, "Halfway there — 3\u{00A0}to\u{00A0}go")
     }
 
     func testFortyAndSixtyPercentAreStillHalfway() {
-        XCTAssertEqual(DayScore(met: 2, total: 5).title, "Halfway there — 3 to go")  // 40%
-        XCTAssertEqual(DayScore(met: 3, total: 5).title, "Halfway there — 2 to go")  // 60%
+        XCTAssertEqual(DayScore(met: 2, total: 5).title, "Halfway there — 3\u{00A0}to\u{00A0}go")  // 40%
+        XCTAssertEqual(DayScore(met: 3, total: 5).title, "Halfway there — 2\u{00A0}to\u{00A0}go")  // 60%
     }
 
     func testOutsideFortyToSixtyPercentIsJustCountToGo() {
-        XCTAssertEqual(DayScore(met: 1, total: 6).title, "5 to go")  // 17%
-        XCTAssertEqual(DayScore(met: 5, total: 6).title, "1 to go")  // 83%
-        XCTAssertEqual(DayScore(met: 1, total: 3).title, "2 to go")  // 33%
+        XCTAssertEqual(DayScore(met: 1, total: 6).title, "5\u{00A0}to\u{00A0}go")  // 17%
+        XCTAssertEqual(DayScore(met: 5, total: 6).title, "1\u{00A0}to\u{00A0}go")  // 83%
+        XCTAssertEqual(DayScore(met: 1, total: 3).title, "2\u{00A0}to\u{00A0}go")  // 33%
     }
 
     func testNoNutrientsIsLetsGetStarted() {

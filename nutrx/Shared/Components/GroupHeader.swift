@@ -39,7 +39,7 @@ struct GroupHeader: View {
         .accessibilityLabel("\(name), \(met) of \(total) goals met")
         .accessibilityValue(isCollapsed ? "Collapsed" : "Expanded")
         .accessibilityHint("Shows or hides this group")
-        .accessibilityAddTraits(.isHeader)
+        .accessibilityAddTraits([.isHeader, .isButton])  // children: .ignore can drop the button's own trait
     }
 }
 

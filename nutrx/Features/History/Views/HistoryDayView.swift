@@ -188,6 +188,7 @@ private struct StatusBadge: View {
     var body: some View {
         Image(systemName: isMet ? "checkmark" : "minus")
             .font(.caption.weight(.bold))
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // the 28pt circle doesn't grow with text
             .foregroundStyle(isMet ? Theme.textOnTint : Theme.textSecondary)
             .frame(width: 28, height: 28)
             .background(isMet ? Theme.green : Theme.surfaceChip, in: Circle())

@@ -28,11 +28,16 @@ All notable changes to nutrx are documented in this file.
 - **Profile avatar** — The profile button shows your photo or initial in a circle.
 - **Brand accent colour** — Buttons, toggles and other system controls now use nutrx forest green (bright green in dark mode) instead of the default blue.
 - **Watch stays current** — The Watch app refreshes whenever you raise your wrist, so it picks up a new day and changes synced from your iPhone.
+- **A different tap when you hit a goal** — Logging that reaches a goal (with + or from the log sheet) gives a success haptic instead of the usual light tap, on iPhone as on the Watch.
+- **Reduce Motion** — With Reduce Motion on, groups, banners, new entries and form sections appear and disappear without sliding.
+- **Larger text** — At the largest accessibility text sizes the nutrient form stacks its fields so names and amounts aren't cut off, the notification banner stacks its buttons, small icon badges stay inside their circles, and Get started on the welcome screen no longer has text running behind it.
+- **VoiceOver** — Swipe actions on Today and My Nutrients now have spoken names, the iCloud banner's close button is labelled (with a larger tap area), nutrient cards and group headers announce as buttons, and a ring's check badge is no longer read as "Selected".
 - **One rule for "goal met"** — Today, History, streaks, analytics, widgets and the Watch now share a single goal check, so they can't disagree, and totals that land a rounding hair under the target (e.g. 0.1 + 0.7 of a 0.8 goal) now count as reached.
 
 ### Fixes
 - **Widget + button** — Tapping + on the quick-log widget could crash the widget, so it didn't refresh (the amount was still logged). The widget now saves without touching iCloud directly; the app syncs it.
 - **Group counts** — Manage Groups no longer counts nutrients you've deleted.
+- **Readable buttons in dark mode** — "Enable" on the notification banner and "Add Reminder" were white on bright green in dark mode; they now use dark text.
 - **Removed "Log Out"** — The profile menu had a Log Out item that did nothing (nutrx has no accounts). It's gone.
 
 ---

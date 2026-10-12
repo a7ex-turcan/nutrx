@@ -62,14 +62,15 @@ all core tracking features remain free forever.
 
 ---
 
-## Design (redesign in progress)
+## Design (v2 redesign)
 
 All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, screen specs, data-model additions and the phased build order. Target renders are in `docs/design/screens/*.png` (compare your previews against them); `docs/design/source/*.dc.html` holds exact values but is design-tool HTML — never port or ship it.
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
-- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. Phase 7 (Onboarding) — `OnboardingWelcomeView`, first-nutrient restyle, `StartingPoint`, `BrandMark` image asset, optional profile fields; `OnboardingPersonalInfoView` deleted. Phase 8 (Settings & Profile) — Settings restyle (profile card, icon-tile rows with values, Rate nutrx, privacy footer), `ProfileAvatar`, `SettingsSummary`, Profile / About / Groups restyle, settings detail views split into files, dead Log Out removed. Phase 9 (Widgets) — Today / Quick log / Goals / Next up (new, rectangular) / Goals and streak restyle, `WidgetSummary`, snapshots on `GoalProgress`. Phase 10 (Watch) — Watch list restyle (ring rows on `Watch/Cell`, "Today" + score header), `WatchLogConfirmationView`, complications (segmented ring, corner gauge, new rectangular bar, inline with streak), `GoalProgress.goalCaption`, `ContrastColor.ink(on:in:)`. **Next:** Phase 11 (Polish).
-- Where this file still describes the old UI (blue/green/orange progress bars), DESIGN.md wins. Update this file as each phase lands.
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. Phase 7 (Onboarding) — `OnboardingWelcomeView`, first-nutrient restyle, `StartingPoint`, `BrandMark` image asset, optional profile fields; `OnboardingPersonalInfoView` deleted. Phase 8 (Settings & Profile) — Settings restyle (profile card, icon-tile rows with values, Rate nutrx, privacy footer), `ProfileAvatar`, `SettingsSummary`, Profile / About / Groups restyle, settings detail views split into files, dead Log Out removed. Phase 9 (Widgets) — Today / Quick log / Goals / Next up (new, rectangular) / Goals and streak restyle, `WidgetSummary`, snapshots on `GoalProgress`. Phase 10 (Watch) — Watch list restyle (ring rows on `Watch/Cell`, "Today" + score header), `WatchLogConfirmationView`, complications (segmented ring, corner gauge, new rectangular bar, inline with streak), `GoalProgress.goalCaption`, `ContrastColor.ink(on:in:)`. Phase 11 (Polish) — accessibility pass (swipe-action labels, button traits, hidden check badges, banner close button), `Animation.unlessReduceMotion`, `Haptics` with a success haptic when a log meets a goal (`GoalProgress.reachesGoal(adding:)`), stacked form fields and banner buttons at accessibility sizes, capped glyphs in fixed badges, dark-mode-legible prominent buttons; `NutrientProgressBar` and the never-shown Profile "saved" toast deleted. **All §7 phases are done**; before release, confirm the `StartingPoint` amounts and add the App Store ID for "Rate nutrx".
+- Where this file and DESIGN.md disagree about the UI, DESIGN.md wins. Update this file as each phase lands.
+- **Accessibility conventions** (phase 11): icon-only buttons and swipe actions get a label (`Label(_:systemImage:)` in swipe actions); rings are one element with label + value and their check badge is hidden (VoiceOver reads a checkmark symbol as "Selected"); layout animations use `withAnimation(.unlessReduceMotion(...))` (`Shared/Extensions/Animation+ReduceMotion.swift`) — colour / opacity highlights can animate anyway; haptics go through `Haptics` (`Shared/Services/Haptics.swift`): `logged(reachingGoal:)` (light, or success when that log met the goal — `GoalProgress.reachesGoal(adding:)`), `adjusted()`, `deleted()`.
 
 ---
 
@@ -197,6 +198,7 @@ nutrx/
     │   ├── Theme.swift                     # Brand colour tokens, NutrientTint colours, GoalStatus colours, spacing/radius constants.
     │   └── Colors.xcassets                 # Named colour sets (Any/Dark) for every token and tint. Shared with widget + Watch targets.
     ├── Extensions/
+    │   ├── Animation+ReduceMotion.swift    # Animation.unlessReduceMotion(_:) — nil when Reduce Motion is on.
     │   ├── Bundle+AppVersion.swift         # CFBundleShortVersionString helper for ReviewService.
     │   ├── Date+Calendar.swift
     │   └── Double+Formatting.swift
@@ -214,7 +216,6 @@ nutrx/
     │   ├── TintPicker.swift                 # 8 tint swatches.
     │   ├── SymbolPicker.swift               # 16-symbol grid (DESIGN.md §3 set).
     │   ├── GoalTypePicker.swift             # At least / At most / Between cards.
-    │   ├── NutrientProgressBar.swift        # Blue (in progress), green (complete), orange (exceeded).
     │   ├── MoveToGroupSheet.swift
     │   ├── CameraView.swift                 # UIImagePickerController wrapper for camera capture.
     │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
@@ -232,6 +233,7 @@ nutrx/
         ├── DayScore.swift                   # Met / total + the day-score card headline.
         ├── UpcomingReminder.swift           # Next dose reminder later today (for the day-score card).
         ├── GoalStatus.swift                 # GoalStatus + GoalProgress: status, ring fraction, status line, counts-as-met.
+        ├── Haptics.swift                    # logged(reachingGoal:) / adjusted() / deleted() — the app's haptics in one place.
         │                                    # Single source of truth for "goal met" (streaks, History, analytics, Today).
         ├── NotificationService.swift        # Daily check-in reminder + per-nutrient dose reminders.
         │                                    # Smart scheduling and suppression after logging intake.
@@ -369,7 +371,7 @@ The central feature (DESIGN.md §5.1). Large "Today" title with the date as the 
 
 - **Day-score card** (`DayScoreCard`) on top: segmented ring ("3/6 goals met"), headline ("Halfway there — 3 to go"), flame streak chip when streaks are on and ≥ 1, and the next reminder still scheduled later today (only when notifications are allowed; refreshed every minute). Logging from Today suppresses that nutrient's reminders until the next foreground reschedule, and the card mirrors that. Notification / sync banners render below it.
 - **Groups** with a `GroupHeader` (name, met-count chip, collapse chevron) — hidden when only the system group exists.
-- **Nutrient cards** (`NutrientCard`): ring in the nutrient's tint with its symbol (amber near/over a limit, check badge when met), name, "**2,000** / 4,000 IU" ("max 400 mg" for at-most), status line ("2,000 IU to go", "Done", "80 mg left today"). − / + log one step with a light haptic; − is disabled when a step would take the total below 0. At accessibility text sizes the buttons move to their own row.
+- **Nutrient cards** (`NutrientCard`): ring in the nutrient's tint with its symbol (amber near/over a limit, check badge when met), name, "**2,000** / 4,000 IU" ("max 400 mg" for at-most), status line ("2,000 IU to go", "Done", "80 mg left today"). − / + log one step with a light haptic (success when that + meets the goal); − is disabled when a step would take the total below 0. At accessibility text sizes the buttons move to their own row.
 - **Tap a card, swipe right, or "Add Exact Amount"** → `LogSheet` (`.medium` / `.large` detents): ring header with today's total, amount stepper (defaults to one step, − / + change it by a step, editable `.decimalPad` field), quick chips ½× / 1× / 2× step and "Fill to goal" (remaining to the target or a range's lower bound; hidden for "at most" and once met), note field, "Log 1,000 IU" button (logs and dismisses), and the "Logged today" list (time, tint dot, signed amount, note) with a trash button that deletes the entry immediately with a haptic.
 - **Swipe left** → Edit Nutrient sheet
 - **Long press** → context menu: Add Exact Amount, Edit Nutrient, Move to Group
@@ -431,37 +433,13 @@ enum GoalType: String, Codable {
 
 ---
 
-### NutrientProgressBar — color and fill logic
+### Status colours and value text
 
-`NutrientProgressBar` is the single source of truth for color state. Accepts `goalType` and `upperBound` alongside `current` and `target`. All colors use gradual blending (UIColor interpolation) rather than discrete switches. Maximum and range bars scale the limit to 85% of bar width so overflow is visually obvious.
+`GoalProgress` (`Shared/Services/GoalStatus.swift`) drives every progress visual — Today and log-sheet rings, widgets, the Watch, History day bars — so there is no per-view colour logic (the old blue/green/orange `NutrientProgressBar` was retired in phase 11):
 
-**`.minimum`:**
-- Bar fill maps `current / dailyTarget`, capped at 100%
-- Gradual blue → green as `current` approaches `dailyTarget`. Green at exactly 100%. Yellow → red when exceeded (fully red at 2× target).
-
-**`.maximum`:**
-- Bar fill maps `current / dailyTarget × 0.85` — limit tick mark sits at 85%
-- Gradual orange → red as `current` approaches `dailyTarget`. Stays red when exceeded. Tick mark at the 85% position reinforces the ceiling.
-
-**`.range`:**
-- Bar fill maps `current / upperBound × 0.85` — upper tick mark at 85%
-- Background track renders a subtle green-tinted band between the lower and upper tick marks
-- Two tick marks: one at `dailyTarget / upperBound × 0.85`, one at 85%
-- Gradual blue → green as `current` approaches `dailyTarget`. Solid green within range. Yellow → red when `current > upperBound` (fully red at 2× upper).
-
----
-
-### Today Tab — value label
-
-The value label to the right of the progress bar (e.g. "400 / 1000 IU") should adapt:
-
-| Goal type | Label format |
-|---|---|
-| `.minimum` | `current / target unit` (existing) |
-| `.maximum` | `current / target unit` |
-| `.range` | `current / lower–upper unit` e.g. "1.2 / 1.0–2.0 g" |
-
-For `.maximum`, consider prefixing with "Max:" on the nutrient form but keeping the Today label identical in format to minimum for scannability.
+- **Ring** (`ProgressRing`): the nutrient's tint, or `Status/Amber` when an "at most" goal nears (≥ 75%) or passes its limit, or a range goes over; check badge when met. `ringFraction` maps the total to the target (at least), the limit (at most) or the upper bound (range).
+- **Value**: "**2,000** / 4,000 IU" (`currentText` + `goalText`), "**240** max 400 mg" for at most, "**92** / 120–160 g" for a range.
+- **Status line** (`remainingText`): "2,000 IU to go" / "Done", "80 mg left today" / "Limit reached" / "40 mg over limit", "28 g to range" / "In range" / "10 g over range" — coloured with `status.textColor` (`Text/GreenInk`, `Text/AmberInk`, secondary).
 
 ---
 
@@ -499,14 +477,18 @@ Hit rate, the chart's met/missed bars and the heatmap all judge a day with `Goal
 | File | Change |
 |---|---|
 | `Models/Nutrient.swift` | Add `goalType: GoalType = .minimum`, `upperBound: Double? = nil` |
-| `Shared/Components/NutrientProgressBar.swift` | Refactor signature + implement all three color/fill modes |
+| `Shared/Services/GoalStatus.swift` | `GoalProgress`: status, ring fraction, text and `countsAsMet` for all three goal types |
 | `Shared/Components/NutrientFormFields.swift` | Goal type picker + conditional `upperBound` field (redesigned in phase 4: cards + live preview row) |
-| `Features/Today/ViewModels/TodayViewModel.swift` | No change — totals are still raw sums; color logic lives in the bar |
+| `Features/Today/ViewModels/TodayViewModel.swift` | No change — totals are still raw sums; status comes from `GoalProgress` |
 | `Features/Nutrients/Views/DailyIntakeChart.swift` | Goal rules per type (Goal / Limit / Min + Max) |
 | `Features/Nutrients/ViewModels/AnalyticsSummary.swift` | Met days via `GoalProgress.countsAsMet` |
 | `Shared/Services/StreakService.swift` | Update per-nutrient completion check for all three goal types |
 
 No new SwiftData models, services, or files required beyond the above edits.
+
+---
+
+## Notifications
 
 All local — no push infrastructure. Two notification types:
 

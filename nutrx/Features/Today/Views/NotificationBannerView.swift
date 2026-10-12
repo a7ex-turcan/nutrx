@@ -4,6 +4,8 @@ struct NotificationBannerView: View {
     let onEnable: () -> Void
     let onDismiss: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         VStack(spacing: 12) {
             HStack(alignment: .top) {
@@ -23,7 +25,11 @@ struct NotificationBannerView: View {
                 Spacer()
             }
 
-            HStack(spacing: 12) {
+            // Side by side, stacked at accessibility sizes so the labels don't break mid-word.
+            let buttons = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: 12))
+                : AnyLayout(HStackLayout(spacing: 12))
+            buttons {
                 Button {
                     onDismiss()
                 } label: {
@@ -43,6 +49,9 @@ struct NotificationBannerView: View {
                         .padding(.vertical, 8)
                 }
                 .buttonStyle(.borderedProminent)
+                // Forest with white in light, bright green with dark ink in dark (white on that green is ~2.5:1).
+                .tint(Theme.controlPrimary)
+                .foregroundStyle(Theme.controlOnPrimary)
             }
         }
         .padding(16)

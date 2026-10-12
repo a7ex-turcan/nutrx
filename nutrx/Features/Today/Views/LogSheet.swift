@@ -217,7 +217,7 @@ struct LogSheet: View {
 
     private func stepButton(systemName: String, label: String, action: @escaping () -> Void) -> some View {
         Button {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Haptics.adjusted()
             action()
         } label: {
             Image(systemName: systemName)
@@ -297,7 +297,7 @@ struct LogSheet: View {
     private var logButton: some View {
         Button {
             guard let amount else { return }
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Haptics.logged(reachingGoal: progress.reachesGoal(adding: amount))
             let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
             onLog(amount, trimmed.isEmpty ? nil : trimmed)
             dismiss()
@@ -378,8 +378,8 @@ struct LogSheet: View {
             Spacer(minLength: 0)
 
             Button {
-                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-                withAnimation(.easeInOut(duration: 0.2)) {
+                Haptics.deleted()
+                withAnimation(.unlessReduceMotion(.easeInOut(duration: 0.2))) {
                     onDelete(record)
                 }
             } label: {

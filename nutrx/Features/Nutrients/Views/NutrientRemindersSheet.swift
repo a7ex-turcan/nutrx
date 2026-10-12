@@ -66,6 +66,8 @@ struct NutrientRemindersSheet: View {
                                 .frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
+                        .tint(Theme.controlPrimary)
+                        .foregroundStyle(Theme.controlOnPrimary)
                     }
                 }
             }
@@ -78,7 +80,7 @@ struct NutrientRemindersSheet: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        withAnimation {
+                        withAnimation(.unlessReduceMotion()) {
                             showTimePicker.toggle()
                         }
                     } label: {
@@ -143,7 +145,7 @@ struct NutrientRemindersSheet: View {
         modelContext.insert(reminder)
         NotificationService.scheduleReminders(for: nutrient)
 
-        withAnimation {
+        withAnimation(.unlessReduceMotion()) {
             showTimePicker = false
             selectedTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now)!
         }

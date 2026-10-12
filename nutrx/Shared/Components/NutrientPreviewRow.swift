@@ -12,6 +12,8 @@ struct NutrientPreviewRow: View {
     let upperBound: Double?
     let step: Double?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     /// How far the preview ring is drawn, just to show the colour.
     private static let sampleFraction = 0.35
 
@@ -51,9 +53,12 @@ struct NutrientPreviewRow: View {
 
             Spacer(minLength: 0)
 
-            Text("Preview")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(Theme.textSecondary)
+            // At accessibility sizes the tag would take a quarter of the row and break the name.
+            if !dynamicTypeSize.isAccessibilitySize {
+                Text("Preview")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Theme.textSecondary)
+            }
         }
         .padding(.horizontal, Theme.Spacing.cardPadding)
         .padding(.vertical, 12)
