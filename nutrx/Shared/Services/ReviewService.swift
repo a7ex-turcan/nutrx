@@ -54,7 +54,8 @@ enum ReviewService {
         return false
     }
 
-    private static func recordPrompt(context: ModelContext) {
+    /// Marks this version as prompted (90-day cooldown starts now). Also called when the user rates from Settings.
+    static func recordPrompt(context: ModelContext) {
         guard let prefs = try? context.fetch(FetchDescriptor<UserPreferences>()).first else { return }
         prefs.lastReviewRequestedVersion = Bundle.main.appVersion
         prefs.lastReviewRequestedDate = .now

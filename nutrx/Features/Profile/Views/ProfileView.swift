@@ -11,6 +11,8 @@ struct ProfileView: View {
     @State private var showPhotoPicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?
     @FocusState private var focusedField: Field?
+    /// The photo decoded once per change, not on every body pass.
+    @State private var avatarImage: UIImage?
 
     private enum Field: Hashable {
         case name, weight, height
@@ -55,6 +57,9 @@ struct ProfileView: View {
         .onAppear {
             viewModel.load(context: modelContext)
         }
+        .onChange(of: viewModel.profileImageData, initial: true) { _, data in
+            avatarImage = data.flatMap(UIImage.init(data:))
+        }
     }
 
     // MARK: - Profile Icon
@@ -64,8 +69,7 @@ struct ProfileView: View {
             showImageSourcePicker = true
         } label: {
             ZStack(alignment: .bottomTrailing) {
-                ProfileAvatar(image: viewModel.profileImageData.flatMap(UIImage.init(data:)),
-                              name: viewModel.name, size: 100, style: .forest)
+                ProfileAvatar(image: avatarImage, name: viewModel.name, size: 100, style: .forest)
 
                 Image(systemName: "camera.fill")
                     .font(.footnote.weight(.semibold))

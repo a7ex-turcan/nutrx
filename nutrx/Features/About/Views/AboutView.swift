@@ -13,7 +13,7 @@ struct AboutView: View {
                         .frame(width: 52)
                         .foregroundStyle(Theme.green)
                         .frame(width: 88, height: 88)
-                        .background(Theme.forest, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .background(Theme.forest, in: RoundedRectangle(cornerRadius: Theme.Radius.appIcon, style: .continuous))
                         .accessibilityHidden(true)
 
                     Text("nutrx")

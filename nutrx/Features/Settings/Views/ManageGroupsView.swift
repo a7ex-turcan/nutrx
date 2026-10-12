@@ -178,7 +178,7 @@ struct ManageGroupsView: View {
 #Preview {
     NavigationStack {
         ManageGroupsView()
-            .navigationTitle("Manage Groups")
+            .navigationTitle("Groups")
             .navigationBarTitleDisplayMode(.inline)
     }
     .modelContainer(previewContainer)

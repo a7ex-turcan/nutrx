@@ -6,12 +6,16 @@ import StoreKit
 /// Notifications, Streaks, Groups; Rate nutrx, About — and the privacy footer.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.requestReview) private var requestReview
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query private var allPreferences: [UserPreferences]
     @Query private var profiles: [UserProfile]
     @Query(filter: #Predicate<NutrientGroup> { !$0.isSystem }) private var userGroups: [NutrientGroup]
 
     @State private var showProfile = false
+    /// Decoded once per photo change, not on every body pass.
+    @State private var profileImage: UIImage?
 
     private var preferences: UserPreferences? { allPreferences.first }
     private var profile: UserProfile? { profiles.first }
@@ -64,6 +68,8 @@ struct SettingsView: View {
             Section {
                 Button {
                     requestReview()
+                    // Counts as this version's prompt, so ReviewService won't also ask right after.
+                    ReviewService.recordPrompt(context: modelContext)
                 } label: {
                     HStack {
                         row("Rate nutrx", symbol: "star", color: NutrientTint.amber.color, value: nil)
@@ -101,6 +107,9 @@ struct SettingsView: View {
                 ProfileView()
             }
         }
+        .onChange(of: profile?.profileImageData, initial: true) { _, data in
+            profileImage = data.flatMap(UIImage.init(data:))
+        }
     }
 
     // MARK: - Profile card
@@ -132,29 +141,32 @@ struct SettingsView: View {
         .accessibilityHint("Opens your profile")
     }
 
-    private var profileImage: UIImage? {
-        profile?.profileImageData.flatMap(UIImage.init(data:))
-    }
-
     // MARK: - Rows
 
     /// A coloured 32pt icon tile, the title, and the current value in secondary text.
     private func row(_ title: String, symbol: String, color: Color, value: String?) -> some View {
         HStack(spacing: 14) {
+            // Fixed glyph size: the tile doesn't grow with Dynamic Type (like iOS Settings), so neither does the symbol.
             Image(systemName: symbol)
-                .font(.body.weight(.semibold))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 32, height: 32)
-                .background(color, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .background(color, in: RoundedRectangle(cornerRadius: Theme.Radius.settingsTile, style: .continuous))
                 .accessibilityHidden(true)
-            Text(title)
-                .foregroundStyle(Theme.textPrimary)
-            Spacer(minLength: 8)
-            if let value {
-                Text(value)
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(1)
+            // Value beside the title; under it at accessibility sizes, where both wouldn't fit on one line.
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+                : AnyLayout(HStackLayout(spacing: 8))
+            layout {
+                Text(title)
+                    .foregroundStyle(Theme.textPrimary)
+                if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                if let value {
+                    Text(value)
+                        .foregroundStyle(Theme.textSecondary)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(minHeight: Theme.minTouchTarget)
         .accessibilityElement(children: .combine)

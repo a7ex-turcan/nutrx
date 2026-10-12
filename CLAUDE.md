@@ -520,7 +520,7 @@ Permission flow handles not-asked, granted, and denied states. A one-time notifi
 Nutrients are organised into named groups. Collapsible sections on Today (with met counts); inset cards with counts on My Nutrients.
 
 - **General group** — system group (`isSystem = true`), always exists, cannot be renamed/deleted. Nutrients with `group = nil` resolve to General at query time.
-- **Group management** — Settings → Manage Groups. Create, rename, reorder, delete (moves nutrients to General).
+- **Group management** — Settings → Groups (`ManageGroupsView`). Create, rename, reorder, delete (moves nutrients to General).
 - **Move to Group** — via context menu on nutrient rows. Half-sheet with group list and inline "New Group" option.
 - Group headers hidden when only General group exists.
 
