@@ -17,8 +17,9 @@ extension Double {
 
 extension Double {
     /// Locale-aware amount with grouping and up to 2 decimals: "2,000", "1.75" (en) / "2.000", "1,75" (de).
-    func formattedAmount(locale: Locale = .current) -> String {
-        formatted(.number.precision(.fractionLength(0...2)).locale(locale))
+    /// Pass a higher `maxFractionDigits` where the value is edited or logged, so nothing gets rounded away.
+    func formattedAmount(locale: Locale = .current, maxFractionDigits: Int = 2) -> String {
+        formatted(.number.precision(.fractionLength(0...maxFractionDigits)).locale(locale))
     }
 }
 

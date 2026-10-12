@@ -14,6 +14,8 @@ struct LogSheet: View {
     @Environment(\.colorScheme) private var colorScheme
     @Query private var records: [IntakeRecord]
     @State private var amountText: String
+    /// The chip the user last tapped — wins when several chips share the current amount.
+    @State private var tappedChipID: String? = "1x"
     @State private var note = ""
     @FocusState private var focusedField: Field?
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize: CGFloat = 52
@@ -24,7 +26,7 @@ struct LogSheet: View {
         self.nutrient = nutrient
         self.onLog = onLog
         self.onDelete = onDelete
-        _amountText = State(initialValue: nutrient.step.formattedAmount())
+        _amountText = State(initialValue: nutrient.step.formattedAmount(maxFractionDigits: Self.precision))
 
         let nutrientID = nutrient.id
         let startOfDay = Calendar.current.startOfDay(for: .now)
@@ -59,7 +61,24 @@ struct LogSheet: View {
     }
 
     private var amountLabel: String {
-        "\(amount?.formattedAmount() ?? "0") \(nutrient.unit)".trimmingCharacters(in: .whitespaces)
+        "\(amount?.formattedAmount(maxFractionDigits: Self.precision) ?? "0") \(nutrient.unit)"
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Decimals kept in the editable amount and the Log button, so a 0.125 step logs 0.125 (not 0.13).
+    private static let precision = 6
+
+    /// Single-select: the tapped chip while its value still matches the amount, else the first chip that does.
+    private var selectedChipID: String? {
+        guard let amount else { return nil }
+        let matching = quickAmounts.filter { Self.isSame($0.value, amount) }
+        if let tappedChipID, matching.contains(where: { $0.id == tappedChipID }) { return tappedChipID }
+        return matching.first?.id
+    }
+
+    /// Equality that tolerates float drift (0.8 − 0.1 vs a typed "0.7").
+    private static func isSame(_ a: Double, _ b: Double) -> Bool {
+        abs(a - b) <= 1e-9 * max(1, abs(b))
     }
 
     private struct QuickAmount: Identifiable {
@@ -73,7 +92,8 @@ struct LogSheet: View {
     private var quickAmounts: [QuickAmount] {
         let step = nutrient.step
         var chips = [0.5, 1, 2].map { factor in
-            QuickAmount(id: "\(factor)x", label: (step * factor).formattedAmount(), value: step * factor)
+            QuickAmount(id: "\(factor)x", label: (step * factor).formattedAmount(maxFractionDigits: Self.precision),
+                        value: step * factor)
         }
         if let remaining = progress.amountToGoal {
             chips.append(QuickAmount(id: "fill", label: "Fill to goal", value: remaining, isFillToGoal: true))
@@ -84,6 +104,25 @@ struct LogSheet: View {
     // MARK: - Body
 
     var body: some View {
+        // The NavigationStack (bar hidden) is only there so the keyboard toolbar — the Done button for the
+        // return-less .decimalPad — actually renders; outside one it doesn't.
+        NavigationStack {
+            content
+                .toolbar(.hidden, for: .navigationBar)
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { focusedField = nil }
+                            .fontWeight(.semibold)
+                    }
+                }
+        }
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Theme.surfaceCard)
+    }
+
+    private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 header
@@ -100,15 +139,7 @@ struct LogSheet: View {
             .padding(.bottom, 20)
         }
         .scrollDismissesKeyboard(.interactively)
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Theme.surfaceCard)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { focusedField = nil }
-            }
-        }
+        .background(Theme.surfaceCard)
     }
 
     private var header: some View {
@@ -214,24 +245,25 @@ struct LogSheet: View {
     }
 
     private func quickAmountChip(_ chip: QuickAmount) -> some View {
-        let isSelected = !chip.isFillToGoal && amount == chip.value
+        let isSelected = selectedChipID == chip.id
         return Button {
             setAmount(chip.value)
+            tappedChipID = chip.id
         } label: {
             Text(chip.label)
                 .font(chip.isFillToGoal ? .subheadline.weight(.semibold)
                                         : .system(.subheadline, design: .rounded, weight: .semibold))
                 .monospacedDigit()
-                .foregroundStyle(chip.isFillToGoal ? Theme.textGreenInk
-                                 : isSelected ? Theme.controlOnPrimary : Theme.textPrimary)
+                .foregroundStyle(isSelected ? Theme.controlOnPrimary
+                                 : chip.isFillToGoal ? Theme.textGreenInk : Theme.textPrimary)
                 .padding(.horizontal, 14)
                 .frame(minHeight: Theme.minTouchTarget)
                 .background {
-                    if chip.isFillToGoal {
+                    if isSelected {
+                        Capsule().fill(Theme.controlPrimary)
+                    } else if chip.isFillToGoal {
                         Capsule().fill(Theme.green.opacity(0.10))
                         Capsule().strokeBorder(Theme.green, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                    } else if isSelected {
-                        Capsule().fill(Theme.controlPrimary)
                     } else {
                         Capsule().strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
                     }
@@ -239,7 +271,8 @@ struct LogSheet: View {
                 .fixedSize()
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(chip.isFillToGoal ? "Fill to goal, \(chip.value.formattedAmount()) \(nutrient.unit)"
+        .accessibilityLabel(chip.isFillToGoal
+                            ? "Fill to goal, \(chip.value.formattedAmount(maxFractionDigits: Self.precision)) \(nutrient.unit)"
                                               : "\(chip.label) \(nutrient.unit)")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -317,7 +350,7 @@ struct LogSheet: View {
 
     private func entryRow(_ record: IntakeRecord) -> some View {
         let isDecrement = record.amount < 0
-        let signedAmount = "\(isDecrement ? "−" : "+")\(abs(record.amount).formattedAmount()) \(nutrient.unit)"
+        let signedAmount = "\(isDecrement ? "−" : "+")\(abs(record.amount).formattedAmount(maxFractionDigits: Self.precision)) \(nutrient.unit)"
 
         return HStack(spacing: 12) {
             Text(record.date, format: .dateTime.hour().minute())
@@ -363,7 +396,7 @@ struct LogSheet: View {
     }
 
     private func setAmount(_ value: Double) {
-        amountText = value.formattedAmount()
+        amountText = value.formattedAmount(maxFractionDigits: Self.precision)
     }
 }
 

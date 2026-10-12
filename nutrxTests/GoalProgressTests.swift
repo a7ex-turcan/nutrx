@@ -219,6 +219,15 @@ final class GoalProgressTests: XCTestCase {
         XCTAssertEqual(1.5.formattedAmount(locale: Locale(identifier: "de_DE")), "1,5")
     }
 
+    func testFormattedAmountKeepsExtraPrecisionWhenAskedFor() {
+        // The log sheet edits and logs amounts at 6 decimals so a 0.125 step isn't rounded to 2.
+        XCTAssertNotEqual(0.125.formattedAmount(locale: enUS), "0.125")
+        XCTAssertEqual(0.125.formattedAmount(locale: enUS, maxFractionDigits: 6), "0.125")
+        // The sheet formats and parses in the current locale, so the round trip must be lossless there.
+        XCTAssertEqual(0.125.formattedAmount(maxFractionDigits: 6).parsedDouble, 0.125)
+        XCTAssertEqual(1234.5.formattedAmount(maxFractionDigits: 6).parsedDouble, 1234.5)
+    }
+
     // MARK: - Nutrient convenience
 
     func testNutrientInitializerReadsGoalFromTheModel() throws {
