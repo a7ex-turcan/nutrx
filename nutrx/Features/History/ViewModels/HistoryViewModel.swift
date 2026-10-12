@@ -1,110 +1,104 @@
 import Foundation
 import SwiftData
 
+/// Loads nutrients, intake and exclusions into a `HistoryLog` for the History screens, and tracks the month
+/// the calendar shows. The day maths lives in `HistoryLog`; this only fetches and orders.
 @Observable
 final class HistoryViewModel {
+    /// How many days the "Recent days" list shows; older days are reached through the calendar.
+    static let recentDayCount = 7
 
-    struct DaySummary: Identifiable {
-        let id: Date // startOfDay
-        let date: Date
-        var nutrientTotals: [(nutrient: Nutrient, total: Double)]
-    }
+    private(set) var log: HistoryLog?
+    private(set) var recentDays: [HistoryDay] = []
+    private(set) var streak: StreakResult?
+    private(set) var month = MonthGrid(containing: .now)
 
-    struct IntakeEntry: Identifiable {
-        let id = UUID()
-        let amount: Double
-        let date: Date
-        let note: String?
-    }
+    private var nutrientsByID: [UUID: Nutrient] = [:]
 
-    struct MonthSection: Identifiable {
-        let id: Date // first day of the month
-        let label: String // e.g. "March, 2026"
-        var days: [DaySummary]
-    }
+    var hasPastEntries: Bool { log?.hasPastEntries ?? false }
 
-    private(set) var days: [DaySummary] = []
-    private(set) var monthSections: [MonthSection] = []
+    func refresh(context: ModelContext, now: Date = .now) {
+        let calendar = Calendar.current
+        let nutrients = orderedNutrients(context: context)
+        nutrientsByID = Dictionary(nutrients.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
-    func refresh(context: ModelContext) {
-        let descriptor = FetchDescriptor<IntakeRecord>(
-            sortBy: [SortDescriptor(\IntakeRecord.date, order: .reverse)]
-        )
-        guard let records = try? context.fetch(descriptor) else { return }
-
-        // Group records by calendar day
-        var dayMap: [Date: [(nutrientID: PersistentIdentifier, nutrient: Nutrient, amount: Double)]] = [:]
-
+        let records = (try? context.fetch(FetchDescriptor<IntakeRecord>())) ?? []
+        var totals: [Date: [UUID: Double]] = [:]
         for record in records {
             guard let nutrient = record.nutrient else { continue }
-            let day = Calendar.current.startOfDay(for: record.date)
-            dayMap[day, default: []].append((
-                nutrientID: nutrient.persistentModelID,
-                nutrient: nutrient,
-                amount: record.amount
-            ))
+            totals[calendar.startOfDay(for: record.date), default: [:]][nutrient.id, default: 0] += record.amount
         }
 
-        // Exclude today
-        let today = Calendar.current.startOfDay(for: .now)
-
-        // Build summaries, most recent first
-        days = dayMap
-            .filter { $0.key < today }
-            .map { (day, entries) in
-                // Group by nutrient and sum
-                var totals: [PersistentIdentifier: (nutrient: Nutrient, total: Double)] = [:]
-                for entry in entries {
-                    if totals[entry.nutrientID] != nil {
-                        totals[entry.nutrientID]!.total += entry.amount
-                    } else {
-                        totals[entry.nutrientID] = (nutrient: entry.nutrient, total: entry.amount)
-                    }
-                }
-
-                let nutrientTotals = totals.values
-                    .map { (nutrient: $0.nutrient, total: max(0, $0.total)) }
-                    .sorted { $0.nutrient.sortOrder < $1.nutrient.sortOrder }
-
-                return DaySummary(id: day, date: day, nutrientTotals: nutrientTotals)
-            }
-            .sorted { $0.date > $1.date }
-
-        // Group days into month sections
-        let calendar = Calendar.current
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM, yyyy"
-
-        var sectionMap: [Date: [DaySummary]] = [:]
-        for day in days {
-            let components = calendar.dateComponents([.year, .month], from: day.date)
-            let monthStart = calendar.date(from: components)!
-            sectionMap[monthStart, default: []].append(day)
+        let exclusions = (try? context.fetch(FetchDescriptor<Exclusion>())) ?? []
+        var excluded: [Date: Set<UUID>] = [:]
+        for exclusion in exclusions {
+            guard let nutrient = exclusion.nutrient else { continue }
+            excluded[calendar.startOfDay(for: exclusion.date), default: []].insert(nutrient.id)
         }
 
-        monthSections = sectionMap
-            .map { (monthStart, days) in
-                MonthSection(
-                    id: monthStart,
-                    label: formatter.string(from: monthStart),
-                    days: days.sorted { $0.date > $1.date }
-                )
-            }
-            .sorted { $0.id > $1.id }
+        let log = HistoryLog(
+            nutrients: nutrients.map {
+                HistoryNutrient(id: $0.id, goalType: $0.goalType, target: $0.dailyTarget, upperBound: $0.upperBound,
+                                createdAt: $0.createdAt, isDeleted: $0.isDeleted)
+            },
+            totals: totals, exclusions: excluded, today: now, calendar: calendar
+        )
+        self.log = log
+        recentDays = log.recentDays(limit: Self.recentDayCount)
+        streak = StreakService.compute(context: context)
     }
 
-    func intakeRecords(for nutrient: Nutrient, on day: Date, context: ModelContext) -> [IntakeEntry] {
-        let startOfDay = Calendar.current.startOfDay(for: day)
-        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+    func nutrient(_ id: UUID) -> Nutrient? { nutrientsByID[id] }
 
+    func day(_ date: Date) -> HistoryDay? { log?.day(date) }
+
+    // MARK: - Month
+
+    var canShowPreviousMonth: Bool {
+        guard let first = log?.firstDay else { return false }
+        return month.month > first
+    }
+
+    var canShowNextMonth: Bool {
+        !month.contains(.now)
+    }
+
+    func showPreviousMonth() {
+        if canShowPreviousMonth { month = month.moved(by: -1) }
+    }
+
+    func showNextMonth() {
+        if canShowNextMonth { month = month.moved(by: 1) }
+    }
+
+    // MARK: - Entries
+
+    /// A nutrient's records on one day, oldest first.
+    func intakeRecords(for nutrient: Nutrient, on day: Date, context: ModelContext) -> [IntakeRecord] {
+        let start = Calendar.current.startOfDay(for: day)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
+        let nutrientID = nutrient.id
         let descriptor = FetchDescriptor<IntakeRecord>(
-            predicate: #Predicate<IntakeRecord> { $0.date >= startOfDay && $0.date < endOfDay },
+            predicate: #Predicate<IntakeRecord> {
+                $0.nutrient?.id == nutrientID && $0.date >= start && $0.date < end
+            },
             sortBy: [SortDescriptor(\IntakeRecord.date)]
         )
-        guard let records = try? context.fetch(descriptor) else { return [] }
+        return (try? context.fetch(descriptor)) ?? []
+    }
 
-        return records
-            .filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }
-            .map { IntakeEntry(amount: $0.amount, date: $0.date, note: $0.note) }
+    /// All nutrients, deleted ones included, in Today's order: group, then position within the group.
+    private func orderedNutrients(context: ModelContext) -> [Nutrient] {
+        let nutrients = (try? context.fetch(FetchDescriptor<Nutrient>())) ?? []
+        let groups = (try? context.fetch(FetchDescriptor<NutrientGroup>())) ?? []
+        // Nutrients without a group belong to General.
+        let generalOrder = groups.first(where: \.isSystem)?.sortOrder ?? Int.max
+        return nutrients.sorted { lhs, rhs in
+            let lhsGroup = lhs.group?.sortOrder ?? generalOrder
+            let rhsGroup = rhs.group?.sortOrder ?? generalOrder
+            if lhsGroup != rhsGroup { return lhsGroup < rhsGroup }
+            if lhs.groupSortOrder != rhs.groupSortOrder { return lhs.groupSortOrder < rhs.groupSortOrder }
+            return lhs.sortOrder < rhs.sortOrder
+        }
     }
 }

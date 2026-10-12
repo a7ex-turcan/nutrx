@@ -68,7 +68,7 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
-- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. **Next:** Phase 6 (History).
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. **Next:** Phase 7 (Onboarding).
 - Where this file still describes the old UI (blue/green/orange progress bars, personal-info onboarding), DESIGN.md wins. Update this file as each phase lands.
 
 ---
@@ -159,10 +159,15 @@ nutrx/
 │   │
 │   ├── History/                 # Tab 3 — read-only log of past days.
 │   │   ├── Views/
-│   │   │   ├── HistoryListView.swift        # Day list with monthly section headers and streak summary card.
-│   │   │   └── HistoryDayView.swift         # Day detail with intake drill-down.
+│   │   │   ├── HistoryListView.swift        # Large title; StreakCard, MonthCalendar card, "Recent days" (dots + score). Taps push HistoryDayView.
+│   │   │   ├── StreakCard.swift             # Forest card: flame, "10 days · Current streak", divider, best streak.
+│   │   │   ├── MonthCalendar.swift          # Month grid (first weekday from the locale), all / some / none fills, today ring, chevrons, legend.
+│   │   │   └── HistoryDayView.swift         # Weekday + date header, SegmentedDayRing summary, tint-bar rows with met badge, entries sheet.
 │   │   └── ViewModels/
-│   │       └── HistoryViewModel.swift
+│   │       ├── HistoryViewModel.swift       # Fetches nutrients / intake / exclusions into a HistoryLog; streak; displayed month.
+│   │       ├── HistoryLog.swift             # HistoryDay / DayCompletion — which nutrients count on a day and whether they were met (pure).
+│   │       ├── MonthGrid.swift              # Month layout: leading blanks, days, weekday symbols (pure).
+│   │       └── HistoryText.swift            # "10 days", "4 of 6 goals", "Missed Omega-3 and Protein".
 │   │
 │   ├── About/
 │   │   └── Views/
@@ -202,7 +207,6 @@ nutrx/
     │   ├── TintPicker.swift                 # 8 tint swatches.
     │   ├── SymbolPicker.swift               # 16-symbol grid (DESIGN.md §3 set).
     │   ├── GoalTypePicker.swift             # At least / At most / Between cards.
-    │   ├── NutrientRowView.swift            # Old card with progress bar — History day only until phase 6.
     │   ├── NutrientProgressBar.swift        # Blue (in progress), green (complete), orange (exceeded).
     │   ├── MoveToGroupSheet.swift
     │   ├── CameraView.swift                 # UIImagePickerController wrapper for camera capture.
@@ -366,7 +370,14 @@ Intake is computed by summing `IntakeRecord` rows for today's calendar day. No e
 
 ## History Tab
 
-Chronological list of past days (most recent first), grouped by month. Read-only. Streak summary card at the top shows current and best streak when enabled.
+Redesigned in phase 6 (DESIGN.md §4.9, §5.4, §5.5). Read-only. Large "History" title with the profile avatar.
+
+- **Streak card** (`StreakCard`, forest): flame, "10 days", "Current streak · every goal met", divider, best streak. Shown when streaks are on and there's a current or best streak.
+- **Month calendar** (`MonthCalendar`): 7 columns from `Calendar.current.firstWeekday`. All goals met → `Brand/Green` fill with `Text/OnTint` number; some → green @ 25%; nothing met or nothing logged → no fill; today → 2pt `Control/Primary` ring with a gap around the fill; future → secondary, disabled. Chevrons switch months (previous stops at the first month with data, next at the current month). Past days with entries push `HistoryDayView`. Cells scale with Dynamic Type but never past their column; weekday letters go single-character and the legend stacks at accessibility sizes.
+- **Recent days**: the last 7 completed days with entries — date, a dot per goal (tint if met, `Surface/Chip` if not), "4/6" (`Text/GreenInk` when all met), chevron.
+- **Day detail** (`HistoryDayView`): weekday caption + date title (shown in the bar once scrolled), summary card (64pt `SegmentedDayRing` on light, "4 of 6 goals", "Missed Omega-3 and Protein"), then a row per goal: icon tile, "**4,000** / 4,000 IU", 8pt bar in the tint, green check / grey dash. "Also logged" lists nutrients logged that day that didn't count (removed since, or excluded). Tapping a row opens the day's entries (time, tint dot, signed amount, note, total).
+
+**Which nutrients count on a day** (`HistoryLog`) — the same rule as `StreakService`: not deleted, created on or before the day, not excluded that day. A nutrient with nothing logged still counts (missed, unless it's an "at most" goal). A day with nothing logged at all shows no fill, so the calendar's "all goals" days are exactly the streak days. Covered by `HistoryLogTests`, `MonthGridTests`, `HistoryTextTests`.
 
 ---
 

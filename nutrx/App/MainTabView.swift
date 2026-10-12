@@ -22,7 +22,7 @@ struct MainTabView: View {
                 NavigationStack {
                     HistoryListView()
                         .navigationTitle("History")
-                        .navigationBarTitleDisplayMode(.inline)
+                        .navigationBarTitleDisplayMode(.large)
                         .withProfileMenu()
                 }
             }
