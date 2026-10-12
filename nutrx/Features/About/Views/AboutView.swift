@@ -6,47 +6,56 @@ struct AboutView: View {
             VStack(spacing: 24) {
                 // App icon & name
                 VStack(spacing: 8) {
-                    Image(systemName: "leaf.circle.fill")
-                        .font(.system(size: 64))
-                        .foregroundStyle(.green)
+                    // The app icon's mark (BrandMark), on forest like the icon.
+                    Image("BrandMark")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 52)
+                        .foregroundStyle(Theme.green)
+                        .frame(width: 88, height: 88)
+                        .background(Theme.forest, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .accessibilityHidden(true)
 
                     Text("nutrx")
                         .font(.largeTitle.weight(.bold))
+                        .foregroundStyle(Theme.textPrimary)
 
                     Text("Version \(appVersion) (\(buildNumber))")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textSecondary)
                 }
                 .padding(.top, 20)
 
                 // Philosophy
-                GroupBox {
+                VStack {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("Privacy First", systemImage: "lock.shield")
                             .font(.headline)
 
-                        Text("All your data stays on your device. nutrx has no accounts, no servers, and no tracking. Your health data belongs to you.")
+                        Text("nutrx has no accounts, no servers and no tracking. Your data lives on your devices and your iCloud, and it belongs to you.")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
                 }
+                .padding(Theme.Spacing.cardPadding + 2)
+                .cardStyle()
 
-                GroupBox {
+                VStack {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("Simple by Design", systemImage: "sparkles")
                             .font(.headline)
 
                         Text("Track the nutrients that matter to you. No calorie counting, no food databases, no complexity. Just straightforward daily tracking.")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
                 }
+                .padding(Theme.Spacing.cardPadding + 2)
+                .cardStyle()
 
-                GroupBox {
+                VStack {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("How It Works", systemImage: "questionmark.circle")
                             .font(.headline)
@@ -58,34 +67,35 @@ struct AboutView: View {
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, 4)
                 }
+                .padding(Theme.Spacing.cardPadding + 2)
+                .cardStyle()
 
                 // Footer
                 VStack(spacing: 4) {
                     Text("Made with care")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textSecondary)
 
                     Text("nutrx labs")
                         .font(.footnote.weight(.medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textSecondary)
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .padding(.horizontal, 16)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Theme.surfaceGround)
     }
 
     private func bulletPoint(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text("•")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary)
             Text(text)
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary)
         }
     }
 

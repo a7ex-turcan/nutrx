@@ -15,6 +15,11 @@ struct ManageGroupsView: View {
         allGroups.filter { !$0.isSystem }
     }
 
+    /// Nutrients in a group, not counting deleted ones (they keep their group for history).
+    private func activeCount(_ group: NutrientGroup) -> Int {
+        (group.nutrients ?? []).filter { !$0.isDeleted }.count
+    }
+
     private var systemGroup: NutrientGroup? {
         allGroups.first(where: { $0.isSystem })
     }
@@ -30,7 +35,7 @@ struct ManageGroupsView: View {
 
                             Spacer()
 
-                            Text("\((group.nutrients ?? []).count)")
+                            Text("\(activeCount(group))")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -53,6 +58,7 @@ struct ManageGroupsView: View {
                 } footer: {
                     Text("Tap to rename. Drag to reorder. Swipe to delete.")
                 }
+                .listRowBackground(Theme.surfaceCard)
             }
 
             if let general = systemGroup {
@@ -67,7 +73,7 @@ struct ManageGroupsView: View {
 
                         Spacer()
 
-                        Text("\((general.nutrients ?? []).count)")
+                        Text("\(activeCount(general))")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -76,9 +82,12 @@ struct ManageGroupsView: View {
                 } footer: {
                     Text("Nutrients without a group are placed here. This group cannot be renamed or deleted.")
                 }
+                .listRowBackground(Theme.surfaceCard)
             }
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .background(Theme.surfaceGround)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

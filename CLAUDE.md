@@ -68,7 +68,7 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
-- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. Phase 7 (Onboarding) — `OnboardingWelcomeView`, first-nutrient restyle, `StartingPoint`, `BrandMark` image asset, optional profile fields; `OnboardingPersonalInfoView` deleted. **Next:** Phase 8 (Settings & Profile).
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. Phase 7 (Onboarding) — `OnboardingWelcomeView`, first-nutrient restyle, `StartingPoint`, `BrandMark` image asset, optional profile fields; `OnboardingPersonalInfoView` deleted. Phase 8 (Settings & Profile) — Settings restyle (profile card, icon-tile rows with values, Rate nutrx, privacy footer), `ProfileAvatar`, `SettingsSummary`, Profile / About / Groups restyle, settings detail views split into files, dead Log Out removed. **Next:** Phase 9 (Widgets).
 - Where this file still describes the old UI (blue/green/orange progress bars), DESIGN.md wins. Update this file as each phase lands.
 
 ---
@@ -93,7 +93,7 @@ The app has three tabs (defined in `App/MainTabView.swift`):
 | **My Nutrients** | Create, edit, delete, and reorder custom nutrients |
 | **History** | Browse past daily intake logs |
 
-Profile, Settings, and About are **not** tabs — they're accessed via a profile icon (top-right of every screen's navigation bar). Tapping it opens a flyout menu with three items: "Edit Profile" (opens a sheet), "Settings" (opens a sheet), and "Log Out". About has been moved inside the Settings sheet. This is implemented via the `.withProfileMenu()` view modifier, which every tab applies.
+Profile, Settings, and About are **not** tabs — they're accessed via a profile icon (top-right of every screen's navigation bar). Tapping it opens a menu with two items: "Edit Profile" (opens a sheet) and "Settings" (opens a sheet). About lives inside Settings. (The old "Log Out" item was a no-op — nutrx has no accounts — and was removed in phase 8.) This is implemented via the `.withProfileMenu()` view modifier, which every tab applies.
 
 ---
 
@@ -172,12 +172,17 @@ nutrx/
 │   │
 │   ├── About/
 │   │   └── Views/
-│   │       └── AboutView.swift              # Shown inside SettingsView.
+│   │       └── AboutView.swift              # Shown inside SettingsView: brand mark, version, three cards.
 │   │
 │   ├── Settings/
-│   │   └── Views/
-│   │       ├── SettingsView.swift           # Sections: iCloud Sync, Manage Groups, Streaks, Notifications, About.
-│   │       └── ManageGroupsView.swift       # Create, rename, reorder, delete groups.
+│   │   ├── Views/
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Rate nutrx, About) with values, privacy footer.
+│   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
+│   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
+│   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
+│   │   │   └── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
+│   │   └── ViewModels/
+│   │       └── SettingsSummary.swift        # Row values: "On", "Noon check-in", "No account", group count, profile title.
 │   │
 │   └── Profile/
 │       ├── Views/
@@ -202,7 +207,8 @@ nutrx/
     │   ├── DayScoreCard.swift               # Today header: forest card with SegmentedDayRing, headline, streak chip, next reminder.
     │   ├── NutrientCard.swift               # Today row: ProgressRing, name, value, status line, − / + (44pt).
     │   ├── GroupHeader.swift                # Today group header: name, met-count chip, collapse chevron.
-    │   ├── FormField.swift
+    │   ├── FormField.swift                  # Label + field on a Surface/Card rounded card (Profile).
+    │   ├── ProfileAvatar.swift              # Photo / initial / person symbol; toolbar (pale) or forest style.
     │   ├── NutrientFormFields.swift         # NutrientDraft + shared fields: name/unit, Look (tint, symbol), Daily goal, notes.
     │   ├── NutrientPreviewRow.swift         # Live preview at the top of the nutrient form.
     │   ├── TintPicker.swift                 # 8 tint swatches.
@@ -213,7 +219,7 @@ nutrx/
     │   ├── CameraView.swift                 # UIImagePickerController wrapper for camera capture.
     │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
     │   ├── SyncBannerView.swift             # Dismissible iCloud sync banner.
-    │   ├── ProfileMenuButton.swift          # 44pt avatar circle (photo / initial / person symbol) with the profile menu.
+    │   ├── ProfileMenuButton.swift          # 44pt ProfileAvatar with the Edit Profile / Settings menu.
     │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier.
     ├── Persistence/
     │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback.

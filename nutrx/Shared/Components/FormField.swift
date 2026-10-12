@@ -10,12 +10,12 @@ struct FormField<Content: View>: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(label)
                 .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary)
 
             content
                 .padding(12)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .background(Theme.surfaceCard,
+                            in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
         }
     }
 }
@@ -33,5 +33,5 @@ struct FormField<Content: View>: View {
         }
     }
     .padding(24)
-    .background(Color(.systemGroupedBackground))
+    .background(Theme.surfaceGround)
 }
