@@ -16,6 +16,8 @@ enum Theme {
     static let textSecondary = color(.textSecondary)
     static let textGreenInk = color(.textGreenInk)
     static let textAmberInk = color(.textAmberInk)
+    /// Dark ink for text on a strong nutrient-tint fill (same in light and dark).
+    static let textOnTint = color(.textOnTint)
 
     // MARK: - Status
     static let statusAmber = color(.statusAmber)
@@ -77,6 +79,7 @@ enum Theme {
         case textSecondary = "Text/Secondary"
         case textGreenInk = "Text/GreenInk"
         case textAmberInk = "Text/AmberInk"
+        case textOnTint = "Text/OnTint"
         case statusAmber = "Status/Amber"
         case surfaceGround = "Surface/Ground"
         case surfaceCard = "Surface/Card"

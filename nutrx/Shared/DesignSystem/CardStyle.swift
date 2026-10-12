@@ -11,13 +11,17 @@ struct CardStyle: ViewModifier {
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         content
-            .background(fill, in: shape)
+            .background {
+                // Shadow on the card shape only — on the whole view it would also shadow every text and fill inside.
+                shape
+                    .fill(fill)
+                    .shadow(color: colorScheme == .dark ? .clear : Theme.forest.opacity(0.10), radius: 10, y: 6)
+            }
             .overlay {
                 if colorScheme == .dark {
                     shape.strokeBorder(Color.white.opacity(0.05), lineWidth: 1)
                 }
             }
-            .shadow(color: colorScheme == .dark ? .clear : Theme.forest.opacity(0.10), radius: 10, y: 6)
     }
 }
 

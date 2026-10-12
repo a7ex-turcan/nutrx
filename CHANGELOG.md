@@ -12,8 +12,10 @@ All notable changes to nutrx are documented in this file.
 - **Redesigned nutrient form** — Pick a colour and an icon for each nutrient, choose "At least", "At most" or "Between" from simple cards, and watch a live preview of how it will look on Today as you type.
 - **Redesigned My Nutrients** — Each nutrient shows its icon, goal type and target at a glance, groups are tidy cards, and a "New group" button sits at the end of the list.
 - **Log sheet** — Tap a nutrient on Today to log an exact amount: step it up or down, pick ½× / 1× / 2× a step or "Fill to goal", add a note, and see everything you logged today. Delete any entry with one tap. Replaces the Add Exact Amount sheet and the expandable intake list.
+- **Redesigned nutrient analytics** — Tap a nutrient in My Nutrients to see its hit rate, daily average and best day for the last 7, 30 or 90 days, a bar chart in the nutrient's colour (today shown as a dashed outline until the day is over), and a weekday heatmap of the last four weeks that points out a weekday that clearly lags. Edit the nutrient and open its reminders straight from the screen.
 
 ### Improvements
+- **Fairer analytics** — Stats only count days since you added the nutrient and leave out today until it's over, so a nutrient you added this week isn't marked down for days before it existed.
 - **Profile avatar** — The profile button shows your photo or initial in a circle.
 - **Brand accent colour** — Buttons, toggles and other system controls now use nutrx forest green (bright green in dark mode) instead of the default blue.
 - **One rule for "goal met"** — Today, History, streaks and analytics now share a single goal check, so they can't disagree, and totals that land a rounding hair under the target (e.g. 0.1 + 0.7 of a 0.8 goal) now count as reached.
