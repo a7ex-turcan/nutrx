@@ -61,6 +61,16 @@ all core tracking features remain free forever.
 
 ---
 
+## Design (redesign in progress)
+
+All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, screen specs, data-model additions and the phased build order. Target renders are in `docs/design/screens/*.png` (compare your previews against them); `docs/design/source/*.dc.html` holds exact values but is design-tool HTML — never port or ship it.
+
+- "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
+- Build one phase from DESIGN.md §7 per session; don't mix phases.
+- Where this file still describes the old UI (blue/green/orange progress bars, expandable cards, `CustomAmountSheet`, personal-info onboarding), DESIGN.md wins. Update this file as each phase lands.
+
+---
+
 ## Platform & Tech Stack
 
 - **Platform:** iOS (native Swift / SwiftUI)

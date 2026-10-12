@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — First nutrient</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1B3B2D}a:hover{color:#0E1A13}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F2F4EF; color: #0E1A13; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; padding: 54px 20px 40px 20px; box-sizing: border-box">
+
+  <div style="display: flex; align-items: center; gap: 12px">
+    <a href="Welcome.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 22px; background: #FFFFFF; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E1A13" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+    </a>
+    <div role="progressbar" aria-valuemin="1" aria-valuemax="2" aria-valuenow="2" aria-label="Step 2 of 2" style="flex: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px">
+      <span style="height: 5px; border-radius: 3px; background: #1EB955"></span>
+      <span style="height: 5px; border-radius: 3px; background: #1EB955"></span>
+    </div>
+    <button style="height: 44px; padding: 0 6px; border: 0; background: transparent; font: 600 15px -apple-system, system-ui, sans-serif; color: #56655C; cursor: pointer">Skip</button>
+  </div>
+
+  <h1 style="margin: 24px 0 0 0; font-size: 30px; line-height: 35px; font-weight: 800; letter-spacing: -0.02em; text-wrap: pretty">What do you want to track first?</h1>
+  <p style="margin: 8px 0 0 0; font-size: 15px; line-height: 21px; color: #56655C">Pick a starting point or make your own. Everything stays editable.</p>
+
+  <div role="radiogroup" aria-label="Starting points" style="margin-top: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+    <sc-for list="{{picks}}" as="p" hint-placeholder-count="6">
+      <button role="radio" aria-checked="{{p.on}}" style="height: 74px; border-radius: 20px; border: {{p.border}}; background: #FFFFFF; padding: 0 12px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; cursor: pointer; text-align: left; font-family: inherit; color: #0E1A13">
+        <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: {{p.tile}}; display: flex; align-items: center; justify-content: center; flex: none">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{p.tint}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{p.icon}}"></path></svg>
+        </span>
+        <span style="display: flex; flex-direction: column; gap: 1px; min-width: 0">
+          <span style="font-size: 15px; font-weight: 600">{{p.name}}</span>
+          <span style="font-size: 12px; color: #56655C">{{p.hint}}</span>
+        </span>
+      </button>
+    </sc-for>
+  </div>
+
+  <button style="margin-top: 10px; height: 52px; border-radius: 18px; border: 1.5px dashed #B9C4BC; background: transparent; font: 600 15px -apple-system, system-ui, sans-serif; color: #1B3B2D; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B3B2D" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+    Something else
+  </button>
+
+  <div style="flex: 1"></div>
+
+  <div style="border-radius: 20px; background: #FFFFFF; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden">
+    <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid #EEF1EC">
+      <label for="ot" style="font-size: 12px; font-weight: 600; color: #56655C">Daily goal</label>
+      <input id="ot" value="4,000 IU" style="border: 0; padding: 0; height: 28px; font: 700 20px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #0E1A13; outline: none; background: transparent">
+    </div>
+    <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px">
+      <label for="os" style="font-size: 12px; font-weight: 600; color: #56655C">Each tap adds</label>
+      <input id="os" value="1,000 IU" style="border: 0; padding: 0; height: 28px; font: 700 20px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #0E1A13; outline: none; background: transparent">
+    </div>
+  </div>
+
+  <a href="Main.dc.html" style="margin-top: 14px; height: 56px; border-radius: 18px; background: #1B3B2D; color: #FFFFFF; text-decoration: none; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600">Start tracking</a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var I = {
+      sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+      fish: 'M2.5 12c2.8-3.6 7.5-5 11.5-3.2L18.5 6v12L14 15.2C10 17 5.3 15.6 2.5 12zM8 11.5v.01',
+      pill: 'M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7zM7 7l7 7',
+      drop: 'M12 3c0 0 6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+      dumbbell: 'M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11',
+      bottle: 'M7 3h10M8 3v4l-3 5v8h14v-8l-3-5V3M5 13h14'
+    };
+    function p(name, icon, tint, tile, hint, on) {
+      return { name: name, icon: I[icon], tint: tint, tile: tile, hint: hint, on: on ? 'true' : 'false',
+        border: on ? '2px solid #1B3B2D' : '2px solid transparent' };
+    }
+    return {
+      picks: [
+        p('Vitamin D', 'sun', '#C48C00', '#FCF1D2', 'IU · at least', true),
+        p('Magnesium', 'pill', '#6B5BE0', '#E6E3FB', 'mg · at least'),
+        p('Omega-3', 'fish', '#0F8A84', '#D6F1EF', 'mg · at least'),
+        p('Water', 'drop', '#2F80ED', '#DCE9FC', 'L · at least'),
+        p('Protein', 'dumbbell', '#D2563A', '#FBE3DD', 'g · between'),
+        p('Creatine', 'bottle', '#1B8A47', '#D9F2E2', 'g · at least')
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

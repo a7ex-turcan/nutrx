@@ -10,6 +10,10 @@ description: >
 
 # SwiftUI & Apple HIG Guidelines for nutrx
 
+> The visual design (tokens, components, screens) is specified in
+> `docs/design/DESIGN.md`, with target renders in `docs/design/screens/`.
+> This skill covers *how* to build natively; DESIGN.md covers *what it looks like*.
+
 ## Core Principle
 
 Every screen should feel native. If a custom component can be replaced with a
@@ -82,27 +86,31 @@ Common styles in nutrx:
 
 ---
 
-## Colour — Semantic System Colours
+## Colour — Brand Tokens + Semantic Colours
 
-Never hardcode hex values. Use semantic colours that adapt to light/dark mode:
+nutrx has a brand layer (see `docs/design/DESIGN.md` §1). Colours come from
+**named colour sets in the asset catalog** (with Any/Dark appearances),
+exposed through `Shared/DesignSystem/Theme.swift`. Never write hex values or
+`Color(red:green:blue:)` in view code — reference the token.
 
 ```swift
-// ✅ CORRECT
-.foregroundStyle(.primary)
-.foregroundStyle(.secondary)
-.foregroundStyle(.accent)          // app tint
-.background(.background)
-.background(Color(.systemGroupedBackground))
-.foregroundStyle(Color.green)      // OK for status states like "target reached"
+// ✅ CORRECT — brand / semantic tokens
+.background(Theme.surfaceGround)          // Surface/Ground
+.foregroundStyle(Theme.textSecondary)      // Text/Secondary
+.tint(Theme.controlPrimary)
+.foregroundStyle(nutrient.tint.color)      // user-chosen nutrient tint
+.foregroundStyle(.primary)                 // system semantics still fine for plain text
 
 // ❌ WRONG
-.foregroundStyle(Color(hex: "#2563EB"))
+.foregroundStyle(Color(hex: "#1B3B2D"))    // hex in a view
+.foregroundStyle(.green)                   // ad-hoc status colour — use GoalStatus + Theme
 ```
 
-For the progress bar visual states in nutrx:
-- Normal progress: system accent / tint colour
-- Target reached: `.green` or system green
-- Exceeded: `.orange` or `.red` — use system colours, not custom hex
+Rules:
+- `Brand/Green` (#1EB955) is for fills, rings and badges only. Green **text** uses `Text/GreenInk`.
+- Status colours come from `GoalStatus` (DESIGN.md §2): met → green check badge, nearing/over a limit → `Status/Amber` ring + `Text/AmberInk` text. Never signal status with colour alone.
+- Each nutrient's ring, icon tile and chart use its `NutrientTint`.
+- Plain system UI (forms, toolbars, alerts) keeps system semantic colours.
 
 ---
 
@@ -137,14 +145,10 @@ Button("Delete", role: .destructive) { viewModel.delete() }
 
 Touch targets should be at least 44×44pt. Use `.contentShape(Rectangle())` if needed to expand a small icon's hit area.
 
-### Long press
-nutrx uses long press on the progress bar to open the context sheet (edit step / custom amount / exclude). Implement with `.onLongPressGesture`:
-
-```swift
-.onLongPressGesture { showContextSheet = true }
-```
-
-Provide visual affordance that long press is available (subtle animation or documentation in onboarding).
+### Tap, long press
+On Today, tapping a nutrient card opens the `LogSheet` (exact amount, note,
+today's entries); the − / + buttons log one step. Long press shows the
+`.contextMenu` (Add Exact Amount, Edit, Move to Group).
 
 ### Swipe actions
 For lists (My Nutrients, History), use `.swipeActions` — it's the native iOS pattern for list-item actions:
@@ -198,9 +202,9 @@ Use `.keyboardType(.decimalPad)` on numeric fields. Use `.onSubmit` or a toolbar
 ## Accessibility Basics
 
 - All interactive elements must have `.accessibilityLabel` if the visual label is ambiguous (e.g. icon-only buttons).
-- Progress bars: use `.accessibilityValue` to announce current / target values.
+- Rings and progress bars: use `.accessibilityValue` to announce current / target values.
 - Respect Dynamic Type — never clamp font sizes.
-- Support both light and dark mode via semantic colours (covered above).
+- Support both light and dark mode via the asset-catalog tokens (covered above); check every new view in both.
 
 ```swift
 Button {
@@ -236,6 +240,7 @@ Use `.animation(.default, value: someValue)` to scope animations to specific sta
 
 - ❌ No UIKit (`UIViewController`, `UITableView`, etc.) unless absolutely no SwiftUI equivalent exists.
 - ❌ No custom navigation bars built from scratch — use `NavigationStack` + `.toolbar`.
-- ❌ No hardcoded colours, font sizes, or spacing magic numbers.
+- ❌ No hex colours, font sizes, or spacing/radius magic numbers in view code — use `Theme` tokens (colours, `Theme.Spacing`, `Theme.Radius` from DESIGN.md §1.4) and Dynamic Type styles (numbers: `.fontDesign(.rounded)` + `.monospacedDigit()`).
+- ❌ No emoji as UI glyphs (streak = `flame.fill`).
 - ❌ No custom tab bar — use SwiftUI `TabView`.
 - ❌ No loading spinners for local SwiftData operations (they're synchronous enough).

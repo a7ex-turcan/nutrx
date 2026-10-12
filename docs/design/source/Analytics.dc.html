@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — Vitamin D analytics</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1B3B2D}a:hover{color:#0E1A13}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F2F4EF; color: #0E1A13; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+
+  <div style="padding: 54px 12px 0 8px; display: flex; align-items: center; justify-content: space-between">
+    <a href="Nutrients.dc.html" style="height: 44px; padding: 0 14px 0 8px; border-radius: 22px; background: rgba(255,255,255,0.8); display: flex; align-items: center; gap: 2px; text-decoration: none; font-size: 16px; font-weight: 600">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      Nutrients
+    </a>
+    <button style="height: 44px; padding: 0 16px; border-radius: 22px; border: 0; background: rgba(255,255,255,0.8); font: 600 16px -apple-system, system-ui, sans-serif; color: #1B3B2D; cursor: pointer">Edit</button>
+  </div>
+
+  <div style="padding: 14px 20px 0 20px; display: flex; align-items: center; gap: 14px">
+    <div aria-hidden="true" style="width: 52px; height: 52px; border-radius: 16px; background: #FCF1D2; display: flex; align-items: center; justify-content: center; flex: none">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#C48C00" stroke-width="2" stroke-linecap="round"><path d="M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">Vitamin D</h1>
+      <div style="font-size: 14px; color: #56655C">At least 4,000 IU a day · Morning stack</div>
+    </div>
+  </div>
+
+  <div role="tablist" aria-label="Period" style="margin: 18px 16px 0 16px; padding: 3px; border-radius: 14px; background: #E3E8E1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px">
+    <button role="tab" aria-selected="true" style="height: 36px; border-radius: 11px; border: 0; background: #FFFFFF; box-shadow: 0 1px 3px rgba(14,26,19,0.12); font: 600 14px -apple-system, system-ui, sans-serif; color: #0E1A13; cursor: pointer">7 days</button>
+    <button role="tab" aria-selected="false" style="height: 36px; border-radius: 11px; border: 0; background: transparent; font: 600 14px -apple-system, system-ui, sans-serif; color: #56655C; cursor: pointer">30 days</button>
+    <button role="tab" aria-selected="false" style="height: 36px; border-radius: 11px; border: 0; background: transparent; font: 600 14px -apple-system, system-ui, sans-serif; color: #56655C; cursor: pointer">90 days</button>
+  </div>
+
+  <section style="margin: 14px 16px 0 16px; padding: 18px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)">
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 12px; font-weight: 600; color: #56655C">Hit rate</span>
+        <span style="font: 700 28px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: -0.02em">83<span style="font-size: 17px; color: #56655C">%</span></span>
+        <span style="font-size: 12px; color: #56655C">5 of 6 days</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 12px; font-weight: 600; color: #56655C">Daily avg</span>
+        <span style="font: 700 28px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: -0.02em">3,830</span>
+        <span style="font-size: 12px; color: #56655C">IU</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 12px; font-weight: 600; color: #56655C">Best day</span>
+        <span style="font: 700 28px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: -0.02em">5,000</span>
+        <span style="font-size: 12px; color: #56655C">Friday</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 18px; position: relative; height: 170px">
+      <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 30px; border-top: 1.5px dashed #9AA69F"></div>
+      <div aria-hidden="true" style="position: absolute; right: 0; top: 10px; font: 600 11px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #56655C">Goal 4,000</div>
+      <div role="img" aria-label="Daily Vitamin D intake, last 7 days" style="position: absolute; inset: 0 0 22px 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; align-items: end">
+        <sc-for list="{{bars}}" as="b" hint-placeholder-count="7">
+          <div style="height: {{b.h}}; border-radius: 10px; background: {{b.fill}}; border: {{b.border}}; box-sizing: border-box"></div>
+        </sc-for>
+      </div>
+      <div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px">
+        <sc-for list="{{bars}}" as="b" hint-placeholder-count="7">
+          <span style="text-align: center; font-size: 12px; font-weight: 600; color: {{b.labelColor}}">{{b.label}}</span>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section style="margin: 12px 16px 0 16px; padding: 18px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)">
+    <div style="display: flex; align-items: baseline; justify-content: space-between">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 700">Weekday pattern</h2>
+      <span style="font-size: 12px; color: #56655C">Last 4 weeks</span>
+    </div>
+    <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
+      <sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+          <div style="width: 100%; aspect-ratio: 1; border-radius: 12px; background: {{d.fill}}; display: flex; align-items: center; justify-content: center; font: 700 12px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{d.ink}}">{{d.pct}}</div>
+          <span style="font-size: 12px; font-weight: 600; color: #56655C">{{d.label}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin: 14px 0 0 0; font-size: 14px; line-height: 20px; color: #0E1A13">Sundays are your weakest day — <span style="color: #56655C">a 10:00 reminder on weekends could help.</span></p>
+  </section>
+
+  <section style="margin: 12px 16px 0 16px; border-radius: 24px; background: #FFFFFF; overflow: hidden">
+    <button style="width: 100%; min-height: 56px; border: 0; background: transparent; padding: 0 16px; display: flex; align-items: center; gap: 12px; font: 400 16px -apple-system, system-ui, sans-serif; color: #0E1A13; cursor: pointer; text-align: left">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B3B2D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"></path></svg>
+      <span style="flex: 1">Reminders</span>
+      <span style="color: #56655C">13:00</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA69F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var vals = [4000, 4000, 2000, 5000, 4000, 4000, 2000];
+    var labels = ['T', 'W', 'T', 'F', 'S', 'S', 'Today'];
+    var max = 6000, h = 148;
+    var bars = vals.map(function (v, i) {
+      var today = i === vals.length - 1;
+      var hit = v >= 4000;
+      return {
+        h: Math.round(v / max * h) + 'px',
+        fill: today ? 'transparent' : (hit ? '#E5A500' : '#F5DFA0'),
+        border: today ? '2px dashed #E5A500' : '0',
+        label: labels[i],
+        labelColor: today ? '#0E1A13' : '#56655C'
+      };
+    });
+    var pcts = [100, 75, 100, 50, 100, 75, 25];
+    var days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    var week = pcts.map(function (p, i) {
+      var fill = p === 100 ? '#E5A500' : (p >= 75 ? '#F2CC5E' : (p >= 50 ? '#F7E2A6' : '#FBF0D3'));
+      return { pct: p + '%', label: days[i], fill: fill, ink: '#3A2A00' };
+    });
+    return { bars: bars, week: week };
+  }
+}
+</script>
+</body>
+</html>
