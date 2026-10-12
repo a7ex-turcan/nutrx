@@ -37,6 +37,7 @@ Put colours in `nutrx/Assets.xcassets` as named colour sets with **Any / Dark** 
 | `Brand/GreenSoft` | `#7BE3A0` | `#7BE3A0` | Accents on forest (flame, "Today" label, icon on forest) |
 | `Text/GreenInk` | `#137A3A` | `#5BD88A` | Green *text* ("Done", "6/6") |
 | `Text/AmberInk` | `#9A5A0C` | `#F0B35A` | Warning text ("80 mg left today") |
+| `Text/OnTint` | `#050A07` | `#050A07` | Dark ink on a nutrient-tint fill (heatmap percentages) — used where it out-contrasts white; white otherwise. Keeps every tint × fill level ≥ 4.5:1 |
 | `Status/Amber` | `#E08A1E` | `#E08A1E` | Ring colour when nearing / over a limit |
 | `Surface/Ground` | `#F2F4EF` | `#0A130E` | Screen background (replaces `systemGroupedBackground` on branded screens) |
 | `Surface/Card` | `#FFFFFF` | `#142019` | Cards, list groups, sheets |

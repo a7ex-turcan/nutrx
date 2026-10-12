@@ -68,7 +68,7 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
-- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. **Next:** Phase 5 (Analytics).
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. **Next:** Phase 6 (History).
 - Where this file still describes the old UI (blue/green/orange progress bars, personal-info onboarding), DESIGN.md wins. Update this file as each phase lands.
 
 ---
@@ -146,12 +146,16 @@ nutrx/
 │   │   │   ├── NutrientFormView.swift           # Create/edit sheet: preview row, NutrientFormFields, Group + Reminders rows, notes.
 │   │   │   ├── PendingRemindersSheet.swift      # Reminder times for a nutrient that isn't saved yet (kept on the draft).
 │   │   │   ├── NutrientRemindersSheet.swift     # Per-nutrient dose reminder management.
-│   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics screen. Three cards: bar chart, stats, day-of-week. Pushed onto NavigationStack on row tap.
-│   │   │   ├── DailyIntakeChartCard.swift       # Card 1 — bar chart with period picker (7D/30D/90D) and target RuleMark.
-│   │   │   ├── PeriodStatsCard.swift            # Card 2 — hit rate, average, target stats derived from selected period.
-│   │   │   └── DayOfWeekCard.swift              # Card 3 — fixed 4-week average broken down by weekday.
+│   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics, pushed on row tap: header, period picker, stats + chart card, heatmap, Reminders row, Edit.
+│   │   │   ├── StatTriplet.swift                # Hit rate / Daily avg / Best day columns (stack at accessibility sizes).
+│   │   │   ├── DailyIntakeChart.swift           # Swift Charts bars in the tint, dashed today outline, dashed goal rule(s) + labels.
+│   │   │   └── WeekdayHeatmap.swift             # 7 squares by 4-week hit rate + "Sundays are your weakest day."
 │   │   └── ViewModels/
-│   │       └── NutrientAnalyticsViewModel.swift # Fetches and aggregates IntakeRecords for the selected nutrient and period. Exposes dailyTotals, hitRate, average, dayOfWeekAverages.
+│   │       ├── NutrientAnalyticsViewModel.swift # Fetches day totals for the nutrient; exposes goal, summary, stats, weekdayPattern for the selected period.
+│   │       ├── AnalyticsSummary.swift           # AnalyticsDay / AnalyticsGoal / AnalyticsSummary — period days, hit rate, average, best day (pure).
+│   │       ├── WeekdayPattern.swift             # Per-weekday hit rate over the last 28 days, weakest-day insight, heatmap fill levels (pure).
+│   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
+│   │       └── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │
 │   ├── History/                 # Tab 3 — read-only log of past days.
 │   │   ├── Views/
@@ -177,7 +181,8 @@ nutrx/
 │
 └── Shared/
     ├── DesignSystem/
-    │   ├── CardStyle.swift                 # .cardStyle(): card fill + radius, forest shadow (light) / hairline (dark).
+    │   ├── CardStyle.swift                 # .cardStyle(): card fill + radius, forest shadow on the card shape only (light) / hairline (dark).
+    │   ├── ContrastColor.swift             # WCAG contrast maths on resolved colours — picks legible ink on runtime fills (heatmap).
     │   ├── Theme.swift                     # Brand colour tokens, NutrientTint colours, GoalStatus colours, spacing/radius constants.
     │   └── Colors.xcassets                 # Named colour sets (Any/Dark) for every token and tint. Shared with widget + Watch targets.
     ├── Extensions/
@@ -367,59 +372,18 @@ Chronological list of past days (most recent first), grouped by month. Read-only
 
 ## Nutrient Analytics
 
-Accessed by tapping any nutrient row in the My Nutrients tab. Replaces the previous tap-to-edit behaviour — editing is still available via swipe-left on the row or long-press context menu, both of which were already shipped.
+Redesigned in phase 5 (DESIGN.md §4.8, §5.3). Tapping a nutrient row in My Nutrients pushes `NutrientAnalyticsView` onto the My Nutrients `NavigationStack`; editing is also available via swipe or the context menu on the row.
 
-`NutrientAnalyticsView` is pushed onto the My Nutrients `NavigationStack`. It receives the `Nutrient` model object and hosts `NutrientAnalyticsViewModel`.
+- **Header** — 52pt `NutrientIconTile`, name (`.title.bold`), "At least 4,000 IU a day · Morning stack" (group only when it isn't General). The bar shows the name once the header scrolls away. Toolbar **Edit** opens `NutrientFormView`; saving refreshes the stats.
+- **Period picker** — native segmented `Picker`: 7 / 30 / 90 days (default 7). Drives the stats and the chart; the heatmap is always the last 4 weeks.
+- **Stats + chart card** — `StatTriplet`: Hit rate ("83 %", "5 of 6 days"), Daily avg (unit), Best day (weekday name for 7 days, a date for 30/90; "Peak day" for at-most and range goals, where the highest day isn't the best). Below it `DailyIntakeChart`: one bar per day in the nutrient's tint — met days full tint, missed days tint @ 35% — today as a dashed outline (with a faint fill), and dashed goal rules: "Goal X", "Limit X", or "Min" / "Max" for a range. Goal labels are drawn in the chart overlay because Swift Charts draws later bars over mark annotations.
+- **Weekday heatmap card** — `WeekdayHeatmap`: seven squares from `Calendar.current.firstWeekday`, filled by hit rate (100% full tint, ≥ 75% @ 70%, ≥ 50% @ 40%, else 15%), percentage inside in `Text/OnTint` or white — whichever contrasts more with that square's fill (≥ 4.5:1 for every tint and level, light and dark; `ContrastColorTests`), weekday letter below. One sentence when a single weekday is ≥ 25 points below the average and every rated weekday has at least 2 days ("Sundays are your weakest day.") — no advice beyond that.
+- **Reminders row** — times ("13:00", "8:00, 20:00", "3 a day" or "None"; `NutrientSummaryText`); opens `NutrientRemindersSheet`.
+- **VoiceOver / Audio Graph** — each bar is labelled with its date and real total ("30 Mg, on target"); today reads "… so far" (its bar is drawn at least a sliver tall, but the value is the true total).
 
-### Period picker
+**Counting rules** (`AnalyticsSummary`, `WeekdayPattern`): a day's total is the SUM of its `IntakeRecord`s floored at 0, and "met" comes from `GoalProgress.countsAsMet`. Stats count only *completed, tracked* days — today is drawn but not counted until it's over, and days before `Nutrient.createdAt` don't count (same scoping as streaks). No counted days → "—". Best day is the highest total among counted days (earliest wins a tie; nothing logged → none).
 
-A segmented control at the top of the screen with three options: **7D · 30D · 90D**. Defaults to 7D on open. Controls the data range for Cards 1 and 2. Card 3 is always fixed at 4 weeks regardless of this selection.
-
-### Card 1 — Daily Intake Chart
-
-Built with **Swift Charts** (native, no third-party dependency). One `BarMark` per calendar day in the selected period. Bar height = total intake for that day (SUM of `IntakeRecord.amount` for that nutrient, same aggregation logic as `TodayViewModel` — floored at 0 in the UI, never negative). A dashed `RuleMark` at `nutrient.dailyTarget` acts as the target line. Bars are color-coded using the same three-state logic as `NutrientProgressBar`: blue (below target), green (at or above target), orange (exceeded by more than 0%). Card title: "Daily intake". Period picker lives in the card header trailing position.
-
-**Important:** days with zero intake must still render as a zero-height bar so the x-axis is continuous and the user can see gaps clearly.
-
-### Card 2 — Period Stats
-
-Title: "This period" (updates label to reflect "Last 7 days" / "Last 30 days" / "Last 90 days" as a subtitle). Three stat items displayed in a horizontal row:
-
-| Stat | Label | Derivation |
-|---|---|---|
-| Hit rate | "On target" | Days where total ≥ dailyTarget ÷ total days in period, displayed as "X / Y days" |
-| Average | "Daily avg" | Sum of all daily totals ÷ number of days in period, displayed with unit |
-| Target | "Target" | `nutrient.dailyTarget` with unit — static, for quick reference |
-
-### Card 3 — Day of Week Patterns
-
-Title: "Patterns". Subtitle: "Last 4 weeks" — always fixed, does not respond to the period picker. Seven small bars, one per weekday (Mon–Sun). Each bar height = average daily intake for that weekday over the last 28 days (only days that have at least one `IntakeRecord` for this nutrient count toward the average — days with no data are excluded from the denominator so the average isn't dragged down by days the user simply didn't log). A dashed `RuleMark` at `nutrient.dailyTarget` is shown for reference. The highest bar is highlighted in accent blue; the rest are neutral grey. This lets the user instantly spot their strongest and weakest days of the week.
-
-### ViewModel — NutrientAnalyticsViewModel
-
-Holds `@Published var selectedPeriod: AnalyticsPeriod` (enum: `.week`, `.month`, `.quarter`). On init and on period change, fetches all `IntakeRecord` rows for the given nutrient within the date window using a manual `ModelContext` fetch (same pattern as widget `TimelineProvider` — no `@Query` in the VM). Computes and exposes:
-
-- `dailyTotals: [Date: Double]` — keyed by calendar day (start-of-day), covering every day in the window including zeros
-- `hitRate: (Int, Int)` — (daysOnTarget, totalDays)
-- `periodAverage: Double`
-- `dayOfWeekAverages: [Int: Double]` — keyed by `Calendar.weekday` (1 = Sunday … 7 = Saturday)
-
-All aggregation uses calendar-day comparison, consistent with the rest of the app. Amounts are summed per day and floored at 0 before being exposed to the view layer.
-
-### File placement summary
-
-```
-Features/Nutrients/Views/
-  NutrientAnalyticsView.swift       ← screen shell, hosts the three cards + period picker
-  DailyIntakeChartCard.swift        ← Card 1
-  PeriodStatsCard.swift             ← Card 2
-  DayOfWeekCard.swift               ← Card 3
-
-Features/Nutrients/ViewModels/
-  NutrientAnalyticsViewModel.swift  ← data fetching + aggregation
-```
-
-No new SwiftData models required. No new services. No network requests.
+`NutrientAnalyticsViewModel` does one manual `ModelContext` fetch of the nutrient's records over max(period, 29) days (no `@Query`), builds the summary, stat text and weekday pattern, and refreshes on period change, edit, and when the screen reappears. All the maths lives in the pure types, covered by `AnalyticsSummaryTests` and `WeekdayPatternTests`.
 
 ---
 
@@ -492,29 +456,9 @@ Redesigned in phase 4 (DESIGN.md §5.7). Sheet with **Cancel / title / Add (or S
 
 ---
 
-### Analytics — DailyIntakeChartCard and DayOfWeekCard
+### Analytics
 
-**Rule marks:**
-- `.minimum` → single dashed `RuleMark` at `dailyTarget`, neutral color, labeled "Target"
-- `.maximum` → single dashed `RuleMark` at `dailyTarget`, orange tint, labeled "Max"
-- `.range` → two dashed `RuleMarks`: green at `dailyTarget` labeled "Min", orange at `upperBound` labeled "Max". A subtle filled area between the two lines reinforces the target window (use `AreaMark` or a background `RectangleMark` at low opacity). Check that labels don't overlap on narrow chart widths — offset vertically if needed.
-
-**Bar colors:** mirror `NutrientProgressBar` logic exactly — blue / green / orange based on goal type and the same threshold conditions. Consistency between Today and Analytics is critical.
-
----
-
-### Analytics — PeriodStatsCard
-
-**Hit rate computation** changes silently by goal type (label stays "On target"):
-- `.minimum` — day counts if total ≥ `dailyTarget`
-- `.maximum` — day counts if total ≤ `dailyTarget`
-- `.range` — day counts if `dailyTarget ≤ total ≤ upperBound`
-
-**Target stat** (rightmost column):
-- `.minimum` / `.maximum` → `"target unit"` as today
-- `.range` → `"lower–upper unit"` e.g. `"1,000–2,000 mg"` — no line break, en dash between values
-
----
+Hit rate, the chart's met/missed bars and the heatmap all judge a day with `GoalProgress.countsAsMet` (see below), so analytics, Today, History and streaks agree. Goal rules: `.minimum` → "Goal X", `.maximum` → "Limit X", `.range` → "Min" (label below the line) and "Max" (above). Best day is labelled "Peak day" for `.maximum` and `.range`.
 
 ### StreakService
 
@@ -534,11 +478,8 @@ Redesigned in phase 4 (DESIGN.md §5.7). Sheet with **Cancel / title / Add (or S
 | `Shared/Components/NutrientProgressBar.swift` | Refactor signature + implement all three color/fill modes |
 | `Shared/Components/NutrientFormFields.swift` | Goal type picker + conditional `upperBound` field (redesigned in phase 4: cards + live preview row) |
 | `Features/Today/ViewModels/TodayViewModel.swift` | No change — totals are still raw sums; color logic lives in the bar |
-| `Features/Nutrients/Views/NutrientAnalyticsView.swift` | Pass `goalType` + `upperBound` down to chart cards |
-| `Features/Nutrients/Views/DailyIntakeChartCard.swift` | Update `RuleMark`s + bar color logic |
-| `Features/Nutrients/Views/PeriodStatsCard.swift` | Update hit rate logic + target stat display for range |
-| `Features/Nutrients/Views/DayOfWeekCard.swift` | Update `RuleMark`s + bar color logic |
-| `Features/Nutrients/ViewModels/NutrientAnalyticsViewModel.swift` | Update hit rate derivation |
+| `Features/Nutrients/Views/DailyIntakeChart.swift` | Goal rules per type (Goal / Limit / Min + Max) |
+| `Features/Nutrients/ViewModels/AnalyticsSummary.swift` | Met days via `GoalProgress.countsAsMet` |
 | `Shared/Services/StreakService.swift` | Update per-nutrient completion check for all three goal types |
 
 No new SwiftData models, services, or files required beyond the above edits.

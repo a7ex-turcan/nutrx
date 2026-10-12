@@ -1,29 +1,27 @@
 import Foundation
 import SwiftData
 
-enum AnalyticsPeriod: String, CaseIterable, Identifiable {
-    case week = "7D"
-    case month = "30D"
-    case quarter = "90D"
+enum AnalyticsPeriod: Int, CaseIterable, Identifiable {
+    case week = 7
+    case month = 30
+    case quarter = 90
 
-    var id: String { rawValue }
-
-    var days: Int {
-        switch self {
-        case .week: 7
-        case .month: 30
-        case .quarter: 90
-        }
-    }
+    var id: Int { rawValue }
+    var days: Int { rawValue }
+    var title: String { "\(rawValue) days" }
 }
 
+/// Fetches a nutrient's intake and builds the analytics screen's summaries. The maths lives in
+/// `AnalyticsSummary` / `WeekdayPattern`; this only loads the day totals.
 @Observable
 final class NutrientAnalyticsViewModel {
-    var selectedPeriod: AnalyticsPeriod = .week
-    var dailyTotals: [(date: Date, total: Double)] = []
-    var hitRate: (onTarget: Int, total: Int) = (0, 0)
-    var periodAverage: Double = 0
-    var dayOfWeekAverages: [(weekday: Int, label: String, average: Double)] = []
+    var selectedPeriod: AnalyticsPeriod = .week {
+        didSet { if selectedPeriod != oldValue { refresh() } }
+    }
+    private(set) var goal: AnalyticsGoal
+    private(set) var summary: AnalyticsSummary?
+    private(set) var stats: [AnalyticsStat] = []
+    private(set) var weekdayPattern: WeekdayPattern?
 
     private let nutrient: Nutrient
     private let modelContext: ModelContext
@@ -31,93 +29,40 @@ final class NutrientAnalyticsViewModel {
     init(nutrient: Nutrient, modelContext: ModelContext) {
         self.nutrient = nutrient
         self.modelContext = modelContext
+        goal = AnalyticsGoal(nutrient: nutrient)
         refresh()
-        refreshDayOfWeek()
     }
 
-    func refresh() {
+    /// Re-reads the nutrient's goal and intake — call after an edit or when the screen reappears.
+    func refresh(now: Date = .now) {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: .now)
-        let startDate = calendar.date(byAdding: .day, value: -selectedPeriod.days, to: today)!
+        goal = AnalyticsGoal(nutrient: nutrient)
+        let lookback = max(selectedPeriod.days, WeekdayPattern.windowDays + 1)
+        let totals = dayTotals(daysBack: lookback, now: now, calendar: calendar)
 
+        let summary = AnalyticsSummary(dayCount: selectedPeriod.days, totals: totals, goal: goal,
+                                       createdAt: nutrient.createdAt, today: now, calendar: calendar)
+        self.summary = summary
+        stats = AnalyticsStat.triplet(for: summary, period: selectedPeriod, unit: nutrient.unit,
+                                      goalType: nutrient.goalType, calendar: calendar)
+        weekdayPattern = WeekdayPattern(totals: totals, goal: goal, createdAt: nutrient.createdAt,
+                                        today: now, calendar: calendar)
+    }
+
+    /// Summed intake per day (keyed by start of day) from `daysBack - 1` days ago through today.
+    private func dayTotals(daysBack: Int, now: Date, calendar: Calendar) -> [Date: Double] {
+        let startOfToday = calendar.startOfDay(for: now)
+        let start = calendar.date(byAdding: .day, value: -(daysBack - 1), to: startOfToday)!
+        let end = calendar.date(byAdding: .day, value: 1, to: startOfToday)!
         let nutrientID = nutrient.id
         let descriptor = FetchDescriptor<IntakeRecord>(
             predicate: #Predicate<IntakeRecord> {
-                $0.nutrient?.id == nutrientID
-                    && $0.date >= startDate
-                    && $0.date < today
+                $0.nutrient?.id == nutrientID && $0.date >= start && $0.date < end
             }
         )
-
         let records = (try? modelContext.fetch(descriptor)) ?? []
-
-        // Group records by calendar day
-        var dayMap: [Date: Double] = [:]
-        for record in records {
-            let day = calendar.startOfDay(for: record.date)
-            dayMap[day, default: 0] += record.amount
-        }
-
-        // Build continuous array of days
-        var result: [(date: Date, total: Double)] = []
-        var onTarget = 0
-
-        for offset in (0..<selectedPeriod.days).reversed() {
-            let day = calendar.date(byAdding: .day, value: -(offset + 1), to: today)!
-            let startOfDay = calendar.startOfDay(for: day)
-            let total = max(0, dayMap[startOfDay] ?? 0)
-            result.append((date: startOfDay, total: total))
-
-            if GoalProgress(nutrient: nutrient, current: total).countsAsMet { onTarget += 1 }
-        }
-
-        dailyTotals = result
-        hitRate = (onTarget, selectedPeriod.days)
-
-        let sum = result.reduce(0.0) { $0 + $1.total }
-        periodAverage = result.isEmpty ? 0 : sum / Double(result.count)
-    }
-
-    private func refreshDayOfWeek() {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: .now)
-        let startDate = calendar.date(byAdding: .day, value: -28, to: today)!
-
-        let nutrientID = nutrient.id
-        let descriptor = FetchDescriptor<IntakeRecord>(
-            predicate: #Predicate<IntakeRecord> {
-                $0.nutrient?.id == nutrientID
-                    && $0.date >= startDate
-                    && $0.date < today
-            }
-        )
-
-        let records = (try? modelContext.fetch(descriptor)) ?? []
-
-        // Group by calendar day, then aggregate by weekday
-        var dayMap: [Date: Double] = [:]
-        for record in records {
-            let day = calendar.startOfDay(for: record.date)
-            dayMap[day, default: 0] += record.amount
-        }
-
-        // Only include days that have at least one record
-        var weekdaySums: [Int: Double] = [:]
-        var weekdayCounts: [Int: Int] = [:]
-        for (day, total) in dayMap {
-            let wd = calendar.component(.weekday, from: day)
-            weekdaySums[wd, default: 0] += max(0, total)
-            weekdayCounts[wd, default: 0] += 1
-        }
-
-        // Build Mon–Sun ordered array (weekday 2=Mon ... 7=Sat, 1=Sun)
-        let weekdayOrder = [2, 3, 4, 5, 6, 7, 1]
-        let symbols = calendar.shortWeekdaySymbols // ["Sun", "Mon", ...]
-        dayOfWeekAverages = weekdayOrder.map { wd in
-            let avg = weekdayCounts[wd, default: 0] > 0
-                ? weekdaySums[wd, default: 0] / Double(weekdayCounts[wd]!)
-                : 0
-            return (weekday: wd, label: symbols[wd - 1], average: avg)
+        return records.reduce(into: [:]) { totals, record in
+            totals[calendar.startOfDay(for: record.date), default: 0] += record.amount
         }
     }
 }
