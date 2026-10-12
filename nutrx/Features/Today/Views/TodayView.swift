@@ -129,7 +129,7 @@ struct TodayView: View {
             NutrientFormView(
                 draft: editDraft,
                 title: "Edit Nutrient",
-                buttonLabel: "Save Changes",
+                buttonLabel: "Save",
                 nutrient: nutrient
             ) {
                 applyEdit(to: nutrient)
@@ -142,7 +142,7 @@ struct TodayView: View {
             NutrientFormView(
                 draft: addDraft,
                 title: "New Nutrient",
-                buttonLabel: "Add Nutrient",
+                buttonLabel: "Add",
                 selectedGroup: $selectedGroupForAdd,
                 showGroupPicker: true
             ) {
@@ -365,17 +365,7 @@ struct TodayView: View {
     }
 
     private func applyEdit(to nutrient: Nutrient) {
-        guard let stepValue = editDraft.step.parsedDouble,
-              let targetValue = editDraft.dailyTarget.parsedDouble else { return }
-
-        nutrient.name = editDraft.name.trimmingCharacters(in: .whitespaces)
-        nutrient.unit = editDraft.unit.trimmingCharacters(in: .whitespaces)
-        nutrient.step = stepValue
-        nutrient.dailyTarget = targetValue
-        nutrient.goalType = editDraft.goalType
-        nutrient.upperBound = editDraft.goalType == .range ? editDraft.upperBound.parsedDouble : nil
-        let notes = editDraft.notes.trimmingCharacters(in: .whitespaces)
-        nutrient.notes = notes.isEmpty ? nil : notes
+        editDraft.apply(to: nutrient)
         viewModel.refresh(context: modelContext)
     }
 }

@@ -68,7 +68,7 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
-- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. **Next:** Phase 4 (Nutrient form + My Nutrients).
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. **Next:** Phase 5 (Analytics).
 - Where this file still describes the old UI (blue/green/orange progress bars, personal-info onboarding), DESIGN.md wins. Update this file as each phase lands.
 
 ---
@@ -142,8 +142,9 @@ nutrx/
 │   │
 │   ├── Nutrients/               # Tab 2 — manage the nutrient list.
 │   │   ├── Views/
-│   │   │   ├── NutrientsListView.swift          # Reorderable list with add/edit/delete. Row shows note inline, summary with target/reminders/step.
-│   │   │   ├── NutrientFormView.swift           # Create/edit form with group picker and reminders section.
+│   │   │   ├── NutrientsListView.swift          # Large-title list of inset group cards; row = icon tile, name, goal-type tag + target, bell. Reorder, swipe, context menu, dashed "New group".
+│   │   │   ├── NutrientFormView.swift           # Create/edit sheet: preview row, NutrientFormFields, Group + Reminders rows, notes.
+│   │   │   ├── PendingRemindersSheet.swift      # Reminder times for a nutrient that isn't saved yet (kept on the draft).
 │   │   │   ├── NutrientRemindersSheet.swift     # Per-nutrient dose reminder management.
 │   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics screen. Three cards: bar chart, stats, day-of-week. Pushed onto NavigationStack on row tap.
 │   │   │   ├── DailyIntakeChartCard.swift       # Card 1 — bar chart with period picker (7D/30D/90D) and target RuleMark.
@@ -191,10 +192,13 @@ nutrx/
     │   ├── NutrientCard.swift               # Today row: ProgressRing, name, value, status line, − / + (44pt).
     │   ├── GroupHeader.swift                # Today group header: name, met-count chip, collapse chevron.
     │   ├── FormField.swift
-    │   ├── NutrientFormFields.swift         # Reusable nutrient form + NutrientDraft observable.
+    │   ├── NutrientFormFields.swift         # NutrientDraft + shared fields: name/unit, Look (tint, symbol), Daily goal, notes.
+    │   ├── NutrientPreviewRow.swift         # Live preview at the top of the nutrient form.
+    │   ├── TintPicker.swift                 # 8 tint swatches.
+    │   ├── SymbolPicker.swift               # 16-symbol grid (DESIGN.md §3 set).
+    │   ├── GoalTypePicker.swift             # At least / At most / Between cards.
     │   ├── NutrientRowView.swift            # Old card with progress bar — History day only until phase 6.
     │   ├── NutrientProgressBar.swift        # Blue (in progress), green (complete), orange (exceeded).
-    │   ├── GroupHeaderView.swift            # Old collapsible group header — My Nutrients only until phase 4.
     │   ├── MoveToGroupSheet.swift
     │   ├── CameraView.swift                 # UIImagePickerController wrapper for camera capture.
     │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
@@ -205,7 +209,8 @@ nutrx/
     │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback.
     │   │                                    # Backs up local store before first CloudKit init to prevent data loss.
     │   │                                    # Singleton deduplication. Logs via os.log.
-    │   ├── NutrientDraft+Insert.swift       # Creates a nutrient (+ reminders) from a NutrientDraft. Used by My Nutrients and Today.
+    │   ├── NutrientDraft+Persistence.swift  # insertNutrient / apply(to:) — the only writers of a draft to a Nutrient.
+    │   ├── NutrientGroup+Create.swift       # NutrientGroup.create(named:among:in:) — new user group before General.
     │   └── PreviewSampleData.swift
     └── Services/
         ├── DayScore.swift                   # Met / total + the day-score card headline.
@@ -328,7 +333,9 @@ Completion tracked via `UserProfile.onboardingCompleted`. On a new device with i
 
 ## Nutrient Configuration
 
-Users create and manage their own nutrients. No preset list — fully user-defined. Each nutrient has: **name**, **unit**, **step** (increment per +/− tap), **daily target**, and optional **notes**. Nutrients can be reordered via drag-and-drop. Order in My Nutrients = order on Today screen.
+Users create and manage their own nutrients. No preset list — fully user-defined. Each nutrient has: **name**, **unit**, **step** (increment per +/− tap), **daily target**, a **tint** and **SF Symbol**, and optional **notes**. Nutrients can be reordered via drag-and-drop. Order in My Nutrients = order on Today screen.
+
+**My Nutrients** (DESIGN.md §5.6): large title, toolbar + (filled forest circle) and profile. Groups are inset cards with uppercase headers and a count (headers hidden when only General exists; every nutrient is listed — collapsing is a Today thing). Row: icon tile, name, goal-type tag ("AT LEAST" / "AT MOST" / "BETWEEN") + target, bell if it has reminders, chevron → analytics. Swipe right = edit, swipe left = delete, long press = Edit / Move to Group / Delete, drag to reorder. A dashed **New group** button ends the list.
 
 Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Smart suppression cancels upcoming reminders after logging intake. Reminders can be configured both during nutrient creation (inline in the form) and via the "Reminders" section in the Edit Nutrient form. Notification permission is requested on first reminder add if not yet granted.
 
@@ -472,31 +479,16 @@ For `.maximum`, consider prefixing with "Max:" on the nutrient form but keeping 
 
 ### NutrientFormView — setup UX
 
-The goal type picker is a segmented control with plain-English labels, not enum names:
+Redesigned in phase 4 (DESIGN.md §5.7). Sheet with **Cancel / title / Add (or Save)** in the toolbar, on `Surface/Ground`:
 
-| Display label | Maps to |
-|---|---|
-| At least | `.minimum` |
-| At most | `.maximum` |
-| Between | `.range` |
+1. **Live preview row** (`NutrientPreviewRow`) — ring in the chosen tint and symbol, the name, "0 / 5 g · +5 g per tap"; updates as you type.
+2. **Name + Unit** card (unit isn't auto-capitalised).
+3. **Look** — `TintPicker` (8 swatches) and `SymbolPicker` (16 SF Symbols from DESIGN.md §3). New nutrients start on the first tint nobody uses yet (`NutrientTint.suggested(avoiding:)`).
+4. **Daily goal** — `GoalTypePicker` cards (At least / At most / Between, each with a tiny bar) replace the segmented control; then "At least, per day" + "Each tap adds" (range: "Minimum, per day" + "Maximum", then "Each tap adds"). A range whose maximum isn't above the minimum shows an inline error and can't be saved.
+5. **Group** row (new nutrients only — a dialog listing groups + "New Group…"; edits use Move to Group) and **Reminders** row (saved nutrient → `NutrientRemindersSheet`; new nutrient → `PendingRemindersSheet`, created with it).
+6. **Notes**, then **Delete Nutrient** when editing.
 
-Place the segmented control at the top of the target section, above the target value field(s).
-
-**Dynamic caption** — a single sentence directly below the segmented control that updates live as the user changes goal type or edits values:
-- At least: *"Your bar fills green when you hit [target] [unit] or more."*
-- At most: *"Your bar turns orange if you go over [target] [unit]."*
-- Between: *"Your bar is green when you stay between [lower] and [upper] [unit]."*
-
-Use the actual typed values so the caption reads as a real description of their specific nutrient. Fall back to placeholder text (e.g. "your target") if the value field is empty.
-
-**Live mini progress bar preview** — a small non-interactive `NutrientProgressBar` directly below the caption, pre-filled to a representative value so the user sees the exact color and fill they'll get on Today before saving:
-- `.minimum`: preview at 60% of target (blue, in progress)
-- `.maximum`: preview at 70% of target (orange, spending budget)
-- `.range`: preview at a value inside the range (green, on target)
-
-This is ~20 lines of SwiftUI. It eliminates the most common confusion about what each goal type means in practice.
-
-**Field layout for `.range`:** reveal a second `upperBound` field below `dailyTarget` with a smooth animation when "Between" is selected. Label them "Minimum" and "Maximum" (not "Lower bound / Upper bound"). Validate that `upperBound > dailyTarget` before allowing save — show an inline error if not.
+`NutrientFormFields` (sections 2–4 + notes, with a slot for rows before notes) is shared with onboarding. Focus (`NutrientFormField`) is owned by the container, which declares the keyboard's Done button at the root of its toolbar — a keyboard toolbar declared inside the scroll view's content caused SwiftUI attribute-graph cycles. The draft's `apply(to:)` / `insertNutrient(into:group:sortOrder:)` (`Shared/Persistence/NutrientDraft+Persistence.swift`) are the only places a draft is written to a nutrient.
 
 ---
 
@@ -540,7 +532,7 @@ This is ~20 lines of SwiftUI. It eliminates the most common confusion about what
 |---|---|
 | `Models/Nutrient.swift` | Add `goalType: GoalType = .minimum`, `upperBound: Double? = nil` |
 | `Shared/Components/NutrientProgressBar.swift` | Refactor signature + implement all three color/fill modes |
-| `Shared/Components/NutrientFormFields.swift` | Add goal type picker, dynamic caption, live preview bar, conditional `upperBound` field |
+| `Shared/Components/NutrientFormFields.swift` | Goal type picker + conditional `upperBound` field (redesigned in phase 4: cards + live preview row) |
 | `Features/Today/ViewModels/TodayViewModel.swift` | No change — totals are still raw sums; color logic lives in the bar |
 | `Features/Nutrients/Views/NutrientAnalyticsView.swift` | Pass `goalType` + `upperBound` down to chart cards |
 | `Features/Nutrients/Views/DailyIntakeChartCard.swift` | Update `RuleMark`s + bar color logic |
@@ -564,7 +556,7 @@ Permission flow handles not-asked, granted, and denied states. A one-time notifi
 
 ## Nutrient Grouping
 
-Nutrients are organised into named groups. Collapsible sections on Today and My Nutrients screens with completion counts and aggregate progress bars.
+Nutrients are organised into named groups. Collapsible sections on Today (with met counts); inset cards with counts on My Nutrients.
 
 - **General group** — system group (`isSystem = true`), always exists, cannot be renamed/deleted. Nutrients with `group = nil` resolve to General at query time.
 - **Group management** — Settings → Manage Groups. Create, rename, reorder, delete (moves nutrients to General).
@@ -693,7 +685,7 @@ User-defined nutrient to track.
 | `sortOrder` | `Int` | Legacy flat sort order, tiebreaker for groupSortOrder |
 | `groupSortOrder` | `Int = 0` | Order within group |
 | `isDeleted` | `Bool` | Soft delete flag |
-| `notes` | `String?` | Shown in My Nutrients and in reminder notifications; not on the redesigned Today card |
+| `notes` | `String?` | Shown in the edit form and as the reminder notification body; not on the redesigned Today or My Nutrients rows |
 | `group` | `NutrientGroup?` | `nil` → General group |
 | `createdAt` | `Date = Date()` | Used by streak computation |
 | `goalType` | `GoalType = .minimum` | `.minimum`, `.maximum`, or `.range` — see Nutrient Goal Types section |

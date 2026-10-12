@@ -98,7 +98,8 @@ Expose these as constants on `Theme` (e.g. `Theme.Radius.card`, `Theme.Spacing.s
 | Card corner radius | 22 (`.continuous`) |
 | Hero / streak card radius | 28 |
 | Icon tile radius | 12–13 (40–42pt tile) |
-| Control radius (text field, full-width primary button) | 16 |
+| Control radius (text field, full-width primary button, goal-type card) | 16 |
+| Tag radius ("AT LEAST" chips) | 6 |
 | Sheet corner radius | system |
 | Screen horizontal margin | 16 |
 | Gap between cards | 10 |
@@ -218,7 +219,7 @@ all goals met → `Brand/Green` fill, dark number; some met → green @ 25% fill
 ### 4.10 Form pickers (Nutrient form)
 - `TintPicker`: 8 circles (34pt), selected = 3pt card-colour gap + 2pt tint ring.
 - `SymbolPicker`: grid of 44pt tiles; selected tile uses the tint's tile bg/glyph.
-- `GoalTypePicker`: 3 cards (At least / At most / Between), each with a tiny bar illustration; selected = 2pt `Brand/Forest` border. Replaces the segmented `Picker`.
+- `GoalTypePicker`: 3 cards (At least / At most / Between), each with a tiny bar illustration; selected = 2pt `Control/Primary` border (forest in light, green in dark — `Brand/Forest` disappears on a dark card). Replaces the segmented `Picker`.
 - Live preview row at the top of the form (ring + name + "0 / 5 g · +5 g per tap") that updates as you type.
 
 ---

@@ -15,6 +15,8 @@ struct NutrientsListView: View {
     @State private var nutrientToEdit: Nutrient?
     @State private var nutrientToDelete: Nutrient?
     @State private var nutrientToMove: Nutrient?
+    @State private var showNewGroupAlert = false
+    @State private var newGroupName = ""
     @Query private var allPreferences: [UserPreferences]
 
     private var generalGroup: NutrientGroup? {
@@ -58,19 +60,31 @@ struct NutrientsListView: View {
                     nutrientList
                 }
             }
+            .background(Theme.surfaceGround)
             .navigationTitle("My Nutrients")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
             .withProfileMenu()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        addDraft.reset()
-                        selectedGroupForAdd = generalGroup
-                        showAddSheet = true
-                    } label: {
+                    Button(action: startAdding) {
                         Image(systemName: "plus")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(Theme.controlOnPrimary)
+                            .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                            .background(Theme.controlPrimary, in: Circle())
+                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     }
+                    .accessibilityLabel("New nutrient")
                 }
+                .sharedBackgroundVisibility(.hidden)
+            }
+            .alert("New Group", isPresented: $showNewGroupAlert) {
+                TextField("Group name", text: $newGroupName)
+                Button("Add") {
+                    NutrientGroup.create(named: newGroupName, among: allGroups, in: modelContext)
+                }
+                .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
+                Button("Cancel", role: .cancel) {}
             }
             .navigationDestination(for: PersistentIdentifier.self) { id in
                 if let nutrient = nutrients.first(where: { $0.persistentModelID == id }) {
@@ -81,7 +95,7 @@ struct NutrientsListView: View {
                 NutrientFormView(
                     draft: addDraft,
                     title: "New Nutrient",
-                    buttonLabel: "Add Nutrient",
+                    buttonLabel: "Add",
                     selectedGroup: $selectedGroupForAdd,
                     showGroupPicker: true
                 ) {
@@ -92,7 +106,7 @@ struct NutrientsListView: View {
                 NutrientFormView(
                     draft: editDraft,
                     title: "Edit Nutrient",
-                    buttonLabel: "Save Changes",
+                    buttonLabel: "Save",
                     nutrient: nutrient,
                     onDelete: {
                         nutrientToEdit = nil
@@ -131,10 +145,22 @@ struct NutrientsListView: View {
 
     private var emptyState: some View {
         ContentUnavailableView {
-            Label("No Nutrients", systemImage: "leaf")
+            Label("No nutrients yet", systemImage: "leaf")
         } description: {
-            Text("Tap + to add your first nutrient.")
+            Text("Add what you take — vitamins, supplements, water, anything.")
+        } actions: {
+            Button("Add a nutrient", action: startAdding)
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.controlPrimary)
+                .foregroundStyle(Theme.controlOnPrimary)
         }
+    }
+
+    private func startAdding() {
+        addDraft.reset()
+        addDraft.tint = NutrientTint.suggested(avoiding: nutrients.map(\.tint))
+        selectedGroupForAdd = generalGroup
+        showAddSheet = true
     }
 
     // MARK: - List
@@ -143,126 +169,146 @@ struct NutrientsListView: View {
         List {
             if let prefs = allPreferences.first, !prefs.hasSeenAnalyticsBanner {
                 analyticsBanner
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
 
             ForEach(groupedSections, id: \.group.persistentModelID) { section in
                 Section {
-                    if !section.group.isCollapsed {
-                        ForEach(section.nutrients, id: \.persistentModelID) { nutrient in
-                            NavigationLink(value: nutrient.persistentModelID) {
-                                nutrientRow(nutrient)
+                    ForEach(section.nutrients, id: \.persistentModelID) { nutrient in
+                        NavigationLink(value: nutrient.persistentModelID) {
+                            nutrientRow(nutrient)
+                        }
+                        .listRowBackground(Theme.surfaceCard)
+                        .listRowSeparatorTint(Theme.lineHairline)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                nutrientToDelete = nutrient
+                            } label: {
+                                Image(systemName: "trash")
                             }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        nutrientToDelete = nutrient
-                                    } label: {
-                                        Image(systemName: "trash")
-                                    }
-                                }
-                                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                                    Button {
-                                        editDraft.populate(from: nutrient)
-                                        nutrientToEdit = nutrient
-                                    } label: {
-                                        Image(systemName: "pencil")
-                                    }
-                                    .tint(.blue)
-                                }
-                                .contextMenu {
-                                    Button {
-                                        editDraft.populate(from: nutrient)
-                                        nutrientToEdit = nutrient
-                                    } label: {
-                                        Label("Edit Nutrient", systemImage: "pencil")
-                                    }
-
-                                    Button {
-                                        nutrientToMove = nutrient
-                                    } label: {
-                                        Label("Move to Group", systemImage: "folder")
-                                    }
-
-                                    Button(role: .destructive) {
-                                        nutrientToDelete = nutrient
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
-                                }
                         }
-                        .onMove { source, destination in
-                            moveNutrients(in: section.group, from: source, to: destination)
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                editDraft.populate(from: nutrient)
+                                nutrientToEdit = nutrient
+                            } label: {
+                                Image(systemName: "pencil")
+                            }
+                            .tint(.blue)
                         }
+                        .contextMenu {
+                            Button {
+                                editDraft.populate(from: nutrient)
+                                nutrientToEdit = nutrient
+                            } label: {
+                                Label("Edit Nutrient", systemImage: "pencil")
+                            }
+
+                            Button {
+                                nutrientToMove = nutrient
+                            } label: {
+                                Label("Move to Group", systemImage: "folder")
+                            }
+
+                            Button(role: .destructive) {
+                                nutrientToDelete = nutrient
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                    }
+                    .onMove { source, destination in
+                        moveNutrients(in: section.group, from: source, to: destination)
                     }
                 } header: {
                     if hasCustomGroups {
-                        GroupHeaderView(
-                            name: section.group.name,
-                            isCollapsed: section.group.isCollapsed,
-                            intakes: [], // No aggregate progress needed in My Nutrients
-                            onToggle: {
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    section.group.isCollapsed.toggle()
-                                }
-                            }
-                        )
-                        .padding(.vertical, 4)
+                        sectionHeader(section.group.name, count: section.nutrients.count)
                     }
                 }
             }
+
+            newGroupButton
+                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+                .listRowBackground(Color.clear)
         }
         .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+        .listRowSpacing(0)
     }
 
-    private func nutrientRow(_ nutrient: Nutrient) -> some View {
+    private func sectionHeader(_ name: String, count: Int) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(nutrient.name)
-                        .font(.body.weight(.medium))
-
-                    if let notes = nutrient.notes, !notes.isEmpty {
-                        Text("·")
-                            .foregroundStyle(.secondary)
-                        Text(notes)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-
-                HStack(spacing: 0) {
-                    HStack(spacing: 3) {
-                        Image(systemName: "target")
-                            .font(.caption2)
-                        switch nutrient.goalType {
-                        case .range:
-                            Text("\(nutrient.dailyTarget.displayString)–\((nutrient.upperBound ?? nutrient.dailyTarget).displayString) \(nutrient.unit)/day")
-                        case .minimum, .maximum:
-                            Text("\(nutrient.dailyTarget.displayString) \(nutrient.unit)/day")
-                        }
-                    }
-                    Spacer()
-                    HStack(spacing: 3) {
-                        Image(systemName: "bell.fill")
-                            .font(.caption2)
-                        let count = nutrient.reminders?.count ?? 0
-                        Text("\(count) Reminder\(count == 1 ? "" : "s")")
-                    }
-                    Spacer()
-                    HStack(spacing: 3) {
-                        Image(systemName: "plus.forwardslash.minus")
-                            .font(.caption2)
-                        Text("\(nutrient.step.displayString)")
-                    }
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
+            Text(name)
+                .font(.footnote.weight(.bold))
+                .textCase(.uppercase)
+                .tracking(0.6)
+            Spacer()
+            Text("\(count)")
+                .font(.system(.footnote, design: .rounded, weight: .semibold))
+                .monospacedDigit()
         }
+        .foregroundStyle(Theme.textSecondary)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(name), \(count) nutrients")
+    }
+
+    /// Row (DESIGN.md §5.6): icon tile, name, goal-type tag + target, bell if it has reminders.
+    private func nutrientRow(_ nutrient: Nutrient) -> some View {
+        let goal = GoalProgress(nutrient: nutrient, current: 0)
+        let hasReminders = !(nutrient.reminders ?? []).isEmpty
+
+        return HStack(spacing: 12) {
+            NutrientIconTile(nutrient: nutrient)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(nutrient.name)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
+
+                HStack(spacing: 8) {
+                    Text(GoalTypePicker.label(for: nutrient.goalType))
+                        .font(.caption2.bold())
+                        .textCase(.uppercase)
+                        .foregroundStyle(Theme.textSecondary)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Theme.surfaceChip, in: RoundedRectangle(cornerRadius: Theme.Radius.tag, style: .continuous))
+
+                    Text(goal.goalAmountText)
+                        .font(.subheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.textSecondary)
+
+                    if hasReminders {
+                        Image(systemName: "bell.fill")
+                            .font(.caption)
+                            .foregroundStyle(Theme.textSecondary)
+                            .accessibilityLabel("Has reminders")
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 6)
+    }
+
+    private var newGroupButton: some View {
+        Button {
+            newGroupName = ""
+            showNewGroupAlert = true
+        } label: {
+            Label("New group", systemImage: "folder.badge.plus")
+                .font(.headline)
+                .foregroundStyle(Theme.controlPrimary)  // forest in light, green in dark (forest vanishes on dark)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .overlay {
+                    RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+                        .strokeBorder(Theme.controlGhostBorder, style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Analytics Banner
@@ -307,17 +353,7 @@ struct NutrientsListView: View {
     }
 
     private func applyEdit(to nutrient: Nutrient) {
-        guard let stepValue = editDraft.step.parsedDouble,
-              let targetValue = editDraft.dailyTarget.parsedDouble else { return }
-
-        nutrient.name = editDraft.name.trimmingCharacters(in: .whitespaces)
-        nutrient.unit = editDraft.unit.trimmingCharacters(in: .whitespaces)
-        nutrient.step = stepValue
-        nutrient.dailyTarget = targetValue
-        nutrient.goalType = editDraft.goalType
-        nutrient.upperBound = editDraft.goalType == .range ? editDraft.upperBound.parsedDouble : nil
-        let notes = editDraft.notes.trimmingCharacters(in: .whitespaces)
-        nutrient.notes = notes.isEmpty ? nil : notes
+        editDraft.apply(to: nutrient)
     }
 
     private func moveNutrients(in group: NutrientGroup, from source: IndexSet, to destination: Int) {
