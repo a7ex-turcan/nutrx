@@ -17,7 +17,10 @@ struct TodayView: View {
     @State private var showSyncBanner = false
     @State private var syncBannerVariant: SyncBannerView.Variant = .enabled
     @State private var streak: StreakResult?
-    @State private var expandedNutrientIDs: Set<UUID> = []
+    @State private var notificationsAllowed = false
+    @State private var showAddSheet = false
+    @State private var addDraft = NutrientDraft()
+    @State private var selectedGroupForAdd: NutrientGroup?
     @AppStorage("wasSyncRestored") private var wasSyncRestored = false
 
     private var hasCustomGroups: Bool {
@@ -39,68 +42,56 @@ struct TodayView: View {
                 emptyState
             } else {
                 List {
-                    if let streak, streak.current >= 1, preferences.streaksEnabled {
-                        HStack {
-                            Spacer()
-                            Text("🔥 \(streak.current)-day streak")
-                                .font(.subheadline.weight(.medium))
-                                .foregroundStyle(.orange)
-                            Spacer()
-                        }
-                        .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                    // Re-evaluated every minute so a reminder drops off once its time passes.
+                    TimelineView(.everyMinute) { timeline in
+                        DayScoreCard(
+                            score: viewModel.dayScore,
+                            streak: preferences.streaksEnabled ? streak?.current : nil,
+                            nextReminder: notificationsAllowed ? viewModel.nextReminder(after: timeline.date) : nil
+                        )
                     }
+                    .listRowInsets(EdgeInsets(top: 8, leading: Theme.Spacing.screenMargin,
+                                              bottom: Theme.Spacing.cardGap / 2, trailing: Theme.Spacing.screenMargin))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
 
                     if showBanner {
                         NotificationBannerView(
                             onEnable: { enableReminder() },
                             onDismiss: { dismissBanner() }
                         )
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowInsets(cardRowInsets)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                     } else if showSyncBanner {
                         SyncBannerView(variant: syncBannerVariant) {
                             dismissSyncBanner()
                         }
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowInsets(cardRowInsets)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                     }
 
                     ForEach(viewModel.groupSections) { section in
-                        Section {
-                            if !section.group.isCollapsed {
-                                ForEach(section.intakes, id: \.nutrient.persistentModelID) { entry in
-                                    nutrientRow(entry)
-                                }
-                            }
-                        } header: {
-                            if hasCustomGroups {
-                                GroupHeaderView(
-                                    name: section.group.name,
-                                    isCollapsed: section.group.isCollapsed,
-                                    intakes: section.intakes.map { (current: $0.total, target: $0.nutrient.dailyTarget) },
-                                    onToggle: {
-                                        withAnimation(.easeInOut(duration: 0.25)) {
-                                            section.group.isCollapsed.toggle()
-                                        }
-                                    }
-                                )
-                                .padding(.vertical, 4)
+                        if hasCustomGroups {
+                            groupHeader(section)
+                        }
+                        if !section.group.isCollapsed {
+                            ForEach(section.intakes, id: \.nutrient.persistentModelID) { entry in
+                                nutrientRow(entry)
                             }
                         }
                     }
                 }
                 .listStyle(.plain)
-                .listSectionSpacing(4)
+                .scrollContentBackground(.hidden)
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Theme.surfaceGround)
         .onAppear {
             viewModel.refresh(context: modelContext)
             refreshBannerVisibility()
+            refreshNotificationPermission()
             refreshSyncBannerVisibility()
             refreshStreak()
         }
@@ -111,8 +102,9 @@ struct TodayView: View {
             if newPhase == .active {
                 viewModel.refresh(context: modelContext)
                 refreshStreak()
+                refreshNotificationPermission()
                 NotificationService.refreshDailyReminder(context: modelContext)
-                NotificationService.refreshAllNutrientReminders(context: modelContext)
+                viewModel.rescheduleReminders(context: modelContext)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange).receive(on: DispatchQueue.main)) { _ in
@@ -140,19 +132,51 @@ struct TodayView: View {
         .sheet(item: $nutrientToMove) { nutrient in
             MoveToGroupSheet(nutrient: nutrient)
         }
+        .sheet(isPresented: $showAddSheet) {
+            NutrientFormView(
+                draft: addDraft,
+                title: "New Nutrient",
+                buttonLabel: "Add Nutrient",
+                selectedGroup: $selectedGroupForAdd,
+                showGroupPicker: true
+            ) {
+                addNutrient()
+            }
+        }
+    }
+
+    /// 16pt side margins and a 10pt gap between cards.
+    private var cardRowInsets: EdgeInsets {
+        EdgeInsets(top: Theme.Spacing.cardGap / 2, leading: Theme.Spacing.screenMargin,
+                   bottom: Theme.Spacing.cardGap / 2, trailing: Theme.Spacing.screenMargin)
+    }
+
+    private func groupHeader(_ section: TodayViewModel.GroupSection) -> some View {
+        let score = DayScore(progresses: section.intakes.map(\.progress))
+        return GroupHeader(
+            name: section.group.name,
+            met: score.met,
+            total: score.total,
+            isCollapsed: section.group.isCollapsed,
+            onToggle: {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    section.group.isCollapsed.toggle()
+                }
+            }
+        )
+        .listRowInsets(EdgeInsets(top: Theme.Spacing.sectionTop - Theme.Spacing.cardGap / 2,
+                                  leading: Theme.Spacing.screenMargin, bottom: 0, trailing: Theme.Spacing.screenMargin))
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 
     private func nutrientRow(_ entry: TodayViewModel.NutrientIntake) -> some View {
-        ExpandableNutrientCard(
+        NutrientCard(
             nutrient: entry.nutrient,
             currentIntake: entry.total,
-            isExpanded: expandedNutrientIDs.contains(entry.nutrient.id),
-            onToggle: {
-                if expandedNutrientIDs.contains(entry.nutrient.id) {
-                    expandedNutrientIDs.remove(entry.nutrient.id)
-                } else {
-                    expandedNutrientIDs.insert(entry.nutrient.id)
-                }
+            // LogSheet arrives in phase 3; until then the card opens the exact-amount sheet.
+            onOpen: {
+                nutrientForCustomAmount = entry.nutrient
             },
             onIncrement: {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -165,12 +189,9 @@ struct TodayView: View {
                     viewModel.decrement(entry.nutrient, context: modelContext)
                 }
                 checkForReview()
-            },
-            onLogExactAmount: {
-                nutrientForCustomAmount = entry.nutrient
             }
         )
-        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowInsets(cardRowInsets)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
         .contextMenu {
@@ -214,11 +235,33 @@ struct TodayView: View {
 
     private var emptyState: some View {
         ContentUnavailableView {
-            Label("No Nutrients", systemImage: "leaf")
+            Label("Nothing to track yet", systemImage: "leaf")
         } description: {
-            Text("Add nutrients in the My Nutrients tab to start tracking.")
+            Text("Add the first thing you take and it shows up here.")
+        } actions: {
+            Button("Add a nutrient") {
+                addDraft.reset()
+                selectedGroupForAdd = allGroups.first(where: \.isSystem)
+                showAddSheet = true
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Theme.controlPrimary)
+            .foregroundStyle(Theme.controlOnPrimary)
         }
         .padding(.top, 60)
+    }
+
+    private func addNutrient() {
+        let count = (try? modelContext.fetchCount(FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isDeleted }))) ?? 0
+        addDraft.insertNutrient(into: modelContext, group: selectedGroupForAdd ?? allGroups.first(where: \.isSystem),
+                                sortOrder: count)
+        viewModel.refresh(context: modelContext)
+    }
+
+    private func refreshNotificationPermission() {
+        Task {
+            notificationsAllowed = await NotificationService.permissionStatus() == .granted
+        }
     }
 
     private func refreshBannerVisibility() {
@@ -332,11 +375,29 @@ struct TodayView: View {
     }
 }
 
-#Preview {
-    NavigationStack {
-        TodayView()
-            .navigationTitle("Today")
-            .navigationBarTitleDisplayMode(.inline)
+private struct TodayPreview: View {
+    var body: some View {
+        NavigationStack {
+            TodayView()
+                .navigationTitle("Today")
+                .navigationSubtitle(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                .navigationBarTitleDisplayMode(.large)
+                .withProfileMenu()
+        }
+        .modelContainer(previewContainer)
     }
-    .modelContainer(previewContainer)
+}
+
+#Preview("Light") {
+    TodayPreview()
+}
+
+#Preview("Dark") {
+    TodayPreview()
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Accessibility 3") {
+    TodayPreview()
+        .environment(\.dynamicTypeSize, .accessibility3)
 }

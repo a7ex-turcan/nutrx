@@ -51,6 +51,8 @@ Put colours in `nutrx/Assets.xcassets` as named colour sets with **Any / Dark** 
 | `OnForest/Secondary` | `#B7CCBF` | `#B7CCBF` | Secondary text on forest |
 | `OnForest/Track` | `#FFFFFF` @ 13% | same | Unmet ring segments on forest |
 | `Watch/Cell` | `#1C2620` | `#1C2620` | Watch list row background (watchOS is always dark) |
+| `Avatar/Fill` | `#DCE7DF` | `#1B3B2D` | Profile avatar circle in the toolbar |
+| `Avatar/Ink` | `#1B3B2D` | `#7BE3A0` | Initial on `Avatar/Fill` |
 
 Set the app `AccentColor` to `Brand/Forest` (light) / `Brand/Green` (dark).
 
