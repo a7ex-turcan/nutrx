@@ -5,6 +5,7 @@ import SwiftData
 /// the calendar or the list — pushes `HistoryDayView`.
 struct HistoryListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @Query private var allPreferences: [UserPreferences]
     @State private var viewModel = HistoryViewModel()
     @State private var selectedDay: Date?
@@ -28,6 +29,10 @@ struct HistoryListView: View {
         }
         .onAppear {
             viewModel.refresh(context: modelContext)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Back from the background, possibly on a new day: move today's ring and pick up synced entries.
+            if phase == .active { viewModel.refresh(context: modelContext) }
         }
     }
 

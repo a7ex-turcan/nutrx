@@ -93,6 +93,10 @@ struct MonthCalendar: View {
             // where the ring and the fill are the same green.
             Circle().fill(fill(for: state))
                 .padding(isToday ? 4 : 0)
+            if state == .noneMet && !isToday {
+                // Logged but nothing met: no fill (§4.9), but a faint outline so it reads as tappable.
+                Circle().strokeBorder(Theme.surfaceChip, lineWidth: 2)
+            }
             if isToday {
                 Circle().strokeBorder(Theme.controlPrimary, lineWidth: 2)
             }
@@ -160,6 +164,7 @@ struct MonthCalendar: View {
     private var legendItems: some View {
         legendItem("All goals") { Circle().fill(Theme.green) }
         legendItem("Some") { Circle().fill(Theme.green.opacity(0.25)) }
+        legendItem("None") { Circle().strokeBorder(Theme.surfaceChip, lineWidth: 2) }
         legendItem("Today") { Circle().strokeBorder(Theme.controlPrimary, lineWidth: 1.5) }
     }
 
@@ -180,7 +185,7 @@ private struct MonthCalendarPreview: View {
             today: today,
             completion: { date in
                 let offset = calendar.dateComponents([.day], from: date, to: today).day ?? 0
-                return offset == 0 ? .someMet : (offset % 9 == 0 ? .someMet : (offset % 13 == 0 ? .noEntries : .allMet))
+                return offset == 0 ? .someMet : (offset % 9 == 0 ? .someMet : (offset % 4 == 0 ? .noneMet : .allMet))
             },
             canShowPrevious: true, canShowNext: false,
             onPrevious: {}, onNext: {}, onSelect: { _ in }

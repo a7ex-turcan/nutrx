@@ -59,8 +59,10 @@ final class HistoryViewModel {
         return month.month > first
     }
 
+    /// Up to the month holding "today" as of the last refresh — the same today the calendar rings.
     var canShowNextMonth: Bool {
-        !month.contains(.now)
+        guard let today = log?.today else { return false }
+        return !month.contains(today)
     }
 
     func showPreviousMonth() {
