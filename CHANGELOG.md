@@ -14,8 +14,10 @@ All notable changes to nutrx are documented in this file.
 - **Log sheet** — Tap a nutrient on Today to log an exact amount: step it up or down, pick ½× / 1× / 2× a step or "Fill to goal", add a note, and see everything you logged today. Delete any entry with one tap. Replaces the Add Exact Amount sheet and the expandable intake list.
 - **Redesigned nutrient analytics** — Tap a nutrient in My Nutrients to see its hit rate, daily average and best day for the last 7, 30 or 90 days, a bar chart in the nutrient's colour (today shown as a dashed outline until the day is over), and a weekday heatmap of the last four weeks that points out a weekday that clearly lags. Edit the nutrient and open its reminders straight from the screen.
 - **Redesigned History** — A streak card with your current and best streak, a month calendar coloured by how many goals you met each day (all, some or none) that you can page back through, and your most recent days with a dot per nutrient. Tap a day to see each nutrient's total against its goal, who you missed, and every entry you logged.
+- **New welcome and first-nutrient setup** — A new welcome screen, then pick a starting point (Vitamin D, Magnesium, Omega-3, Water, Protein or Creatine) whose goal and step you can adjust before you start, or make your own. You can also skip and add nutrients later.
 
 ### Improvements
+- **No personal details needed to start** — Setup no longer asks for your name, birthday, weight or height. They're all optional now and live in Edit Profile.
 - **History counts every nutrient you were tracking** — A day's score now includes nutrients you didn't log at all (they count as missed, unless they're an "at most" goal), so a day where you skipped one nutrient no longer looks complete. A nutrient you've since deleted still shows on the days you logged it, under "Also logged".
 - **Fairer analytics** — Stats only count days since you added the nutrient and leave out today until it's over, so a nutrient you added this week isn't marked down for days before it existed.
 - **Profile avatar** — The profile button shows your photo or initial in a circle.
