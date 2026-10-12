@@ -8,9 +8,13 @@ struct NutrientIconTile: View {
     var size: CGFloat = 42
 
     var body: some View {
+        // Symbol fits a 22pt box in a 42pt tile (design source), same as ProgressRing.
         Image(systemName: symbolName)
-            .font(.system(size: size * 0.45, weight: .medium))
+            .resizable()
+            .scaledToFit()
+            .fontWeight(.regular)
             .foregroundStyle(tint.tileGlyph)
+            .frame(width: size * 22 / 42, height: size * 22 / 42)
             .frame(width: size, height: size)
             .background(tint.tileBackground,
                         in: RoundedRectangle(cornerRadius: size * Theme.Radius.iconTile / 40, style: .continuous))

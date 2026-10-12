@@ -19,6 +19,8 @@ struct ProgressRing: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var clampedFraction: Double { min(max(fraction, 0), 1) }
+
     var body: some View {
         GeometryReader { geo in
             let side = min(geo.size.width, geo.size.height)
@@ -31,16 +33,21 @@ struct ProgressRing: View {
                     .padding(inset)
 
                 Circle()
-                    .trim(from: 0, to: min(max(fraction, 0), 1))
+                    .trim(from: 0, to: clampedFraction)
                     .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .padding(inset)
-                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: fraction)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: clampedFraction)
 
                 if let symbolName {
+                    // Fit the symbol in a 22pt box at the 52pt size (design source), so wide glyphs
+                    // like `fish` stay inside the ring.
                     Image(systemName: symbolName)
-                        .font(.system(size: side * 0.36, weight: .medium))
+                        .resizable()
+                        .scaledToFit()
+                        .fontWeight(.regular)
                         .foregroundStyle(symbolColor ?? color)
+                        .frame(width: side * 22 / 52, height: side * 22 / 52)
                 }
 
                 if showsCheck {
@@ -55,7 +62,7 @@ struct ProgressRing: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(label ?? "Progress"))
         .accessibilityValue(valueDescription.map { Text($0) }
-            ?? Text(fraction, format: .percent.precision(.fractionLength(0))))
+            ?? Text(clampedFraction, format: .percent.precision(.fractionLength(0))))
     }
 }
 
