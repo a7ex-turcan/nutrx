@@ -1,0 +1,44 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-10-12T10:55:00Z"},
+  "title": "nutrx redesign",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 390, "h": 844, "title": "Today — light", "radius": 48},
+    "TodayDark.dc.html": {"x": 470, "y": 0, "w": 390, "h": 844, "title": "Today — dark", "radius": 48},
+    "LogSheet.dc.html": {"x": 940, "y": 0, "w": 390, "h": 844, "title": "Log sheet (replaces expand + exact amount)", "radius": 48},
+    "Analytics.dc.html": {"x": 1410, "y": 0, "w": 390, "h": 844, "title": "Nutrient analytics", "radius": 48},
+    "History.dc.html": {"x": 0, "y": 1270, "w": 390, "h": 844, "title": "History", "radius": 48},
+    "HistoryDay.dc.html": {"x": 470, "y": 1270, "w": 390, "h": 844, "title": "History — day detail", "radius": 48},
+    "Nutrients.dc.html": {"x": 940, "y": 1270, "w": 390, "h": 844, "title": "My Nutrients", "radius": 48},
+    "NutrientForm.dc.html": {"x": 1410, "y": 1270, "w": 390, "h": 844, "title": "New / edit nutrient", "radius": 48},
+    "Welcome.dc.html": {"x": 0, "y": 2540, "w": 390, "h": 844, "title": "Onboarding — welcome", "radius": 48},
+    "OnboardingNutrient.dc.html": {"x": 470, "y": 2540, "w": 390, "h": 844, "title": "Onboarding — first nutrient", "radius": 48},
+    "Settings.dc.html": {"x": 940, "y": 2540, "w": 390, "h": 844, "title": "Settings", "radius": 48},
+    "Widgets.dc.html": {"x": 0, "y": 3810, "w": 960, "h": 600, "title": "Widgets"},
+    "Watch.dc.html": {"x": 1040, "y": 3810, "w": 760, "h": 600, "title": "Apple Watch"}
+  },
+  "order": [
+    "Main.dc.html",
+    "TodayDark.dc.html",
+    "LogSheet.dc.html",
+    "Analytics.dc.html",
+    "History.dc.html",
+    "HistoryDay.dc.html",
+    "Nutrients.dc.html",
+    "NutrientForm.dc.html",
+    "Welcome.dc.html",
+    "OnboardingNutrient.dc.html",
+    "Settings.dc.html",
+    "Widgets.dc.html",
+    "Watch.dc.html"
+  ],
+  "notes": {
+    "row1": {"x": 0, "y": -300, "text": "Daily loop", "kind": "title1", "maxW": 1800},
+    "row2": {"x": 0, "y": 970, "text": "History & managing nutrients", "kind": "title1", "maxW": 1800},
+    "row3": {"x": 0, "y": 2240, "text": "First run & settings", "kind": "title1", "maxW": 1330},
+    "row4": {"x": 0, "y": 3510, "text": "Widgets & Watch", "kind": "title1", "maxW": 1800}
+  },
+  "designSystems": []
+}

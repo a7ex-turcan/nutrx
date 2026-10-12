@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — Apple Watch</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 760px; height: 600px; box-sizing: border-box; padding: 48px; background: #DDE3DA; color: #0E1A13; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; gap: 22px">
+  <h2 style="margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #56655C">Watch app &amp; complications</h2>
+  <div style="display: flex; gap: 36px; align-items: flex-start">
+
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 12px; align-items: center">
+      <div style="width: 216px; height: 260px; border-radius: 56px; background: #1A1A1A; padding: 10px; box-sizing: border-box; box-shadow: 0 18px 36px -18px rgba(0,0,0,0.6)">
+        <div style="width: 100%; height: 100%; border-radius: 46px; background: #000000; color: #FFFFFF; padding: 16px 12px 0 12px; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 0 6px">
+            <span style="font-size: 15px; font-weight: 700; color: #7BE3A0">Today</span>
+            <span style="font: 700 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #B7CCBF">3/6</span>
+          </div>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 18px; background: #1C2620">
+              <svg width="30" height="30" viewBox="0 0 52 52" aria-hidden="true" style="flex: none">
+                <circle cx="26" cy="26" r="21" fill="none" stroke="{{r.track}}" stroke-width="8"></circle>
+                <circle cx="26" cy="26" r="21" fill="none" stroke="{{r.tint}}" stroke-width="8" stroke-linecap="round" stroke-dasharray="{{r.dash}}" transform="rotate(-90 26 26)"></circle>
+              </svg>
+              <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+                <span style="font-size: 13px; font-weight: 600">{{r.name}}</span>
+                <span style="font: 600 11px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #B7CCBF">{{r.val}}</span>
+              </div>
+              <button aria-label="Log {{r.name}}" style="width: 30px; height: 30px; border-radius: 15px; border: 0; background: #1EB955; display: flex; align-items: center; justify-content: center; flex: none; cursor: pointer">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0A130E" stroke-width="3.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <figcaption style="font-size: 13px; color: #56655C">Tap + to log one step</figcaption>
+    </figure>
+
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 12px; align-items: center">
+      <div style="width: 216px; height: 260px; border-radius: 56px; background: #1A1A1A; padding: 10px; box-sizing: border-box; box-shadow: 0 18px 36px -18px rgba(0,0,0,0.6)">
+        <div style="width: 100%; height: 100%; border-radius: 46px; background: #000000; color: #FFFFFF; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px">
+          <div style="position: relative; width: 120px; height: 120px">
+            <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#E5A50040" stroke-width="14"></circle>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="#E5A500" stroke-width="14" stroke-linecap="round" stroke-dasharray="235.6 314.2" transform="rotate(-90 60 60)"></circle>
+            </svg>
+            <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center">
+              <span style="font: 700 26px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">3,000</span>
+              <span style="font-size: 11px; color: #B7CCBF; margin-top: 3px">of 4,000 IU</span>
+            </div>
+          </div>
+          <span style="font-size: 15px; font-weight: 700">Vitamin D</span>
+          <span style="font: 700 13px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #0A130E; background: #E5A500; padding: 4px 10px; border-radius: 999px">+1,000 logged</span>
+        </div>
+      </div>
+      <figcaption style="font-size: 13px; color: #56655C">Confirmation, with haptic</figcaption>
+    </figure>
+
+    <figure style="margin: 0; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; gap: 14px; align-items: center">
+        <div style="width: 64px; height: 64px; border-radius: 32px; background: #000000; position: relative; display: flex; align-items: center; justify-content: center; color: #FFFFFF">
+          <svg width="56" height="56" viewBox="0 0 116 116" style="position: absolute; left: 4px; top: 4px" aria-hidden="true">
+            <sc-for list="{{segments}}" as="s" hint-placeholder-count="6">
+              <circle cx="58" cy="58" r="48" fill="none" stroke="{{s.color}}" stroke-width="12" stroke-linecap="round" stroke-dasharray="31 270.6" stroke-dashoffset="{{s.offset}}" transform="rotate(-90 58 58)"></circle>
+            </sc-for>
+          </svg>
+          <span style="font: 700 15px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">3/6</span>
+        </div>
+        <span style="font-size: 13px; color: #56655C">Circular</span>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: center">
+        <div style="width: 150px; height: 56px; border-radius: 14px; background: #000000; color: #FFFFFF; padding: 8px 10px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between">
+          <span style="font-size: 12px; font-weight: 700; color: #7BE3A0">nutrx · 3/6</span>
+          <span aria-hidden="true" style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px">
+            <span style="height: 6px; border-radius: 3px; background: #1EB955"></span>
+            <span style="height: 6px; border-radius: 3px; background: #1EB955"></span>
+            <span style="height: 6px; border-radius: 3px; background: #1EB955"></span>
+            <span style="height: 6px; border-radius: 3px; background: #2A3A31"></span>
+            <span style="height: 6px; border-radius: 3px; background: #2A3A31"></span>
+            <span style="height: 6px; border-radius: 3px; background: #2A3A31"></span>
+          </span>
+        </div>
+        <span style="font-size: 13px; color: #56655C">Rectangular</span>
+      </div>
+      <div style="display: flex; gap: 14px; align-items: center">
+        <div style="height: 32px; border-radius: 16px; background: #000000; color: #FFFFFF; padding: 0 12px; display: flex; align-items: center; font-size: 13px; font-weight: 600">3/6 goals · 10 days</div>
+        <span style="font-size: 13px; color: #56655C">Inline</span>
+      </div>
+    </figure>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":760,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var C = 131.95;
+    function r(name, tint, frac, val) {
+      return { name: name, tint: tint, track: tint + '40', dash: (frac * C).toFixed(1) + ' ' + C, val: val };
+    }
+    var met = [true, true, true, false, false, false];
+    var seg = 50.27;
+    var segments = met.map(function (m, i) {
+      return { color: m ? '#1EB955' : '#2A3A31', offset: (-(i * seg) - 9).toFixed(2) };
+    });
+    return {
+      rows: [
+        r('Vitamin D', '#E5A500', 0.5, '2,000 / 4,000 IU'),
+        r('Water', '#2F80ED', 0.6, '1.5 / 2.5 L'),
+        r('Protein', '#E2674A', 0.58, '92 / 120–160 g')
+      ],
+      segments: segments
+    };
+  }
+}
+</script>
+</body>
+</html>

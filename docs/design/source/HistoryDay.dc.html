@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — Day detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#1B3B2D}a:hover{color:#0E1A13}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F2F4EF; color: #0E1A13; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+
+  <div style="padding: 54px 12px 0 8px; display: flex; align-items: center">
+    <a href="History.dc.html" style="height: 44px; padding: 0 14px 0 8px; border-radius: 22px; background: rgba(255,255,255,0.8); display: flex; align-items: center; gap: 2px; text-decoration: none; font-size: 16px; font-weight: 600">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"></path></svg>
+      History
+    </a>
+  </div>
+
+  <div style="padding: 12px 20px 0 20px; display: flex; flex-direction: column; gap: 2px">
+    <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #56655C">Thursday</div>
+    <h1 style="margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em">1 October</h1>
+  </div>
+
+  <section style="margin: 16px 16px 0 16px; padding: 16px 18px; border-radius: 22px; background: #FFFFFF; display: flex; align-items: center; gap: 16px; box-shadow: 0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)">
+    <svg width="64" height="64" viewBox="0 0 116 116" role="img" aria-label="4 of 6 goals met">
+      <sc-for list="{{segments}}" as="s" hint-placeholder-count="6">
+        <circle cx="58" cy="58" r="50" fill="none" stroke="{{s.color}}" stroke-width="14" stroke-linecap="round" stroke-dasharray="32.4 281.8" stroke-dashoffset="{{s.offset}}" transform="rotate(-90 58 58)"></circle>
+      </sc-for>
+    </svg>
+    <div style="display: flex; flex-direction: column; gap: 2px">
+      <span style="font: 700 24px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">4 of 6 goals</span>
+      <span style="font-size: 14px; color: #56655C">Missed Omega-3 and Protein</span>
+    </div>
+  </section>
+
+  <div style="margin: 14px 16px 0 16px; display: flex; flex-direction: column; gap: 8px">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+      <button style="width: 100%; border: 0; text-align: left; cursor: pointer; padding: 14px 16px; border-radius: 20px; background: #FFFFFF; display: flex; align-items: center; gap: 12px; font-family: inherit; color: #0E1A13">
+        <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: {{r.tile}}; display: flex; align-items: center; justify-content: center; flex: none">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{r.tint}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{r.icon}}"></path></svg>
+        </span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
+            <span style="font-size: 16px; font-weight: 600">{{r.name}}</span>
+            <span style="font-size: 13px; color: #56655C"><span style="font: 700 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #0E1A13">{{r.cur}}</span> {{r.of}}</span>
+          </span>
+          <span aria-hidden="true" style="height: 8px; border-radius: 4px; background: #EEF1EC; display: block; overflow: hidden">
+            <span style="display: block; height: 8px; width: {{r.w}}; border-radius: 4px; background: {{r.tint}}"></span>
+          </span>
+        </span>
+        <span style="width: 24px; height: 24px; border-radius: 12px; background: {{r.badgeBg}}; display: flex; align-items: center; justify-content: center; flex: none">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{r.badgeInk}}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.badge}}"></path></svg>
+        </span>
+      </button>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var I = {
+      sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+      fish: 'M2.5 12c2.8-3.6 7.5-5 11.5-3.2L18.5 6v12L14 15.2C10 17 5.3 15.6 2.5 12zM8 11.5v.01',
+      pill: 'M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7zM7 7l7 7',
+      drop: 'M12 3c0 0 6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+      dumbbell: 'M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11',
+      cup: 'M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2.5M12 3.5v2.5'
+    };
+    var CHECK = 'M5 12.5l4.5 4.5L19 7.5', DASH = 'M6 12h12';
+    function r(name, icon, tint, tile, frac, cur, of, hit) {
+      return { name: name, icon: I[icon], tint: tint, tile: tile, w: Math.round(Math.min(frac, 1) * 100) + '%', cur: cur, of: of,
+        badge: hit ? CHECK : DASH, badgeBg: hit ? '#1EB955' : '#EEF1EC', badgeInk: hit ? '#0E1A13' : '#56655C' };
+    }
+    var met = [true, true, true, true, false, false];
+    var segments = met.map(function (m, i) {
+      return { color: m ? '#1EB955' : '#E3E8E1', offset: (-(i * 52.36) - 10).toFixed(2) };
+    });
+    return {
+      segments: segments,
+      rows: [
+        r('Vitamin D', 'sun', '#E5A500', '#FCF1D2', 1, '4,000', '/ 4,000 IU', true),
+        r('Omega-3', 'fish', '#13A39C', '#D6F1EF', 0.5, '1,000', '/ 2,000 mg', false),
+        r('Magnesium', 'pill', '#6B5BE0', '#E6E3FB', 1, '400', '/ 400 mg', true),
+        r('Water', 'drop', '#2F80ED', '#DCE9FC', 1, '2.6', '/ 2.5 L', true),
+        r('Protein', 'dumbbell', '#E2674A', '#FBE3DD', 0.65, '104', '/ 120–160 g', false),
+        r('Caffeine', 'cup', '#9B6A45', '#F0E6DE', 0.6, '240', 'max 400 mg', true)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

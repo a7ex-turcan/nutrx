@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — New nutrient</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+input::placeholder{color:#7A887F}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #2A3A31; color: #0E1A13; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+  <section aria-label="New nutrient" style="position: absolute; left: 0; right: 0; top: 54px; bottom: 0; background: #F2F4EF; border-radius: 38px 38px 0 0; padding: 8px 16px 0 16px; box-sizing: border-box; display: flex; flex-direction: column">
+    <div aria-hidden="true" style="align-self: center; width: 36px; height: 5px; border-radius: 3px; background: #CBD3CA"></div>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px">
+      <button style="height: 44px; padding: 0 14px; border-radius: 22px; border: 0; background: #FFFFFF; font: 400 16px -apple-system, system-ui, sans-serif; color: #0E1A13; cursor: pointer">Cancel</button>
+      <h1 style="margin: 0; font-size: 17px; font-weight: 700">New Nutrient</h1>
+      <button style="height: 44px; padding: 0 18px; border-radius: 22px; border: 0; background: #1B3B2D; font: 600 16px -apple-system, system-ui, sans-serif; color: #FFFFFF; cursor: pointer">Add</button>
+    </div>
+
+    <div aria-label="Preview" style="margin-top: 14px; padding: 12px 14px; border-radius: 22px; background: #FFFFFF; display: flex; align-items: center; gap: 14px; box-shadow: 0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)">
+      <div style="position: relative; width: 48px; height: 48px; flex: none">
+        <svg width="48" height="48" viewBox="0 0 52 52" aria-hidden="true">
+          <circle cx="26" cy="26" r="22" fill="none" stroke="#13A39C26" stroke-width="5"></circle>
+          <circle cx="26" cy="26" r="22" fill="none" stroke="#13A39C" stroke-width="5" stroke-linecap="round" stroke-dasharray="46 138.2" transform="rotate(-90 26 26)"></circle>
+        </svg>
+        <svg style="position: absolute; left: 13px; top: 13px" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#13A39C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10M8 3v4l-3 5v8h14v-8l-3-5V3M5 13h14"></path></svg>
+      </div>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 16px; font-weight: 600">Creatine</span>
+        <span style="font-size: 13px; color: #56655C"><span style="font: 700 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #0E1A13">0</span> / 5 g · +5 g per tap</span>
+      </div>
+      <span style="font-size: 12px; font-weight: 600; color: #56655C">Preview</span>
+    </div>
+
+    <div style="margin-top: 14px; border-radius: 20px; background: #FFFFFF; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden">
+      <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid #EEF1EC">
+        <label for="nm" style="font-size: 12px; font-weight: 600; color: #56655C">Name</label>
+        <input id="nm" value="Creatine" style="border: 0; padding: 0; height: 26px; font: 400 17px -apple-system, system-ui, sans-serif; color: #0E1A13; outline: none; background: transparent">
+      </div>
+      <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px">
+        <label for="un" style="font-size: 12px; font-weight: 600; color: #56655C">Unit</label>
+        <input id="un" value="g" style="border: 0; padding: 0; height: 26px; font: 400 17px -apple-system, system-ui, sans-serif; color: #0E1A13; outline: none; background: transparent">
+      </div>
+    </div>
+
+    <h2 style="margin: 18px 4px 8px 4px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #56655C">Look</h2>
+    <div style="border-radius: 20px; background: #FFFFFF; padding: 14px; display: flex; flex-direction: column; gap: 14px">
+      <div role="radiogroup" aria-label="Colour" style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; justify-items: center">
+        <sc-for list="{{colors}}" as="c" hint-placeholder-count="8">
+          <button role="radio" aria-checked="{{c.on}}" aria-label="{{c.name}}" style="width: 34px; height: 34px; border-radius: 17px; background: {{c.hex}}; border: 0; box-shadow: {{c.ring}}; cursor: pointer; padding: 0"></button>
+        </sc-for>
+      </div>
+      <div role="radiogroup" aria-label="Icon" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
+        <sc-for list="{{icons}}" as="i" hint-placeholder-count="7">
+          <button role="radio" aria-checked="{{i.on}}" aria-label="{{i.name}}" style="height: 44px; border-radius: 12px; border: 0; background: {{i.bg}}; display: flex; align-items: center; justify-content: center; cursor: pointer">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{i.ink}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{i.d}}"></path></svg>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <h2 style="margin: 18px 4px 8px 4px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #56655C">Daily goal</h2>
+    <div role="radiogroup" aria-label="Goal type" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <sc-for list="{{goals}}" as="g" hint-placeholder-count="3">
+        <button role="radio" aria-checked="{{g.on}}" style="height: 76px; border-radius: 18px; border: {{g.border}}; background: #FFFFFF; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 12px; box-sizing: border-box; cursor: pointer; font-family: inherit">
+          <span aria-hidden="true" style="width: 100%; height: 8px; border-radius: 4px; background: #EEF1EC; position: relative; display: block">
+            <span style="position: absolute; top: 0; bottom: 0; left: {{g.l}}; width: {{g.w}}; border-radius: 4px; background: {{g.fill}}"></span>
+          </span>
+          <span style="font-size: 15px; font-weight: 600; color: #0E1A13">{{g.label}}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="margin-top: 8px; border-radius: 20px; background: #FFFFFF; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden">
+      <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid #EEF1EC">
+        <label for="tg" style="font-size: 12px; font-weight: 600; color: #56655C">At least, per day</label>
+        <input id="tg" value="5 g" inputmode="decimal" style="border: 0; padding: 0; height: 28px; font: 700 20px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #0E1A13; outline: none; background: transparent">
+      </div>
+      <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px">
+        <label for="st" style="font-size: 12px; font-weight: 600; color: #56655C">Each tap adds</label>
+        <input id="st" value="5 g" inputmode="decimal" style="border: 0; padding: 0; height: 28px; font: 700 20px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #0E1A13; outline: none; background: transparent">
+      </div>
+    </div>
+
+    <div style="margin-top: 14px; border-radius: 20px; background: #FFFFFF; overflow: hidden">
+      <button style="width: 100%; min-height: 52px; border: 0; border-bottom: 1px solid #EEF1EC; background: transparent; padding: 0 14px; display: flex; align-items: center; gap: 10px; font: 400 16px -apple-system, system-ui, sans-serif; color: #0E1A13; cursor: pointer; text-align: left">
+        <span style="flex: 1">Group</span><span style="color: #56655C">Morning stack</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA69F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+      </button>
+      <button style="width: 100%; min-height: 52px; border: 0; background: transparent; padding: 0 14px; display: flex; align-items: center; gap: 10px; font: 400 16px -apple-system, system-ui, sans-serif; color: #0E1A13; cursor: pointer; text-align: left">
+        <span style="flex: 1">Reminders</span><span style="color: #56655C">None</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9AA69F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+      </button>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var sel = '#13A39C';
+    var palette = [['Green', '#1EB955'], ['Teal', '#13A39C'], ['Blue', '#2F80ED'], ['Indigo', '#6B5BE0'], ['Pink', '#D9539A'], ['Coral', '#E2674A'], ['Amber', '#E5A500'], ['Brown', '#9B6A45']];
+    var colors = palette.map(function (p) {
+      var on = p[1] === sel;
+      return { name: p[0], hex: p[1], on: on ? 'true' : 'false', ring: on ? '0 0 0 3px #FFFFFF, 0 0 0 5px ' + p[1] : 'none' };
+    });
+    var iconList = [
+      ['Bottle', 'M7 3h10M8 3v4l-3 5v8h14v-8l-3-5V3M5 13h14'],
+      ['Sun', 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4'],
+      ['Pill', 'M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7zM7 7l7 7'],
+      ['Drop', 'M12 3c0 0 6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z'],
+      ['Fish', 'M2.5 12c2.8-3.6 7.5-5 11.5-3.2L18.5 6v12L14 15.2C10 17 5.3 15.6 2.5 12zM8 11.5v.01'],
+      ['Weights', 'M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11'],
+      ['Cup', 'M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2.5M12 3.5v2.5']
+    ];
+    var icons = iconList.map(function (p, i) {
+      var on = i === 0;
+      return { name: p[0], d: p[1], on: on ? 'true' : 'false', bg: on ? '#D6F1EF' : '#F2F4EF', ink: on ? '#0F8A84' : '#56655C' };
+    });
+    var goals = [
+      { label: 'At least', l: '0', w: '70%', fill: '#13A39C', on: 'true', border: '2px solid #1B3B2D' },
+      { label: 'At most', l: '0', w: '45%', fill: '#9AA69F', on: 'false', border: '2px solid transparent' },
+      { label: 'Between', l: '35%', w: '35%', fill: '#9AA69F', on: 'false', border: '2px solid transparent' }
+    ];
+    return { colors: colors, icons: icons, goals: goals };
+  }
+}
+</script>
+</body>
+</html>
