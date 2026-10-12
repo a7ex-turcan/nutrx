@@ -62,14 +62,20 @@ final class NutrientDraft {
     /// same `nutrient-…-reminder-HHmm` notification.
     @discardableResult
     func addPendingReminder(_ time: Date, calendar: Calendar = .current) -> Bool {
-        func hourMinute(_ date: Date) -> (Int, Int) {
-            let parts = calendar.dateComponents([.hour, .minute], from: date)
-            return (parts.hour ?? 0, parts.minute ?? 0)
-        }
-        guard !pendingReminderTimes.contains(where: { hourMinute($0) == hourMinute(time) }) else { return false }
+        guard !hasPendingReminder(at: time, calendar: calendar) else { return false }
         pendingReminderTimes.append(time)
-        pendingReminderTimes.sort { hourMinute($0) < hourMinute($1) }
+        pendingReminderTimes.sort { Self.hourMinute($0, calendar) < Self.hourMinute($1, calendar) }
         return true
+    }
+
+    /// Whether a reminder at this hour and minute is already in the list.
+    func hasPendingReminder(at time: Date, calendar: Calendar = .current) -> Bool {
+        pendingReminderTimes.contains { Self.hourMinute($0, calendar) == Self.hourMinute(time, calendar) }
+    }
+
+    private static func hourMinute(_ date: Date, _ calendar: Calendar) -> (Int, Int) {
+        let parts = calendar.dateComponents([.hour, .minute], from: date)
+        return (parts.hour ?? 0, parts.minute ?? 0)
     }
 
     /// A number as the user would type it: current locale's decimal separator, no grouping, no trailing ".0".

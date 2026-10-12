@@ -117,6 +117,8 @@ final class NutrientFormTests: XCTestCase {
         XCTAssertFalse(draft.addPendingReminder(time(13, 0, day: 1), calendar: calendar), "same hour and minute")
 
         XCTAssertEqual(draft.pendingReminderTimes, [time(9, 30), time(13, 0)])
+        XCTAssertTrue(draft.hasPendingReminder(at: time(9, 30, day: 3), calendar: calendar))
+        XCTAssertFalse(draft.hasPendingReminder(at: time(9, 31), calendar: calendar))
     }
 
     // MARK: - Groups

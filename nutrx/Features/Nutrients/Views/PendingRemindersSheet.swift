@@ -34,6 +34,11 @@ struct PendingRemindersSheet: View {
                 Section {
                     DatePicker("Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
                     Button("Add Reminder") { addReminder() }
+                        .disabled(isAlreadyAdded)
+                } footer: {
+                    if isAlreadyAdded {
+                        Text("\(selectedTime, format: .dateTime.hour().minute()) is already in the list.")
+                    }
                 }
             }
             .navigationTitle("Reminders")
@@ -57,6 +62,10 @@ struct PendingRemindersSheet: View {
         .presentationDetents([.medium, .large])
     }
 
+    private var isAlreadyAdded: Bool {
+        draft.hasPendingReminder(at: selectedTime)
+    }
+
     private func addReminder() {
         Task {
             switch await NotificationService.permissionStatus() {
@@ -72,4 +81,11 @@ struct PendingRemindersSheet: View {
             draft.addPendingReminder(selectedTime)
         }
     }
+}
+
+#Preview("Duplicate time") {
+    let draft = NutrientDraft()
+    draft.addPendingReminder(Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now)!)
+    draft.addPendingReminder(Calendar.current.date(bySettingHour: 21, minute: 0, second: 0, of: .now)!)
+    return PendingRemindersSheet(draft: draft)
 }
