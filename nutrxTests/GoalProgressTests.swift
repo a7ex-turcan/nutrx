@@ -190,6 +190,35 @@ final class GoalProgressTests: XCTestCase {
         XCTAssertEqual(between.goalText(locale: enUS), "/ 120–160 g")
     }
 
+    // MARK: - Log sheet
+
+    func testGoalAmountTextForEachGoalType() {
+        XCTAssertEqual(progress(0, .minimum, target: 4000, unit: "IU").goalAmountText(locale: enUS), "4,000 IU")
+        XCTAssertEqual(progress(0, .maximum, target: 400).goalAmountText(locale: enUS), "400 mg")
+        XCTAssertEqual(progress(0, .range, target: 120, upper: 160, unit: "g").goalAmountText(locale: enUS), "120–160 g")
+    }
+
+    func testAmountToGoalIsWhatsLeftOfAnAtLeastTarget() {
+        XCTAssertEqual(progress(2000, .minimum, target: 4000).amountToGoal, 2000)
+        XCTAssertNil(progress(4000, .minimum, target: 4000).amountToGoal)
+    }
+
+    func testAmountToGoalIsWhatsLeftToARangesLowerBound() {
+        XCTAssertEqual(progress(92, .range, target: 120, upper: 160).amountToGoal, 28)
+        XCTAssertNil(progress(130, .range, target: 120, upper: 160).amountToGoal)  // in range
+        XCTAssertNil(progress(170, .range, target: 120, upper: 160).amountToGoal)  // over
+    }
+
+    func testAmountToGoalIsNilForAtMost() {
+        XCTAssertNil(progress(0, .maximum, target: 400).amountToGoal)
+    }
+
+    func testFormattedAmountGroupsAndKeepsUpToTwoDecimals() {
+        XCTAssertEqual(1000.0.formattedAmount(locale: enUS), "1,000")
+        XCTAssertEqual(0.25.formattedAmount(locale: enUS), "0.25")
+        XCTAssertEqual(1.5.formattedAmount(locale: Locale(identifier: "de_DE")), "1,5")
+    }
+
     // MARK: - Nutrient convenience
 
     func testNutrientInitializerReadsGoalFromTheModel() throws {

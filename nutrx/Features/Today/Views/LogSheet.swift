@@ -1,0 +1,399 @@
+import SwiftData
+import SwiftUI
+
+/// Log an exact amount and review today's entries for one nutrient (DESIGN.md §4.6).
+/// Opened from Today by tapping a card, the leading swipe action, or "Add Exact Amount".
+struct LogSheet: View {
+    let nutrient: Nutrient
+    /// Logs `amount` with an optional note. The sheet dismisses itself afterwards.
+    let onLog: (_ amount: Double, _ note: String?) -> Void
+    /// Deletes one of today's entries.
+    let onDelete: (IntakeRecord) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+    @Query private var records: [IntakeRecord]
+    @State private var amountText: String
+    @State private var note = ""
+    @FocusState private var focusedField: Field?
+    @ScaledMetric(relativeTo: .largeTitle) private var amountSize: CGFloat = 52
+
+    private enum Field { case amount, note }
+
+    init(nutrient: Nutrient, onLog: @escaping (Double, String?) -> Void, onDelete: @escaping (IntakeRecord) -> Void) {
+        self.nutrient = nutrient
+        self.onLog = onLog
+        self.onDelete = onDelete
+        _amountText = State(initialValue: nutrient.step.formattedAmount())
+
+        let nutrientID = nutrient.id
+        let startOfDay = Calendar.current.startOfDay(for: .now)
+        let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
+        _records = Query(
+            filter: #Predicate<IntakeRecord> {
+                $0.nutrient?.id == nutrientID && $0.date >= startOfDay && $0.date < endOfDay
+            },
+            sort: \IntakeRecord.date
+        )
+    }
+
+    // MARK: - Derived state
+
+    /// Today's total, summed from the same records the list shows.
+    private var progress: GoalProgress {
+        GoalProgress(nutrient: nutrient, current: records.reduce(0) { $0 + $1.amount })
+    }
+
+    /// The amount to log, if the field holds a positive number.
+    private var amount: Double? {
+        guard let value = amountText.parsedDouble, value > 0 else { return nil }
+        return value
+    }
+
+    /// The 52pt amount, scaled with Dynamic Type up to its xxxLarge size (~62pt — beyond that the unit no
+    /// longer fits between − and +), and shrunk for long values (a TextField can't use `minimumScaleFactor`).
+    private var amountFontSize: CGFloat {
+        let size = min(amountSize, 62)
+        let characters = max(amountText.count, 1)
+        return characters > 6 ? size * max(6 / CGFloat(characters), 0.5) : size
+    }
+
+    private var amountLabel: String {
+        "\(amount?.formattedAmount() ?? "0") \(nutrient.unit)".trimmingCharacters(in: .whitespaces)
+    }
+
+    private struct QuickAmount: Identifiable {
+        let id: String
+        let label: String
+        let value: Double
+        var isFillToGoal = false
+    }
+
+    /// ½× / 1× / 2× step, plus "Fill to goal" when there's a target left to reach.
+    private var quickAmounts: [QuickAmount] {
+        let step = nutrient.step
+        var chips = [0.5, 1, 2].map { factor in
+            QuickAmount(id: "\(factor)x", label: (step * factor).formattedAmount(), value: step * factor)
+        }
+        if let remaining = progress.amountToGoal {
+            chips.append(QuickAmount(id: "fill", label: "Fill to goal", value: remaining, isFillToGoal: true))
+        }
+        return chips
+    }
+
+    // MARK: - Body
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                header
+                    .padding(.bottom, 8)
+                amountStepper
+                quickAmountChips
+                noteField
+                logButton
+                loggedToday
+                    .padding(.top, 10)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 20)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
+        .presentationBackground(Theme.surfaceCard)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focusedField = nil }
+            }
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 14) {
+            ProgressRing(nutrient: nutrient, progress: progress)
+                .frame(width: 56, height: 56)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(nutrient.name)
+                    .font(.title2.bold())
+                    .foregroundStyle(Theme.textPrimary)
+                Text("\(Text(progress.currentText).font(.system(.subheadline, design: .rounded, weight: .bold)).foregroundStyle(Theme.textPrimary)) of \(progress.goalAmountText) today")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .monospacedDigit()
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.subheadline.weight(.bold))
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                    .background(Theme.surfaceChip, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Close")
+        }
+    }
+
+    private var amountStepper: some View {
+        HStack(spacing: 8) {
+            stepButton(systemName: "minus", label: "Decrease amount") {
+                setAmount(max(0, (amount ?? 0) - nutrient.step))
+            }
+            .disabled((amount ?? 0) <= 0)
+
+            VStack(spacing: 4) {
+                Text("Amount")
+                    .font(.caption.weight(.semibold))
+                    .textCase(.uppercase)
+                    .tracking(0.6)
+                    .foregroundStyle(Theme.textSecondary)
+
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    TextField("0", text: $amountText)
+                        .keyboardType(.decimalPad)
+                        .focused($focusedField, equals: .amount)
+                        .font(.system(size: amountFontSize, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .multilineTextAlignment(.trailing)
+                        .fixedSize()
+                        .foregroundStyle(Theme.textPrimary)
+                        .accessibilityLabel("Amount in \(nutrient.unit)")
+                    Text(nutrient.unit)
+                        .font(.system(.title3, design: .rounded, weight: .semibold))
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                .lineLimit(1)
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            }
+            .frame(maxWidth: .infinity)
+
+            stepButton(systemName: "plus", label: "Increase amount") {
+                setAmount((amount ?? 0) + nutrient.step)
+            }
+        }
+        .padding(.vertical, 18)
+        .padding(.horizontal, 12)
+        .background(Theme.surfaceGround, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+    }
+
+    private func stepButton(systemName: String, label: String, action: @escaping () -> Void) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        } label: {
+            Image(systemName: systemName)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Theme.textPrimary)
+                .frame(width: 48, height: 48)
+                .background(Theme.surfaceCard, in: Circle())
+                .shadow(color: Theme.textPrimary.opacity(0.08), radius: 1, y: 1)
+        }
+        .buttonStyle(.plain)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .accessibilityLabel(label)
+    }
+
+    private var quickAmountChips: some View {
+        let chips = HStack(spacing: 8) {
+            ForEach(quickAmounts) { chip in
+                quickAmountChip(chip)
+            }
+        }
+        return ViewThatFits(in: .horizontal) {
+            chips
+            ScrollView(.horizontal, showsIndicators: false) { chips }
+        }
+    }
+
+    private func quickAmountChip(_ chip: QuickAmount) -> some View {
+        let isSelected = !chip.isFillToGoal && amount == chip.value
+        return Button {
+            setAmount(chip.value)
+        } label: {
+            Text(chip.label)
+                .font(chip.isFillToGoal ? .subheadline.weight(.semibold)
+                                        : .system(.subheadline, design: .rounded, weight: .semibold))
+                .monospacedDigit()
+                .foregroundStyle(chip.isFillToGoal ? Theme.textGreenInk
+                                 : isSelected ? Theme.controlOnPrimary : Theme.textPrimary)
+                .padding(.horizontal, 14)
+                .frame(minHeight: Theme.minTouchTarget)
+                .background {
+                    if chip.isFillToGoal {
+                        Capsule().fill(Theme.green.opacity(0.10))
+                        Capsule().strokeBorder(Theme.green, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    } else if isSelected {
+                        Capsule().fill(Theme.controlPrimary)
+                    } else {
+                        Capsule().strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
+                    }
+                }
+                .fixedSize()
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(chip.isFillToGoal ? "Fill to goal, \(chip.value.formattedAmount()) \(nutrient.unit)"
+                                              : "\(chip.label) \(nutrient.unit)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var noteField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Note")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary)
+            TextField("e.g. with breakfast", text: $note)
+                .focused($focusedField, equals: .note)
+                .submitLabel(.done)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 48)
+                .overlay {
+                    RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                        .strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
+                }
+        }
+    }
+
+    private var logButton: some View {
+        Button {
+            guard let amount else { return }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+            onLog(amount, trimmed.isEmpty ? nil : trimmed)
+            dismiss()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .fontWeight(.bold)
+                    // GreenSoft accent on forest; on the dark-mode green button it would vanish.
+                    .foregroundStyle(colorScheme == .dark ? Theme.controlOnPrimary : Theme.greenSoft)
+                Text("Log \(amountLabel)")
+                    .monospacedDigit()
+            }
+            .font(.headline)
+            .foregroundStyle(Theme.controlOnPrimary)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .background(Theme.controlPrimary, in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(amount == nil)
+        .opacity(amount == nil ? 0.5 : 1)
+    }
+
+    private var loggedToday: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("Logged today")
+                    .font(.headline)
+                    .foregroundStyle(Theme.textPrimary)
+                Spacer()
+                Text(records.count == 1 ? "1 entry" : "\(records.count) entries")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+
+            if records.isEmpty {
+                Text("Nothing logged yet today.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .padding(.vertical, 12)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(records, id: \.persistentModelID) { record in
+                        entryRow(record)
+                        Divider().overlay(Theme.lineHairline)
+                    }
+                }
+            }
+        }
+    }
+
+    private func entryRow(_ record: IntakeRecord) -> some View {
+        let isDecrement = record.amount < 0
+        let signedAmount = "\(isDecrement ? "−" : "+")\(abs(record.amount).formattedAmount()) \(nutrient.unit)"
+
+        return HStack(spacing: 12) {
+            Text(record.date, format: .dateTime.hour().minute())
+                .font(.system(.subheadline, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(Theme.textSecondary)
+
+            Circle()
+                .fill(nutrient.tint.color)
+                .frame(width: 8, height: 8)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(signedAmount)
+                    .font(.system(.body, design: .rounded, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundStyle(isDecrement ? Theme.textSecondary : Theme.textPrimary)
+                if let note = record.note, !note.isEmpty {
+                    Text(note)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    onDelete(record)
+                }
+            } label: {
+                Image(systemName: "trash")
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Delete entry")
+        }
+        .frame(minHeight: 56)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func setAmount(_ value: Double) {
+        amountText = value.formattedAmount()
+    }
+}
+
+// MARK: - Previews
+
+private struct LogSheetPreview: View {
+    @Query(filter: #Predicate<Nutrient> { $0.name == "Vitamin D" }) private var nutrients: [Nutrient]
+
+    // Rendered inline: preview snapshots don't capture presented sheets.
+    var body: some View {
+        if let nutrient = nutrients.first {
+            LogSheet(nutrient: nutrient, onLog: { _, _ in }, onDelete: { _ in })
+                .background(Theme.surfaceCard)
+        }
+    }
+}
+
+#Preview("Light") {
+    LogSheetPreview()
+        .modelContainer(previewContainer)
+}
+
+#Preview("Dark") {
+    LogSheetPreview()
+        .modelContainer(previewContainer)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Accessibility 3") {
+    LogSheetPreview()
+        .modelContainer(previewContainer)
+        .environment(\.dynamicTypeSize, .accessibility3)
+}

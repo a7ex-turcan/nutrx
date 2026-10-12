@@ -15,6 +15,13 @@ extension Double {
     }
 }
 
+extension Double {
+    /// Locale-aware amount with grouping and up to 2 decimals: "2,000", "1.75" (en) / "2.000", "1,75" (de).
+    func formattedAmount(locale: Locale = .current) -> String {
+        formatted(.number.precision(.fractionLength(0...2)).locale(locale))
+    }
+}
+
 extension String {
     /// Parses a numeric string respecting the user's locale decimal separator (comma or dot).
     var parsedDouble: Double? {

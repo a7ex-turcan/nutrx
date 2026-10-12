@@ -57,6 +57,8 @@ enum Theme {
         /// Day-score and streak cards.
         static let hero: CGFloat = 28
         static let iconTile: CGFloat = 12
+        /// Text fields and full-width primary buttons.
+        static let control: CGFloat = 16
     }
 
     /// Minimum hit area for anything tappable.

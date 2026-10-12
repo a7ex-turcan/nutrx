@@ -3,7 +3,6 @@ import SwiftUI
 
 /// Today's nutrient row (DESIGN.md §4.4): progress ring with the nutrient's symbol, name, value and
 /// status line, then − / + step buttons. Tapping the card body calls `onOpen`.
-/// Replaces `NutrientRowView` + `ExpandableNutrientCard` on Today.
 struct NutrientCard: View {
     let nutrient: Nutrient
     let currentIntake: Double

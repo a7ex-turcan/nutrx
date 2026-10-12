@@ -6,6 +6,8 @@ import WidgetKit
 final class TodayViewModel {
     struct NutrientIntake {
         let nutrient: Nutrient
+        /// Raw sum of today's records — can dip below 0 if an entry was deleted while a decrement remains.
+        /// Display goes through `progress`, which floors at 0.
         let total: Double
 
         var progress: GoalProgress { GoalProgress(nutrient: nutrient, current: total) }
@@ -83,8 +85,7 @@ final class TodayViewModel {
         // Build flat list (kept for backward compat with decrement lookup)
         let activeNutrients = nutrients.filter { !excludedNutrientIDs.contains($0.persistentModelID) }
         nutrientIntakes = activeNutrients.map { nutrient in
-            let total = max(0, totalsByID[nutrient.persistentModelID] ?? 0)
-            return (nutrient: nutrient, total: total)
+            (nutrient: nutrient, total: totalsByID[nutrient.persistentModelID] ?? 0)
         }
 
         // Build grouped sections
@@ -92,7 +93,7 @@ final class TodayViewModel {
         for nutrient in activeNutrients {
             let groupID = (nutrient.group ?? generalGroup)?.persistentModelID ?? generalGroup?.persistentModelID
             guard let gid = groupID else { continue }
-            let total = max(0, totalsByID[nutrient.persistentModelID] ?? 0)
+            let total = totalsByID[nutrient.persistentModelID] ?? 0
             sectionsByGroupID[gid, default: []].append(NutrientIntake(nutrient: nutrient, total: total))
         }
 
@@ -147,6 +148,17 @@ final class TodayViewModel {
         }
     }
 
+    /// Deletes one logged entry (from the log sheet). No confirmation — the sheet deletes immediately.
+    func deleteRecord(_ record: IntakeRecord, context: ModelContext) {
+        guard let nutrient = record.nutrient else { return }
+        let amount = record.amount
+        context.delete(record)
+        try? context.save()
+        updateTotal(for: nutrient, delta: -amount)
+        NotificationService.refreshDailyReminder(context: context)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     /// Reschedules every nutrient's reminders (call on foreground), which also lifts today's suppressions.
     func rescheduleReminders(context: ModelContext) {
         NotificationService.refreshAllNutrientReminders(context: context)
@@ -176,14 +188,14 @@ final class TodayViewModel {
         // Update flat list
         if let idx = nutrientIntakes.firstIndex(where: { $0.nutrient.persistentModelID == id }) {
             let old = nutrientIntakes[idx]
-            nutrientIntakes[idx] = (nutrient: old.nutrient, total: max(0, old.total + delta))
+            nutrientIntakes[idx] = (nutrient: old.nutrient, total: old.total + delta)
         }
 
         // Update grouped sections
         for sIdx in groupSections.indices {
             if let iIdx = groupSections[sIdx].intakes.firstIndex(where: { $0.nutrient.persistentModelID == id }) {
                 let old = groupSections[sIdx].intakes[iIdx]
-                groupSections[sIdx].intakes[iIdx] = NutrientIntake(nutrient: old.nutrient, total: max(0, old.total + delta))
+                groupSections[sIdx].intakes[iIdx] = NutrientIntake(nutrient: old.nutrient, total: old.total + delta)
                 return
             }
         }

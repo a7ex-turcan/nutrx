@@ -109,6 +109,20 @@ struct GoalProgress: Equatable {
     /// The goal after the bold total: "/ 4,000 IU", "max 400 mg", "/ 120–160 g".
     var goalText: String { goalText(locale: .current) }
 
+    /// The goal on its own: "4,000 IU", "400 mg", "120–160 g".
+    var goalAmountText: String { goalAmountText(locale: .current) }
+
+    /// What's left to reach an "at least" target or a range's lower bound — the log sheet's "Fill to goal".
+    /// Nil for "at most" goals and once the goal is reached.
+    var amountToGoal: Double? {
+        guard status == .inProgress else { return nil }
+        switch goal {
+        case .atLeast(let target): return target - current
+        case .between(let lower, _): return lower - current
+        case .atMost: return nil
+        }
+    }
+
     func remainingText(locale: Locale) -> String {
         switch goal {
         case .atLeast(let target):
@@ -126,12 +140,15 @@ struct GoalProgress: Equatable {
     }
 
     func progressText(locale: Locale) -> String {
-        let value = Self.number(current, locale)
+        "\(Self.number(current, locale)) of \(goalAmountText(locale: locale))"
+    }
+
+    func goalAmountText(locale: Locale) -> String {
         switch goal {
         case .atLeast(let target), .atMost(let target):
-            return "\(value) of \(amount(target, locale))"
+            return amount(target, locale)
         case .between(let lower, let upper):
-            return "\(value) of \(Self.number(lower, locale))–\(amount(upper, locale))"
+            return "\(Self.number(lower, locale))–\(amount(upper, locale))"
         }
     }
 
@@ -168,6 +185,6 @@ struct GoalProgress: Equatable {
     }
 
     private static func number(_ value: Double, _ locale: Locale) -> String {
-        value.formatted(.number.precision(.fractionLength(0...2)).locale(locale))
+        value.formattedAmount(locale: locale)
     }
 }

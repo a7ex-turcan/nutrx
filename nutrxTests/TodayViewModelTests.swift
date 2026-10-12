@@ -41,6 +41,47 @@ final class TodayViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.dayScore, DayScore(met: 2, total: 3))  // Vitamin D met, Caffeine under its limit
     }
 
+    // MARK: - Deleting entries (log sheet)
+
+    private func total(of nutrient: Nutrient, in viewModel: TodayViewModel) -> Double? {
+        viewModel.groupSections.flatMap(\.intakes).first { $0.nutrient.persistentModelID == nutrient.persistentModelID }?.total
+    }
+
+    func testDeletingAnEntryLowersTodaysTotal() throws {
+        let vitaminD = makeNutrient("Vitamin D", target: 4000)
+        let first = IntakeRecord(nutrient: vitaminD, amount: 1000)
+        context.insert(first)
+        context.insert(IntakeRecord(nutrient: vitaminD, amount: 1000))
+        let viewModel = try refreshedViewModel()
+        XCTAssertEqual(total(of: vitaminD, in: viewModel), 2000)
+
+        viewModel.deleteRecord(first, context: context)
+        XCTAssertEqual(total(of: vitaminD, in: viewModel), 1000)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<IntakeRecord>()), 1)
+    }
+
+    func testDeletingLeavesALoneDecrementAsARawNegativeTotal() throws {
+        // +1000 then −1000, then the +1000 is deleted: the day sums to −1000, shown as 0.
+        let vitaminD = makeNutrient("Vitamin D", target: 4000)
+        let added = IntakeRecord(nutrient: vitaminD, amount: 1000)
+        context.insert(added)
+        context.insert(IntakeRecord(nutrient: vitaminD, amount: -1000))
+        let viewModel = try refreshedViewModel()
+
+        viewModel.deleteRecord(added, context: context)
+        XCTAssertEqual(total(of: vitaminD, in: viewModel), -1000)
+        XCTAssertEqual(viewModel.groupSections[0].intakes[0].progress.current, 0)
+
+        // The next + (step 100) keeps tracking the raw sum, matching what a fresh refresh computes,
+        // instead of starting again from the displayed 0.
+        viewModel.increment(vitaminD, context: context)
+        XCTAssertEqual(total(of: vitaminD, in: viewModel), -900)
+        viewModel.refresh(context: context)
+        XCTAssertEqual(total(of: vitaminD, in: viewModel), -900)
+    }
+
+    // MARK: - Next reminder
+
     func testPicksTheEarliestReminderAmongShownNutrients() throws {
         _ = makeNutrient("Magnesium", target: 400, reminderHours: [21], sortOrder: 0)
         _ = makeNutrient("Vitamin D", target: 4000, reminderHours: [9, 13], sortOrder: 1)
