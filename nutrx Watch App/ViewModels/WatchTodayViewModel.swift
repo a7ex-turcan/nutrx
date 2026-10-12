@@ -31,6 +31,8 @@ final class WatchTodayViewModel {
     }
 
     private(set) var sections: [GroupSection] = []
+    /// Any non-deleted nutrients, excluded today or not.
+    private(set) var hasNutrients = false
     private(set) var hasCustomGroups = false
     /// Set after a + tap; the view shows it until it's cleared.
     var confirmation: WatchLogConfirmation?
@@ -49,6 +51,7 @@ final class WatchTodayViewModel {
             sortBy: [SortDescriptor(\Nutrient.sortOrder)]
         )
         guard let nutrients = try? context.fetch(nutrientDescriptor) else { return }
+        hasNutrients = !nutrients.isEmpty
 
         // Fetch groups
         let groupDescriptor = FetchDescriptor<NutrientGroup>(sortBy: [SortDescriptor(\NutrientGroup.sortOrder)])

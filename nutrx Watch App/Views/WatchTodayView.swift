@@ -16,6 +16,7 @@ struct WatchTodayView: View {
         // The stack's bar gives the clock a scroll-edge fade over the rows.
         NavigationStack {
             WatchTodayList(sections: viewModel.sections,
+                           hasNutrients: viewModel.hasNutrients,
                            showsGroupHeaders: viewModel.hasCustomGroups,
                            metCount: viewModel.metCount,
                            totalCount: viewModel.totalCount,
@@ -51,15 +52,17 @@ struct WatchTodayView: View {
         guard let confirmation = viewModel.confirmation else { return }
         WKInterfaceDevice.current().play(confirmation.metGoal ? .success : .click)
 
-        let progress = confirmation.item.progress
-        let logged = "Logged \(confirmation.amount.formattedAmount()) \(nutrient.unit) of \(nutrient.name)"
-        AccessibilityNotification.Announcement("\(logged). \(progress.progressText)").post()
+        let announcement = WidgetSummary.loggedAnnouncement(confirmation.amount, unit: nutrient.unit, name: nutrient.name,
+                                                            progress: confirmation.item.progress.progressText)
+        AccessibilityNotification.Announcement(announcement).post()
     }
 }
 
 /// The list itself, separate from the data so previews can show it.
 struct WatchTodayList: View {
     let sections: [WatchTodayViewModel.GroupSection]
+    /// False before the first sync brings any nutrients over; true when they're all excluded today.
+    let hasNutrients: Bool
     let showsGroupHeaders: Bool
     let metCount: Int
     let totalCount: Int
@@ -68,9 +71,8 @@ struct WatchTodayList: View {
     var body: some View {
         List {
             if sections.isEmpty {
-                // Every nutrient is excluded today.
                 Section {
-                    Text("Nothing to track today")
+                    Text(hasNutrients ? "Nothing to track today" : "Add a nutrient on your iPhone")
                         .font(.footnote)
                         .foregroundStyle(Theme.onForestSecondary)
                         .listRowBackground(Color.clear)
@@ -83,7 +85,7 @@ struct WatchTodayList: View {
                 Section {
                     ForEach(section.items) { item in
                         WatchNutrientRowView(item: item) { onIncrement(item.nutrient) }
-                            .listRowBackground(RoundedRectangle(cornerRadius: 18).fill(Theme.watchCell))
+                            .listRowBackground(RoundedRectangle(cornerRadius: Theme.Radius.watchCell).fill(Theme.watchCell))
                             .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
                     }
                 } header: {
@@ -104,15 +106,17 @@ struct WatchTodayList: View {
                 .font(.title3.weight(.bold))
                 .foregroundStyle(Theme.greenSoft)
             Spacer()
-            Text(WidgetSummary.score(met: metCount, total: totalCount))
-                .font(.headline)
-                .fontDesign(.rounded)
-                .monospacedDigit()
-                .foregroundStyle(Theme.onForestSecondary)
+            if totalCount > 0 {
+                Text(WidgetSummary.score(met: metCount, total: totalCount))
+                    .font(.headline)
+                    .fontDesign(.rounded)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.onForestSecondary)
+            }
         }
         .textCase(nil)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Today, \(metCount) of \(totalCount) goals met")
+        .accessibilityLabel(totalCount > 0 ? "Today, \(metCount) of \(totalCount) goals met" : "Today")
         .accessibilityAddTraits(.isHeader)
     }
 }
@@ -121,7 +125,7 @@ struct WatchTodayList: View {
 #Preview("Today") {
     let sections = [WatchTodayViewModel.GroupSection(id: WatchPreviewData.items[0].id, name: "General",
                                                      items: WatchPreviewData.items)]
-    WatchTodayList(sections: sections, showsGroupHeaders: false,
+    WatchTodayList(sections: sections, hasNutrients: true, showsGroupHeaders: false,
                    metCount: WatchPreviewData.items.filter { $0.progress.countsAsMet }.count,
                    totalCount: WatchPreviewData.items.count, onIncrement: { _ in })
 }

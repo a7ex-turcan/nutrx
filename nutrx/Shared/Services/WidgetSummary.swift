@@ -34,6 +34,15 @@ enum WidgetSummary {
         "+\(amount.formattedAmount(locale: locale)) logged"
     }
 
+    /// VoiceOver announcement after a Watch + tap: "Logged 1,000 IU of Vitamin D. 3,000 of 4,000 IU."
+    /// `progress` is `GoalProgress.progressText` for the new total.
+    static func loggedAnnouncement(_ amount: Double, unit: String, name: String, progress: String,
+                                   locale: Locale = .current) -> String {
+        let number = amount.formattedAmount(locale: locale)
+        let logged = unit.isEmpty ? number : "\(number) \(unit)"
+        return "Logged \(logged) of \(name). \(progress)."
+    }
+
     /// Segments for a goals bar: one per goal up to `maxSegments`; beyond that, the met share scaled to fit
     /// (rounded down, so a bar only looks full when every goal is met).
     static func segments(met: Int, total: Int, maxSegments: Int = 12) -> (filled: Int, count: Int) {

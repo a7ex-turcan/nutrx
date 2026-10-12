@@ -8,15 +8,21 @@ struct ComplicationEntry: TimelineEntry {
     let totalCount: Int
     let currentStreak: Int
     let streaksEnabled: Bool
+    /// False when the store couldn't be read. With no goals (or no data) the faces show a plain nutrx
+    /// state, never a "0/0" that would look like a real score.
+    var isAvailable = true
 
+    var hasGoals: Bool { totalCount > 0 }
     var fraction: Double { totalCount > 0 ? Double(metCount) / Double(totalCount) : 0 }
     var score: String { WidgetSummary.score(met: metCount, total: totalCount) }
-    var accessibilityLabel: String { "\(metCount) of \(totalCount) goals met" }
+    var accessibilityLabel: String { hasGoals ? "\(metCount) of \(totalCount) goals met" : "nutrx" }
 
     static let placeholder = ComplicationEntry(date: .now, metCount: 3, totalCount: 6,
                                                currentStreak: 10, streaksEnabled: true)
     static let empty = ComplicationEntry(date: .now, metCount: 0, totalCount: 0,
                                          currentStreak: 0, streaksEnabled: true)
+    static let unavailable = ComplicationEntry(date: .now, metCount: 0, totalCount: 0,
+                                               currentStreak: 0, streaksEnabled: true, isAvailable: false)
 }
 
 struct ComplicationProvider: TimelineProvider {
@@ -37,8 +43,9 @@ struct ComplicationProvider: TimelineProvider {
     @MainActor
     private func makeEntry() -> ComplicationEntry {
         // The extension-safe container: no CloudKit, none of `create()`'s one-off steps.
+        // Fails e.g. while the store still needs a migration only the Watch app runs.
         guard let container = try? ModelContainerFactory.createForExtension(allowsSave: false) else {
-            return .empty
+            return .unavailable
         }
         let context = container.mainContext
 
@@ -90,11 +97,18 @@ struct CircularComplicationView: View {
     var body: some View {
         ZStack {
             SegmentedDayRing(met: entry.metCount, total: entry.totalCount, style: .onForest, showsLabel: false)
-            Text(entry.score)
-                .font(.headline).fontDesign(.rounded)
-                .minimumScaleFactor(0.6)
-                .lineLimit(1)
-                .padding(.horizontal, 8)
+            if entry.hasGoals {
+                Text(entry.score)
+                    .font(.headline).fontDesign(.rounded)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                    .padding(.horizontal, 8)
+            } else {
+                Image(systemName: "pills.fill")
+                    .font(.title3)
+                    .foregroundStyle(Theme.greenSoft)
+                    .widgetAccentable()
+            }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(entry.accessibilityLabel)
@@ -107,19 +121,28 @@ struct CornerComplicationView: View {
     let entry: ComplicationEntry
 
     var body: some View {
-        Text(entry.score)
-            .font(.title3.weight(.bold)).fontDesign(.rounded)
-            .minimumScaleFactor(0.6)
-            .widgetCurvesContent()
-            .widgetLabel {
-                // A progress view fills the curve up to the share met; a gauge there only draws a marker.
-                ProgressView(value: entry.fraction) {
-                    Text("Goals")
+        if entry.hasGoals {
+            Text(entry.score)
+                .font(.title3.weight(.bold)).fontDesign(.rounded)
+                .minimumScaleFactor(0.6)
+                .widgetCurvesContent()
+                .widgetLabel {
+                    // A progress view fills the curve up to the share met; a gauge there only draws a marker.
+                    ProgressView(value: entry.fraction) {
+                        Text("Goals")
+                    }
+                    .tint(Theme.green)
                 }
-                .tint(Theme.green)
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(entry.accessibilityLabel)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(entry.accessibilityLabel)
+        } else {
+            Image(systemName: "pills.fill")
+                .font(.title3)
+                .foregroundStyle(Theme.greenSoft)
+                .widgetAccentable()
+                .widgetLabel("nutrx")
+                .accessibilityLabel(entry.accessibilityLabel)
+        }
     }
 }
 
@@ -130,15 +153,15 @@ struct RectangularComplicationView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(entry.totalCount > 0 ? "nutrx · \(entry.score)" : "nutrx")
+            Text(entry.hasGoals ? "nutrx · \(entry.score)" : "nutrx")
                 .font(.headline)
                 .foregroundStyle(Theme.greenSoft)
                 .widgetAccentable()
 
-            if entry.totalCount > 0 {
+            if entry.hasGoals {
                 Spacer(minLength: 0)
                 SegmentBar(met: entry.metCount, total: entry.totalCount)
-            } else {
+            } else if entry.isAvailable {
                 Text(WidgetSummary.nextLine(firstUnmetName: nil, total: 0))
                     .font(.footnote)
                     .foregroundStyle(Theme.onForestSecondary)
@@ -146,7 +169,7 @@ struct RectangularComplicationView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(entry.totalCount > 0 ? entry.accessibilityLabel : "nutrx, no goals yet")
+        .accessibilityLabel(entry.accessibilityLabel)
     }
 }
 
@@ -246,12 +269,14 @@ struct NutrxInlineComplication: Widget {
     NutrxCircularComplication()
 } timeline: {
     ComplicationEntry.placeholder
+    ComplicationEntry.unavailable
 }
 
 #Preview("Corner", as: .accessoryCorner) {
     NutrxCornerComplication()
 } timeline: {
     ComplicationEntry.placeholder
+    ComplicationEntry.unavailable
 }
 
 #Preview("Rectangular", as: .accessoryRectangular) {

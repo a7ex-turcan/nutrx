@@ -38,6 +38,15 @@ final class WidgetSummaryTests: XCTestCase {
         XCTAssertEqual(WidgetSummary.logged(0.25, locale: locale), "+0.25 logged")
     }
 
+    func testLoggedAnnouncement() {
+        let locale = Locale(identifier: "en_US")
+        XCTAssertEqual(WidgetSummary.loggedAnnouncement(1000, unit: "IU", name: "Vitamin D",
+                                                        progress: "3,000 of 4,000 IU", locale: locale),
+                       "Logged 1,000 IU of Vitamin D. 3,000 of 4,000 IU.")
+        XCTAssertEqual(WidgetSummary.loggedAnnouncement(1, unit: "", name: "Water", progress: "6 of 8", locale: locale),
+                       "Logged 1 of Water. 6 of 8.")
+    }
+
     func testSegmentsOnePerGoalUpToTheCap() {
         XCTAssertTrue(WidgetSummary.segments(met: 3, total: 6) == (3, 6))
         XCTAssertTrue(WidgetSummary.segments(met: 0, total: 0) == (0, 0))

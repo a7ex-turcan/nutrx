@@ -67,6 +67,8 @@ enum Theme {
         static let settingsTile: CGFloat = 9
         /// The app-icon-style brand tile in About (88pt).
         static let appIcon: CGFloat = 20
+        /// Apple Watch list rows (`Watch/Cell`).
+        static let watchCell: CGFloat = 18
     }
 
     /// Minimum hit area for anything tappable.

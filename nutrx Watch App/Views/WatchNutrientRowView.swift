@@ -56,7 +56,7 @@ struct WatchNutrientRowView: View {
     List {
         ForEach(WatchPreviewData.items) { item in
             WatchNutrientRowView(item: item, onIncrement: {})
-                .listRowBackground(RoundedRectangle(cornerRadius: 18).fill(Theme.watchCell))
+                .listRowBackground(RoundedRectangle(cornerRadius: Theme.Radius.watchCell).fill(Theme.watchCell))
         }
     }
 }
