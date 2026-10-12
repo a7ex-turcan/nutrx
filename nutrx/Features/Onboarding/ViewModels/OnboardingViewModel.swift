@@ -16,6 +16,8 @@ final class OnboardingViewModel {
     /// The starting point's editable values.
     let draft = NutrientDraft()
     private(set) var selectedStartingPoint: StartingPoint?
+    /// Set once the "Something else" form has created a nutrient; onboarding finishes when its sheet is gone.
+    private(set) var hasCustomNutrient = false
 
     var canStartTracking: Bool {
         selectedStartingPoint != nil && draft.isValid
@@ -33,10 +35,20 @@ final class OnboardingViewModel {
         complete(context: context, defaults: defaults)
     }
 
-    /// Creates a nutrient from another draft ("Something else" → the blank form) and finishes onboarding.
-    func startTracking(with customDraft: NutrientDraft, context: ModelContext, defaults: UserDefaults = .standard) {
-        guard customDraft.isValid else { return }
+    /// Creates a nutrient from another draft ("Something else" → the blank form). Doesn't finish onboarding —
+    /// `finishAfterCustomForm` does, once the form's sheet is gone, so the switch to the tabs doesn't happen under it.
+    /// - Returns: whether a nutrient was created.
+    @discardableResult
+    func createCustomNutrient(from customDraft: NutrientDraft, context: ModelContext) -> Bool {
+        guard customDraft.isValid else { return false }
         addNutrient(from: customDraft, context: context)
+        hasCustomNutrient = true
+        return true
+    }
+
+    /// The custom form's sheet was dismissed: finish onboarding if it created a nutrient (not on Cancel).
+    func finishAfterCustomForm(context: ModelContext, defaults: UserDefaults = .standard) {
+        guard hasCustomNutrient else { return }
         complete(context: context, defaults: defaults)
     }
 

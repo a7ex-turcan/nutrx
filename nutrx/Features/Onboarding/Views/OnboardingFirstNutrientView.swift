@@ -11,6 +11,7 @@ struct OnboardingFirstNutrientView: View {
     let onBack: () -> Void
 
     @State private var showCustomForm = false
+    /// One draft for the screen's lifetime — reset, never replaced, so the form and its save action always share it.
     @State private var customDraft = NutrientDraft()
     @FocusState private var focusedField: GoalField?
 
@@ -63,9 +64,13 @@ struct OnboardingFirstNutrientView: View {
                         .fontWeight(.semibold)
                 }
             }
-            .sheet(isPresented: $showCustomForm) {
-                NutrientFormView(draft: customDraft, title: "New Nutrient", buttonLabel: "Add") {
-                    viewModel.startTracking(with: customDraft, context: modelContext)
+            .sheet(isPresented: $showCustomForm, onDismiss: {
+                viewModel.finishAfterCustomForm(context: modelContext)
+            }) {
+                // Save from the same instance the form edits, not whatever the state holds when Add is tapped.
+                let draft = customDraft
+                NutrientFormView(draft: draft, title: "New Nutrient", buttonLabel: "Add") {
+                    viewModel.createCustomNutrient(from: draft, context: modelContext)
                 }
             }
         }
@@ -152,7 +157,7 @@ struct OnboardingFirstNutrientView: View {
     private var somethingElse: some View {
         Button {
             focusedField = nil
-            customDraft = NutrientDraft()
+            customDraft.reset()
             showCustomForm = true
         } label: {
             Label("Something else", systemImage: "plus")

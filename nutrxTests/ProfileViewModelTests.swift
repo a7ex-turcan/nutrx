@@ -60,6 +60,17 @@ final class ProfileViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isValid)
     }
 
+    func testSurroundingSpacesAreIgnoredWhenSaving() {
+        let profile = emptyProfile
+        let viewModel = load(profile)
+        viewModel.weight = " \((72).formattedAmount()) "
+        viewModel.height = "\((180).formattedAmount()) "
+        XCTAssertTrue(viewModel.isValid)
+        viewModel.save()
+        XCTAssertEqual(profile.weight, 72)
+        XCTAssertEqual(profile.height, 180)
+    }
+
     func testRemovingTheBirthdayStoresNotSet() {
         let birthday = Calendar.current.date(byAdding: .year, value: -30, to: .now)!
         let profile = UserProfile(name: "Sam", birthdate: birthday, weight: 70, height: 180)

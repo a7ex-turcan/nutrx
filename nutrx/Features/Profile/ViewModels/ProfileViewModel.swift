@@ -53,9 +53,9 @@ final class ProfileViewModel {
 
         profile.name = name.trimmingCharacters(in: .whitespaces)
         profile.birthdate = birthdate ?? .distantPast
-        profile.weight = weight.parsedDouble ?? 0
+        profile.weight = Self.parsed(weight) ?? 0
         profile.weightUnit = weightUnit
-        profile.height = height.parsedDouble ?? 0
+        profile.height = Self.parsed(height) ?? 0
         profile.heightUnit = heightUnit
         profile.profileImageData = profileImageData
     }
@@ -69,10 +69,14 @@ final class ProfileViewModel {
         date == .distantPast ? nil : date
     }
 
+    /// The number in a field, ignoring surrounding spaces (e.g. pasted " 72"); nil when blank or not a number.
+    private static func parsed(_ text: String) -> Double? {
+        text.trimmingCharacters(in: .whitespaces).parsedDouble
+    }
+
     private static func isBlankOrPositive(_ text: String) -> Bool {
-        let trimmed = text.trimmingCharacters(in: .whitespaces)
-        if trimmed.isEmpty { return true }
-        guard let value = trimmed.parsedDouble else { return false }
+        if text.trimmingCharacters(in: .whitespaces).isEmpty { return true }
+        guard let value = parsed(text) else { return false }
         return value > 0
     }
 }

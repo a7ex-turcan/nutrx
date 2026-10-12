@@ -82,15 +82,29 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(try profiles().first?.onboardingCompleted, true)
     }
 
-    func testSomethingElseCreatesTheCustomNutrient() throws {
+    func testSomethingElseCreatesTheCustomNutrientWithoutFinishing() throws {
         let custom = NutrientDraft()
         custom.name = "Iron"
         custom.unit = "mg"
         custom.dailyTarget = "18"
         custom.step = "6"
-        OnboardingViewModel().startTracking(with: custom, context: context, defaults: defaults)
+        let viewModel = OnboardingViewModel()
+        XCTAssertTrue(viewModel.createCustomNutrient(from: custom, context: context))
 
         XCTAssertEqual(try nutrients().map(\.name), ["Iron"])
+        XCTAssertTrue(try profiles().isEmpty)  // not finished while the form's sheet is up
+
+        viewModel.finishAfterCustomForm(context: context, defaults: defaults)
         XCTAssertEqual(try profiles().first?.onboardingCompleted, true)
+    }
+
+    func testCancellingTheCustomFormDoesNotFinish() throws {
+        OnboardingViewModel().finishAfterCustomForm(context: context, defaults: defaults)
+        XCTAssertTrue(try profiles().isEmpty)
+    }
+
+    func testAnInvalidCustomDraftCreatesNothing() throws {
+        XCTAssertFalse(OnboardingViewModel().createCustomNutrient(from: NutrientDraft(), context: context))
+        XCTAssertTrue(try nutrients().isEmpty)
     }
 }
