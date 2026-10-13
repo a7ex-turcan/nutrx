@@ -70,7 +70,9 @@ enum ModelContainerFactory {
             deduplicateSingletons(context: container.mainContext)
             return container
         } catch {
-            logger.error("CloudKit container failed: \(error.localizedDescription, privacy: .public)")
+            // The full error (domain, code, underlying error), not localizedDescription: for SwiftData / Core Data
+            // that's often just "The operation couldn't be completed."
+            logger.error("CloudKit container failed: \(String(describing: error), privacy: .public)")
             // Fallback to local-only if CloudKit config fails
             if needsCloudKitUpgrade {
                 UserDefaults.standard.set(true, forKey: cloudKitUpgradeKey)
@@ -149,7 +151,7 @@ enum ModelContainerFactory {
         do {
             backupContainer = try ModelContainer(for: schema, configurations: [backupConfig])
         } catch {
-            logger.error("Failed to open backup store for migration: \(error.localizedDescription, privacy: .public)")
+            logger.error("Failed to open backup store for migration: \(String(describing: error), privacy: .public)")
             return
         }
         let backupContext = backupContainer.mainContext
