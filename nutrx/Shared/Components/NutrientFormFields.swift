@@ -153,14 +153,14 @@ struct NutrientFormFields<BeforeNotes: View>: View {
 
     private var nameAndUnit: some View {
         fieldPair(
-            labelled("Name") {
+            labelled("Name", id: .name) {
                 TextField("e.g. Vitamin D", text: $draft.name)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .focused(focusedField, equals: .name)
                     .accessibilityLabel("Name")
             },
-            labelled("Unit") {
+            labelled("Unit", id: .unit) {
                 TextField("e.g. mg, IU", text: $draft.unit)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -175,24 +175,24 @@ struct NutrientFormFields<BeforeNotes: View>: View {
         VStack(spacing: 0) {
             if draft.goalType == .range {
                 fieldPair(
-                    labelled("Minimum, per day") {
+                    labelled("Minimum, per day", id: .dailyTarget) {
                         amountField($draft.dailyTarget, focus: .dailyTarget, label: "Minimum, per day")
                     },
-                    labelled("Maximum") {
+                    labelled("Maximum", id: .upperBound) {
                         amountField($draft.upperBound, focus: .upperBound, label: "Maximum")
                     }
                 )
                 rowDivider
-                labelled("Each tap adds") {
+                labelled("Each tap adds", id: .step) {
                     amountField($draft.step, focus: .step, label: "Each tap adds")
                 }
             } else {
                 let goalLabel = "\(GoalTypePicker.label(for: draft.goalType)), per day"
                 fieldPair(
-                    labelled(goalLabel) {
+                    labelled(goalLabel, id: .dailyTarget) {
                         amountField($draft.dailyTarget, focus: .dailyTarget, label: goalLabel)
                     },
-                    labelled("Each tap adds") {
+                    labelled("Each tap adds", id: .step) {
                         amountField($draft.step, focus: .step, label: "Each tap adds")
                     }
                 )
@@ -202,7 +202,7 @@ struct NutrientFormFields<BeforeNotes: View>: View {
     }
 
     private var notesField: some View {
-        labelled("Notes") {
+        labelled("Notes", id: .notes) {
             TextField("Why you take it, best time to take it…", text: $draft.notes, axis: .vertical)
                 .lineLimit(1...4)
                 .focused(focusedField, equals: .notes)
@@ -252,8 +252,9 @@ struct NutrientFormFields<BeforeNotes: View>: View {
     }
 
     /// The caption above a field. VoiceOver skips it: each field carries the same text as its own label, so a
-    /// value never reads as just its placeholder ("e.g. Vitamin D", "0").
-    private func labelled(_ label: String, @ViewBuilder content: () -> some View) -> some View {
+    /// value never reads as just its placeholder ("e.g. Vitamin D", "0"). `id` lets a scrolling container bring the
+    /// field above the keyboard when it's focused.
+    private func labelled(_ label: String, id: NutrientFormField, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.caption.weight(.semibold))
@@ -265,6 +266,7 @@ struct NutrientFormFields<BeforeNotes: View>: View {
         .padding(.horizontal, Theme.Spacing.cardPadding)
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .id(id)
     }
 
     /// Big rounded number with the unit after it ("5 g"). VoiceOver reads "Each tap adds, g, 5".
