@@ -37,6 +37,7 @@ All notable changes to nutrx are documented in this file.
 - **Design polish** — The tab bar matches the new design (rings for Today, "Nutrients", a calendar for History). The iCloud and reminder banners use the same cards as the rest of Today. Settings icons are easier to read, "Recent days" in History stands out from the days under it, log-sheet entries are easier to scan, and the welcome screen's rings and headline match the design.
 
 ### Fixes
+- **Start tracking above the keyboard** — During setup, after the number pad had opened a few times, "Start tracking" could slip behind it with the keyboard's Done button on top. Done now sits in the panel above the amounts, and the button stays clear of the keyboard.
 - **Typing in the nutrient form** — The keyboard no longer covers the field you're typing in: the form scrolls it into view, including the amounts and Notes.
 - **No freeze when notifications are slow** — Right after a restart, iOS's notification service can take minutes to answer. nutrx used to wait for it on the main thread as it opened, freezing the app; it now does that work in the background.
 - **Dose reminders after logging** — Logging a nutrient now silences only the rest of that day's reminders for it. Before, reopening the app brought them back the same day, and the next days' reminders could stop until you opened the app again. Logs from the widget, the Watch or another device count too.
