@@ -264,17 +264,17 @@ Sheet with Cancel / title / Add (prominent). Live preview row, Name + Unit, "Loo
 ### 5.8 Onboarding — `09-onboarding-welcome.png`, `10-onboarding-first-nutrient.png`
 `Features/Onboarding/…`
 1. **Welcome** (new): full-bleed forest, brand mark (use the app icon artwork as an image asset — do not redraw the logo in code), headline "Track what you take. **Nothing else.**" (second line `GreenSoft`), three benefit rows, "Get started" button (`Brand/Green` bg, dark text).
-2. **First nutrient**: progress bar (2 steps), back, Skip. Title "What do you want to track first?", 2-column grid of starting points + dashed "Something else" (opens the blank form). Selecting a starting point pre-fills goal + step fields at the bottom (editable). "Start tracking" creates the nutrient and finishes onboarding.
-- **Starting points are pre-fills, not a preset list** — the user can edit everything, and nothing is created unless they tap Start tracking. Defaults (editable; confirm the numbers before shipping):
+2. **First nutrient**: progress bar (2 steps), back, Skip. Title "What do you want to track first?", 2-column grid of starting points + dashed "Something else" (opens the blank form). Selecting a starting point shows empty goal + step fields at the bottom. "Start tracking" (chip-grey until they're filled) creates the nutrient and finishes onboarding.
+- **Starting points are pre-fills, not a preset list** — they fill the name, unit, goal type, symbol and tint; the user can edit everything, and nothing is created unless they tap Start tracking. **No suggested amounts:** nutrx doesn't recommend intakes, so the goal and step start empty and the user enters their own (decided before release, replacing the earlier draft numbers).
 
-| Name | Unit | Goal | Step | Symbol | Tint |
-|---|---|---|---|---|---|
-| Vitamin D | IU | at least 4,000 | 1,000 | `sun.max` | amber |
-| Magnesium | mg | at least 400 | 200 | `pills` | indigo |
-| Omega-3 | mg | at least 2,000 | 1,000 | `fish` | teal |
-| Water | L | at least 2.5 | 0.25 | `drop` | blue |
-| Protein | g | between 120–160 | 20 | `dumbbell` | coral |
-| Creatine | g | at least 5 | 5 | `waterbottle` | green |
+| Name | Unit | Goal type | Symbol | Tint |
+|---|---|---|---|---|
+| Vitamin D | IU | at least | `sun.max` | amber |
+| Magnesium | mg | at least | `pills` | indigo |
+| Omega-3 | mg | at least | `fish` | teal |
+| Water | L | at least | `drop` | blue |
+| Protein | g | between | `dumbbell` | coral |
+| Creatine | g | at least | `waterbottle` | green |
 
 - Personal info step is removed from onboarding (§3). `OnboardingPersonalInfoView` moves/merges into Profile editing.
 

@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 /// Second onboarding screen (DESIGN.md §5.8): back, progress, Skip; "What do you want to track first?"; a grid of
-/// starting points and "Something else". A starting point pre-fills editable goal / step fields above Start
-/// tracking — nothing is created until that's tapped.
+/// starting points and "Something else". A starting point fills in the name, unit and look and shows empty goal / step
+/// fields above Start tracking for the user's own amounts (none are suggested). Nothing is created until that's tapped.
 struct OnboardingFirstNutrientView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -35,7 +35,7 @@ struct OnboardingFirstNutrientView: View {
                         .foregroundStyle(Theme.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
-                    Text("Pick a starting point or make your own. Everything stays editable.")
+                    Text("Pick a starting point or make your own. You set the amounts.")
                         .font(.body)
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.top, 8)
@@ -196,16 +196,17 @@ struct OnboardingFirstNutrientView: View {
                 focusedField = nil
                 viewModel.startTracking(context: modelContext)
             } label: {
+                // Disabled until the amounts are entered, which is most of the time: a chip-grey fill with
+                // secondary text stays legible in both appearances (dimming the green didn't).
                 Text("Start tracking")
                     .font(.headline)
-                    .foregroundStyle(Theme.controlOnPrimary)
+                    .foregroundStyle(viewModel.canStartTracking ? Theme.controlOnPrimary : Theme.textSecondary)
                     .frame(maxWidth: .infinity, minHeight: 56)
-                    .background(Theme.controlPrimary,
+                    .background(viewModel.canStartTracking ? Theme.controlPrimary : Theme.surfaceChip,
                                 in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
             }
             .buttonStyle(.plain)
             .disabled(!viewModel.canStartTracking)
-            .opacity(viewModel.canStartTracking ? 1 : 0.5)
         }
         .padding(.horizontal, Theme.Spacing.screenMargin)
         .padding(.top, 10)
