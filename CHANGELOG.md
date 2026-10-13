@@ -33,12 +33,16 @@ All notable changes to nutrx are documented in this file.
 - **Larger text** — At the largest accessibility text sizes the nutrient form stacks its fields so names and amounts aren't cut off, the notification banner stacks its buttons, small icon badges stay inside their circles, and Get started on the welcome screen no longer has text running behind it.
 - **VoiceOver** — Swipe actions on Today and My Nutrients now have spoken names, the iCloud banner's close button is labelled (with a larger tap area), nutrient cards and group headers announce as buttons, and a ring's check badge is no longer read as "Selected".
 - **One rule for "goal met"** — Today, History, streaks, analytics, widgets and the Watch now share a single goal check, so they can't disagree, and totals that land a rounding hair under the target (e.g. 0.1 + 0.7 of a 0.8 goal) now count as reached.
+- **"1 over limit" instead of "1 to go"** — When the only goal left is one you've gone over (an "at most" goal past its limit, or a range past its maximum), Today's header says so instead of telling you there's one to go.
+- **Design polish** — The tab bar matches the new design (rings for Today, "Nutrients", a calendar for History). The iCloud and reminder banners use the same cards as the rest of Today. Settings icons are easier to read, "Recent days" in History stands out from the days under it, log-sheet entries are easier to scan, and the welcome screen's rings and headline match the design.
 
 ### Fixes
 - **Widget + button** — Tapping + on the quick-log widget could crash the widget, so it didn't refresh (the amount was still logged). The widget now saves without touching iCloud directly; the app syncs it.
 - **Group counts** — Manage Groups no longer counts nutrients you've deleted.
 - **Readable buttons in dark mode** — "Enable" on the notification banner and "Add Reminder" were white on bright green in dark mode; they now use dark text.
 - **Removed "Log Out"** — The profile menu had a Log Out item that did nothing (nutrx has no accounts). It's gone.
+- **Nutrient form on smaller iPhones** — The colour picker made the form wider than the screen on most iPhones, so its cards lost their side margins (and could run off the edge on the smallest ones).
+- **Readable disabled buttons** — "Log" (with no amount) and "Start tracking" (before you enter amounts) were faded until they were hard to read; they're now grey and legible in light and dark mode.
 
 ---
 

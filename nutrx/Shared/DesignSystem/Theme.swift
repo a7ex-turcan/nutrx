@@ -45,6 +45,18 @@ enum Theme {
     static let avatarFill = color(.avatarFill)
     static let avatarInk = color(.avatarInk)
 
+    // MARK: - Settings icon tiles
+    /// Solid tiles behind Settings' white row glyphs (Settings.dc.html), the same in both appearances. Deeper than
+    /// the nutrient tints so a white glyph stays legible (the bright amber tint was about 2:1).
+    enum SettingsTile {
+        static let blue = color(.settingsTileBlue)
+        static let coral = color(.settingsTileCoral)
+        static let green = color(.settingsTileGreen)
+        static let indigo = color(.settingsTileIndigo)
+        static let amber = color(.settingsTileAmber)
+        static let grey = color(.settingsTileGrey)
+    }
+
     // MARK: - Shape & spacing (§1.4)
     enum Spacing {
         static let screenMargin: CGFloat = 16
@@ -100,6 +112,12 @@ enum Theme {
         case watchCell = "Watch/Cell"
         case avatarFill = "Avatar/Fill"
         case avatarInk = "Avatar/Ink"
+        case settingsTileBlue = "SettingsTile/Blue"
+        case settingsTileCoral = "SettingsTile/Coral"
+        case settingsTileGreen = "SettingsTile/Green"
+        case settingsTileIndigo = "SettingsTile/Indigo"
+        case settingsTileAmber = "SettingsTile/Amber"
+        case settingsTileGrey = "SettingsTile/Grey"
     }
 
     private static func color(_ asset: ColorAsset) -> Color {

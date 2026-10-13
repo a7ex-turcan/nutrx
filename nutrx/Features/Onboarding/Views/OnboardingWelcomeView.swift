@@ -5,6 +5,9 @@ import SwiftUI
 struct OnboardingWelcomeView: View {
     let onGetStarted: () -> Void
 
+    /// The design's 38pt headline (Welcome.dc.html), scaling with Dynamic Type like `.largeTitle`.
+    @ScaledMetric(relativeTo: .largeTitle) private var headlineSize: CGFloat = 38
+
     var body: some View {
         // Fixed layout when it fits (the spacer pushes the headline down, as in the mockup); scrolls at large text.
         ViewThatFits(in: .vertical) {
@@ -28,11 +31,10 @@ struct OnboardingWelcomeView: View {
             .background { Theme.forest.ignoresSafeArea() }
         }
         .background {
-            ZStack(alignment: .topTrailing) {
-                Theme.forest
-                rings
-            }
-            .ignoresSafeArea()
+            // An overlay, not a ZStack sibling: the 520pt rings would widen a ZStack past the screen and shift them.
+            Theme.forest
+                .overlay(alignment: .topTrailing) { rings }
+                .ignoresSafeArea()
         }
     }
 
@@ -45,12 +47,14 @@ struct OnboardingWelcomeView: View {
                 .frame(width: 112)
                 .foregroundStyle(Theme.green)
                 .accessibilityLabel("nutrx")
-                .padding(.top, 40)
+                // The design puts the mark 120pt from the top of the frame; below the safe area (47–62pt) that's ~64.
+                .padding(.top, 64)
 
             Spacer(minLength: 48)
 
             Text("\(Text("Track what you take.").foregroundStyle(Theme.onForestPrimary))\n\(Text("Nothing else.").foregroundStyle(Theme.greenSoft))")
-                .font(.system(.largeTitle, weight: .heavy))
+                .font(.system(size: headlineSize, weight: .heavy))
+                .tracking(-0.03 * headlineSize)  // the design's -0.03em
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
                 .padding(.bottom, 32)
@@ -69,21 +73,30 @@ struct OnboardingWelcomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Two open rings echoing the day-score ring — decoration only.
+    /// Two rings echoing the day-score ring, decoration only (Welcome.dc.html): a faint full track with a brighter
+    /// round-capped arc from 12 o'clock, in a 520pt box hanging 210pt off the trailing edge, 40pt from the top.
     private var rings: some View {
         ZStack {
-            Circle()
-                .trim(from: 0.06, to: 0.78)
-                .stroke(Theme.green.opacity(0.14), style: StrokeStyle(lineWidth: 40, lineCap: .round))
-                .frame(width: 500, height: 500)
-            Circle()
-                .trim(from: 0.04, to: 0.74)
-                .stroke(Theme.green.opacity(0.10), style: StrokeStyle(lineWidth: 40, lineCap: .round))
-                .frame(width: 360, height: 360)
+            ring(radius: 230, arcLength: 900, trackOpacity: 0.10, arcOpacity: 0.35)
+            ring(radius: 160, arcLength: 520, trackOpacity: 0.08, arcOpacity: 0.22)
         }
-        .rotationEffect(.degrees(-80))
-        .offset(x: 220, y: 40)
+        .frame(width: 520, height: 520)
+        .opacity(0.9)
+        .offset(x: 210, y: 40)
         .accessibilityHidden(true)
+    }
+
+    /// One ring: `arcLength` points of a circle of `radius`, drawn with a 40pt stroke like the source SVG.
+    private func ring(radius: CGFloat, arcLength: CGFloat, trackOpacity: Double, arcOpacity: Double) -> some View {
+        ZStack {
+            Circle()
+                .stroke(Theme.green.opacity(trackOpacity), lineWidth: 40)
+            Circle()
+                .trim(from: 0, to: arcLength / (2 * .pi * radius))
+                .stroke(Theme.green.opacity(arcOpacity), style: StrokeStyle(lineWidth: 40, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+        }
+        .frame(width: radius * 2, height: radius * 2)
     }
 
     private func benefit(_ symbol: String, title: String, detail: String) -> some View {

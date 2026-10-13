@@ -303,22 +303,35 @@ struct LogSheet: View {
             onLog(amount, trimmed.isEmpty ? nil : trimmed)
             dismiss()
         } label: {
+            let enabled = amount != nil
             HStack(spacing: 8) {
                 Image(systemName: "plus")
                     .fontWeight(.bold)
                     // GreenSoft accent on forest; on the dark-mode green button it would vanish.
-                    .foregroundStyle(colorScheme == .dark ? Theme.controlOnPrimary : Theme.greenSoft)
-                Text("Log \(amountLabel)")
+                    .foregroundStyle(!enabled ? Theme.textSecondary
+                                     : colorScheme == .dark ? Theme.controlOnPrimary : Theme.greenSoft)
+                // No amount yet: just "Log", not "Log 0 mg".
+                Text(enabled ? "Log \(amountLabel)" : "Log")
                     .monospacedDigit()
             }
             .font(.headline)
-            .foregroundStyle(Theme.controlOnPrimary)
+            // Disabled (no valid amount): chip grey with secondary text, legible in both appearances. Fading the
+            // green to 50% left the label at about 2:1 (#20); same style as onboarding's Start tracking.
+            .foregroundStyle(enabled ? Theme.controlOnPrimary : Theme.textSecondary)
             .frame(maxWidth: .infinity, minHeight: 56)
-            .background(Theme.controlPrimary, in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+            .background(enabled ? Theme.controlPrimary : Theme.surfaceChip,
+                        in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+            .overlay {
+                // On the sheet's white card the chip fill alone barely shows, so the disabled button gets the
+                // ghost outline the stepper buttons use.
+                if !enabled {
+                    RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                        .strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
+                }
+            }
         }
         .buttonStyle(.plain)
         .disabled(amount == nil)
-        .opacity(amount == nil ? 0.5 : 1)
     }
 
     private var loggedToday: some View {
@@ -355,13 +368,13 @@ struct LogSheet: View {
 
         return HStack(spacing: 12) {
             Text(record.date, format: .dateTime.hour().minute())
-                .font(.system(.subheadline, design: .rounded))
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
                 .monospacedDigit()
                 .foregroundStyle(Theme.textSecondary)
 
             Circle()
                 .fill(nutrient.tint.color)
-                .frame(width: 8, height: 8)
+                .frame(width: 10, height: 10)
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 1) {

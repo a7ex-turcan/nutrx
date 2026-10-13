@@ -21,7 +21,7 @@ struct StreakCard: View {
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // the 52pt circle doesn't grow with text
                     .foregroundStyle(Theme.greenSoft)
                     .frame(width: 52, height: 52)
-                    .background(Theme.onForestPrimary.opacity(0.10), in: Circle())
+                    .background(Theme.greenSoft.opacity(0.16), in: Circle())
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
