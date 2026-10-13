@@ -3,7 +3,8 @@ import SwiftData
 
 /// Second onboarding screen (DESIGN.md §5.8): back, progress, Skip; "What do you want to track first?"; a grid of
 /// starting points and "Something else". A starting point fills in the name, unit and look and shows empty goal / step
-/// fields above Start tracking for the user's own amounts (none are suggested). Nothing is created until that's tapped.
+/// fields above Start tracking for the user's own amounts (none are suggested) — at accessibility sizes, below the picked
+/// card instead. Nothing is created until Start tracking is tapped.
 struct OnboardingFirstNutrientView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -22,38 +23,69 @@ struct OnboardingFirstNutrientView: View {
 
     private var draft: NutrientDraft { viewModel.draft }
     private static let valueFont = Font.system(.title3, design: .rounded, weight: .bold)
+    /// One id per starting point: with a single shared id, a newly picked card showed the previous card's fields
+    /// (their labels and unit) under it.
+    private static func goalSectionID(_ point: StartingPoint) -> String { "goalSection-\(point.id)" }
+
+    /// At accessibility sizes the goal fields stack, and stacked they don't fit in the pinned panel above the keyboard:
+    /// with a range it reached over the top bar, and past the top of the screen at the largest sizes (#40). There they
+    /// scroll with the content, right below the picked starting point, and the panel keeps Done and Start tracking.
+    private var fieldsInContent: Bool { dynamicTypeSize.isAccessibilitySize }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                topBar
-                    .padding(.bottom, 24)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    topBar
+                        .padding(.bottom, 24)
 
-                Text("What do you want to track first?")
-                    .font(.system(.largeTitle, weight: .heavy))
-                    .foregroundStyle(Theme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .accessibilityAddTraits(.isHeader)
-                Text("Pick a starting point or make your own. You set the amounts.")
-                    .font(.body)
-                    .foregroundStyle(Theme.textSecondary)
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
+                    Text("What do you want to track first?")
+                        .font(.system(.largeTitle, weight: .heavy))
+                        .foregroundStyle(Theme.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Pick a starting point or make your own. You set the amounts.")
+                        .font(.body)
+                        .foregroundStyle(Theme.textSecondary)
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
 
-                LazyVGrid(columns: columns, spacing: Theme.Spacing.cardGap) {
-                    ForEach(StartingPoint.all) { point in
-                        startingPointCard(point)
+                    // One column at accessibility sizes, in a plain stack: in a lazy grid, picking another card
+                    // after scrolling made the list jump back to where the last pick had left it before scrolling
+                    // to the new fields.
+                    if fieldsInContent {
+                        VStack(spacing: Theme.Spacing.cardGap) { startingPoints }
+                    } else {
+                        LazyVGrid(columns: Self.columns, spacing: Theme.Spacing.cardGap) { startingPoints }
                     }
-                }
 
-                somethingElse
-                    .padding(.top, Theme.Spacing.cardGap)
+                    somethingElse
+                        .padding(.top, Theme.Spacing.cardGap)
+                }
+                .padding(.horizontal, Theme.Spacing.screenMargin)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, Theme.Spacing.screenMargin)
-            .padding(.bottom, 24)
+            .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .bottom) { bottomPanel }
+            // Fields in the content: line the picked starting point's fields up with the bottom of the visible area,
+            // so the card stays in view above them. Once the keyboard has risen, put the focused field near the top of
+            // what's left so the next one shows under it (as in NutrientFormView); tapping beside a field focuses it
+            // without the system scrolling it into view.
+            .task(id: viewModel.selectedStartingPoint?.id) {
+                guard fieldsInContent, let point = viewModel.selectedStartingPoint else { return }
+                do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                    proxy.scrollTo(Self.goalSectionID(point), anchor: .bottom)
+                }
+            }
+            .task(id: focusedField) {
+                guard fieldsInContent, let field = focusedField else { return }
+                do { try await Task.sleep(for: .milliseconds(350)) } catch { return }
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                    proxy.scrollTo(field, anchor: UnitPoint(x: 0.5, y: 0.3))
+                }
+            }
         }
-        .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom) { bottomPanel }
         .background(Theme.surfaceGround)
         .sheet(isPresented: $showCustomForm, onDismiss: {
             viewModel.finishAfterCustomForm(context: modelContext)
@@ -66,9 +98,18 @@ struct OnboardingFirstNutrientView: View {
         }
     }
 
-    private var columns: [GridItem] {
-        let count = dynamicTypeSize.isAccessibilitySize ? 1 : 2
-        return Array(repeating: GridItem(.flexible(), spacing: Theme.Spacing.cardGap), count: count)
+    private static let columns = Array(repeating: GridItem(.flexible(), spacing: Theme.Spacing.cardGap), count: 2)
+
+    /// The starting-point cards; at accessibility sizes the picked one is followed by its goal fields.
+    private var startingPoints: some View {
+        ForEach(StartingPoint.all) { point in
+            startingPointCard(point)
+            if fieldsInContent, viewModel.selectedStartingPoint == point {
+                goalSection
+                    .id(Self.goalSectionID(point))
+                    .transition(.opacity)
+            }
+        }
     }
 
     // MARK: - Top bar
@@ -186,16 +227,9 @@ struct OnboardingFirstNutrientView: View {
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .accessibilityHint("Hides the keyboard")
             }
-            if viewModel.selectedStartingPoint != nil {
-                goalFields
+            if !fieldsInContent, viewModel.selectedStartingPoint != nil {
+                goalSection
                     .transition(.move(edge: .bottom).combined(with: .opacity))
-                if let error = draft.rangeError {
-                    Text(error)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Theme.textAmberInk)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 4)
-                }
             }
 
             Button {
@@ -221,6 +255,20 @@ struct OnboardingFirstNutrientView: View {
         // keyboard's rounded top corners.
         .background { Theme.surfaceGround.ignoresSafeArea(edges: .bottom) }
         .animation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2)), value: viewModel.selectedStartingPoint)
+    }
+
+    /// The goal fields and, for a range whose maximum isn't above the minimum, the error below them.
+    private var goalSection: some View {
+        VStack(spacing: 10) {
+            goalFields
+            if let error = draft.rangeError {
+                Text(error)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.textAmberInk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
+            }
+        }
     }
 
     /// "Daily goal" + "Each tap adds" — or Minimum / Maximum / Each tap adds for a range.
@@ -281,6 +329,7 @@ struct OnboardingFirstNutrientView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture { focusedField = field }
+        .id(field)
     }
 }
 
@@ -338,4 +387,13 @@ private struct OnboardingFirstNutrientPreview: View {
     OnboardingFirstNutrientPreview()
         .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
         .dynamicTypeSize(.accessibility3)
+}
+
+// The range's three fields at the largest size, below the picked card (#40). Protein is near the end of the list,
+// so the preview starts scrolled to the bottom.
+#Preview("Accessibility size, range") {
+    OnboardingFirstNutrientPreview(selected: 4)
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+        .dynamicTypeSize(.accessibility5)
+        .defaultScrollAnchor(.bottom)
 }
