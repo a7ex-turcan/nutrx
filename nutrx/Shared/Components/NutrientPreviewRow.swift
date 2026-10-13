@@ -17,21 +17,34 @@ struct NutrientPreviewRow: View {
     /// How far the preview ring is drawn, just to show the colour.
     private static let sampleFraction = 0.35
 
-    private var goalLine: String {
+    /// The goal after the "0" ("/ 5 g", "max 400 mg"), or nil until there's a target.
+    private var goalText: String? {
+        target.map { target in
+            GoalProgress(current: 0, goalType: goalType, target: target, upperBound: upperBound,
+                         unit: unit.trimmingCharacters(in: .whitespaces)).goalText
+        }
+    }
+
+    /// "+5 g per tap", or nil until there's a step.
+    private var stepText: String? {
+        guard let step, step > 0 else { return nil }
         let trimmedUnit = unit.trimmingCharacters(in: .whitespaces)
-        func amount(_ value: Double) -> String {
-            trimmedUnit.isEmpty ? value.formattedAmount() : "\(value.formattedAmount()) \(trimmedUnit)"
-        }
-        var parts: [String] = []
-        if let target {
-            let progress = GoalProgress(current: 0, goalType: goalType, target: target,
-                                        upperBound: upperBound, unit: trimmedUnit)
-            parts.append("0 \(progress.goalText)")
-        }
-        if let step, step > 0 {
-            parts.append("+\(amount(step)) per tap")
-        }
+        let amount = trimmedUnit.isEmpty ? step.formattedAmount() : "\(step.formattedAmount()) \(trimmedUnit)"
+        return "+\(amount) per tap"
+    }
+
+    /// "0 / 5 g · +5 g per tap", or a prompt before anything is entered.
+    private var goalLine: String {
+        let parts = [goalText.map { "0 \($0)" }, stepText].compactMap { $0 }
         return parts.isEmpty ? "Set a goal below" : parts.joined(separator: " · ")
+    }
+
+    /// `goalLine` with the 0 bold, rounded and primary, like the value on a Today card (DESIGN.md §0.5, §4.4).
+    private var goalLineText: Text {
+        guard let goalText else { return Text(goalLine) }
+        let rest = [goalText, stepText].compactMap { $0 }.joined(separator: " · ")
+        return Text("0").font(.subheadline.weight(.bold)).fontDesign(.rounded).foregroundStyle(Theme.textPrimary)
+            + Text(" \(rest)")
     }
 
     var body: some View {
@@ -45,7 +58,7 @@ struct NutrientPreviewRow: View {
                 Text(name.trimmingCharacters(in: .whitespaces).isEmpty ? "New nutrient" : name)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
-                Text(goalLine)
+                goalLineText
                     .font(.subheadline)
                     .monospacedDigit()
                     .foregroundStyle(Theme.textSecondary)
