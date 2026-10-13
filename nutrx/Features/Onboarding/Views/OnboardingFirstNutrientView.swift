@@ -388,3 +388,12 @@ private struct OnboardingFirstNutrientPreview: View {
         .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
         .dynamicTypeSize(.accessibility3)
 }
+
+// The range's three fields at the largest size, below the picked card (#40). Protein is near the end of the list,
+// so the preview starts scrolled to the bottom.
+#Preview("Accessibility size, range") {
+    OnboardingFirstNutrientPreview(selected: 4)
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+        .dynamicTypeSize(.accessibility5)
+        .defaultScrollAnchor(.bottom)
+}
