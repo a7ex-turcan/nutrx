@@ -84,12 +84,19 @@ enum NotificationService {
     }
 
     /// `removePendingNotificationRequests` is synchronous and can block for minutes when the notification service
-    /// is slow (#15: over two minutes right after a simulator cold boot, from Today's scene-phase handler), so it
-    /// never runs on the main actor.
-    @concurrent
+    /// is slow (#15: over two minutes right after a simulator cold boot, from Today's scene-phase handler). It runs
+    /// on a private serial queue, not the main actor, and not Swift's cooperative pool either, whose few threads a
+    /// hang would hold.
     private nonisolated static func removePendingRequests(_ identifiers: [String]) async {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
+        await withCheckedContinuation { continuation in
+            notificationQueue.async {
+                UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
+                continuation.resume()
+            }
+        }
     }
+
+    private nonisolated static let notificationQueue = DispatchQueue(label: "nutrx-labs.nutrx.notifications")
 
     // MARK: - Per-Nutrient Dose Reminders
 
