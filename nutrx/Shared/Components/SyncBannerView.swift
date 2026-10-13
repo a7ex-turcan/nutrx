@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// One-time iCloud cards on Today ("Data restored", "iCloud sync active"): a blue iCloud tile (the Settings iCloud
+/// Sync colour), the message, and a dismiss ✕. Card styling like the nutrient cards around it.
 struct SyncBannerView: View {
     enum Variant {
         case restored
@@ -11,27 +13,27 @@ struct SyncBannerView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: variant == .restored ? "icloud.and.arrow.down" : "icloud")
-                .font(.title3)
-                .foregroundStyle(.blue)
+            NutrientIconTile(tint: .blue, symbolName: variant == .restored ? "icloud.and.arrow.down" : "icloud",
+                             size: 36)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
 
                 Text(message)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
 
             Button {
                 onDismiss()
             } label: {
                 Image(systemName: "xmark")
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
                     .contentShape(Rectangle())
             }
@@ -39,9 +41,8 @@ struct SyncBannerView: View {
             .padding(-12)  // keep the visual layout; only the hit area grows
             .accessibilityLabel("Dismiss")
         }
-        .padding(16)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(Theme.Spacing.cardPadding)
+        .cardStyle()
     }
 
     private var title: String {
@@ -59,4 +60,25 @@ struct SyncBannerView: View {
             "Your data syncs across all your Apple devices via iCloud. You can manage or delete your iCloud data in Settings."
         }
     }
+}
+
+private struct SyncBannerPreviewGallery: View {
+    var body: some View {
+        VStack(spacing: Theme.Spacing.cardGap) {
+            SyncBannerView(variant: .enabled, onDismiss: {})
+            SyncBannerView(variant: .restored, onDismiss: {})
+        }
+        .padding(Theme.Spacing.screenMargin)
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+    }
+}
+
+#Preview("Light") {
+    SyncBannerPreviewGallery()
+}
+
+#Preview("Dark") {
+    SyncBannerPreviewGallery()
+        .preferredColorScheme(.dark)
 }

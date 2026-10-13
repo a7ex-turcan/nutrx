@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// The one-time "Stay on track" card on Today: a coral bell tile (the Settings Notifications colour), the pitch,
+/// and Dismiss / Enable. Card styling like the nutrient cards around it.
 struct NotificationBannerView: View {
     let onEnable: () -> Void
     let onDismiss: () -> Void
@@ -8,21 +10,20 @@ struct NotificationBannerView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            HStack(alignment: .top) {
-                Image(systemName: "bell.badge")
-                    .font(.title3)
-                    .foregroundStyle(.blue)
+            HStack(alignment: .top, spacing: 12) {
+                NutrientIconTile(tint: .coral, symbolName: "bell.badge", size: 36)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Stay on track")
                         .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
 
                     Text("Get a daily reminder at noon if you haven't logged any nutrients yet. You can change this anytime in Settings.")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textSecondary)
                 }
 
-                Spacer()
+                Spacer(minLength: 0)
             }
 
             // Side by side, stacked at accessibility sizes so the labels don't break mid-word.
@@ -39,6 +40,7 @@ struct NotificationBannerView: View {
                         .padding(.vertical, 8)
                 }
                 .buttonStyle(.bordered)
+                .tint(Theme.controlPrimary)
 
                 Button {
                     onEnable()
@@ -54,14 +56,22 @@ struct NotificationBannerView: View {
                 .foregroundStyle(Theme.controlOnPrimary)
             }
         }
-        .padding(16)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(Theme.Spacing.cardPadding)
+        .cardStyle()
     }
 }
 
-#Preview {
+#Preview("Light") {
     NotificationBannerView(onEnable: {}, onDismiss: {})
-        .padding()
-        .background(Color(.systemGroupedBackground))
+        .padding(Theme.Spacing.screenMargin)
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+}
+
+#Preview("Dark") {
+    NotificationBannerView(onEnable: {}, onDismiss: {})
+        .padding(Theme.Spacing.screenMargin)
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+        .preferredColorScheme(.dark)
 }
