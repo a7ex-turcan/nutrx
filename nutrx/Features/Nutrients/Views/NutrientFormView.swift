@@ -107,9 +107,9 @@ struct NutrientFormView: View {
                     }
                     // Done for the return-less .decimalPad fields. SwiftUI logs "Invalid frame dimension (negative
                     // or non-finite)" for this toolbar on the sheet's first keyboard open, and again when the sheet
-                    // closes with it up. A bare sheet with one field and this toolbar logs the first too, and nothing in
-                    // the form changes either; there's no visible effect (#41). Keep the toolbar: without it the number
-                    // pad can only be closed from another field's Return key.
+                    // closes with it up. A bare sheet with one field and this toolbar logs the first too, and removing
+                    // the form's other pieces doesn't change either warning; there's no visible effect (#41). Keep the
+                    // toolbar: without it the number pad can only be closed from another field's Return key.
                     ToolbarItemGroup(placement: .keyboard) {
                         Spacer()
                         Button("Done") { focusedField = nil }
