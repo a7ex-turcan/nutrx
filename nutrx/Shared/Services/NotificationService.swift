@@ -66,7 +66,29 @@ enum NotificationService {
     }
 
     static func cancelDailyReminder() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [dailyReminderID])
+        enqueueDailyReminderChange {
+            await removePendingRequests([dailyReminderID])
+            logger.info("Daily check-in cancelled")
+        }
+    }
+
+    /// The latest daily check-in change, so changes apply in order: a cancel can't land after a newer schedule.
+    private static var dailyReminderChange: Task<Void, Never>?
+
+    private static func enqueueDailyReminderChange(_ change: @escaping @MainActor () async -> Void) {
+        let previous = dailyReminderChange
+        dailyReminderChange = Task {
+            await previous?.value
+            await change()
+        }
+    }
+
+    /// `removePendingNotificationRequests` is synchronous and can block for minutes when the notification service
+    /// is slow (#15: over two minutes right after a simulator cold boot, from Today's scene-phase handler), so it
+    /// never runs on the main actor.
+    @concurrent
+    private nonisolated static func removePendingRequests(_ identifiers: [String]) async {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
     }
 
     // MARK: - Per-Nutrient Dose Reminders
@@ -119,7 +141,7 @@ enum NotificationService {
                 .map(\.identifier)
                 .filter { $0.hasPrefix(nutrientReminderPrefix) && !wanted.contains($0) }
             if !stale.isEmpty {
-                center.removePendingNotificationRequests(withIdentifiers: stale)
+                await removePendingRequests(stale)
             }
             // Re-adding an identifier replaces it, so a renamed nutrient's pending reminders get the new name.
             // Adds fail while notifications aren't allowed, hence counting what was actually scheduled.
@@ -186,8 +208,6 @@ enum NotificationService {
     // MARK: - Private Helpers
 
     private static func scheduleReminder(for date: Date) {
-        cancelDailyReminder()
-
         let content = UNMutableNotificationContent()
         content.title = "Daily Check-in"
         content.body = "You haven't logged any intake today. Tap to start tracking!"
@@ -197,7 +217,13 @@ enum NotificationService {
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         let request = UNNotificationRequest(identifier: dailyReminderID, content: content, trigger: trigger)
 
-        UNUserNotificationCenter.current().add(request)
+        // Adding replaces a pending check-in with the same identifier, so there's no separate cancel. The async
+        // `add` suspends rather than blocking the main actor.
+        enqueueDailyReminderChange {
+            let added = (try? await UNUserNotificationCenter.current().add(request)) != nil
+            let outcome = added ? "scheduled" : "not scheduled"
+            logger.info("Daily check-in \(outcome, privacy: .public) for \(date, privacy: .public)")
+        }
     }
 
     private static func nextNoon(afterToday: Bool) -> Date {

@@ -38,6 +38,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Fixes
 - **Typing in the nutrient form** — The keyboard no longer covers the field you're typing in: the form scrolls it into view, including the amounts and Notes.
+- **No freeze when notifications are slow** — Right after a restart, iOS's notification service can take minutes to answer. nutrx used to wait for it on the main thread as it opened, freezing the app; it now does that work in the background.
 - **Dose reminders after logging** — Logging a nutrient now silences only the rest of that day's reminders for it. Before, reopening the app brought them back the same day, and the next days' reminders could stop until you opened the app again. Logs from the widget, the Watch or another device count too.
 - **Widget + button** — Tapping + on the quick-log widget could crash the widget, so it didn't refresh (the amount was still logged). The widget now saves without touching iCloud directly; the app syncs it.
 - **Group counts** — Manage Groups no longer counts nutrients you've deleted.
