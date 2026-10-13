@@ -1,13 +1,18 @@
 #if DEBUG
 import Foundation
+import os.log
 import SwiftData
+
+private let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "ScreenshotDemoData")
 
 /// Demo data for App Store screenshots, matching the redesign renders (docs/design/screens): a morning stack and
 /// a through-the-day group, three of six goals met today, a 10-day current streak (a longer best one before it),
 /// and Vitamin D missed on Sundays in the weeks before the streak so the weekday pattern has something to say.
 ///
 /// Debug builds only. Launch with `-screenshotDemoData` to replace everything in the store with it (the iPhone
-/// and Watch apps both read the argument). Never runs otherwise.
+/// and Watch apps both read the argument). Never runs otherwise. **Use simulators signed out of iCloud:** the store
+/// is CloudKit-backed, so on a device signed in it also deletes that account's development-container data on every
+/// synced device.
 enum ScreenshotDemoData {
     static let launchArgument = "-screenshotDemoData"
 
@@ -15,13 +20,17 @@ enum ScreenshotDemoData {
 
     /// Deletes every record in the store and inserts the demo set.
     static func replaceStore(in context: ModelContext, now: Date = .now) {
-        for model in [IntakeRecord.self, NutrientReminder.self, Exclusion.self] as [any PersistentModel.Type] {
-            try? context.delete(model: model)
+        // Children first. A failed delete would leave the demo set on top of the old data, so say so.
+        let models: [any PersistentModel.Type] = [IntakeRecord.self, NutrientReminder.self, Exclusion.self,
+                                                  Nutrient.self, NutrientGroup.self, UserProfile.self,
+                                                  UserPreferences.self]
+        for model in models {
+            do {
+                try context.delete(model: model)
+            } catch {
+                logger.error("Couldn't clear \(String(describing: model), privacy: .public): \(String(describing: error), privacy: .public)")
+            }
         }
-        try? context.delete(model: Nutrient.self)
-        try? context.delete(model: NutrientGroup.self)
-        try? context.delete(model: UserProfile.self)
-        try? context.delete(model: UserPreferences.self)
 
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: now)
@@ -95,9 +104,12 @@ enum ScreenshotDemoData {
         }
 
         // Today: three of six met (Omega-3, Magnesium, Caffeine under its limit); Vitamin D, Water and Protein to go.
+        // Logged by 9:30 at the latest, so the log sheet's times fit the 9:41 status bar of the captures.
+        let morning930 = calendar.date(bySettingHour: 9, minute: 30, second: 0, of: today) ?? now
+        let todayBase = min(now, morning930)
         func logToday(_ item: Nutrient, _ amounts: [Double]) {
             for (index, amount) in amounts.enumerated() {
-                let date = max(today, now.addingTimeInterval(TimeInterval(-60 * (index + 1) * 20)))
+                let date = max(today, todayBase.addingTimeInterval(TimeInterval(-60 * (index + 1) * 20)))
                 context.insert(IntakeRecord(nutrient: item, amount: amount, date: date))
             }
         }
@@ -112,8 +124,11 @@ enum ScreenshotDemoData {
         if let oneOClock = calendar.date(bySettingHour: 13, minute: 0, second: 0, of: today) {
             context.insert(NutrientReminder(nutrient: vitaminD, timeOfDay: oneOClock))
         }
-        let laterHour = min(calendar.component(.hour, from: now) + 2, 23)
-        if let later = calendar.date(bySettingHour: laterHour, minute: 0, second: 0, of: today) {
+        // Late in the evening that would pass midnight: 23:59 is still ahead of anything before it.
+        let laterHour = calendar.component(.hour, from: now) + 2
+        if let later = laterHour > 23
+            ? calendar.date(bySettingHour: 23, minute: 59, second: 0, of: today)
+            : calendar.date(bySettingHour: laterHour, minute: 0, second: 0, of: today) {
             context.insert(NutrientReminder(nutrient: protein, timeOfDay: later))
         }
 

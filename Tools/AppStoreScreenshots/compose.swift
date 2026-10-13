@@ -8,13 +8,17 @@
 
 import AppKit
 
+enum Device: String, Decodable { case iphone, ipad, watch }
+enum Style: String, Decodable { case forest, light }
+
+/// A typo in panels.json ("iPhone", "dark") fails the decode instead of falling back to a default.
 struct Panel: Decodable {
     let output: String
-    let device: String
+    let device: Device
     let raw: String
     let line1: String
     let line2: String
-    let style: String
+    let style: Style
 }
 
 struct Config: Decodable { let panels: [Panel] }
@@ -30,16 +34,16 @@ struct Layout {
     let bezel: CGFloat
     let island: Bool
 
-    static func forDevice(_ device: String) -> Layout {
+    static func forDevice(_ device: Device) -> Layout {
         switch device {
-        case "ipad":
+        case .ipad:
             return Layout(canvas: CGSize(width: 2064, height: 2752), headlineTop: 170, fontSize: 118,
                           deviceWidth: 1860, deviceTop: 540, cornerRatio: 0.028, bezel: 40, island: false)
-        case "watch":
+        case .watch:
             // Watch art on the iPhone canvas: the capture is small, so it's drawn large in a watch case.
             return Layout(canvas: CGSize(width: 1320, height: 2868), headlineTop: 190, fontSize: 104,
                           deviceWidth: 920, deviceTop: 940, cornerRatio: 0.24, bezel: 76, island: false)
-        default:
+        case .iphone:
             return Layout(canvas: CGSize(width: 1320, height: 2868), headlineTop: 190, fontSize: 104,
                           deviceWidth: 1000, deviceTop: 600, cornerRatio: 0.145, bezel: 24, island: true)
         }
@@ -86,7 +90,7 @@ func render(_ panel: Panel, rawDir: URL, outDir: URL, background: NSImage) throw
     cg.translateBy(x: 0, y: layout.canvas.height)
     cg.scaleBy(x: 1, y: -1)
     let canvas = CGRect(origin: .zero, size: layout.canvas)
-    let isLight = panel.style == "light"
+    let isLight = panel.style == .light
 
     // Background.
     if isLight {
@@ -134,7 +138,7 @@ func render(_ panel: Panel, rawDir: URL, outDir: URL, background: NSImage) throw
     bodyPath.lineWidth = 3
     bodyPath.stroke()
 
-    if panel.device == "watch" {
+    if panel.device == .watch {
         // Digital crown and side button.
         let crown = CGRect(x: body.maxX - 6, y: body.minY + body.height * 0.24, width: 34, height: body.height * 0.16)
         color(0x2A302C).setFill(); NSBezierPath(roundedRect: crown, xRadius: 14, yRadius: 14).fill()
@@ -164,7 +168,9 @@ func render(_ panel: Panel, rawDir: URL, outDir: URL, background: NSImage) throw
         throw NSError(domain: "compose", code: 2, userInfo: [NSLocalizedDescriptionKey: "can't write \(panel.output)"])
     }
     CGImageDestinationAddImage(destination, image, nil)
-    CGImageDestinationFinalize(destination)
+    guard CGImageDestinationFinalize(destination) else {
+        throw NSError(domain: "compose", code: 3, userInfo: [NSLocalizedDescriptionKey: "writing \(panel.output) failed"])
+    }
     print("\(panel.output)  \(cg.width)×\(cg.height)")
 }
 
