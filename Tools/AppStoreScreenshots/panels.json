@@ -1,0 +1,16 @@
+{
+  "panels": [
+    {"output": "iphone-01-today.png", "device": "iphone", "raw": "iphone/01-today.png", "line1": "Track what you take.", "line2": "Nothing else.", "style": "forest"},
+    {"output": "iphone-02-log.png", "device": "iphone", "raw": "iphone/02-log-sheet.png", "line1": "Log exact amounts", "line2": "in seconds.", "style": "forest"},
+    {"output": "iphone-03-private.png", "device": "iphone", "raw": "iphone/07-settings.png", "line1": "Private by design.", "line2": "No account. No ads.", "style": "forest"},
+    {"output": "iphone-04-analytics.png", "device": "iphone", "raw": "iphone/03-analytics-7.png", "line1": "Spot the days", "line2": "you tend to miss.", "style": "forest"},
+    {"output": "iphone-05-history.png", "device": "iphone", "raw": "iphone/04-history.png", "line1": "Build a streak", "line2": "that sticks.", "style": "forest"},
+    {"output": "iphone-06-widgets.png", "device": "iphone", "raw": "iphone/09-home-widgets.png", "line1": "Log straight from", "line2": "your Home Screen.", "style": "forest"},
+    {"output": "iphone-07-watch.png", "device": "watch", "raw": "watch/01-list.png", "line1": "Or right", "line2": "from your wrist.", "style": "forest"},
+    {"output": "iphone-08-form.png", "device": "iphone", "raw": "iphone/06-form.png", "line1": "Your nutrients.", "line2": "Your goals.", "style": "forest"},
+    {"output": "iphone-09-dark.png", "device": "iphone", "raw": "iphone/08-today-dark.png", "line1": "Easy on the eyes,", "line2": "day or night.", "style": "light"},
+    {"output": "ipad-01-today.png", "device": "ipad", "raw": "ipad/01-today.png", "line1": "Track what you take.", "line2": "Nothing else.", "style": "forest"},
+    {"output": "ipad-02-analytics.png", "device": "ipad", "raw": "ipad/02-analytics-30.png", "line1": "Spot the days", "line2": "you tend to miss.", "style": "forest"},
+    {"output": "ipad-03-history.png", "device": "ipad", "raw": "ipad/03-history.png", "line1": "Build a streak", "line2": "that sticks.", "style": "forest"}
+  ]
+}

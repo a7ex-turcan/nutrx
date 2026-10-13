@@ -44,6 +44,13 @@ xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 1
 - Look up App Store Connect facts (IDs, versions, builds, review state) with the tool yourself instead of asking the user.
 - nutrx app record `6760843478` ("nutrx - Nutrient Tracker", bundle and SKU `nutrx-labs.nutrx`). Example: `Tools/asc get '/v1/apps/6760843478/appStoreVersions?limit=5'`.
 
+## App Store screenshots
+
+- **Demo data:** debug builds launched with `-screenshotDemoData` (`Shared/Persistence/ScreenshotDemoData.swift`, also compiled into the Watch app) replace everything in the store with the redesign-render data set: Morning stack / Through the day, 3/6 goals met today, a 10-day streak, seven weeks of history with Vitamin D missed on Sundays. Example: `xcrun simctl launch <UDID> nutrx-labs.nutrx -screenshotDemoData`. Never in Release.
+- **Capture** on the iPhone 6.9″ (1320×2868), iPad 13″ (2064×2752) and Apple Watch 46mm (416×496) simulators: `xcrun simctl status_bar <UDID> override --time "9:41" …`, en_US region (reboot after changing it, or the clock reads "09:41"), notifications allowed so Today shows its next-reminder line.
+- **Compose:** `swift Tools/AppStoreScreenshots/compose.swift Tools/AppStoreScreenshots/panels.json <raw dir> <out dir>`. `panels.json` sets each panel's capture, two-line headline and style (`forest`, or `light` for the dark-mode shot); the output is opaque PNG at the App Store size. `background-forest.jpg` was generated once with gpt-image-2. Watch screenshots go up as plain captures, flattened to JPEG (App Store Connect rejects an alpha channel).
+- Screenshots show the real app only — never generated or mocked-up UI.
+
 ## Swift Configuration
 
 Notable build settings in the Xcode project:

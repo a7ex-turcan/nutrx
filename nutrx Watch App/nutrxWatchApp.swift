@@ -11,7 +11,11 @@ struct nutrxWatchApp: App {
     init() {
         let container = ModelContainerFactory.create()
         #if DEBUG
-        Self.seedSampleDataIfEmpty(container: container)
+        if ScreenshotDemoData.isRequested {
+            ScreenshotDemoData.replaceStore(in: container.mainContext)
+        } else {
+            Self.seedSampleDataIfEmpty(container: container)
+        }
         #endif
         self.modelContainer = container
     }

@@ -112,6 +112,7 @@
 				Shared/DesignSystem/Theme.swift,
 				"Shared/Extensions/Double+Formatting.swift",
 				Shared/Persistence/ModelContainerFactory.swift,
+				Shared/Persistence/ScreenshotDemoData.swift,
 				Shared/Services/GoalStatus.swift,
 				Shared/Services/WidgetSummary.swift,
 			);
