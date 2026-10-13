@@ -1,2 +1,6 @@
 # App Store Connect tool build output (Tools/asc builds it on first use)
 Tools/AppStoreConnect/.build/
+
+# Local Claude Code settings: holds ASC_KEY_ID / ASC_ISSUER_ID for Tools/asc. This repo is public, so it must
+# never be committed, whatever the machine's global ignore says.
+.claude/settings.local.json
