@@ -26,8 +26,9 @@ public struct ASCClient {
 
     /// Builds a client from `ASC_KEY_ID`, `ASC_ISSUER_ID` and, optionally, `ASC_KEY_PATH`.
     ///
-    /// Without `ASC_KEY_PATH` the key is read from `~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8`,
-    /// the location Apple's own tools use. The key material never leaves this process.
+    /// Without `ASC_KEY_PATH` (or with it empty) the key is read from
+    /// `~/.appstoreconnect/private_keys/AuthKey_<KEY_ID>.p8`, the location Apple's own tools use. The key material
+    /// never leaves this process.
     public static func fromEnvironment(
         _ environment: [String: String] = ProcessInfo.processInfo.environment
     )
@@ -39,10 +40,7 @@ public struct ASCClient {
         guard let issuerIdentifier = environment["ASC_ISSUER_ID"], !issuerIdentifier.isEmpty else {
             throw ASCError.missingEnvironment("ASC_ISSUER_ID")
         }
-        let defaultPath = FileManager.default.homeDirectoryForCurrentUser
-            .appending(path: ".appstoreconnect/private_keys/AuthKey_\(keyIdentifier).p8")
-            .path(percentEncoded: false)
-        let keyPath = environment["ASC_KEY_PATH"] ?? defaultPath
+        let keyPath = keyPath(keyIdentifier: keyIdentifier, environment: environment)
         let pem: String
         do {
             pem = try String(contentsOfFile: keyPath, encoding: .utf8)
@@ -54,8 +52,38 @@ public struct ASCClient {
         return try ASCClient(signer: signer)
     }
 
+    /// Where the private key is read from: `ASC_KEY_PATH` when it is set and not empty, like the two identifiers,
+    /// otherwise `AuthKey_<KEY_ID>.p8` in `~/.appstoreconnect/private_keys/`.
+    static func keyPath(
+        keyIdentifier: String,
+        environment: [String: String],
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser
+    ) -> String {
+        if let path = environment["ASC_KEY_PATH"], !path.isEmpty { return path }
+        return homeDirectory.appending(path: ".appstoreconnect/private_keys/AuthKey_\(keyIdentifier).p8")
+            .path(percentEncoded: false)
+    }
+
+    /// The URL a request goes to. A path resolves against the API host; an absolute URL, such as a response's
+    /// `links.next`, is accepted only on that same origin. Redirects are held to the same rule (`send`), so the
+    /// bearer token never goes elsewhere.
+    static func resolve(_ path: String, against baseURL: URL) throws -> URL {
+        guard let url = URL(string: path, relativeTo: baseURL)?.absoluteURL else { throw ASCError.invalidURL(path) }
+        guard isSameOrigin(url, as: baseURL) else {
+            // The whole origin, so a wrong scheme or port reads as clearly as a wrong host.
+            let origin = "\(url.scheme ?? "")://\(url.host ?? "")" + (url.port.map { ":\($0)" } ?? "")
+            throw ASCError.foreignHost(origin)
+        }
+        return url
+    }
+
+    /// Whether `url` has `baseURL`'s scheme, host and port.
+    static func isSameOrigin(_ url: URL, as baseURL: URL) -> Bool {
+        url.scheme == baseURL.scheme && url.host == baseURL.host && url.port == baseURL.port
+    }
+
     public func send(method: String, path: String, body: Data? = nil) async throws -> Response {
-        guard let url = URL(string: path, relativeTo: baseURL) else { throw ASCError.invalidURL(path) }
+        let url = try Self.resolve(path, against: baseURL)
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue("Bearer \(try signer.token())", forHTTPHeaderField: "Authorization")
@@ -64,7 +92,7 @@ public struct ASCClient {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await session.data(for: request, delegate: SameOriginRedirects(baseURL: baseURL))
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         return Response(status: status, body: data)
     }

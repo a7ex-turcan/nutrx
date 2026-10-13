@@ -6,6 +6,7 @@ public enum ASCError: Error, CustomStringConvertible {
     case keyFileUnreadable(path: String, underlying: String)
     case invalidKey(String)
     case invalidURL(String)
+    case foreignHost(String)
     case invalidJSON(String)
     case usage(String)
 
@@ -19,6 +20,8 @@ public enum ASCError: Error, CustomStringConvertible {
             return "private key is not a valid P-256 PEM key: \(reason)"
         case .invalidURL(let text):
             return "not a valid request path: \(text)"
+        case .foreignHost(let origin):
+            return "refusing to send the API token to \(origin); pass a path such as /v1/apps or a URL on the API host"
         case .invalidJSON(let reason):
             return "request body is not valid JSON: \(reason)"
         case .usage(let text):

@@ -1,13 +1,18 @@
 #!/bin/sh
-# App Store Connect CLI. Builds Tools/AppStoreConnect on first use, then runs it.
+# App Store Connect CLI. Builds Tools/AppStoreConnect on first use and whenever its sources are newer than the
+# binary, then runs it; otherwise it runs the existing binary straight away.
 # Usage: Tools/asc <get|post|patch|delete> <path> [body.json | -]
 set -e
 pkg="$(cd "$(dirname "$0")/AppStoreConnect" && pwd)"
-log="$(mktemp -t asc-build)"
-if ! swift build -c release --package-path "$pkg" >"$log" 2>&1; then
-    cat "$log" >&2
+bin="$pkg/.build/release/asc"
+if [ ! -x "$bin" ] || [ -n "$(find "$pkg/Package.swift" "$pkg/Sources" -newer "$bin" | head -n 1)" ]; then
+    log="$(mktemp -t asc-build)"
+    if ! swift build -c release --package-path "$pkg" >"$log" 2>&1; then
+        cat "$log" >&2
+        rm -f "$log"
+        exit 1
+    fi
     rm -f "$log"
-    exit 1
+    touch "$bin"  # a no-op build doesn't relink, so mark the binary as current
 fi
-rm -f "$log"
-exec "$pkg/.build/release/asc" "$@"
+exec "$bin" "$@"
