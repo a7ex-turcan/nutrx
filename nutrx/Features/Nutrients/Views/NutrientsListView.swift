@@ -348,7 +348,8 @@ struct NutrientsListView: View {
             .accessibilityLabel("Dismiss tip")
         }
         .padding(Theme.Spacing.cardPadding)
-        .cardStyle()
+        // Flat like the list's group cards below it: a list row clips `cardStyle()`'s shadow into a hard band.
+        .background(Theme.surfaceCard, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
     }
 
     // MARK: - Actions
