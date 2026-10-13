@@ -26,11 +26,13 @@ struct FormField<Content: View>: View {
     VStack(spacing: 20) {
         FormField(label: "Name") {
             TextField("Your name", text: .constant(""))
+                .accessibilityLabel("Name")
         }
         FormField(label: "Weight") {
             HStack {
                 TextField("0", text: .constant(""))
                     .keyboardType(.decimalPad)
+                    .accessibilityLabel("Weight")
             }
         }
     }
