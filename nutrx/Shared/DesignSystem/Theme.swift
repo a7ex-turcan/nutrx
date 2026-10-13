@@ -47,7 +47,8 @@ enum Theme {
 
     // MARK: - Settings icon tiles
     /// Solid tiles behind Settings' white row glyphs (Settings.dc.html), the same in both appearances. Deeper than
-    /// the nutrient tints so a white glyph stays legible (the bright amber tint was about 2:1).
+    /// the nutrient tints so a white glyph stays legible (the bright amber tint was about 2:1). Amber is a shade
+    /// darker than the source's #C48C00 (2.96:1) to clear 3:1 for icons: #B07D00, about 3.6:1.
     enum SettingsTile {
         static let blue = color(.settingsTileBlue)
         static let coral = color(.settingsTileCoral)
