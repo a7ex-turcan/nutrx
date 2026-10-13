@@ -244,7 +244,8 @@ nutrx/
         │                                    # Single source of truth for "goal met" (streaks, History, analytics, Today).
         ├── Haptics.swift                    # logged(reachingGoal:) / adjusted() / deleted() — the app's haptics in one place.
         ├── NotificationService.swift        # Daily check-in reminder + per-nutrient dose reminders.
-        │                                    # Smart scheduling and suppression after logging intake.
+        │                                    # refreshAllNutrientReminders: one data-driven, serialized sync.
+        ├── ReminderSchedule.swift           # Dose reminders as one-off requests per date (rolling window).
         ├── StreakService.swift              # Computes current/best streak from IntakeRecord + Exclusion data.
         └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30;
                                              # writeReviewURL (App Store review page) for Settings → Rate nutrx.
@@ -370,7 +371,7 @@ Users create and manage their own nutrients. No preset list — fully user-defin
 
 **My Nutrients** (DESIGN.md §5.6): large title, toolbar + (filled forest circle) and profile. Groups are inset cards with uppercase headers and a count (headers hidden when only General exists; every nutrient is listed — collapsing is a Today thing). Row: icon tile, name, goal-type tag ("AT LEAST" / "AT MOST" / "BETWEEN") + target, bell if it has reminders, chevron → analytics. Swipe right = edit, swipe left = delete, long press = Edit / Move to Group / Delete, drag to reorder. A dashed **New group** button ends the list.
 
-Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Smart suppression cancels upcoming reminders after logging intake. Reminders can be configured both during nutrient creation (inline in the form) and via the "Reminders" section in the Edit Nutrient form. Notification permission is requested on first reminder add if not yet granted.
+Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Logging a nutrient silences the rest of **today's** reminders for it (today's total above 0); later days are untouched. Reminders can be configured both during nutrient creation (inline in the form) and via the "Reminders" section in the Edit Nutrient form. Notification permission is requested on first reminder add if not yet granted.
 
 ---
 
@@ -502,7 +503,7 @@ No new SwiftData models, services, or files required beyond the above edits.
 All local — no push infrastructure. Two notification types:
 
 1. **Daily check-in reminder** — fires at noon if no intake logged. Opt-in via Settings. Smart one-shot scheduling refreshed on foreground and after every intake action. ID: `daily-checkin-reminder`.
-2. **Per-nutrient dose reminders** — configurable times per nutrient. Smart suppression after logging. IDs: `nutrient-{id}-reminder-{HHmm}`.
+2. **Per-nutrient dose reminders** — configurable times per nutrient, scheduled as **one-off requests per date** for a rolling window (`ReminderSchedule`: up to 14 days, fewer with many reminders so all fit under iOS's 64 pending; the daily check-in takes one more). The rest of today is left out for a nutrient already logged today. `NotificationService.refreshAllNutrientReminders(context:)` is the only scheduler: it rebuilds the set from the data after every log change, on foreground and remote (iCloud) changes, and after reminder or nutrient edits, so logs from the widget, Watch or Siri count from the next sync. Syncs are serialized; requests for deleted nutrients, past times and the old repeating format are removed. Today's "next reminder" line uses the same rule. IDs: `nutrient-{id}-reminder-{HHmm}-{yyyyMMdd}`. The sync logs "Dose reminders synced: N of M scheduled, K removed" (category `NotificationService`).
 
 Permission flow handles not-asked, granted, and denied states. A one-time notification banner appears on Today after onboarding.
 

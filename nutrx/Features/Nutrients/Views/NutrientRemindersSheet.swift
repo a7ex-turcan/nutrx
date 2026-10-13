@@ -144,7 +144,8 @@ struct NutrientRemindersSheet: View {
     private func insertReminder() {
         let reminder = NutrientReminder(nutrient: nutrient, timeOfDay: selectedTime)
         modelContext.insert(reminder)
-        NotificationService.scheduleReminders(for: nutrient)
+        try? modelContext.save()
+        NotificationService.refreshAllNutrientReminders(context: modelContext)
 
         withAnimation(.unlessReduceMotion(reduceMotion)) {
             showTimePicker = false
@@ -157,8 +158,9 @@ struct NutrientRemindersSheet: View {
         for index in offsets {
             modelContext.delete(sorted[index])
         }
-        // Re-schedule after deletion
-        NotificationService.scheduleReminders(for: nutrient)
+        // Saved first, so the reschedule no longer sees the deleted reminders.
+        try? modelContext.save()
+        NotificationService.refreshAllNutrientReminders(context: modelContext)
     }
 }
 

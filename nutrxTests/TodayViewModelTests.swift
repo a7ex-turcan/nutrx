@@ -90,16 +90,18 @@ final class TodayViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Vitamin D")
     }
 
-    func testIntakeLoggedOutsideTodayDoesNotHideTheReminder() throws {
-        // Widget / Watch / another device: nothing suppressed this device's notification.
+    func testALogFromAnywhereHidesThatNutrientsReminderToday() throws {
+        // Widget, Watch, Siri or another device: the record is what counts, and the scheduler skips the same
+        // reminders on its next sync (#4).
         let vitaminD = makeNutrient("Vitamin D", target: 4000, reminderHours: [9], sortOrder: 0)
+        _ = makeNutrient("Magnesium", target: 400, reminderHours: [21], sortOrder: 1)
         context.insert(IntakeRecord(nutrient: vitaminD, amount: 1000))
 
         let viewModel = try refreshedViewModel()
-        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Vitamin D")
+        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Magnesium")
     }
 
-    func testLoggingFromTodayHidesTheReminderUntilTheNextReschedule() throws {
+    func testLoggingHidesTheReminderForTheRestOfTodayEvenAfterAReschedule() throws {
         let vitaminD = makeNutrient("Vitamin D", target: 4000, reminderHours: [9], sortOrder: 0)
         _ = makeNutrient("Magnesium", target: 400, reminderHours: [21], sortOrder: 1)
         let viewModel = try refreshedViewModel()
@@ -107,21 +109,18 @@ final class TodayViewModelTests: XCTestCase {
         viewModel.increment(vitaminD, context: context)
         XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Magnesium")
 
-        // Foreground reschedule restores every reminder, so the card shows Vitamin D again.
+        // A foreground reschedule used to bring today's Vitamin D reminder back (#4); now it stays silenced.
         viewModel.rescheduleReminders(context: context)
-        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Vitamin D")
+        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Magnesium")
     }
 
-    func testChangingRemindersAfterLoggingShowsThemAgain() throws {
+    func testTakingTodaysLogBackBringsTheReminderBack() throws {
         let vitaminD = makeNutrient("Vitamin D", target: 4000, reminderHours: [9], sortOrder: 0)
         let viewModel = try refreshedViewModel()
         viewModel.increment(vitaminD, context: context)
         XCTAssertNil(viewModel.nextReminder(after: startOfToday))
 
-        // Adding a reminder (Edit Nutrient → Reminders) reschedules all of that nutrient's reminders.
-        let tenOClock = Calendar.current.date(bySettingHour: 10, minute: 0, second: 0, of: .now)!
-        context.insert(NutrientReminder(nutrient: vitaminD, timeOfDay: tenOClock))
-        try context.save()
+        viewModel.decrement(vitaminD, context: context)  // back to 0 today
         XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.time,
                        Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now))
     }

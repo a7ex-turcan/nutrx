@@ -131,6 +131,9 @@ struct NutrientsListView: View {
                     if let nutrient = nutrientToDelete {
                         nutrient.isDeleted = true
                         nutrientToDelete = nil
+                        // Its pending reminders go now, not at the next foreground.
+                        try? modelContext.save()
+                        NotificationService.refreshAllNutrientReminders(context: modelContext)
                     }
                 }
                 Button("Cancel", role: .cancel) {

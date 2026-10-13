@@ -1,6 +1,9 @@
 import Foundation
+import os.log
 import UserNotifications
 import SwiftData
+
+private let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "NotificationService")
 
 enum NotificationPermissionStatus {
     case notDetermined
@@ -67,124 +70,86 @@ enum NotificationService {
 
     // MARK: - Per-Nutrient Dose Reminders
 
-    /// Schedules all reminders for a given nutrient. Cancels existing ones first.
-    static func scheduleReminders(for nutrient: Nutrient) {
-        let center = UNUserNotificationCenter.current()
-        let nutrientUUID = nutrient.id.uuidString
-        let prefix = "\(nutrientReminderPrefix)\(nutrientUUID)-reminder-"
+    /// The latest reminder sync, so a newer one runs after it: two syncs interleaving their removes and adds
+    /// could leave a request the newer data doesn't want.
+    private static var reminderSync: Task<Void, Never>?
 
-        // Collect the IDs we're about to schedule so we can cancel stale ones synchronously
-        var newIDs: Set<String> = []
-        var requests: [UNNotificationRequest] = []
-
-        for reminder in nutrient.reminders ?? [] {
-            let (hour, minute) = reminder.timeComponents
-            let id = "\(nutrientReminderPrefix)\(nutrientUUID)-reminder-\(String(format: "%02d%02d", hour, minute))"
-            newIDs.insert(id)
-
-            let content = UNMutableNotificationContent()
-            content.title = "Time to log your \(nutrient.name)"
-            if let notes = nutrient.notes, !notes.isEmpty {
-                content.body = notes
-            } else {
-                content.body = "Tap to log your \(nutrient.name) intake."
-            }
-            content.sound = .default
-
-            var dateComponents = DateComponents()
-            dateComponents.hour = hour
-            dateComponents.minute = minute
-
-            let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-            requests.append(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
-        }
-
-        // Remove all existing reminders for this nutrient, then add new ones.
-        // Using getPendingNotificationRequests async overload ensures cancel completes before scheduling.
-        Task {
-            let pending = await center.pendingNotificationRequests()
-            let staleIDs = pending
-                .map(\.identifier)
-                .filter { $0.hasPrefix(prefix) && !newIDs.contains($0) }
-            if !staleIDs.isEmpty {
-                center.removePendingNotificationRequests(withIdentifiers: staleIDs)
-            }
-
-            for request in requests {
-                try? await center.add(request)
-            }
-        }
-    }
-
-    /// Cancels all pending reminders for a given nutrient.
-    static func cancelReminders(for nutrient: Nutrient) {
-        let prefix = "\(nutrientReminderPrefix)\(nutrient.id.uuidString)-reminder-"
-        let center = UNUserNotificationCenter.current()
-
-        Task {
-            let pending = await center.pendingNotificationRequests()
-            let ids = pending
-                .map(\.identifier)
-                .filter { $0.hasPrefix(prefix) }
-            if !ids.isEmpty {
-                center.removePendingNotificationRequests(withIdentifiers: ids)
-            }
-        }
-    }
-
-    /// Called after a user logs intake for a nutrient. Cancels all pending
-    /// reminders for that nutrient for the rest of today. They are restored
-    /// on the next app foreground by `refreshAllNutrientReminders`.
-    static func suppressRemindersAfterLogging(for nutrient: Nutrient) {
-        let prefix = "\(nutrientReminderPrefix)\(nutrient.id.uuidString)-reminder-"
-        let center = UNUserNotificationCenter.current()
-
-        Task {
-            let pending = await center.pendingNotificationRequests()
-            let idsToCancel = pending
-                .map(\.identifier)
-                .filter { $0.hasPrefix(prefix) }
-
-            if !idsToCancel.isEmpty {
-                center.removePendingNotificationRequests(withIdentifiers: idsToCancel)
-            }
-        }
-    }
-
-    /// Reschedules all nutrient reminders for all non-deleted nutrients.
-    /// Call on app foreground to ensure reminders are fresh.
-    /// Also cleans up orphaned notifications from old ID formats.
-    static func refreshAllNutrientReminders(context: ModelContext) {
-        let descriptor = FetchDescriptor<Nutrient>(
-            predicate: #Predicate { !$0.isDeleted }
-        )
+    /// Brings the pending dose reminders in line with the data (#4): each reminder time as a one-off request per
+    /// date for the next few days (`ReminderSchedule`), without the rest of today for nutrients already logged
+    /// today. Call after any log change, on foreground, and after reminders or nutrients change. Requests for
+    /// deleted nutrients, for times that have passed, and in the old repeating format are removed.
+    static func refreshAllNutrientReminders(context: ModelContext, now: Date = .now) {
+        let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isDeleted })
         guard let nutrients = try? context.fetch(descriptor) else { return }
+        let totals = todayTotals(context: context, now: now)
+        let withReminders = nutrients.filter { !($0.reminders ?? []).isEmpty }
 
-        // Collect all valid UUID-based prefixes
-        let validPrefixes = Set(nutrients.compactMap { nutrient -> String? in
-            guard !(nutrient.reminders ?? []).isEmpty else { return nil }
-            return "\(nutrientReminderPrefix)\(nutrient.id.uuidString)-reminder-"
-        })
-
-        // Schedule fresh reminders for each nutrient
-        for nutrient in nutrients where !(nutrient.reminders ?? []).isEmpty {
-            scheduleReminders(for: nutrient)
+        let plans = withReminders.map { nutrient in
+            ReminderSchedule.Plan(
+                nutrientID: nutrient.id,
+                times: (nutrient.reminders ?? []).map {
+                    ReminderSchedule.Time(hour: $0.timeComponents.hour, minute: $0.timeComponents.minute)
+                },
+                loggedToday: (totals[nutrient.persistentModelID] ?? 0) > 0
+            )
         }
-
-        // Clean up any orphaned notifications (e.g. from old persistentModelID-based IDs)
-        Task {
-            let center = UNUserNotificationCenter.current()
-            let pending = await center.pendingNotificationRequests()
-            let orphanedIDs = pending
-                .map(\.identifier)
-                .filter { id in
-                    id.hasPrefix(nutrientReminderPrefix)
-                        && !validPrefixes.contains(where: { id.hasPrefix($0) })
-                }
-            if !orphanedIDs.isEmpty {
-                center.removePendingNotificationRequests(withIdentifiers: orphanedIDs)
+        let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }) { first, _ in first }
+        let requests = ReminderSchedule.occurrences(for: plans, now: now).compactMap { occurrence in
+            contents[occurrence.nutrientID].map { content in
+                let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute],
+                                                            from: occurrence.fireDate)
+                return UNNotificationRequest(identifier: occurrence.id, content: content,
+                                             trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false))
             }
         }
+        let wanted = Set(requests.map(\.identifier))
+
+        let previous = reminderSync
+        reminderSync = Task {
+            await previous?.value
+            let center = UNUserNotificationCenter.current()
+            let stale = await center.pendingNotificationRequests()
+                .map(\.identifier)
+                .filter { $0.hasPrefix(nutrientReminderPrefix) && !wanted.contains($0) }
+            if !stale.isEmpty {
+                center.removePendingNotificationRequests(withIdentifiers: stale)
+            }
+            // Re-adding an identifier replaces it, so a renamed nutrient's pending reminders get the new name.
+            // Adds fail while notifications aren't allowed, hence counting what was actually scheduled.
+            var scheduled = 0
+            for request in requests where (try? await center.add(request)) != nil {
+                scheduled += 1
+            }
+            logger.info("Dose reminders synced: \(scheduled) of \(requests.count) scheduled, \(stale.count) removed")
+        }
+    }
+
+    private static func reminderContent(for nutrient: Nutrient) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = "Time to log your \(nutrient.name)"
+        if let notes = nutrient.notes, !notes.isEmpty {
+            content.body = notes
+        } else {
+            content.body = "Tap to log your \(nutrient.name) intake."
+        }
+        content.sound = .default
+        return content
+    }
+
+    /// Today's total per nutrient (the sum of today's records; it can be negative, which counts as not logged).
+    private static func todayTotals(context: ModelContext, now: Date) -> [PersistentIdentifier: Double] {
+        let startOfDay = Calendar.current.startOfDay(for: now)
+        guard let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay) else { return [:] }
+        let descriptor = FetchDescriptor<IntakeRecord>(
+            predicate: #Predicate<IntakeRecord> { $0.date >= startOfDay && $0.date < endOfDay }
+        )
+        var totals: [PersistentIdentifier: Double] = [:]
+        for record in (try? context.fetch(descriptor)) ?? [] {
+            if let id = record.nutrient?.persistentModelID {
+                totals[id, default: 0] += record.amount
+            }
+        }
+        return totals
     }
 
     // MARK: - Private Helpers

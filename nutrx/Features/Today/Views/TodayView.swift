@@ -111,6 +111,8 @@ struct TodayView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange).receive(on: DispatchQueue.main)) { _ in
             viewModel.refresh(context: modelContext)
             refreshStreak()
+            // A log synced from another device silences that nutrient's reminders for today here too.
+            viewModel.rescheduleReminders(context: modelContext)
         }
         .sheet(item: $nutrientToLog) { nutrient in
             LogSheet(

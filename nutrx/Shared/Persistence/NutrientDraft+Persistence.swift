@@ -33,7 +33,7 @@ extension NutrientDraft {
             context.insert(NutrientReminder(nutrient: nutrient, timeOfDay: time))
         }
         if !pendingReminderTimes.isEmpty {
-            NotificationService.scheduleReminders(for: nutrient)
+            NotificationService.refreshAllNutrientReminders(context: context)
         }
         return nutrient
     }
@@ -53,6 +53,10 @@ extension NutrientDraft {
         nutrient.notes = trimmedNotes
         nutrient.tint = tint
         nutrient.symbolName = symbolName
+        // Pending reminders carry the name and notes; re-adding them picks up the edit.
+        if !(nutrient.reminders ?? []).isEmpty, let context = nutrient.modelContext {
+            NotificationService.refreshAllNutrientReminders(context: context)
+        }
     }
 
     private var trimmedNotes: String? {
