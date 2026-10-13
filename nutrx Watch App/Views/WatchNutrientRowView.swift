@@ -7,6 +7,8 @@ struct WatchNutrientRowView: View {
     let item: WatchNutrientItem
     let onIncrement: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         let nutrient = item.nutrient
         let progress = item.progress
@@ -25,9 +27,10 @@ struct WatchNutrientRowView: View {
 
                 // Never broken mid-value: a range's goal gets its own line ("2,500" / "/ 2,300–3,500 mg"), since
                 // wrapping split it after the en dash and one line had no room for it; other goals stay on one
-                // line, shrinking slightly if needed ("2,000 / 4,000 IU").
+                // line, shrinking slightly if needed ("2,000 / 4,000 IU"). From xxLarge text up every goal gets
+                // its own line, and at accessibility sizes that line may wrap rather than lose its unit.
                 Group {
-                    if nutrient.goalType == .range {
+                    if nutrient.goalType == .range || dynamicTypeSize >= .xxLarge {
                         VStack(alignment: .leading, spacing: 0) {
                             Text(progress.currentText).foregroundStyle(.primary)
                             Text(progress.goalText)
@@ -40,7 +43,7 @@ struct WatchNutrientRowView: View {
                 .fontDesign(.rounded)
                 .monospacedDigit()
                 .foregroundStyle(Theme.onForestSecondary)
-                .lineLimit(1)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? 2 : 1)
                 .minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
