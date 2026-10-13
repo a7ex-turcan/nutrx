@@ -17,4 +17,9 @@ final class ReviewServiceTests: XCTestCase {
         let recorded = try XCTUnwrap(preferences.lastReviewRequestedDate)
         XCTAssertLessThan(abs(recorded.timeIntervalSinceNow), 5)
     }
+
+    func testWriteReviewURLOpensNutrxsReviewPage() {
+        XCTAssertEqual(ReviewService.writeReviewURL.absoluteString,
+                       "https://apps.apple.com/app/id6760843478?action=write-review")
+    }
 }

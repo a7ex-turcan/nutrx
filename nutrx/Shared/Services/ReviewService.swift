@@ -5,6 +5,13 @@ import UIKit
 
 enum ReviewService {
 
+    /// nutrx's App Store ID (the App Store Connect app record).
+    static let appStoreID = "6760843478"
+
+    /// The App Store's "Write a Review" page for nutrx, opened by Settings → Rate nutrx. Unlike the system review
+    /// prompt, which iOS rate-limits, it always opens.
+    static let writeReviewURL = URL(string: "https://apps.apple.com/app/id\(appStoreID)?action=write-review")!
+
     /// Call after every intake action. Evaluates guard conditions and fires the review prompt if they pass.
     static func maybeRequestReview(
         context: ModelContext,
