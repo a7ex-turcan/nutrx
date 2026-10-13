@@ -254,13 +254,14 @@ struct OnboardingFirstNutrientView: View {
             Text(label)
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(Theme.textSecondary)
+                .accessibilityHidden(true)  // the field's own label
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 TextField("0", text: text)
                     .font(Self.valueFont)
                     .keyboardType(.decimalPad)
                     .focused($focusedField, equals: field)
                     .fixedSize()
-                    .accessibilityLabel(label)
+                    .accessibilityLabel(draft.unit.isEmpty ? label : "\(label), \(draft.unit)")
                 Text(draft.unit)
                     .font(Self.valueFont)
                     .lineLimit(1)

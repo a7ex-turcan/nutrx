@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Labeled form field with consistent styling used across the app.
-/// Wraps any input control with a label and the standard card background.
+/// Wraps any input control with a label and the standard card background. The caption is visual only: give the
+/// control its own accessibility label (a text field's placeholder alone isn't a name).
 struct FormField<Content: View>: View {
     let label: String
     @ViewBuilder let content: Content
@@ -11,6 +12,7 @@ struct FormField<Content: View>: View {
             Text(label)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(Theme.textSecondary)
+                .accessibilityHidden(true)
 
             content
                 .padding(12)

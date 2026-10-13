@@ -158,12 +158,14 @@ struct NutrientFormFields<BeforeNotes: View>: View {
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .focused(focusedField, equals: .name)
+                    .accessibilityLabel("Name")
             },
             labelled("Unit") {
                 TextField("e.g. mg, IU", text: $draft.unit)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused(focusedField, equals: .unit)
+                    .accessibilityLabel("Unit")
             }
         )
         .background(Theme.surfaceCard, in: cardShape)
@@ -174,23 +176,24 @@ struct NutrientFormFields<BeforeNotes: View>: View {
             if draft.goalType == .range {
                 fieldPair(
                     labelled("Minimum, per day") {
-                        amountField($draft.dailyTarget, focus: .dailyTarget)
+                        amountField($draft.dailyTarget, focus: .dailyTarget, label: "Minimum, per day")
                     },
                     labelled("Maximum") {
-                        amountField($draft.upperBound, focus: .upperBound)
+                        amountField($draft.upperBound, focus: .upperBound, label: "Maximum")
                     }
                 )
                 rowDivider
                 labelled("Each tap adds") {
-                    amountField($draft.step, focus: .step)
+                    amountField($draft.step, focus: .step, label: "Each tap adds")
                 }
             } else {
+                let goalLabel = "\(GoalTypePicker.label(for: draft.goalType)), per day"
                 fieldPair(
-                    labelled("\(GoalTypePicker.label(for: draft.goalType)), per day") {
-                        amountField($draft.dailyTarget, focus: .dailyTarget)
+                    labelled(goalLabel) {
+                        amountField($draft.dailyTarget, focus: .dailyTarget, label: goalLabel)
                     },
                     labelled("Each tap adds") {
-                        amountField($draft.step, focus: .step)
+                        amountField($draft.step, focus: .step, label: "Each tap adds")
                     }
                 )
             }
@@ -203,6 +206,7 @@ struct NutrientFormFields<BeforeNotes: View>: View {
             TextField("Why you take it, best time to take it…", text: $draft.notes, axis: .vertical)
                 .lineLimit(1...4)
                 .focused(focusedField, equals: .notes)
+                .accessibilityLabel("Notes")
         }
         .background(Theme.surfaceCard, in: cardShape)
     }
@@ -247,11 +251,14 @@ struct NutrientFormFields<BeforeNotes: View>: View {
         }
     }
 
+    /// The caption above a field. VoiceOver skips it: each field carries the same text as its own label, so a
+    /// value never reads as just its placeholder ("e.g. Vitamin D", "0").
     private func labelled(_ label: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.textSecondary)
+                .accessibilityHidden(true)
             content()
                 .foregroundStyle(Theme.textPrimary)
         }
@@ -260,15 +267,18 @@ struct NutrientFormFields<BeforeNotes: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Big rounded number with the unit after it ("5 g").
-    private func amountField(_ text: Binding<String>, focus: NutrientFormField) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 4) {
+    /// Big rounded number with the unit after it ("5 g"). VoiceOver reads "Each tap adds, g, 5".
+    private func amountField(_ text: Binding<String>, focus: NutrientFormField, label: String) -> some View {
+        let unit = draft.unit.trimmingCharacters(in: .whitespaces)
+        return HStack(alignment: .firstTextBaseline, spacing: 4) {
             TextField("0", text: text)
                 .keyboardType(.decimalPad)
                 .focused(focusedField, equals: focus)
                 .fixedSize()
-            Text(draft.unit.trimmingCharacters(in: .whitespaces))
+                .accessibilityLabel(unit.isEmpty ? label : "\(label), \(unit)")
+            Text(unit)
                 .lineLimit(1)
+                .accessibilityHidden(true)  // in the field's label
         }
         .font(.system(.title3, design: .rounded, weight: .bold))
         .monospacedDigit()

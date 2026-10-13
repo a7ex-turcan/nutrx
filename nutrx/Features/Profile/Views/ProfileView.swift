@@ -136,6 +136,7 @@ struct ProfileView: View {
         VStack(spacing: 20) {
             FormField(label: "Name") {
                 TextField("Optional", text: $viewModel.name)
+                    .accessibilityLabel("Name")
                     .textContentType(.name)
                     .autocorrectionDisabled()
                     .focused($focusedField, equals: .name)
@@ -166,9 +167,11 @@ struct ProfileView: View {
                 Text("Weight")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(Theme.textSecondary)
+                    .accessibilityHidden(true)  // the field's own label
 
                 HStack(spacing: 10) {
                     TextField("Optional", text: $viewModel.weight)
+                        .accessibilityLabel("Weight")
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .weight)
                         .padding(12)
@@ -188,9 +191,11 @@ struct ProfileView: View {
                 Text("Height")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(Theme.textSecondary)
+                    .accessibilityHidden(true)  // the field's own label
 
                 HStack(spacing: 10) {
                     TextField("Optional", text: $viewModel.height)
+                        .accessibilityLabel("Height")
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .height)
                         .padding(12)
