@@ -108,6 +108,9 @@ struct NutrientFormFields<BeforeNotes: View>: View {
     /// Rows the container wants between the goal and the notes (the form sheet's Group / Reminders).
     @ViewBuilder var beforeNotes: BeforeNotes
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             nameAndUnit
@@ -138,8 +141,8 @@ struct NutrientFormFields<BeforeNotes: View>: View {
             notesField
                 .padding(.top, 6)
         }
-        .animation(.easeInOut(duration: 0.25), value: draft.goalType)
-        .animation(.easeInOut(duration: 0.2), value: rangeError)
+        .animation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25)), value: draft.goalType)
+        .animation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2)), value: rangeError)
     }
 
     // MARK: - Sections
@@ -149,50 +152,47 @@ struct NutrientFormFields<BeforeNotes: View>: View {
     }
 
     private var nameAndUnit: some View {
-        HStack(spacing: 0) {
+        fieldPair(
             labelled("Name") {
                 TextField("e.g. Vitamin D", text: $draft.name)
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .focused(focusedField, equals: .name)
-            }
+            },
             labelled("Unit") {
                 TextField("e.g. mg, IU", text: $draft.unit)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused(focusedField, equals: .unit)
             }
-            .overlay(alignment: .leading) { columnDivider }
-        }
+        )
         .background(Theme.surfaceCard, in: cardShape)
     }
 
     private var goalFields: some View {
         VStack(spacing: 0) {
             if draft.goalType == .range {
-                HStack(spacing: 0) {
+                fieldPair(
                     labelled("Minimum, per day") {
                         amountField($draft.dailyTarget, focus: .dailyTarget)
-                    }
+                    },
                     labelled("Maximum") {
                         amountField($draft.upperBound, focus: .upperBound)
                     }
-                    .overlay(alignment: .leading) { columnDivider }
-                }
-                Rectangle().fill(Theme.lineHairline).frame(height: 1)
+                )
+                rowDivider
                 labelled("Each tap adds") {
                     amountField($draft.step, focus: .step)
                 }
             } else {
-                HStack(spacing: 0) {
+                fieldPair(
                     labelled("\(GoalTypePicker.label(for: draft.goalType)), per day") {
                         amountField($draft.dailyTarget, focus: .dailyTarget)
-                    }
+                    },
                     labelled("Each tap adds") {
                         amountField($draft.step, focus: .step)
                     }
-                    .overlay(alignment: .leading) { columnDivider }
-                }
+                )
             }
         }
         .background(Theme.surfaceCard, in: cardShape)
@@ -224,6 +224,27 @@ struct NutrientFormFields<BeforeNotes: View>: View {
     /// `fixedSize` (which fed back into the self-sizing text fields when the keyboard appeared).
     private var columnDivider: some View {
         Rectangle().fill(Theme.lineHairline).frame(width: 1)
+    }
+
+    private var rowDivider: some View {
+        Rectangle().fill(Theme.lineHairline).frame(height: 1)
+    }
+
+    /// Two fields side by side, stacked at accessibility text sizes so neither label nor value is squeezed.
+    @ViewBuilder
+    private func fieldPair(_ first: some View, _ second: some View) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(spacing: 0) {
+                first
+                rowDivider
+                second
+            }
+        } else {
+            HStack(spacing: 0) {
+                first
+                second.overlay(alignment: .leading) { columnDivider }
+            }
+        }
     }
 
     private func labelled(_ label: String, @ViewBuilder content: () -> some View) -> some View {

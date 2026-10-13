@@ -131,6 +131,23 @@ struct GoalProgress: Equatable {
         }
     }
 
+    /// Whether logging `amount` more turns a goal that isn't met yet into a met one — the cue for a success
+    /// haptic. Never true for "at most" goals, which start out met.
+    func reachesGoal(adding amount: Double) -> Bool {
+        guard !countsAsMet else { return false }
+        let next: GoalProgress
+        switch goal {
+        case .atLeast(let target):
+            next = GoalProgress(current: current + amount, goalType: .minimum, target: target, unit: unit)
+        case .atMost(let limit):
+            next = GoalProgress(current: current + amount, goalType: .maximum, target: limit, unit: unit)
+        case .between(let lower, let upper):
+            next = GoalProgress(current: current + amount, goalType: .range, target: lower, upperBound: upper,
+                                unit: unit)
+        }
+        return next.countsAsMet
+    }
+
     func remainingText(locale: Locale) -> String {
         switch goal {
         case .atLeast(let target):

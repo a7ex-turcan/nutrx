@@ -42,6 +42,7 @@ struct NutrientCard: View {
             HStack(spacing: 14) {
                 ProgressRing(nutrient: nutrient, progress: progress)
                     .frame(width: 52, height: 52)
+                    .accessibilityHidden(true)  // the card's own label and value say it
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(nutrient.name)
@@ -66,6 +67,7 @@ struct NutrientCard: View {
         .accessibilityLabel(nutrient.name)
         .accessibilityValue("\(progress.progressText), \(progress.remainingText)")
         .accessibilityHint("Opens logging options")
+        .accessibilityAddTraits(.isButton)  // children: .ignore can drop the button's own trait
     }
 
     /// Same rule as `TodayViewModel.decrement`, which ignores a step that would take the total below zero.
@@ -76,7 +78,7 @@ struct NutrientCard: View {
     private var stepButtons: some View {
         HStack(spacing: 10) {
             Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                Haptics.adjusted()
                 onDecrement()
             } label: {
                 Image(systemName: "minus")
@@ -91,7 +93,7 @@ struct NutrientCard: View {
             .accessibilityLabel("Remove one step of \(nutrient.name)")
 
             Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                Haptics.logged(reachingGoal: progress.reachesGoal(adding: nutrient.step))
                 onIncrement()
             } label: {
                 Image(systemName: "plus")

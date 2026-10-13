@@ -7,6 +7,7 @@ import SwiftData
 struct OnboardingFirstNutrientView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var viewModel: OnboardingViewModel
     let onBack: () -> Void
 
@@ -88,6 +89,7 @@ struct OnboardingFirstNutrientView: View {
             Button(action: onBack) {
                 Image(systemName: "chevron.left")
                     .font(.body.weight(.semibold))
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // the 44pt circle doesn't grow with text
                     .foregroundStyle(Theme.textPrimary)
                     .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
                     .background(Theme.surfaceCard, in: Circle())
@@ -120,7 +122,7 @@ struct OnboardingFirstNutrientView: View {
 
         return Button {
             focusedField = nil
-            withAnimation(.easeInOut(duration: 0.2)) { viewModel.select(point) }
+            withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) { viewModel.select(point) }
         } label: {
             HStack(spacing: 10) {
                 NutrientIconTile(tint: point.tint, symbolName: point.symbolName, size: 40)
@@ -211,7 +213,7 @@ struct OnboardingFirstNutrientView: View {
         // Down to the screen edge: with the keyboard up, the floating Done bar below the panel is see-through
         // and the grid would show between the panel and the keys.
         .background { Theme.surfaceGround.ignoresSafeArea(edges: .bottom) }
-        .animation(.easeInOut(duration: 0.2), value: viewModel.selectedStartingPoint)
+        .animation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2)), value: viewModel.selectedStartingPoint)
     }
 
     /// "Daily goal" + "Each tap adds" — or Minimum / Maximum / Each tap adds for a range.

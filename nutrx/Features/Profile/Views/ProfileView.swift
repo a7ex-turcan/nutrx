@@ -5,7 +5,6 @@ import PhotosUI
 struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = ProfileViewModel()
-    @State private var showSavedConfirmation = false
     @State private var showImageSourcePicker = false
     @State private var showCamera = false
     @State private var showPhotoPicker = false
@@ -49,11 +48,6 @@ struct ProfileView: View {
                 .disabled(!viewModel.hasChanges || !viewModel.isValid)
             }
         }
-        .overlay {
-            if showSavedConfirmation {
-                savedToast
-            }
-        }
         .onAppear {
             viewModel.load(context: modelContext)
         }
@@ -73,6 +67,7 @@ struct ProfileView: View {
 
                 Image(systemName: "camera.fill")
                     .font(.footnote.weight(.semibold))
+                    .dynamicTypeSize(...DynamicTypeSize.large)  // the 32pt badge doesn't grow with text
                     .foregroundStyle(Theme.controlOnPrimary)
                     .frame(width: 32, height: 32)
                     .background(Theme.controlPrimary, in: Circle())
@@ -208,29 +203,6 @@ struct ProfileView: View {
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 120)
-                }
-            }
-        }
-    }
-
-    // MARK: - Saved Toast
-
-    private var savedToast: some View {
-        VStack {
-            Spacer()
-            Text("Profile saved")
-                .font(.subheadline.weight(.medium))
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
-                .padding(.bottom, 24)
-        }
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation {
-                    showSavedConfirmation = false
                 }
             }
         }

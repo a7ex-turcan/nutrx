@@ -3,6 +3,7 @@ import SwiftData
 
 struct NutrientsListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<Nutrient> { !$0.isDeleted },
            sort: \Nutrient.sortOrder)
     private var nutrients: [Nutrient]
@@ -186,7 +187,7 @@ struct NutrientsListView: View {
                             Button(role: .destructive) {
                                 nutrientToDelete = nutrient
                             } label: {
-                                Image(systemName: "trash")
+                                Label("Delete", systemImage: "trash")
                             }
                         }
                         .swipeActions(edge: .leading, allowsFullSwipe: true) {
@@ -194,7 +195,7 @@ struct NutrientsListView: View {
                                 editDraft.populate(from: nutrient)
                                 nutrientToEdit = nutrient
                             } label: {
-                                Image(systemName: "pencil")
+                                Label("Edit", systemImage: "pencil")
                             }
                             .tint(.blue)
                         }
@@ -331,15 +332,19 @@ struct NutrientsListView: View {
             Spacer()
 
             Button {
-                withAnimation {
+                withAnimation(.unlessReduceMotion(reduceMotion)) {
                     allPreferences.first?.hasSeenAnalyticsBanner = true
                 }
             } label: {
                 Image(systemName: "xmark")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
+                    .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .padding(-12)  // keep the visual layout; only the hit area grows
+            .accessibilityLabel("Dismiss tip")
         }
         .padding(12)
         .background(Color(.secondarySystemGroupedBackground))

@@ -135,7 +135,6 @@
 				Models/NutrientTint.swift,
 				Models/UserPreferences.swift,
 				Models/UserProfile.swift,
-				Shared/Components/NutrientProgressBar.swift,
 				Shared/Components/ProgressRing.swift,
 				Shared/Components/SegmentedDayRing.swift,
 				Shared/DesignSystem/Colors.xcassets,

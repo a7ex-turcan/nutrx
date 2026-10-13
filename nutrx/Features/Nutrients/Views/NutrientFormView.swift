@@ -6,6 +6,7 @@ import SwiftData
 struct NutrientFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query private var allReminders: [NutrientReminder]
     @Query(sort: \NutrientGroup.sortOrder) private var allGroups: [NutrientGroup]
     @Bindable var draft: NutrientDraft
@@ -173,12 +174,23 @@ struct NutrientFormView: View {
 
     private func settingsRow(_ title: String, value: String) -> some View {
         HStack(spacing: 10) {
-            Text(title)
-                .foregroundStyle(Theme.textPrimary)
-            Spacer(minLength: 8)
-            Text(value)
-                .foregroundStyle(Theme.textSecondary)
-                .lineLimit(1)
+            if dynamicTypeSize.isAccessibilitySize {
+                // Value under the title, so neither is cut short or broken mid-word.
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .foregroundStyle(Theme.textPrimary)
+                    Text(value)
+                        .foregroundStyle(Theme.textSecondary)
+                }
+                Spacer(minLength: 0)
+            } else {
+                Text(title)
+                    .foregroundStyle(Theme.textPrimary)
+                Spacer(minLength: 8)
+                Text(value)
+                    .foregroundStyle(Theme.textSecondary)
+                    .lineLimit(1)
+            }
             Image(systemName: "chevron.right")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(Theme.textSecondary.opacity(0.6))

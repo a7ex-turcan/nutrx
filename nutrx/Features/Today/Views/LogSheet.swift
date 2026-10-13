@@ -12,6 +12,7 @@ struct LogSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var records: [IntakeRecord]
     @State private var amountText: String
     /// The chip the user last tapped — wins when several chips share the current amount.
@@ -217,7 +218,7 @@ struct LogSheet: View {
 
     private func stepButton(systemName: String, label: String, action: @escaping () -> Void) -> some View {
         Button {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Haptics.adjusted()
             action()
         } label: {
             Image(systemName: systemName)
@@ -297,7 +298,7 @@ struct LogSheet: View {
     private var logButton: some View {
         Button {
             guard let amount else { return }
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Haptics.logged(reachingGoal: progress.reachesGoal(adding: amount))
             let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
             onLog(amount, trimmed.isEmpty ? nil : trimmed)
             dismiss()
@@ -378,8 +379,8 @@ struct LogSheet: View {
             Spacer(minLength: 0)
 
             Button {
-                UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
-                withAnimation(.easeInOut(duration: 0.2)) {
+                Haptics.deleted()
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) {
                     onDelete(record)
                 }
             } label: {

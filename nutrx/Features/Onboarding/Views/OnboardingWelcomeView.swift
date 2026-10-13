@@ -22,7 +22,10 @@ struct OnboardingWelcomeView: View {
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 28)
+            .padding(.top, 12)
             .padding(.bottom, 12)
+            // Opaque, so scrolled benefits (at large text sizes) don't show around the button.
+            .background { Theme.forest.ignoresSafeArea() }
         }
         .background {
             ZStack(alignment: .topTrailing) {
@@ -87,6 +90,7 @@ struct OnboardingWelcomeView: View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: symbol)
                 .font(.body.weight(.semibold))
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // the 40pt tile doesn't grow with text
                 .foregroundStyle(Theme.greenSoft)
                 .frame(width: 40, height: 40)
                 .background(Theme.onForestPrimary.opacity(0.08),
