@@ -65,6 +65,9 @@ enum Theme {
         static let cardPadding: CGFloat = 14
         /// Space above a group header.
         static let sectionTop: CGFloat = 22
+        /// Bottom content margin for a scrolling form with text fields: room for the last field to clear the
+        /// keyboard's floating Done bar, which isn't part of the keyboard inset (#26).
+        static let keyboardBarClearance: CGFloat = 80
     }
 
     enum Radius {

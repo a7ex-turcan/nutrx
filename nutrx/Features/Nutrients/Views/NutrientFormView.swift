@@ -7,6 +7,7 @@ struct NutrientFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var allReminders: [NutrientReminder]
     @Query(sort: \NutrientGroup.sortOrder) private var allGroups: [NutrientGroup]
     @Bindable var draft: NutrientDraft
@@ -48,71 +49,87 @@ struct NutrientFormView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: Theme.Spacing.cardGap) {
-                    NutrientPreviewRow(draft: draft)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(spacing: Theme.Spacing.cardGap) {
+                        NutrientPreviewRow(draft: draft)
 
-                    NutrientFormFields(draft: draft, focusedField: $focusedField) {
-                        settingsRows
-                    }
-
-                    if let onDelete {
-                        Button(role: .destructive) {
-                            dismiss()
-                            onDelete()
-                        } label: {
-                            Text("Delete Nutrient")
-                                .font(.headline)
-                                .frame(maxWidth: .infinity, minHeight: 52)
+                        NutrientFormFields(draft: draft, focusedField: $focusedField) {
+                            settingsRows
                         }
-                        .buttonStyle(.bordered)
-                        .buttonBorderShape(.roundedRectangle(radius: Theme.Radius.control))
-                        .padding(.top, Theme.Spacing.sectionTop)
+
+                        if let onDelete {
+                            Button(role: .destructive) {
+                                dismiss()
+                                onDelete()
+                            } label: {
+                                Text("Delete Nutrient")
+                                    .font(.headline)
+                                    .frame(maxWidth: .infinity, minHeight: 52)
+                            }
+                            .buttonStyle(.bordered)
+                            .buttonBorderShape(.roundedRectangle(radius: Theme.Radius.control))
+                            .padding(.top, Theme.Spacing.sectionTop)
+                        }
+                    }
+                    .padding(Theme.Spacing.screenMargin)
+                }
+                .scrollDismissesKeyboard(.interactively)
+                // Room below the last field: the keyboard's floating Done bar isn't part of the keyboard inset, so
+                // without this Notes (last in a new nutrient's form) can't scroll above it. Constant, because
+                // removing it as the keyboard closed made the form jump back to the top.
+                .contentMargins(.bottom, Theme.Spacing.keyboardBarClearance, for: .scrollContent)
+                // Bring the focused field above the keyboard (#26). The amount fields take focus from a tap gesture,
+                // which SwiftUI doesn't scroll into view by itself, and the floating Done bar covers the bottom of
+                // what's left. Wait for the keyboard to finish rising so the visible area is the one above it.
+                .task(id: focusedField) {
+                    guard let field = focusedField else { return }
+                    try? await Task.sleep(for: .milliseconds(350))
+                    withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                        proxy.scrollTo(field, anchor: UnitPoint(x: 0.5, y: 0.3))
                     }
                 }
-                .padding(Theme.Spacing.screenMargin)
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .background(Theme.surfaceGround)
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(buttonLabel) {
-                        onSave()
-                        dismiss()
+                .background(Theme.surfaceGround)
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
                     }
-                    .fontWeight(.semibold)
-                    .buttonStyle(.glassProminent)
-                    .disabled(!draft.isValid)
-                }
-                // Done for the return-less .decimalPad fields.
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") { focusedField = nil }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(buttonLabel) {
+                            onSave()
+                            dismiss()
+                        }
                         .fontWeight(.semibold)
-                }
-            }
-            .sheet(isPresented: $showRemindersSheet) {
-                if let nutrient {
-                    NutrientRemindersSheet(nutrient: nutrient)
-                }
-            }
-            .sheet(isPresented: $showPendingReminders) {
-                PendingRemindersSheet(draft: draft)
-            }
-            .alert("New Group", isPresented: $showNewGroupAlert) {
-                TextField("Group name", text: $newGroupName)
-                Button("Add") {
-                    if let group = NutrientGroup.create(named: newGroupName, among: allGroups, in: modelContext) {
-                        selectedGroup = group
+                        .buttonStyle(.glassProminent)
+                        .disabled(!draft.isValid)
+                    }
+                    // Done for the return-less .decimalPad fields.
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { focusedField = nil }
+                            .fontWeight(.semibold)
                     }
                 }
-                .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
-                Button("Cancel", role: .cancel) {}
+                .sheet(isPresented: $showRemindersSheet) {
+                    if let nutrient {
+                        NutrientRemindersSheet(nutrient: nutrient)
+                    }
+                }
+                .sheet(isPresented: $showPendingReminders) {
+                    PendingRemindersSheet(draft: draft)
+                }
+                .alert("New Group", isPresented: $showNewGroupAlert) {
+                    TextField("Group name", text: $newGroupName)
+                    Button("Add") {
+                        if let group = NutrientGroup.create(named: newGroupName, among: allGroups, in: modelContext) {
+                            selectedGroup = group
+                        }
+                    }
+                    .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button("Cancel", role: .cancel) {}
+                }
             }
         }
     }
