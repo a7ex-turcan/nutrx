@@ -12,6 +12,10 @@ struct nutrxApp: App {
             ContentView()
         }
         .modelContainer(modelContainer)
+        // Rolls the per-date dose-reminder window forward without the app being opened (#4).
+        .backgroundTask(.appRefresh(NotificationService.reminderRefreshTaskID)) { [modelContainer] in
+            await NotificationService.refreshRemindersInBackground(container: modelContainer)
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 WidgetCenter.shared.reloadAllTimelines()

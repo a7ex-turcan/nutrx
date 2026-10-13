@@ -1,3 +1,4 @@
+import BackgroundTasks
 import Foundation
 import os.log
 import UserNotifications
@@ -74,13 +75,18 @@ enum NotificationService {
     /// could leave a request the newer data doesn't want.
     private static var reminderSync: Task<Void, Never>?
 
+    /// Background app refresh that rolls the per-date window forward when the app itself isn't opened, e.g. for
+    /// someone who logs only from the Watch or widgets. Listed under `BGTaskSchedulerPermittedIdentifiers`.
+    static let reminderRefreshTaskID = "nutrx-labs.nutrx.reminders"
+
     /// Brings the pending dose reminders in line with the data (#4): each reminder time as a one-off request per
     /// date for the next few days (`ReminderSchedule`), without the rest of today for nutrients already logged
     /// today. Call after any log change, on foreground, and after reminders or nutrients change. Requests for
     /// deleted nutrients, for times that have passed, and in the old repeating format are removed.
-    static func refreshAllNutrientReminders(context: ModelContext, now: Date = .now) {
+    @discardableResult
+    static func refreshAllNutrientReminders(context: ModelContext, now: Date = .now) -> Task<Void, Never>? {
         let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isDeleted })
-        guard let nutrients = try? context.fetch(descriptor) else { return }
+        guard let nutrients = try? context.fetch(descriptor) else { return nil }
         let totals = todayTotals(context: context, now: now)
         let withReminders = nutrients.filter { !($0.reminders ?? []).isEmpty }
 
@@ -103,6 +109,7 @@ enum NotificationService {
             }
         }
         let wanted = Set(requests.map(\.identifier))
+        scheduleBackgroundRefresh(needed: !requests.isEmpty)
 
         let previous = reminderSync
         reminderSync = Task {
@@ -121,6 +128,30 @@ enum NotificationService {
                 scheduled += 1
             }
             logger.info("Dose reminders synced: \(scheduled) of \(requests.count) scheduled, \(stale.count) removed")
+        }
+        return reminderSync
+    }
+
+    /// The background refresh's work: the same sync, run to completion.
+    static func refreshRemindersInBackground(container: ModelContainer) async {
+        await refreshAllNutrientReminders(context: container.mainContext)?.value
+    }
+
+    /// Asks iOS for a background refresh about 12 hours out while any reminders are scheduled (each sync
+    /// replaces the request), or cancels it when there are none. iOS decides when it actually runs; it doesn't
+    /// run with Background App Refresh off. Opening the app syncs as well, so the window only runs out after
+    /// its full length (14 days for a few reminders) with neither.
+    private static func scheduleBackgroundRefresh(needed: Bool) {
+        guard needed else {
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: reminderRefreshTaskID)
+            return
+        }
+        let request = BGAppRefreshTaskRequest(identifier: reminderRefreshTaskID)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 12 * 60 * 60)
+        do {
+            try BGTaskScheduler.shared.submit(request)
+        } catch {
+            logger.error("Reminder background refresh not scheduled: \(String(describing: error), privacy: .public)")
         }
     }
 

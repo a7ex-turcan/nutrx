@@ -34,7 +34,7 @@ final class ReminderScheduleTests: XCTestCase {
                                                        calendar: calendar)
         let today = occurrences.filter { calendar.isDate($0.fireDate, inSameDayAs: date(hour: 12)) }
         XCTAssertEqual(today.map(\.fireDate), [date(hour: 21)])
-        // 7 days (2 reminders a day → 14 days … capped by maxDays 14), minus 09:00 today.
+        // 14 days (60 / 2 = 30, capped at maxDays), minus 09:00 today.
         XCTAssertEqual(occurrences.count, 14 * 2 - 1)
     }
 
