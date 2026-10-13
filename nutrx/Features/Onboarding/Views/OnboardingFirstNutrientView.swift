@@ -279,11 +279,18 @@ struct OnboardingFirstNutrientView: View {
 private struct OnboardingFirstNutrientPreview: View {
     @State private var viewModel: OnboardingViewModel
 
-    /// - Parameter selected: index into `StartingPoint.all` to pre-select (before the first render, so the
-    ///   snapshot isn't caught mid-animation), or nil.
-    init(selected: Int? = 0) {
+    /// - Parameters:
+    ///   - selected: index into `StartingPoint.all` to pre-select (before the first render, so the snapshot isn't
+    ///     caught mid-animation), or nil.
+    ///   - amounts: goal and step to type in after picking, so Start tracking is enabled. Starting points leave
+    ///     them empty.
+    init(selected: Int? = 0, amounts: (goal: String, step: String)? = nil) {
         let viewModel = OnboardingViewModel()
         if let selected { viewModel.select(StartingPoint.all[selected]) }
+        if let amounts {
+            viewModel.draft.dailyTarget = amounts.goal
+            viewModel.draft.step = amounts.step
+        }
         _viewModel = State(initialValue: viewModel)
     }
 
@@ -295,6 +302,17 @@ private struct OnboardingFirstNutrientPreview: View {
 #Preview("Light") {
     OnboardingFirstNutrientPreview()
         .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+}
+
+#Preview("Amounts entered") {
+    OnboardingFirstNutrientPreview(amounts: ("2000", "1000"))
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+}
+
+#Preview("Dark, amounts entered") {
+    OnboardingFirstNutrientPreview(selected: 3, amounts: ("2.5", "0.25"))
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+        .preferredColorScheme(.dark)
 }
 
 #Preview("Dark, nothing picked") {
