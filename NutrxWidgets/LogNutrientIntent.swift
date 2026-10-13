@@ -26,7 +26,8 @@ struct LogNutrientIntent: AppIntent {
             do {
                 container = try ModelContainerFactory.createForExtension()
             } catch {
-                logger.error("Widget log tap couldn't open the shared store: \(error.localizedDescription)")
+                logger.error(
+                    "Widget log tap couldn't open the shared store: \(error.localizedDescription, privacy: .public)")
                 return .result()
             }
         } else {
@@ -41,7 +42,7 @@ struct LogNutrientIntent: AppIntent {
         )
         let nutrients = (try? context.fetch(descriptor)) ?? []
         guard let nutrient = nutrients.first(where: { $0.id == nutrientUUID }) else {
-            logger.error("Widget log tap found no nutrient \(nutrientID)")
+            logger.error("Widget log tap found no nutrient \(nutrientID, privacy: .public)")
             return .result()
         }
 

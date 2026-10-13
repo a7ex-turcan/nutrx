@@ -29,7 +29,8 @@ struct NutrxTimelineProvider: TimelineProvider {
         do {
             container = try ModelContainerFactory.createForExtension(allowsSave: false)
         } catch {
-            logger.error("Widget timeline couldn't open the shared store: \(error.localizedDescription)")
+            logger.error(
+                "Widget timeline couldn't open the shared store: \(error.localizedDescription, privacy: .public)")
             return .empty
         }
 
