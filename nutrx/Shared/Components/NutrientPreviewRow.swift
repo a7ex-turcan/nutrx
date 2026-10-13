@@ -43,8 +43,8 @@ struct NutrientPreviewRow: View {
     private var goalLineText: Text {
         guard let goalText else { return Text(goalLine) }
         let rest = [goalText, stepText].compactMap { $0 }.joined(separator: " · ")
-        return Text("0").font(.subheadline.weight(.bold)).fontDesign(.rounded).foregroundStyle(Theme.textPrimary)
-            + Text(" \(rest)")
+        let zero = Text("0").font(.subheadline.weight(.bold)).fontDesign(.rounded).foregroundStyle(Theme.textPrimary)
+        return Text("\(zero) \(rest)")
     }
 
     var body: some View {
