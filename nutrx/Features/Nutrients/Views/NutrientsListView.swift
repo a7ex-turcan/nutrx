@@ -291,7 +291,6 @@ struct NutrientsListView: View {
                 }
             }
         }
-        .padding(.vertical, 6)
     }
 
     private var newGroupButton: some View {
@@ -318,15 +317,17 @@ struct NutrientsListView: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "chart.bar.fill")
                 .font(.title3)
-                .foregroundStyle(.blue)
+                .foregroundStyle(Theme.controlPrimary)
                 .padding(.top, 2)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Tap a nutrient to see your stats")
-                    .font(.subheadline.weight(.medium))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textPrimary)
                 Text("Swipe or long-press to edit, move, or delete.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
 
             Spacer()
@@ -338,7 +339,7 @@ struct NutrientsListView: View {
             } label: {
                 Image(systemName: "xmark")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary)
                     .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
                     .contentShape(Rectangle())
             }
@@ -346,9 +347,9 @@ struct NutrientsListView: View {
             .padding(-12)  // keep the visual layout; only the hit area grows
             .accessibilityLabel("Dismiss tip")
         }
-        .padding(12)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .padding(Theme.Spacing.cardPadding)
+        // Flat like the list's group cards below it: a list row clips `cardStyle()`'s shadow into a hard band.
+        .background(Theme.surfaceCard, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
     }
 
     // MARK: - Actions

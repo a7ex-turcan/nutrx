@@ -1,7 +1,9 @@
 import SwiftUI
 
 /// The eight nutrient tints as 34pt swatches; the selected one gets a card-coloured gap and a tint ring
-/// (DESIGN.md §4.10).
+/// (DESIGN.md §4.10). Each swatch's hit area is an eighth of the row and 44pt tall, so the row fits the form's
+/// card on every iPhone (eight fixed 44pt frames need 352pt, wider than the Look card's content on any iPhone
+/// below Pro Max: 315pt on a 375pt phone).
 struct TintPicker: View {
     @Binding var selection: NutrientTint
 
@@ -9,7 +11,6 @@ struct TintPicker: View {
         HStack(spacing: 0) {
             ForEach(NutrientTint.allCases, id: \.self) { tint in
                 swatch(tint)
-                    .frame(maxWidth: .infinity)
             }
         }
         .accessibilityElement(children: .contain)
@@ -30,8 +31,8 @@ struct TintPicker: View {
                         Circle().strokeBorder(tint.color, lineWidth: 2)
                     }
                 }
-                .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
-                .contentShape(Circle())
+                .frame(maxWidth: .infinity, minHeight: Theme.minTouchTarget)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.15), value: isSelected)
