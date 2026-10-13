@@ -13,6 +13,8 @@ struct ProgressRing: View {
     var symbolColor: Color? = nil
     /// Green check badge at the bottom-right, for met / in-range goals.
     var showsCheck: Bool = false
+    /// The badge's border — the colour the ring sits on (`Surface/Card`, or `Watch/Cell` / black on the Watch).
+    var badgeBorderColor: Color = Theme.surfaceCard
     /// VoiceOver label (nutrient name) and value ("2,000 of 4,000 IU"). The value defaults to a percentage.
     var label: String? = nil
     var valueDescription: String? = nil
@@ -51,9 +53,11 @@ struct ProgressRing: View {
                 }
 
                 if showsCheck {
-                    CheckBadge(diameter: side * 20 / 52)
+                    // Decorative: the value says the goal is met, and VoiceOver reads a checkmark as "Selected".
+                    CheckBadge(diameter: side * 20 / 52, borderColor: badgeBorderColor)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                         .offset(x: side * 2 / 52, y: side * 2 / 52)
+                        .accessibilityHidden(true)
                 }
             }
             .frame(width: side, height: side)
@@ -69,7 +73,8 @@ struct ProgressRing: View {
 extension ProgressRing {
     /// A nutrient's ring: its tint and symbol, amber near/over a limit, check badge when met.
     /// VoiceOver reads the nutrient name and "2,000 of 4,000 IU".
-    init(nutrient: Nutrient, progress: GoalProgress, lineWidth: CGFloat = 5, showsSymbol: Bool = true) {
+    init(nutrient: Nutrient, progress: GoalProgress, lineWidth: CGFloat = 5, showsSymbol: Bool = true,
+         badgeBorderColor: Color = Theme.surfaceCard) {
         let tint = nutrient.tint
         self.init(
             fraction: progress.ringFraction,
@@ -79,15 +84,18 @@ extension ProgressRing {
             symbolName: showsSymbol ? nutrient.symbolName : nil,
             symbolColor: tint.color,
             showsCheck: progress.status == .met,
+            badgeBorderColor: badgeBorderColor,
             label: nutrient.name,
             valueDescription: progress.progressText
         )
     }
 }
 
-/// 20pt green disc with a dark check and a card-coloured border, the same in light and dark (sizes scale with the ring).
+/// 20pt green disc with a dark check and a border in the background colour, the same in light and dark
+/// (sizes scale with the ring).
 private struct CheckBadge: View {
     let diameter: CGFloat
+    let borderColor: Color
 
     var body: some View {
         Image(systemName: "checkmark")
@@ -95,7 +103,7 @@ private struct CheckBadge: View {
             .foregroundStyle(Theme.forest)
             .frame(width: diameter, height: diameter)
             .background(Theme.green, in: Circle())
-            .overlay(Circle().strokeBorder(Theme.surfaceCard, lineWidth: max(1.5, diameter / 10)))
+            .overlay(Circle().strokeBorder(borderColor, lineWidth: max(1.5, diameter / 10)))
     }
 }
 

@@ -6,6 +6,7 @@ struct NutrxWatchWidgetsBundle: WidgetBundle {
     var body: some Widget {
         NutrxCircularComplication()
         NutrxCornerComplication()
+        NutrxRectangularComplication()
         NutrxInlineComplication()
     }
 }

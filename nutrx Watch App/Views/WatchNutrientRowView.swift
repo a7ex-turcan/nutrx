@@ -1,99 +1,63 @@
 import SwiftUI
-import WatchKit
 
+/// A Watch list row (DESIGN.md §5.11): 30pt ring in the nutrient's tint, name, "2,000 / 4,000 IU", + button.
+/// The caller puts it on a `Watch/Cell` row background. Text uses the system `.primary` (white): watchOS only
+/// reads an asset colour's "Any" appearance, so `Text/Primary` would come out in its light-mode ink.
 struct WatchNutrientRowView: View {
-    let nutrient: Nutrient
-    let total: Double
+    let item: WatchNutrientItem
     let onIncrement: () -> Void
 
-    private var progressColor: Color {
-        switch nutrient.goalType {
-        case .minimum:
-            guard nutrient.dailyTarget > 0 else { return .blue }
-            if total > nutrient.dailyTarget { return .yellow }
-            if total >= nutrient.dailyTarget { return .green }
-            let fraction = total / nutrient.dailyTarget
-            return fraction > 0.7 ? .green.opacity(0.7) : .blue
-
-        case .maximum:
-            guard nutrient.dailyTarget > 0 else { return .orange }
-            if total > nutrient.dailyTarget { return .red }
-            let fraction = total / nutrient.dailyTarget
-            return fraction > 0.7 ? .red.opacity(0.7) : .orange
-
-        case .range:
-            guard let upper = nutrient.upperBound, upper > 0 else { return .blue }
-            if total > upper { return .red }
-            if total >= nutrient.dailyTarget { return .green }
-            let fraction = nutrient.dailyTarget > 0 ? total / nutrient.dailyTarget : 0
-            return fraction > 0.7 ? .green.opacity(0.7) : .blue
-        }
-    }
-
-    private var progress: Double {
-        switch nutrient.goalType {
-        case .minimum:
-            guard nutrient.dailyTarget > 0 else { return 0 }
-            return min(total / nutrient.dailyTarget, 1.0)
-        case .maximum:
-            guard nutrient.dailyTarget > 0 else { return 0 }
-            return min(total / nutrient.dailyTarget, 1.0)
-        case .range:
-            guard let upper = nutrient.upperBound, upper > 0 else { return 0 }
-            return min(total / upper, 1.0)
-        }
-    }
-
-    private var valueLabel: String {
-        let currentStr = total.displayString
-        switch nutrient.goalType {
-        case .minimum, .maximum:
-            return "\(currentStr) / \(nutrient.dailyTarget.displayString) \(nutrient.unit)"
-        case .range:
-            let lower = nutrient.dailyTarget.displayString
-            let upper = (nutrient.upperBound ?? nutrient.dailyTarget).displayString
-            return "\(currentStr) / \(lower)\u{2013}\(upper) \(nutrient.unit)"
-        }
-    }
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
+        let nutrient = item.nutrient
+        let progress = item.progress
+
+        HStack(spacing: 8) {
+            ProgressRing(nutrient: nutrient, progress: progress, lineWidth: 4.5, showsSymbol: false,
+                         badgeBorderColor: Theme.watchCell)
+                .frame(width: 30, height: 30)
+                .accessibilityHidden(true)  // the name and value element below reads it
+
+            VStack(alignment: .leading, spacing: 1) {
                 Text(nutrient.name)
                     .font(.headline)
-                    .lineLimit(1)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
 
-                Spacer()
-
-                Button {
-                    WKInterfaceDevice.current().play(.click)
-                    onIncrement()
-                } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.title3)
-                        .foregroundStyle(.blue)
-                }
-                .buttonStyle(.plain)
+                Text("\(Text(progress.currentText).foregroundStyle(.primary)) \(Text(progress.goalText))")
+                    .font(.footnote.weight(.semibold))
+                    .fontDesign(.rounded)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.onForestSecondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(nutrient.name)
+            .accessibilityValue("\(progress.progressText), \(progress.remainingText)")
 
-            // Progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(.darkGray))
-
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(progressColor)
-                        .frame(width: max(0, geo.size.width * progress))
-                }
+            Button(action: onIncrement) {
+                Image(systemName: "plus")
+                    .font(.body.weight(.bold))
+                    .foregroundStyle(Theme.textOnTint)
+                    .frame(width: 34, height: 34)
+                    .background(Theme.green, in: Circle())
+                    // 44pt hit area around the 34pt disc.
+                    .frame(width: 44, height: 44)
+                    .contentShape(Circle())
             }
-            .frame(height: 6)
-
-            Text(valueLabel)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add one step of \(nutrient.name)")
         }
-        .padding(.vertical, 4)
-        .padding(.horizontal, 8)
+        .padding(.vertical, 8)
     }
 }
+
+#if DEBUG
+#Preview {
+    List {
+        ForEach(WatchPreviewData.items) { item in
+            WatchNutrientRowView(item: item, onIncrement: {})
+                .listRowBackground(RoundedRectangle(cornerRadius: Theme.Radius.watchCell).fill(Theme.watchCell))
+        }
+    }
+}
+#endif

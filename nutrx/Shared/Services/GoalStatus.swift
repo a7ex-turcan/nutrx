@@ -117,6 +117,9 @@ struct GoalProgress: Equatable {
     /// The goal on its own: "4,000 IU", "400 mg", "120–160 g".
     var goalAmountText: String { goalAmountText(locale: .current) }
 
+    /// The goal under a total shown on its own (the Watch confirmation): "of 4,000 IU", "max 400 mg", "of 120–160 g".
+    var goalCaption: String { goalCaption(locale: .current) }
+
     /// What's left to reach an "at least" target or a range's lower bound — the log sheet's "Fill to goal".
     /// Nil for "at most" goals and once the goal is reached.
     var amountToGoal: Double? {
@@ -154,6 +157,13 @@ struct GoalProgress: Equatable {
             return amount(target, locale)
         case .between(let lower, let upper):
             return "\(Self.number(lower, locale))–\(amount(upper, locale))"
+        }
+    }
+
+    func goalCaption(locale: Locale) -> String {
+        switch goal {
+        case .atMost: return goalText(locale: locale)
+        case .atLeast, .between: return "of \(goalAmountText(locale: locale))"
         }
     }
 

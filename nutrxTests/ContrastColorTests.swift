@@ -31,6 +31,15 @@ final class ContrastColorTests: XCTestCase {
         XCTAssertEqual(ink.blue, 7.0 / 255, accuracy: 0.002)
     }
 
+    func testInkOnAFullTintMeetsAAForEveryTint() {
+        for scheme in [ColorScheme.light, .dark] {
+            for tint in NutrientTint.allCases {
+                let contrast = ContrastColor.ink(on: tint.color, in: environment(scheme)).contrast
+                XCTAssertGreaterThanOrEqual(contrast, 4.5, "\(tint) in \(scheme)")
+            }
+        }
+    }
+
     func testHeatmapInkMeetsAAForEveryTintAndFill() {
         let fills = [1, 0.7, 0.4, 0.15, WeekdayPattern.fillOpacity(for: nil)]
         for scheme in [ColorScheme.light, .dark] {
