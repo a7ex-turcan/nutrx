@@ -23,18 +23,36 @@ struct WatchNutrientRowView: View {
                     .foregroundStyle(.primary)
                     .lineLimit(2)
 
-                Text("\(Text(progress.currentText).foregroundStyle(.primary)) \(Text(progress.goalText))")
-                    .font(.footnote.weight(.semibold))
-                    .fontDesign(.rounded)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.onForestSecondary)
+                // Never broken mid-value: a range's goal gets its own line ("2,500" / "/ 2,300–3,500 mg"), since
+                // wrapping split it after the en dash and one line had no room for it; other goals stay on one
+                // line, shrinking slightly if needed ("2,000 / 4,000 IU").
+                Group {
+                    if nutrient.goalType == .range {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(progress.currentText).foregroundStyle(.primary)
+                            Text(progress.goalText)
+                        }
+                    } else {
+                        Text("\(Text(progress.currentText).foregroundStyle(.primary)) \(Text(progress.goalText))")
+                    }
+                }
+                .font(.footnote.weight(.semibold))
+                .fontDesign(.rounded)
+                .monospacedDigit()
+                .foregroundStyle(Theme.onForestSecondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(nutrient.name)
             .accessibilityValue("\(progress.progressText), \(progress.remainingText)")
 
-            Button(action: onIncrement) {
+            // `Button { } label: { }`, not `Button(action:) { }`: the latter is ambiguous in the preview's
+            // design-time rewrite and kept this file's previews from compiling (#24).
+            Button {
+                onIncrement()
+            } label: {
                 Image(systemName: "plus")
                     .font(.body.weight(.bold))
                     .foregroundStyle(Theme.textOnTint)
