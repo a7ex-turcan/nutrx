@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 /// Second onboarding screen (DESIGN.md §5.8): back, progress, Skip; "What do you want to track first?"; a grid of
-/// starting points and "Something else". A starting point pre-fills editable goal / step fields above Start
-/// tracking — nothing is created until that's tapped.
+/// starting points and "Something else". A starting point fills in the name, unit and look and shows empty goal / step
+/// fields above Start tracking for the user's own amounts (none are suggested). Nothing is created until that's tapped.
 struct OnboardingFirstNutrientView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -35,7 +35,7 @@ struct OnboardingFirstNutrientView: View {
                         .foregroundStyle(Theme.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                         .accessibilityAddTraits(.isHeader)
-                    Text("Pick a starting point or make your own. Everything stays editable.")
+                    Text("Pick a starting point or make your own. You set the amounts.")
                         .font(.body)
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.top, 8)
@@ -196,16 +196,17 @@ struct OnboardingFirstNutrientView: View {
                 focusedField = nil
                 viewModel.startTracking(context: modelContext)
             } label: {
+                // Disabled until the amounts are entered, which is most of the time: a chip-grey fill with
+                // secondary text stays legible in both appearances (dimming the green didn't).
                 Text("Start tracking")
                     .font(.headline)
-                    .foregroundStyle(Theme.controlOnPrimary)
+                    .foregroundStyle(viewModel.canStartTracking ? Theme.controlOnPrimary : Theme.textSecondary)
                     .frame(maxWidth: .infinity, minHeight: 56)
-                    .background(Theme.controlPrimary,
+                    .background(viewModel.canStartTracking ? Theme.controlPrimary : Theme.surfaceChip,
                                 in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
             }
             .buttonStyle(.plain)
             .disabled(!viewModel.canStartTracking)
-            .opacity(viewModel.canStartTracking ? 1 : 0.5)
         }
         .padding(.horizontal, Theme.Spacing.screenMargin)
         .padding(.top, 10)
@@ -278,11 +279,18 @@ struct OnboardingFirstNutrientView: View {
 private struct OnboardingFirstNutrientPreview: View {
     @State private var viewModel: OnboardingViewModel
 
-    /// - Parameter selected: index into `StartingPoint.all` to pre-select (before the first render, so the
-    ///   snapshot isn't caught mid-animation), or nil.
-    init(selected: Int? = 0) {
+    /// - Parameters:
+    ///   - selected: index into `StartingPoint.all` to pre-select (before the first render, so the snapshot isn't
+    ///     caught mid-animation), or nil.
+    ///   - amounts: goal and step to type in after picking, so Start tracking is enabled. Starting points leave
+    ///     them empty.
+    init(selected: Int? = 0, amounts: (goal: String, step: String)? = nil) {
         let viewModel = OnboardingViewModel()
         if let selected { viewModel.select(StartingPoint.all[selected]) }
+        if let amounts {
+            viewModel.draft.dailyTarget = amounts.goal
+            viewModel.draft.step = amounts.step
+        }
         _viewModel = State(initialValue: viewModel)
     }
 
@@ -294,6 +302,17 @@ private struct OnboardingFirstNutrientPreview: View {
 #Preview("Light") {
     OnboardingFirstNutrientPreview()
         .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+}
+
+#Preview("Amounts entered") {
+    OnboardingFirstNutrientPreview(amounts: ("2000", "1000"))
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+}
+
+#Preview("Dark, amounts entered") {
+    OnboardingFirstNutrientPreview(selected: 3, amounts: ("2.5", "0.25"))
+        .modelContainer(for: [Nutrient.self, NutrientGroup.self, UserProfile.self], inMemory: true)
+        .preferredColorScheme(.dark)
 }
 
 #Preview("Dark, nothing picked") {

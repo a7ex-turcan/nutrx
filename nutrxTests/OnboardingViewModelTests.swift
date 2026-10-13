@@ -28,31 +28,48 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertFalse(OnboardingViewModel().canStartTracking)
     }
 
-    func testPickingFillsTheDraft() {
+    func testPickingFillsTheDraftButNeedsTheAmounts() {
         let viewModel = OnboardingViewModel()
         viewModel.select(StartingPoint.all[0])
         XCTAssertEqual(viewModel.selectedStartingPoint, StartingPoint.all[0])
         XCTAssertEqual(viewModel.draft.name, "Vitamin D")
+        XCTAssertFalse(viewModel.canStartTracking)  // no goal or step yet
+
+        viewModel.draft.dailyTarget = "2000"
+        XCTAssertFalse(viewModel.canStartTracking)  // still no step
+        viewModel.draft.step = "1000"
         XCTAssertTrue(viewModel.canStartTracking)
     }
 
-    func testAnInvalidEditBlocksStartTracking() {
+    func testAnInvalidRangeBlocksStartTracking() {
         let viewModel = OnboardingViewModel()
-        viewModel.select(StartingPoint.all[4])  // Protein, 120–160 g
+        viewModel.select(StartingPoint.all[4])  // Protein, a range
+        viewModel.draft.dailyTarget = "120"
         viewModel.draft.upperBound = "100"
+        viewModel.draft.step = "20"
         XCTAssertNotNil(viewModel.draft.rangeError)
         XCTAssertFalse(viewModel.canStartTracking)
     }
 
-    func testStartTrackingCreatesTheEditedNutrientInGeneralAndFinishes() throws {
+    func testStartTrackingWithoutAmountsCreatesNothing() throws {
+        let viewModel = OnboardingViewModel()
+        viewModel.select(StartingPoint.all[0])
+        viewModel.startTracking(context: context, defaults: defaults)
+        XCTAssertTrue(try nutrients().isEmpty)
+        XCTAssertTrue(try profiles().isEmpty)
+    }
+
+    func testStartTrackingCreatesTheEnteredNutrientInGeneralAndFinishes() throws {
         let viewModel = OnboardingViewModel()
         viewModel.select(StartingPoint.all[0])
         viewModel.draft.dailyTarget = "2000"
+        viewModel.draft.step = "1000"
         viewModel.startTracking(context: context, defaults: defaults)
 
         let nutrient = try XCTUnwrap(nutrients().first)
         XCTAssertEqual(nutrient.name, "Vitamin D")
         XCTAssertEqual(nutrient.dailyTarget, 2000)
+        XCTAssertEqual(nutrient.step, 1000)
         XCTAssertEqual(nutrient.tint, .amber)
         XCTAssertEqual(nutrient.symbolName, "sun.max")
         XCTAssertEqual(nutrient.group?.isSystem, true)
