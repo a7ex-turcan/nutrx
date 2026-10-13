@@ -42,6 +42,8 @@ struct SmallWidgetView: View {
                     .foregroundStyle(Theme.onForestSecondary)
             } else {
                 HStack(spacing: 10) {
+                    // 62pt: Widgets.dc.html has 74 with 14pt padding, but inside WidgetKit's wider content margins
+                    // anything above 62 pushes "goals met" onto two lines (checked at 66, 70 and 74).
                     SegmentedDayRing(met: entry.metCount, total: entry.totalCount, showsLabel: false)
                         .frame(width: 62, height: 62)
                     VStack(alignment: .leading, spacing: 0) {
@@ -60,6 +62,8 @@ struct SmallWidgetView: View {
                         Text("goals met")
                             .font(.caption)
                             .foregroundStyle(Theme.onForestSecondary)
+                            .lineLimit(2)  // wraps on the narrowest phones' small widget instead of truncating
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .accessibilityElement(children: .ignore)
@@ -85,8 +89,8 @@ private struct StreakLabelStyle: LabelStyle {
                 .foregroundStyle(Theme.greenSoft)
                 .font(.caption2)
             configuration.title
-                .font(.subheadline.weight(.semibold)).fontDesign(.rounded)
-                .foregroundStyle(Theme.onForestPrimary)
+                .font(.caption.weight(.semibold)).fontDesign(.rounded)  // 12pt, as in Widgets.dc.html
+                .foregroundStyle(Theme.onForestSecondary)
                 .monospacedDigit()
         }
     }
