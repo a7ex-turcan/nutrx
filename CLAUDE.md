@@ -44,6 +44,13 @@ xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 1
 - Look up App Store Connect facts (IDs, versions, builds, review state) with the tool yourself instead of asking the user.
 - nutrx app record `6760843478` ("nutrx - Nutrient Tracker", bundle and SKU `nutrx-labs.nutrx`). Example: `Tools/asc get '/v1/apps/6760843478/appStoreVersions?limit=5'`.
 
+## App Store screenshots
+
+- **Demo data:** debug builds launched with `-screenshotDemoData` (`Shared/Persistence/ScreenshotDemoData.swift`, also compiled into the Watch app) replace everything in the store with the redesign-render data set: Morning stack / Through the day, 3/6 goals met today, a 10-day streak, seven weeks of history with Vitamin D missed on Sundays. Example: `xcrun simctl launch <UDID> nutrx-labs.nutrx -screenshotDemoData`. Never in Release. **Only on simulators signed out of iCloud:** the store is CloudKit-backed, so on a signed-in device it wipes that account's development data on every synced device. `ScreenshotDemoDataTests` checks the set still gives a 10-day streak, 3/6 today and a Sunday insight.
+- **Capture** on the iPhone 6.9″ (1320×2868), iPad 13″ (2064×2752) and Apple Watch 46mm (416×496) simulators: `xcrun simctl status_bar <UDID> override --time "9:41" …`, en_US region (reboot after changing it, or the clock reads "09:41"), notifications allowed so Today shows its next-reminder line.
+- **Compose:** `swift Tools/AppStoreScreenshots/compose.swift Tools/AppStoreScreenshots/panels.json <raw dir> <out dir>`. `panels.json` sets each panel's capture, two-line headline and style (`forest`, or `light` for the dark-mode shot); the output is opaque PNG at the App Store size. `background-forest.jpg` was generated once with gpt-image-2. Watch screenshots go up as plain captures, flattened to JPEG (App Store Connect rejects an alpha channel).
+- Screenshots show the real app only — never generated or mocked-up UI.
+
 ## Swift Configuration
 
 Notable build settings in the Xcode project:
@@ -236,7 +243,8 @@ nutrx/
     │   │                                    # Singleton deduplication. Logs via os.log.
     │   ├── NutrientDraft+Persistence.swift  # insertNutrient / apply(to:) — the only writers of a draft to a Nutrient.
     │   ├── NutrientGroup+Create.swift       # NutrientGroup.create(named:among:in:) — new user group before General.
-    │   └── PreviewSampleData.swift
+    │   ├── PreviewSampleData.swift
+    │   └── ScreenshotDemoData.swift         # DEBUG: -screenshotDemoData replaces the store with the App Store demo set.
     └── Services/
         ├── DayScore.swift                   # Met / total + the day-score card headline.
         ├── UpcomingReminder.swift           # Next dose reminder later today (for the day-score card).
@@ -292,7 +300,7 @@ NutrxWatchWidgets/
 ### Key facts
 
 - Both watch targets share the existing App Group SwiftData store (`group.nutrx-labs.nutrx`) and CloudKit container (`iCloud.nutrx-labs.nutrx`) — no new data layer
-- `ModelContainerFactory`, all Model files and the design system (`Theme.swift`, `Colors.xcassets`, `GoalStatus.swift`) are added to the Watch targets via target membership exceptions (not duplicated) — plus `ProgressRing`, `ContrastColor`, `WidgetSummary` for the app and `SegmentedDayRing`, `StreakService`, `WidgetSummary` for the complications
+- `ModelContainerFactory`, all Model files and the design system (`Theme.swift`, `Colors.xcassets`, `GoalStatus.swift`) are added to the Watch targets via target membership exceptions (not duplicated) — plus `ProgressRing`, `ContrastColor`, `WidgetSummary`, `ScreenshotDemoData` for the app and `SegmentedDayRing`, `StreakService`, `WidgetSummary` for the complications
 - **watchOS only reads an asset colour's "Any" appearance** (the Watch is always dark, but asset dark variants are ignored). Tokens that are the same in both (`Brand/*`, `OnForest/*`, `Watch/Cell`, tints, `Text/OnTint`; tint tracks are just a little fainter) are fine; for primary text use the system `.primary` (white), never `Theme.textPrimary`, and pass `badgeBorderColor` to `ProgressRing` (`Watch/Cell` in rows, black on the confirmation) — its default `Surface/Card` is white there
 - Rows (DESIGN.md §5.11): ring, status and text from `GoalProgress`, the same as Today, on `Theme.Radius.watchCell` cards. The "Today" + "3/6" header is the first section's header (list rows have a tall minimum height on watchOS; don't set `defaultMinListRowHeight` to 0 — rows disappear)
 - Tapping + logs one step, then `WatchLogConfirmationView` covers the list for 1.5s (tap to dismiss) with a VoiceOver announcement; haptic `.click`, or `.success` when that tap met the goal

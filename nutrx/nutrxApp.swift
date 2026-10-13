@@ -7,6 +7,14 @@ struct nutrxApp: App {
     let modelContainer = ModelContainerFactory.create()
     @Environment(\.scenePhase) private var scenePhase
 
+    init() {
+        #if DEBUG
+        if ScreenshotDemoData.isRequested {
+            ScreenshotDemoData.replaceStore(in: modelContainer.mainContext)
+        }
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
