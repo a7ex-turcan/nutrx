@@ -37,6 +37,7 @@ All notable changes to nutrx are documented in this file.
 - **Design polish** — The tab bar matches the new design (rings for Today, "Nutrients", a calendar for History). The iCloud and reminder banners use the same cards as the rest of Today. Settings icons are easier to read, "Recent days" in History stands out from the days under it, log-sheet entries are easier to scan, and the welcome screen's rings and headline match the design.
 
 ### Fixes
+- **Dose reminders after logging** — Logging a nutrient now silences only the rest of that day's reminders for it. Before, reopening the app brought them back the same day, and the next days' reminders could stop until you opened the app again. Logs from the widget, the Watch or another device count too.
 - **Widget + button** — Tapping + on the quick-log widget could crash the widget, so it didn't refresh (the amount was still logged). The widget now saves without touching iCloud directly; the app syncs it.
 - **Group counts** — Manage Groups no longer counts nutrients you've deleted.
 - **Readable buttons in dark mode** — "Enable" on the notification banner and "Add Reminder" were white on bright green in dark mode; they now use dark text.

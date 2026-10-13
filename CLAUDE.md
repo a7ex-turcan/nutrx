@@ -244,7 +244,8 @@ nutrx/
         │                                    # Single source of truth for "goal met" (streaks, History, analytics, Today).
         ├── Haptics.swift                    # logged(reachingGoal:) / adjusted() / deleted() — the app's haptics in one place.
         ├── NotificationService.swift        # Daily check-in reminder + per-nutrient dose reminders.
-        │                                    # Smart scheduling and suppression after logging intake.
+        │                                    # refreshAllNutrientReminders: one data-driven, serialized sync.
+        ├── ReminderSchedule.swift           # Dose reminders as one-off requests per date (rolling window).
         ├── StreakService.swift              # Computes current/best streak from IntakeRecord + Exclusion data.
         └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30;
                                              # writeReviewURL (App Store review page) for Settings → Rate nutrx.
@@ -370,7 +371,7 @@ Users create and manage their own nutrients. No preset list — fully user-defin
 
 **My Nutrients** (DESIGN.md §5.6): large title, toolbar + (filled forest circle) and profile. Groups are inset cards with uppercase headers and a count (headers hidden when only General exists; every nutrient is listed — collapsing is a Today thing). Row: icon tile, name, goal-type tag ("AT LEAST" / "AT MOST" / "BETWEEN") + target, bell if it has reminders, chevron → analytics. Swipe right = edit, swipe left = delete, long press = Edit / Move to Group / Delete, drag to reorder. A dashed **New group** button ends the list.
 
-Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Smart suppression cancels upcoming reminders after logging intake. Reminders can be configured both during nutrient creation (inline in the form) and via the "Reminders" section in the Edit Nutrient form. Notification permission is requested on first reminder add if not yet granted.
+Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Logging a nutrient silences the rest of **today's** reminders for it (today's total above 0); later days are untouched. Reminders can be configured both during nutrient creation (inline in the form) and via the "Reminders" section in the Edit Nutrient form. Notification permission is requested on first reminder add if not yet granted.
 
 ---
 
@@ -378,7 +379,7 @@ Each nutrient supports zero or more **dose reminders** — times of day that fir
 
 The central feature (DESIGN.md §5.1). Large "Today" title with the date as the navigation subtitle, 44pt profile avatar top-right, `Surface/Ground` background.
 
-- **Day-score card** (`DayScoreCard`) on top: segmented ring ("3/6 goals met"), headline ("Halfway there — 3 to go"; "N to go" never counts a goal over its limit, and with only over-limit goals left it reads "1 over limit": `DayScore.toGo` / `overLimit`), flame streak chip when streaks are on and ≥ 1, and the next reminder still scheduled later today (only when notifications are allowed; refreshed every minute). Logging from Today suppresses that nutrient's reminders until the next foreground reschedule, and the card mirrors that. Notification / sync banners render below it on the card style, with a coral bell / blue iCloud icon tile.
+- **Day-score card** (`DayScoreCard`) on top: segmented ring ("3/6 goals met"), headline ("Halfway there — 3 to go"; "N to go" never counts a goal over its limit, and with only over-limit goals left it reads "1 over limit": `DayScore.toGo` / `overLimit`), flame streak chip when streaks are on and ≥ 1, and the next reminder still scheduled later today (only when notifications are allowed; refreshed every minute). A nutrient logged today (today's total above 0, from any source) has no more reminders today, and the card follows the same rule as the scheduler (see Notifications). Notification / sync banners render below it on the card style, with a coral bell / blue iCloud icon tile.
 - **Groups** with a `GroupHeader` (name, met-count chip, collapse chevron) — hidden when only the system group exists.
 - **Nutrient cards** (`NutrientCard`): ring in the nutrient's tint with its symbol (amber near/over a limit, check badge when met), name, "**2,000** / 4,000 IU" ("max 400 mg" for at-most), status line ("2,000 IU to go", "Done", "80 mg left today"). − / + log one step with a light haptic (success when that + meets the goal); − is disabled when a step would take the total below 0. At accessibility text sizes the buttons move to their own row.
 - **Tap a card, swipe right, or "Add Exact Amount"** → `LogSheet` (`.medium` / `.large` detents): ring header with today's total, amount stepper (defaults to one step, − / + change it by a step, editable `.decimalPad` field), quick chips ½× / 1× / 2× step and "Fill to goal" (remaining to the target or a range's lower bound; hidden for "at most" and once met), note field, "Log 1,000 IU" button (logs and dismisses), and the "Logged today" list (time, tint dot, signed amount, note) with a trash button that deletes the entry immediately with a haptic.
@@ -502,7 +503,7 @@ No new SwiftData models, services, or files required beyond the above edits.
 All local — no push infrastructure. Two notification types:
 
 1. **Daily check-in reminder** — fires at noon if no intake logged. Opt-in via Settings. Smart one-shot scheduling refreshed on foreground and after every intake action. ID: `daily-checkin-reminder`.
-2. **Per-nutrient dose reminders** — configurable times per nutrient. Smart suppression after logging. IDs: `nutrient-{id}-reminder-{HHmm}`.
+2. **Per-nutrient dose reminders** — configurable times per nutrient, scheduled as **one-off requests per date** for a rolling window (`ReminderSchedule`: up to 14 days, fewer with many reminders so all fit under iOS's 64 pending; the daily check-in takes one more). The rest of today is left out for a nutrient already logged today. `NotificationService.refreshAllNutrientReminders(context:)` is the only scheduler: it rebuilds the set from the data after every log change, on foreground and remote (iCloud) changes, and after reminder or nutrient edits, so logs from the widget, Watch or Siri count from the next sync. Syncs are serialized; requests for deleted nutrients, past times and the old repeating format are removed. Today's "next reminder" line uses the same rule. **Keeping the window rolling:** every sync asks for a background app refresh (`NotificationService.reminderRefreshTaskID`, `BGTaskSchedulerPermittedIdentifiers` + the `fetch` background mode in `Info.plist`, handled by `.backgroundTask(.appRefresh(...))` in `nutrxApp`) about 12 hours out, which runs the same sync. iOS decides when it runs, and it doesn't with Background App Refresh off, so the fallback is opening the app: with neither, reminders run out only after the full window (14 days for a few reminders; a single day only with 60+ reminders a day). IDs: `nutrient-{id}-reminder-{HHmm}-{yyyyMMdd}`. The sync logs "Dose reminders synced: N of M scheduled, K removed" (category `NotificationService`).
 
 Permission flow handles not-asked, granted, and denied states. A one-time notification banner appears on Today after onboarding.
 
@@ -716,7 +717,7 @@ Named group for organising nutrients.
 
 ### NutrientReminder
 
-Scheduled dose reminder for a nutrient. Maps to one daily local notification.
+Scheduled dose reminder for a nutrient. Maps to one one-off local notification per date in the rolling window (see Notifications).
 
 | Field | Type | Notes |
 |---|---|---|
