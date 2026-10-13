@@ -24,55 +24,44 @@ struct OnboardingFirstNutrientView: View {
     private static let valueFont = Font.system(.title3, design: .rounded, weight: .bold)
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    topBar
-                        .padding(.bottom, 24)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                topBar
+                    .padding(.bottom, 24)
 
-                    Text("What do you want to track first?")
-                        .font(.system(.largeTitle, weight: .heavy))
-                        .foregroundStyle(Theme.textPrimary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityAddTraits(.isHeader)
-                    Text("Pick a starting point or make your own. You set the amounts.")
-                        .font(.body)
-                        .foregroundStyle(Theme.textSecondary)
-                        .padding(.top, 8)
-                        .padding(.bottom, 24)
+                Text("What do you want to track first?")
+                    .font(.system(.largeTitle, weight: .heavy))
+                    .foregroundStyle(Theme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                Text("Pick a starting point or make your own. You set the amounts.")
+                    .font(.body)
+                    .foregroundStyle(Theme.textSecondary)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
 
-                    LazyVGrid(columns: columns, spacing: Theme.Spacing.cardGap) {
-                        ForEach(StartingPoint.all) { point in
-                            startingPointCard(point)
-                        }
+                LazyVGrid(columns: columns, spacing: Theme.Spacing.cardGap) {
+                    ForEach(StartingPoint.all) { point in
+                        startingPointCard(point)
                     }
+                }
 
-                    somethingElse
-                        .padding(.top, Theme.Spacing.cardGap)
-                }
-                .padding(.horizontal, Theme.Spacing.screenMargin)
-                .padding(.bottom, 24)
+                somethingElse
+                    .padding(.top, Theme.Spacing.cardGap)
             }
-            .scrollDismissesKeyboard(.interactively)
-            .safeAreaInset(edge: .bottom) { bottomPanel }
-            .background(Theme.surfaceGround)
-            .toolbar(.hidden, for: .navigationBar)
-            .toolbar {
-                // At the root, not inside the scroll content — see NutrientFormField.
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Done") { focusedField = nil }
-                        .fontWeight(.semibold)
-                }
-            }
-            .sheet(isPresented: $showCustomForm, onDismiss: {
-                viewModel.finishAfterCustomForm(context: modelContext)
-            }) {
-                // Save from the same instance the form edits, not whatever the state holds when Add is tapped.
-                let draft = customDraft
-                NutrientFormView(draft: draft, title: "New Nutrient", buttonLabel: "Add") {
-                    viewModel.createCustomNutrient(from: draft, context: modelContext)
-                }
+            .padding(.horizontal, Theme.Spacing.screenMargin)
+            .padding(.bottom, 24)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom) { bottomPanel }
+        .background(Theme.surfaceGround)
+        .sheet(isPresented: $showCustomForm, onDismiss: {
+            viewModel.finishAfterCustomForm(context: modelContext)
+        }) {
+            // Save from the same instance the form edits, not whatever the state holds when Add is tapped.
+            let draft = customDraft
+            NutrientFormView(draft: draft, title: "New Nutrient", buttonLabel: "Add") {
+                viewModel.createCustomNutrient(from: draft, context: modelContext)
             }
         }
     }
@@ -180,6 +169,23 @@ struct OnboardingFirstNutrientView: View {
 
     private var bottomPanel: some View {
         VStack(spacing: 10) {
+            // Done lives in the panel, not in a keyboard toolbar: with the fields inside this bottom inset, a
+            // keyboard toolbar made SwiftUI log attribute-graph cycles on the first keyboard open (#19), and from the
+            // third open on the panel no longer cleared its floating Done bar, which covered Start tracking.
+            if focusedField != nil {
+                Button {
+                    focusedField = nil
+                } label: {
+                    Text("Done")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Theme.controlPrimary)
+                        .frame(minWidth: Theme.minTouchTarget, minHeight: Theme.minTouchTarget)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .accessibilityHint("Hides the keyboard")
+            }
             if viewModel.selectedStartingPoint != nil {
                 goalFields
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -211,8 +217,8 @@ struct OnboardingFirstNutrientView: View {
         .padding(.horizontal, Theme.Spacing.screenMargin)
         .padding(.top, 10)
         .padding(.bottom, 8)
-        // Down to the screen edge: with the keyboard up, the floating Done bar below the panel is see-through
-        // and the grid would show between the panel and the keys.
+        // Down to the screen edge, so the grid doesn't show below the panel: behind the home indicator, or the
+        // keyboard's rounded top corners.
         .background { Theme.surfaceGround.ignoresSafeArea(edges: .bottom) }
         .animation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2)), value: viewModel.selectedStartingPoint)
     }
