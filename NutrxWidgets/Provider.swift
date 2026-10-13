@@ -25,8 +25,11 @@ struct NutrxTimelineProvider: TimelineProvider {
     @MainActor
     private func fetchEntry() -> NutrxWidgetEntry {
         // The extension-safe container (no CloudKit), read-only: the timeline never writes.
-        guard let container = try? ModelContainerFactory.createForExtension(allowsSave: false) else {
-            logger.error("Widget timeline couldn't open the shared store")
+        let container: ModelContainer
+        do {
+            container = try ModelContainerFactory.createForExtension(allowsSave: false)
+        } catch {
+            logger.error("Widget timeline couldn't open the shared store: \(error.localizedDescription)")
             return .empty
         }
 
