@@ -182,10 +182,10 @@ N equal segments (N = active nutrients), ~6pt gap, round caps; met segments `Bra
 
 ### 4.3 `DayScoreCard` (Today header)
 Forest card, radius 28, padding 20: `SegmentedDayRing` (116pt) + text column:
-- Title, by state: 0 met → "Let's get started"; some → "Halfway there — N to go" (use "Halfway there" only when 40–60% met, otherwise "N to go"); all → "All done for today".
+- Title, by state: 0 met → "Let's get started"; some → "Halfway there — N to go" (use "Halfway there" only when 40–60% met, otherwise "N to go"); all → "All done for today". "N to go" counts only goals that still need more (`GoalProgress.needsMore`); a goal over an "at most" limit or past a range is never "to go". When nothing needs more but a goal is over its limit → "N over limit" (same wording as the widgets), even with 0 met.
 - Streak chip (only if streaks enabled and streak ≥ 1): `flame.fill` in `GreenSoft` + "10-day streak", pill on white @ 10%.
 - Next reminder line (only if one is scheduled later today): `bell` + "Vitamin D at 13:00".
-Replaces the emoji streak row. The notification / sync banners stay as they are but render below this card.
+Replaces the emoji streak row. The notification / sync banners render below this card on the card style (`cardStyle()`, `Text/*` tokens) with a tinted icon tile: coral bell, blue iCloud, the colours of their Settings rows (restyled after the design audit, 2026-10-13; their copy and behaviour are unchanged).
 
 ### 4.4 `NutrientCard` (Today)
 Replaces `NutrientRowView` + `ExpandableNutrientCard` on Today.
