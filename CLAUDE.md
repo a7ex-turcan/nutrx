@@ -238,7 +238,8 @@ nutrx/
         ├── NotificationService.swift        # Daily check-in reminder + per-nutrient dose reminders.
         │                                    # Smart scheduling and suppression after logging intake.
         ├── StreakService.swift              # Computes current/best streak from IntakeRecord + Exclusion data.
-        └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30.
+        └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30;
+                                             # writeReviewURL (App Store review page) for Settings → Rate nutrx.
 ```
 
 ### Rules Claude Code must follow for file placement
