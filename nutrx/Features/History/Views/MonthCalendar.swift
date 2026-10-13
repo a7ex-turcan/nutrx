@@ -31,7 +31,8 @@ struct MonthCalendar: View {
                         .minimumScaleFactor(0.7)
                         .accessibilityHidden(true)
                 }
-                ForEach(0..<grid.leadingBlanks, id: \.self) { _ in
+                // Ids distinct from the weekday headers' 0…6 in the same grid (duplicate ids confuse the lazy grid).
+                ForEach((0..<grid.leadingBlanks).map { "blank-\($0)" }, id: \.self) { _ in
                     Color.clear
                         .aspectRatio(1, contentMode: .fit)
                         .frame(maxWidth: cellSize)

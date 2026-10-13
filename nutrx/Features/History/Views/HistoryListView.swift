@@ -68,7 +68,7 @@ struct HistoryListView: View {
 
                 if !viewModel.recentDays.isEmpty {
                     Text("Recent days")
-                        .font(.title3.bold())
+                        .font(.headline.weight(.bold))  // 17pt bold over 16pt semibold rows (History.dc.html)
                         .foregroundStyle(Theme.textPrimary)
                         .accessibilityAddTraits(.isHeader)
                         .padding(.top, Theme.Spacing.sectionTop - Theme.Spacing.cardGap)
@@ -107,7 +107,7 @@ private struct RecentDayRow: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(day.date, format: .dateTime.weekday(.wide).day().month(.wide))
-                        .font(.body.weight(.semibold))
+                        .font(.callout.weight(.semibold))  // 16pt semibold (History.dc.html)
                         .foregroundStyle(Theme.textPrimary)
                     HStack(spacing: 5) {
                         ForEach(Array(zip(day.goals, tints)), id: \.0.id) { goal, tint in

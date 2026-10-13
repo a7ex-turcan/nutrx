@@ -33,7 +33,7 @@ struct SettingsView: View {
                         .navigationTitle("iCloud Sync")
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    row("iCloud Sync", symbol: "icloud", color: NutrientTint.blue.color,
+                    row("iCloud Sync", symbol: "icloud", color: Theme.SettingsTile.blue,
                         value: SettingsSummary.iCloud(hasAccount: hasICloudAccount,
                                                       syncEnabled: preferences?.iCloudSyncEnabled ?? true))
                 }
@@ -42,7 +42,7 @@ struct SettingsView: View {
                         .navigationTitle("Notifications")
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    row("Notifications", symbol: "bell", color: NutrientTint.coral.color,
+                    row("Notifications", symbol: "bell", color: Theme.SettingsTile.coral,
                         value: SettingsSummary.notifications(dailyReminderEnabled: preferences?.dailyReminderEnabled ?? false))
                 }
                 NavigationLink {
@@ -50,7 +50,7 @@ struct SettingsView: View {
                         .navigationTitle("Streaks")
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    row("Streaks", symbol: "flame", color: NutrientTint.green.color,
+                    row("Streaks", symbol: "flame", color: Theme.SettingsTile.green,
                         value: SettingsSummary.streaks(enabled: preferences?.streaksEnabled ?? true))
                 }
                 NavigationLink {
@@ -58,7 +58,7 @@ struct SettingsView: View {
                         .navigationTitle("Groups")
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    row("Groups", symbol: "folder", color: NutrientTint.indigo.color,
+                    row("Groups", symbol: "folder", color: Theme.SettingsTile.indigo,
                         value: SettingsSummary.groups(userGroupCount: userGroups.count))
                 }
             }
@@ -73,7 +73,7 @@ struct SettingsView: View {
                     ReviewService.recordPrompt(context: modelContext)
                 } label: {
                     HStack {
-                        row("Rate nutrx", symbol: "star", color: NutrientTint.amber.color, value: nil)
+                        row("Rate nutrx", symbol: "star", color: Theme.SettingsTile.amber, value: nil)
                         // Leaves the app, so an outbound arrow rather than a navigation chevron.
                         Image(systemName: "arrow.up.right")
                             .font(.footnote.weight(.semibold))
@@ -89,7 +89,7 @@ struct SettingsView: View {
                         .navigationTitle("About")
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
-                    row("About", symbol: "info.circle", color: Color(.systemGray), value: nil)
+                    row("About", symbol: "info.circle", color: Theme.SettingsTile.grey, value: nil)
                 }
             } footer: {
                 privacyFooter
@@ -182,8 +182,9 @@ struct SettingsView: View {
                 .font(.title3)
             Text("Private by design. No accounts, no servers, no tracking. Your data lives on your devices and your iCloud.")
                 .multilineTextAlignment(.center)
+                .frame(maxWidth: 260)  // a short centred block, as in the design
         }
-        .font(.subheadline)
+        .font(.footnote)
         .foregroundStyle(Theme.textSecondary)
         .frame(maxWidth: .infinity)
         .padding(.top, 24)
