@@ -107,22 +107,24 @@ Rules:
 
 ### 5. Wire into MainTabView (if it's a new tab)
 
-Open `nutrx/App/MainTabView.swift` and add a new `tabItem` entry:
+Open `nutrx/App/MainTabView.swift` and add a new `Tab` (the iOS 18+ `TabView` API the file uses):
 
 ```swift
-<FeatureName>View(modelContext: modelContext)
-    .tabItem {
-        Label("<Tab Label>", systemImage: "<sf-symbol-name>")
+Tab("<Tab Label>", systemImage: "<sf-symbol-name>") {
+    NavigationStack {
+        <FeatureName>View()
+            .navigationTitle("<Screen Title>")
+            .withProfileMenu()
     }
+}
 ```
 
-nutrx currently has four tabs in this order:
-1. Today — `house` (or similar)
-2. My Nutrients — `list.bullet`
-3. History — `clock.arrow.circlepath`
-4. Profile — `person.crop.circle`
+nutrx currently has three tabs in this order (icons and labels from DESIGN.md's `Main.dc.html`):
+1. Today: `circle.circle`
+2. Nutrients: `leaf` (the screen is titled "My Nutrients")
+3. History: `calendar`
 
-New tabs are appended after Profile unless a specific position is requested.
+Profile, Settings and About are not tabs; they're in the profile menu (`.withProfileMenu()`). AGENTS.md says to keep these three as the only tabs, so a new tab needs an explicit decision. If one is added, append it after History unless a specific position is requested.
 
 ---
 
@@ -146,7 +148,7 @@ New tabs are appended after Profile unless a specific position is requested.
 - [ ] No files placed at the root of `Features/<FeatureName>/`
 - [ ] ViewModel receives `ModelContext` via init
 - [ ] View wraps content in `NavigationStack`
-- [ ] If new tab: `MainTabView.swift` updated with correct `tabItem`
+- [ ] If new tab: `MainTabView.swift` updated with the new `Tab` (label and SF Symbol)
 - [ ] SF Symbol used for tab icon (no custom assets)
 - [ ] No business logic in the View file
 - [ ] No UIKit imports
