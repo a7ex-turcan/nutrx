@@ -148,7 +148,7 @@ Profile, Settings and About are not tabs; they're in the profile menu (`.withPro
 - [ ] No files placed at the root of `Features/<FeatureName>/`
 - [ ] ViewModel receives `ModelContext` via init
 - [ ] View wraps content in `NavigationStack`
-- [ ] If new tab: `MainTabView.swift` updated with correct `tabItem`
+- [ ] If new tab: `MainTabView.swift` updated with the new `Tab` (label and SF Symbol)
 - [ ] SF Symbol used for tab icon (no custom assets)
 - [ ] No business logic in the View file
 - [ ] No UIKit imports
