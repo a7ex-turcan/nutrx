@@ -96,11 +96,11 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 The app has three tabs (defined in `App/MainTabView.swift`):
 
-| Tab | Purpose |
+| Tab (SF Symbol) | Purpose |
 |---|---|
-| **Today** | The main daily tracking screen |
-| **My Nutrients** | Create, edit, delete, and reorder custom nutrients |
-| **History** | Browse past daily intake logs |
+| **Today** (`circle.circle`) | The main daily tracking screen |
+| **Nutrients** (`leaf`) | Create, edit, delete, and reorder custom nutrients. The screen's title is "My Nutrients"; the tab label is "Nutrients" (DESIGN.md `Main.dc.html`). |
+| **History** (`calendar`) | Browse past daily intake logs |
 
 Profile, Settings, and About are **not** tabs — they're accessed via a profile icon (top-right of every screen's navigation bar). Tapping it opens a menu with two items: "Edit Profile" (opens a sheet) and "Settings" (opens a sheet). About lives inside Settings. (The old "Log Out" item was a no-op — nutrx has no accounts — and was removed in phase 8.) This is implemented via the `.withProfileMenu()` view modifier, which every tab applies.
 
