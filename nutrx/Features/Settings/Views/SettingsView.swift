@@ -1,13 +1,12 @@
 import SwiftUI
 import SwiftData
-import StoreKit
 
 /// Settings sheet (DESIGN.md §5.9): profile card, then rows with Settings-style icon tiles — iCloud Sync,
 /// Notifications, Streaks, Groups; Rate nutrx, About — and the privacy footer.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.requestReview) private var requestReview
+    @Environment(\.openURL) private var openURL
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query private var allPreferences: [UserPreferences]
     @Query private var profiles: [UserProfile]
@@ -67,19 +66,24 @@ struct SettingsView: View {
 
             Section {
                 Button {
-                    requestReview()
-                    // Counts as this version's prompt, so ReviewService won't also ask right after.
+                    // The App Store's review page, not the system prompt: iOS shows that at most three times a
+                    // year (never in TestFlight), so a tap here often did nothing.
+                    openURL(ReviewService.writeReviewURL)
+                    // The user chose to rate, so ReviewService won't also prompt them for this version.
                     ReviewService.recordPrompt(context: modelContext)
                 } label: {
                     HStack {
                         row("Rate nutrx", symbol: "star", color: NutrientTint.amber.color, value: nil)
-                        Image(systemName: "chevron.right")
+                        // Leaves the app, so an outbound arrow rather than a navigation chevron.
+                        Image(systemName: "arrow.up.right")
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)  // the hint says where it goes
                     }
                     .contentShape(Rectangle())  // the whole row, not just the icon and title
                 }
                 .buttonStyle(.plain)
+                .accessibilityHint("Opens the App Store to write a review")
                 NavigationLink {
                     AboutView()
                         .navigationTitle("About")

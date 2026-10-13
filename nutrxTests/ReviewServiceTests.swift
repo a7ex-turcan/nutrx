@@ -17,4 +17,17 @@ final class ReviewServiceTests: XCTestCase {
         let recorded = try XCTUnwrap(preferences.lastReviewRequestedDate)
         XCTAssertLessThan(abs(recorded.timeIntervalSinceNow), 5)
     }
+
+    func testWriteReviewURLOpensNutrxsReviewPage() throws {
+        let components = try XCTUnwrap(URLComponents(url: ReviewService.writeReviewURL, resolvingAgainstBaseURL: false))
+        XCTAssertEqual(components.scheme, "https")
+        XCTAssertEqual(components.host, "apps.apple.com")
+        XCTAssertEqual(components.path, "/app/id\(ReviewService.appStoreID)")
+        XCTAssertEqual(components.queryItems, [URLQueryItem(name: "action", value: "write-review")])
+    }
+
+    func testAppStoreIDIsNutrxsAppRecord() {
+        // App Store Connect: "nutrx - Nutrient Tracker", bundle nutrx-labs.nutrx.
+        XCTAssertEqual(ReviewService.appStoreID, "6760843478")
+    }
 }
