@@ -1,0 +1,13 @@
+#!/bin/sh
+# App Store Connect CLI. Builds Tools/AppStoreConnect on first use, then runs it.
+# Usage: Tools/asc <get|post|patch|delete> <path> [body.json | -]
+set -e
+pkg="$(cd "$(dirname "$0")/AppStoreConnect" && pwd)"
+log="$(mktemp -t asc-build)"
+if ! swift build -c release --package-path "$pkg" >"$log" 2>&1; then
+    cat "$log" >&2
+    rm -f "$log"
+    exit 1
+fi
+rm -f "$log"
+exec "$pkg/.build/release/asc" "$@"
