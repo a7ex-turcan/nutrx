@@ -9,22 +9,29 @@ struct NutrxInlineWidget: Widget {
             InlineWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("nutrx")
-        .description("Nutrient completion count.")
+        .configurationDisplayName("Goals and streak")
+        .description("Goals met today and your streak, above the clock.")
         .supportedFamilies([.accessoryInline])
     }
 }
 
+/// "3/6 goals · 10-day streak" (DESIGN.md §5.10).
 struct InlineWidgetView: View {
     let entry: NutrxWidgetEntry
 
+    private var allMet: Bool { entry.totalCount > 0 && entry.metCount == entry.totalCount }
+
     var body: some View {
-        if entry.totalCount == 0 {
-            Text("Open nutrx")
-        } else if entry.completedCount == entry.totalCount {
-            Text("All done today ✓")
-        } else {
-            Text("\(entry.completedCount) / \(entry.totalCount) on target")
-        }
+        let text = WidgetSummary.inline(met: entry.metCount, total: entry.totalCount,
+                                        streakDays: entry.currentStreak, streaksEnabled: entry.streaksEnabled)
+        Label(text, systemImage: allMet ? "checkmark.circle" : "circle.dashed")
+            .accessibilityLabel(text)  // the text alone; the icon would read as "Selected"
+            .widgetURL(URL(string: "nutrx://today"))
     }
+}
+
+#Preview("Inline", as: .accessoryInline) {
+    NutrxInlineWidget()
+} timeline: {
+    NutrxWidgetEntry.placeholder
 }

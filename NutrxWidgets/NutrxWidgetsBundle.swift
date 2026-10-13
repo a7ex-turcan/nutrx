@@ -7,6 +7,7 @@ struct NutrxWidgetsBundle: WidgetBundle {
         NutrxSmallWidget()
         NutrxMediumWidget()
         NutrxCircularWidget()
+        NutrxRectangularWidget()
         NutrxInlineWidget()
     }
 }

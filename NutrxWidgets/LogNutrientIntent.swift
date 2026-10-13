@@ -1,6 +1,9 @@
 import AppIntents
 import SwiftData
 import WidgetKit
+import os.log
+
+private let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "LogNutrientIntent")
 
 struct LogNutrientIntent: AppIntent {
     static var title: LocalizedStringResource = "Log Nutrient"
@@ -17,7 +20,19 @@ struct LogNutrientIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        let container = ModelContainerFactory.create()
+        // Widget buttons run this in the widget extension, which must use the extension-safe container.
+        let container: ModelContainer
+        if Bundle.main.bundlePath.hasSuffix(".appex") {
+            do {
+                container = try ModelContainerFactory.createForExtension()
+            } catch {
+                logger.error(
+                    "Widget log tap couldn't open the shared store: \(error.localizedDescription, privacy: .public)")
+                return .result()
+            }
+        } else {
+            container = ModelContainerFactory.create()
+        }
         let context = container.mainContext
 
         guard let nutrientUUID = UUID(uuidString: nutrientID) else { return .result() }
@@ -27,6 +42,7 @@ struct LogNutrientIntent: AppIntent {
         )
         let nutrients = (try? context.fetch(descriptor)) ?? []
         guard let nutrient = nutrients.first(where: { $0.id == nutrientUUID }) else {
+            logger.error("Widget log tap found no nutrient \(nutrientID, privacy: .public)")
             return .result()
         }
 

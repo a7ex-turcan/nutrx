@@ -9,26 +9,37 @@ struct NutrxCircularWidget: Widget {
             CircularWidgetView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .configurationDisplayName("nutrx")
-        .description("Nutrient completion ring.")
+        .configurationDisplayName("Goals")
+        .description("Goals met today, as a ring.")
         .supportedFamilies([.accessoryCircular])
     }
 }
 
+/// Lock Screen ring with "3/6" (DESIGN.md §5.10). Monochrome there, so the ring's fill carries the meaning.
 struct CircularWidgetView: View {
     let entry: NutrxWidgetEntry
 
-    private var progress: Double {
-        guard entry.totalCount > 0 else { return 0 }
-        return Double(entry.completedCount) / Double(entry.totalCount)
+    private var fraction: Double {
+        entry.totalCount > 0 ? Double(entry.metCount) / Double(entry.totalCount) : 0
     }
 
     var body: some View {
-        Gauge(value: progress) {
-            Text("\(entry.completedCount)")
-                .font(.system(.title3, design: .rounded, weight: .bold))
+        Gauge(value: fraction) {
+            EmptyView()
+        } currentValueLabel: {
+            Text(WidgetSummary.score(met: entry.metCount, total: entry.totalCount))
+                .font(.body.weight(.bold)).fontDesign(.rounded)
+                .minimumScaleFactor(0.6)
         }
         .gaugeStyle(.accessoryCircularCapacity)
+        .widgetAccentable()
+        .accessibilityLabel("\(entry.metCount) of \(entry.totalCount) goals met")
         .widgetURL(URL(string: "nutrx://today"))
     }
+}
+
+#Preview("Circular", as: .accessoryCircular) {
+    NutrxCircularWidget()
+} timeline: {
+    NutrxWidgetEntry.placeholder
 }

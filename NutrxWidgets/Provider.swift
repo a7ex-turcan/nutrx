@@ -1,5 +1,8 @@
 import WidgetKit
 import SwiftData
+import os.log
+
+private let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "WidgetTimeline")
 
 struct NutrxTimelineProvider: TimelineProvider {
     func placeholder(in context: Context) -> NutrxWidgetEntry {
@@ -21,22 +24,14 @@ struct NutrxTimelineProvider: TimelineProvider {
 
     @MainActor
     private func fetchEntry() -> NutrxWidgetEntry {
+        // The extension-safe container (no CloudKit), read-only: the timeline never writes.
         let container: ModelContainer
         do {
-            let schema = Schema([
-                UserProfile.self,
-                Nutrient.self,
-                IntakeRecord.self,
-                Exclusion.self,
-                UserPreferences.self,
-                NutrientReminder.self,
-                NutrientGroup.self,
-            ])
-            let storeURL = ModelContainerFactory.sharedStoreURL()
-            let configuration = ModelConfiguration(schema: schema, url: storeURL, allowsSave: false)
-            container = try ModelContainer(for: schema, configurations: [configuration])
+            container = try ModelContainerFactory.createForExtension(allowsSave: false)
         } catch {
-            return NutrxWidgetEntry(date: .now, nutrients: [], isPlaceholder: false, currentStreak: 0, streaksEnabled: false)
+            logger.error(
+                "Widget timeline couldn't open the shared store: \(error.localizedDescription, privacy: .public)")
+            return .empty
         }
 
         let context = container.mainContext
@@ -89,7 +84,8 @@ struct NutrxTimelineProvider: TimelineProvider {
                 let aGroupOrder = (a.group ?? generalGroup)?.sortOrder ?? Int.max
                 let bGroupOrder = (b.group ?? generalGroup)?.sortOrder ?? Int.max
                 if aGroupOrder != bGroupOrder { return aGroupOrder < bGroupOrder }
-                return a.groupSortOrder < b.groupSortOrder
+                if a.groupSortOrder != b.groupSortOrder { return a.groupSortOrder < b.groupSortOrder }
+                return a.sortOrder < b.sortOrder  // same tiebreak as Today
             }
 
         let snapshots = activeNutrients.map { n in
@@ -100,8 +96,10 @@ struct NutrxTimelineProvider: TimelineProvider {
                 current: max(0, totals[n.persistentModelID] ?? 0),
                 target: n.dailyTarget,
                 step: n.step,
-                goalTypeRaw: n.goalTypeRaw,
-                upperBound: n.upperBound
+                goalType: n.goalType,
+                upperBound: n.upperBound,
+                tint: n.tint,
+                symbolName: n.symbolName
             )
         }
 

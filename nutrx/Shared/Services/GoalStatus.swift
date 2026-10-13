@@ -95,6 +95,11 @@ struct GoalProgress: Equatable {
         )
     }
 
+    /// Still short of an "at least" target or a range's lower bound, so logging more works toward the goal.
+    /// False once met, for "at most" goals (they start out met) and past a limit, so the widgets' "Next up"
+    /// never nudges toward more of something that's over.
+    var needsMore: Bool { status == .inProgress && !countsAsMet }
+
     // MARK: - Text
 
     /// Status line under the value: "2,000 IU to go", "80 mg left today", "28 g to range", "Done".

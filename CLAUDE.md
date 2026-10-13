@@ -68,7 +68,7 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 - "Branded native": system components and Liquid Glass chrome, plus a brand layer — forest/green colours from the asset catalog (`Theme.swift`), rounded numerals, progress **rings**, per-nutrient tint + SF Symbol.
 - Build one phase from DESIGN.md §7 per session; don't mix phases.
-- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. Phase 7 (Onboarding) — `OnboardingWelcomeView`, first-nutrient restyle, `StartingPoint`, `BrandMark` image asset, optional profile fields; `OnboardingPersonalInfoView` deleted. Phase 8 (Settings & Profile) — Settings restyle (profile card, icon-tile rows with values, Rate nutrx, privacy footer), `ProfileAvatar`, `SettingsSummary`, Profile / About / Groups restyle, settings detail views split into files, dead Log Out removed. **Next:** Phase 9 (Widgets).
+- **Done:** Phase 1 (Foundations) — colour tokens in `Shared/DesignSystem/Colors.xcassets` + `Theme.swift`, `NutrientTint`, `Nutrient.tintRaw` / `symbolName`, `GoalStatus` / `GoalProgress`, `ProgressRing`, `SegmentedDayRing`, `NutrientIconTile`, `nutrxTests`. Phase 2 (Today) — `DayScoreCard`, `NutrientCard`, `GroupHeader`, `cardStyle()`, `DayScore`, `UpcomingReminder`, 44pt avatar. Phase 3 (Log sheet) — `LogSheet`; `CustomAmountSheet`, `ExpandableNutrientCard`, `NutrientIntakeHistoryView` deleted. Phase 4 (Nutrient form + My Nutrients) — `TintPicker`, `SymbolPicker`, `GoalTypePicker`, `NutrientPreviewRow`, form + list restyle, `GroupHeaderView` deleted. Phase 5 (Analytics) — `StatTriplet`, `DailyIntakeChart`, `WeekdayHeatmap`, `AnalyticsSummary`, `WeekdayPattern`, `AnalyticsStat`, `Text/OnTint`; `DailyIntakeChartCard`, `PeriodStatsCard`, `DayOfWeekCard` deleted. Phase 6 (History) — `StreakCard`, `MonthCalendar`, `HistoryLog`, `MonthGrid`, `HistoryText`, day detail restyle; `NutrientRowView` deleted. Phase 7 (Onboarding) — `OnboardingWelcomeView`, first-nutrient restyle, `StartingPoint`, `BrandMark` image asset, optional profile fields; `OnboardingPersonalInfoView` deleted. Phase 8 (Settings & Profile) — Settings restyle (profile card, icon-tile rows with values, Rate nutrx, privacy footer), `ProfileAvatar`, `SettingsSummary`, Profile / About / Groups restyle, settings detail views split into files, dead Log Out removed. Phase 9 (Widgets) — Today / Quick log / Goals / Next up (new, rectangular) / Goals and streak restyle, `WidgetSummary`, snapshots on `GoalProgress`. **Next:** Phase 10 (Watch).
 - Where this file still describes the old UI (blue/green/orange progress bars), DESIGN.md wins. Update this file as each phase lands.
 
 ---
@@ -222,7 +222,7 @@ nutrx/
     │   ├── ProfileMenuButton.swift          # 44pt ProfileAvatar with the Edit Profile / Settings menu.
     │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier.
     ├── Persistence/
-    │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback.
+    │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback; createForExtension() for widgets (no CloudKit).
     │   │                                    # Backs up local store before first CloudKit init to prevent data loss.
     │   │                                    # Singleton deduplication. Logs via os.log.
     │   ├── NutrientDraft+Persistence.swift  # insertNutrient / apply(to:) — the only writers of a draft to a Nutrient.
@@ -486,7 +486,7 @@ Hit rate, the chart's met/missed bars and the heatmap all judge a day with `Goal
 
 ### GoalProgress — the shared "met" rule
 
-`GoalProgress` (`Shared/Services/GoalStatus.swift`) owns the per-type conditions above: `StreakService`, History streak days, the analytics hit rate and the Today row all read `countsAsMet` instead of re-implementing them. Comparisons tolerate float drift from summed steps; a range with no `upperBound` behaves like `.minimum`. The redesigned UI also takes `status`, `ringFraction` and `remainingText` from it (DESIGN.md §2). Widget and Watch snapshot code still has its own copy until phases 9–10.
+`GoalProgress` (`Shared/Services/GoalStatus.swift`) owns the per-type conditions above: `StreakService`, History streak days, the analytics hit rate and the Today row all read `countsAsMet` instead of re-implementing them. Comparisons tolerate float drift from summed steps; a range with no `upperBound` behaves like `.minimum`. The redesigned UI also takes `status`, `ringFraction` and `remainingText` from it (DESIGN.md §2). Widgets use it via `NutrientSnapshot.progress` (phase 9); the Watch snapshot code still has its own copy until phase 10.
 
 ---
 
@@ -547,16 +547,19 @@ Uses `SKStoreReviewController` — no custom UI. Triggered after intake actions 
 
 ## Widgets
 
-Four widget configurations in `NutrxWidgetsExtension`:
+Five widget configurations in `NutrxWidgetsExtension`, redesigned in phase 9 (DESIGN.md §5.10). Kind IDs and supported families never change — widgets people have placed would disappear.
 
-| Widget | Kind ID | Family | Content |
+| Widget (gallery name) | Kind ID | Families | Content |
 |---|---|---|---|
-| Small | `NutrxSmallWidget` | `.systemSmall` | Completion ring with count |
-| Medium | `NutrxMediumWidget` | `.systemMedium` | 3 nutrient rows with interactive + buttons |
-| Circular | `NutrxCircularWidget` | `.accessoryCircular` | Lock screen ring gauge |
-| Inline | `NutrxInlineWidget` | `.accessoryInline` | Lock screen text: "3 / 6 on target" |
+| Today | `NutrxSmallWidget` | `.systemSmall` | Forest card: "Today" + flame streak, `SegmentedDayRing` + "3/6 goals met", "Next: Vitamin D" (first goal that still needs more, in Today order; "1 over limit" or "All done for today" when none) |
+| Quick log | `NutrxMediumWidget` | `.systemMedium` (+ small / large) | White rows: `ProgressRing` in the tint, name, "**2,000** / 4,000 IU", interactive + (`LogNutrientIntent`). 3 rows; 2 compact in small, 6 + header in large |
+| Goals | `NutrxCircularWidget` | `.accessoryCircular` | Lock Screen capacity gauge with "3/6" |
+| Next up | `NutrxRectangularWidget` | `.accessoryRectangular` | Lock Screen: first goal that still needs more — name, value, linear bar; else "1 over limit" or "All done" + "5/6 goals met" |
+| Goals and streak | `NutrxInlineWidget` | `.accessoryInline` | "3/6 goals · 10-day streak" |
 
-**Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent) for interactive + buttons — target membership must include both app and widget extension. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`. Widgets refresh on intent completion and app foreground.
+`NutrientSnapshot` (`WidgetEntry.swift`) carries tint, symbol and goal type and takes status / ring fraction / text from `GoalProgress`; widget text comes from `Shared/Services/WidgetSummary.swift` (tested in `WidgetSummaryTests`). `ProgressRing`, `SegmentedDayRing` and `WidgetSummary` are compiled into the widget target via membership exceptions. In widgets, set rounded numerals as `.font(.title.weight(.bold)).fontDesign(.rounded)` — `Font.system(_:design:weight:)` drops the weight there.
+
+**Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent) for interactive + buttons — target membership must include both app and widget extension. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`, which opens the store read-only with `ModelContainerFactory.createForExtension(allowsSave: false)`. "Next up" means `GoalProgress.needsMore` (below an "at least" target or a range's lower bound), never an "at most" goal or one over its limit. Widgets refresh on intent completion and app foreground.
 
 ---
 
@@ -566,7 +569,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 
 **Key details:**
 - Container: `iCloud.nutrx-labs.nutrx`. Falls back to local-only if CloudKit unavailable.
-- Entitlements: both main app and widget extension need iCloud + CloudKit capability.
+- Entitlements: the app has iCloud + CloudKit; the widget extension has only the App Group. Extensions open the shared store with `ModelContainerFactory.createForExtension()` (no CloudKit, none of `create()`'s upgrade / backup / seeding steps) — `LogNutrientIntent` does this when running in the widget, and the app's CloudKit mirroring exports what the widget wrote when the app next runs. Never call `create()` from an extension: without the entitlement the CloudKit setup can crash it, and its one-off upgrade steps key off the extension's own `UserDefaults`.
 - **New-device flow:** waits up to 3 seconds for CloudKit sync, skips onboarding if `UserProfile` found.
 - **Conflict resolution:** last-write-wins for most models. `IntakeRecord` is append-only, so concurrent logging from two devices produces two valid records (correct by design).
 - **Local → CloudKit upgrade:** on first CloudKit launch, backs up existing store before init. If CloudKit creates an empty store, migrates all data from backup (prevents TestFlight update data loss). Tracked via `UserDefaults` key `nutrx.hasCompletedCloudKitUpgrade`.

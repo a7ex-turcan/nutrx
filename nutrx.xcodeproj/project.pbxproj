@@ -133,12 +133,15 @@
 				Models/UserPreferences.swift,
 				Models/UserProfile.swift,
 				Shared/Components/NutrientProgressBar.swift,
+				Shared/Components/ProgressRing.swift,
+				Shared/Components/SegmentedDayRing.swift,
 				Shared/DesignSystem/Colors.xcassets,
 				Shared/DesignSystem/Theme.swift,
 				"Shared/Extensions/Double+Formatting.swift",
 				Shared/Persistence/ModelContainerFactory.swift,
 				Shared/Services/GoalStatus.swift,
 				Shared/Services/StreakService.swift,
+				Shared/Services/WidgetSummary.swift,
 			);
 			target = 64702A892F72A89200C45D23 /* NutrxWidgetsExtension */;
 		};

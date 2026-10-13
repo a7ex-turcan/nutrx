@@ -1,83 +1,80 @@
 import WidgetKit
 
-struct NutrientSnapshot {
+/// One nutrient as the widgets see it: today's total plus what's needed to draw its ring.
+struct NutrientSnapshot: Identifiable {
     let id: String
     let name: String
     let unit: String
     let current: Double
     let target: Double
     let step: Double
-    let goalTypeRaw: String
+    let goalType: GoalType
     let upperBound: Double?
+    let tint: NutrientTint
+    let symbolName: String
 
-    init(id: String, name: String, unit: String, current: Double, target: Double, step: Double, goalTypeRaw: String = "minimum", upperBound: Double? = nil) {
-        self.id = id
-        self.name = name
-        self.unit = unit
-        self.current = current
-        self.target = target
-        self.step = step
-        self.goalTypeRaw = goalTypeRaw
-        self.upperBound = upperBound
+    /// Status, ring fraction and text — the same rules as Today (`GoalProgress`).
+    var progress: GoalProgress {
+        GoalProgress(current: current, goalType: goalType, target: target, upperBound: upperBound, unit: unit)
     }
 
-    private var goalType: GoalType {
-        GoalType(rawValue: goalTypeRaw) ?? .minimum
-    }
-
-    var isOnTarget: Bool {
-        switch goalType {
-        case .minimum: return current >= target
-        case .maximum: return current <= target
-        case .range:
-            guard let ub = upperBound else { return current >= target }
-            return current >= target && current <= ub
-        }
-    }
-
-    var isExceeded: Bool {
-        switch goalType {
-        case .minimum: return current > target
-        case .maximum: return current > target
-        case .range:
-            guard let ub = upperBound else { return current > target }
-            return current > ub
-        }
-    }
-
-    var progress: Double {
-        switch goalType {
-        case .minimum, .maximum:
-            guard target > 0 else { return 0 }
-            return current / target
-        case .range:
-            guard let ub = upperBound, ub > 0 else { return 0 }
-            return current / ub
-        }
-    }
+    var isMet: Bool { progress.countsAsMet }
 }
 
 struct NutrxWidgetEntry: TimelineEntry {
     let date: Date
+    /// Today's nutrients in Today's order.
     let nutrients: [NutrientSnapshot]
     let isPlaceholder: Bool
     let currentStreak: Int
     let streaksEnabled: Bool
 
-    var completedCount: Int { nutrients.filter(\.isOnTarget).count }
+    var metCount: Int { nutrients.filter(\.isMet).count }
     var totalCount: Int { nutrients.count }
 
+    /// The first goal that still needs more, in Today's order: the small widget's "Next" and the rectangular
+    /// widget's nutrient. Never an "at most" goal or anything over its limit; logging more wouldn't help.
+    var nextUp: NutrientSnapshot? { nutrients.first { $0.progress.needsMore } }
+
+    /// Goals past an "at most" limit or a range's upper bound. With no `nextUp`, these are the unmet ones.
+    var overLimitCount: Int { nutrients.filter { $0.progress.status == .overLimit }.count }
+
     static var placeholder: NutrxWidgetEntry {
-        NutrxWidgetEntry(
+        func sample(_ name: String, _ unit: String, _ current: Double, _ target: Double, _ step: Double,
+                    _ tint: NutrientTint, _ symbol: String, goalType: GoalType = .minimum,
+                    upper: Double? = nil) -> NutrientSnapshot {
+            NutrientSnapshot(id: name, name: name, unit: unit, current: current, target: target, step: step,
+                             goalType: goalType, upperBound: upper, tint: tint, symbolName: symbol)
+        }
+        return NutrxWidgetEntry(
             date: .now,
             nutrients: [
-                NutrientSnapshot(id: "", name: "Vitamin D", unit: "IU", current: 2000, target: 4000, step: 1000),
-                NutrientSnapshot(id: "", name: "Omega-3", unit: "mg", current: 1500, target: 2000, step: 500),
-                NutrientSnapshot(id: "", name: "Magnesium", unit: "mg", current: 400, target: 400, step: 200),
+                sample("Vitamin D", "IU", 2000, 4000, 1000, .amber, "sun.max"),
+                sample("Water", "L", 1.5, 2.5, 0.25, .blue, "drop"),
+                sample("Protein", "g", 92, 120, 20, .coral, "dumbbell", goalType: .range, upper: 160),
+                sample("Omega-3", "mg", 2000, 2000, 1000, .teal, "fish"),
+                sample("Magnesium", "mg", 400, 400, 200, .indigo, "pills"),
+                sample("Caffeine", "mg", 240, 400, 80, .brown, "cup.and.saucer", goalType: .maximum),
             ],
             isPlaceholder: true,
-            currentStreak: 12,
+            currentStreak: 10,
             streaksEnabled: true
         )
+    }
+
+    /// Previews: every goal met except Caffeine, which is over its limit ("1 over limit").
+    static var overLimitSample: NutrxWidgetEntry {
+        let nutrients = placeholder.nutrients.map { n in
+            NutrientSnapshot(id: n.id, name: n.name, unit: n.unit,
+                             current: n.goalType == .maximum ? 450 : n.upperBound ?? n.target,
+                             target: n.target, step: n.step, goalType: n.goalType, upperBound: n.upperBound,
+                             tint: n.tint, symbolName: n.symbolName)
+        }
+        return NutrxWidgetEntry(date: .now, nutrients: nutrients, isPlaceholder: false, currentStreak: 0,
+                                streaksEnabled: true)
+    }
+
+    static var empty: NutrxWidgetEntry {
+        NutrxWidgetEntry(date: .now, nutrients: [], isPlaceholder: false, currentStreak: 0, streaksEnabled: true)
     }
 }
