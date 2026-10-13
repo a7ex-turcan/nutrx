@@ -15,8 +15,9 @@ struct NutrxRectangularWidget: Widget {
     }
 }
 
-/// The next goal not met yet — name, "2,000 / 4,000 IU" and a bar (DESIGN.md §5.10). Monochrome on the Lock
-/// Screen, so the bar's length carries the progress.
+/// The next goal that still needs more — name, "2,000 / 4,000 IU" and a bar (DESIGN.md §5.10). Monochrome on
+/// the Lock Screen, so the bar's length carries the progress. With none left: "All done", or how many are over
+/// a limit.
 struct RectangularWidgetView: View {
     let entry: NutrxWidgetEntry
 
@@ -36,6 +37,15 @@ struct RectangularWidgetView: View {
                     .progressViewStyle(.linear)
                     .widgetAccentable()
                     .accessibilityHidden(true)
+            } else if entry.overLimitCount > 0 {
+                // Nothing left to log toward, but not every goal is met.
+                Label(WidgetSummary.overLimit(entry.overLimitCount), systemImage: "exclamationmark.circle")
+                    .font(.headline)
+                    .widgetAccentable()
+                    .lineLimit(1)
+                    .accessibilityLabel(WidgetSummary.overLimit(entry.overLimitCount))
+                Text("\(WidgetSummary.score(met: entry.metCount, total: entry.totalCount)) goals met")
+                    .font(.subheadline)
             } else if entry.totalCount > 0 {
                 Label("All done", systemImage: "checkmark.circle")
                     .font(.headline)
@@ -61,5 +71,6 @@ struct RectangularWidgetView: View {
     NutrxRectangularWidget()
 } timeline: {
     NutrxWidgetEntry.placeholder
+    NutrxWidgetEntry.overLimitSample
     NutrxWidgetEntry.empty
 }

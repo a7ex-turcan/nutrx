@@ -29,4 +29,11 @@ final class WidgetSummaryTests: XCTestCase {
         XCTAssertEqual(WidgetSummary.nextLine(firstUnmetName: nil, total: 6), "All done for today")
         XCTAssertEqual(WidgetSummary.nextLine(firstUnmetName: nil, total: 0), "Add a nutrient")
     }
+
+    func testNextLineCountsGoalsOverALimitOnceNothingIsLeftToLog() {
+        XCTAssertEqual(WidgetSummary.nextLine(firstUnmetName: nil, overLimitCount: 1, total: 6), "1 over limit")
+        XCTAssertEqual(WidgetSummary.nextLine(firstUnmetName: nil, overLimitCount: 2, total: 6), "2 over limit")
+        // A goal to work toward still comes first.
+        XCTAssertEqual(WidgetSummary.nextLine(firstUnmetName: "Iron", overLimitCount: 1, total: 6), "Next: Iron")
+    }
 }

@@ -213,6 +213,20 @@ final class GoalProgressTests: XCTestCase {
         XCTAssertNil(progress(0, .maximum, target: 400).amountToGoal)
     }
 
+    func testNeedsMoreOnlyBelowAnAtLeastTargetOrARangesLowerBound() {
+        XCTAssertTrue(progress(2000, .minimum, target: 4000).needsMore)
+        XCTAssertFalse(progress(4000, .minimum, target: 4000).needsMore)
+        XCTAssertTrue(progress(92, .range, target: 120, upper: 160).needsMore)
+        XCTAssertFalse(progress(130, .range, target: 120, upper: 160).needsMore)  // in range
+        XCTAssertFalse(progress(170, .range, target: 120, upper: 160).needsMore)  // over the range
+    }
+
+    func testNeedsMoreIsFalseForAtMostUnderOrOverTheLimit() {
+        XCTAssertFalse(progress(0, .maximum, target: 400).needsMore)
+        XCTAssertFalse(progress(350, .maximum, target: 400).needsMore)  // nearing
+        XCTAssertFalse(progress(450, .maximum, target: 400).needsMore)  // over: "Next up" mustn't suggest more
+    }
+
     func testFormattedAmountGroupsAndKeepsUpToTwoDecimals() {
         XCTAssertEqual(1000.0.formattedAmount(locale: enUS), "1,000")
         XCTAssertEqual(0.25.formattedAmount(locale: enUS), "0.25")

@@ -32,8 +32,12 @@ struct NutrxWidgetEntry: TimelineEntry {
     var metCount: Int { nutrients.filter(\.isMet).count }
     var totalCount: Int { nutrients.count }
 
-    /// The first goal not met yet — the small widget's "Next" and the rectangular widget's nutrient.
-    var nextUp: NutrientSnapshot? { nutrients.first { !$0.isMet } }
+    /// The first goal that still needs more, in Today's order: the small widget's "Next" and the rectangular
+    /// widget's nutrient. Never an "at most" goal or anything over its limit; logging more wouldn't help.
+    var nextUp: NutrientSnapshot? { nutrients.first { $0.progress.needsMore } }
+
+    /// Goals past an "at most" limit or a range's upper bound. With no `nextUp`, these are the unmet ones.
+    var overLimitCount: Int { nutrients.filter { $0.progress.status == .overLimit }.count }
 
     static var placeholder: NutrxWidgetEntry {
         func sample(_ name: String, _ unit: String, _ current: Double, _ target: Double, _ step: Double,
@@ -56,6 +60,18 @@ struct NutrxWidgetEntry: TimelineEntry {
             currentStreak: 10,
             streaksEnabled: true
         )
+    }
+
+    /// Previews: every goal met except Caffeine, which is over its limit ("1 over limit").
+    static var overLimitSample: NutrxWidgetEntry {
+        let nutrients = placeholder.nutrients.map { n in
+            NutrientSnapshot(id: n.id, name: n.name, unit: n.unit,
+                             current: n.goalType == .maximum ? 450 : n.upperBound ?? n.target,
+                             target: n.target, step: n.step, goalType: n.goalType, upperBound: n.upperBound,
+                             tint: n.tint, symbolName: n.symbolName)
+        }
+        return NutrxWidgetEntry(date: .now, nutrients: nutrients, isPlaceholder: false, currentStreak: 0,
+                                streaksEnabled: true)
     }
 
     static var empty: NutrxWidgetEntry {

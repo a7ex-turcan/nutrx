@@ -83,44 +83,51 @@ private struct WidgetNutrientRow: View {
         let progress = nutrient.progress
 
         HStack(spacing: compact ? 8 : 10) {
-            if !compact {
-                ProgressRing(fraction: progress.ringFraction,
-                             color: progress.status.ringColor(tint: nutrient.tint),
-                             trackColor: nutrient.tint.trackColor,
-                             lineWidth: 5,
-                             symbolName: nutrient.symbolName,
-                             symbolColor: nutrient.tint.color,
-                             showsCheck: nutrient.isMet)
-                    .frame(width: 36, height: 36)
-            }
+            HStack(spacing: compact ? 8 : 10) {
+                if !compact {
+                    ProgressRing(fraction: progress.ringFraction,
+                                 color: progress.status.ringColor(tint: nutrient.tint),
+                                 trackColor: nutrient.tint.trackColor,
+                                 lineWidth: 6,
+                                 symbolName: nutrient.symbolName,
+                                 symbolColor: nutrient.tint.color,
+                                 showsCheck: nutrient.isMet,
+                                 label: nutrient.name,
+                                 valueDescription: progress.progressText)
+                        .frame(width: 34, height: 34)
+                }
 
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 5) {
-                    if compact {
-                        Image(systemName: nutrient.isMet ? "checkmark.circle.fill" : "circle.fill")
-                            .font(.system(size: nutrient.isMet ? 10 : 7))
-                            .foregroundStyle(nutrient.tint.color)
-                            .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: 5) {
+                        if compact {
+                            Image(systemName: nutrient.isMet ? "checkmark.circle.fill" : "circle.fill")
+                                .font(.system(size: nutrient.isMet ? 10 : 7))
+                                .foregroundStyle(nutrient.tint.color)
+                        }
+                        Text(nutrient.name)
+                            .font((compact ? Font.subheadline : .body).weight(.semibold))
+                            .foregroundStyle(Theme.textPrimary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
-                    Text(nutrient.name)
-                        .font((compact ? Font.subheadline : .body).weight(.semibold))
-                        .foregroundStyle(Theme.textPrimary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                    // Separate texts: fonts set inside an interpolated Text don't apply in widgets.
+                    HStack(alignment: .firstTextBaseline, spacing: compact ? 2 : 4) {
+                        Text(progress.currentText)
+                            .font((compact ? Font.caption : .subheadline).weight(.bold)).fontDesign(.rounded)
+                            .foregroundStyle(Theme.textPrimary)
+                        Text(progress.goalText)
+                            .font(compact ? .caption : .subheadline)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
                 }
-                // Separate texts: fonts set inside an interpolated Text don't apply in widgets.
-                HStack(alignment: .firstTextBaseline, spacing: compact ? 2 : 4) {
-                    Text(progress.currentText)
-                        .font((compact ? Font.caption : .subheadline).weight(.bold)).fontDesign(.rounded)
-                        .foregroundStyle(Theme.textPrimary)
-                    Text(progress.goalText)
-                        .font(compact ? .caption : .subheadline)
-                        .foregroundStyle(Theme.textSecondary)
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // Ring, name and value as one stop ("Vitamin D, 2,000 of 4,000 IU, 2,000 IU to go"), then the "+".
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(nutrient.name)
+            .accessibilityValue("\(progress.progressText), \(progress.remainingText)")
 
             Button(intent: LogNutrientIntent(nutrientID: nutrient.id)) {
                 Image(systemName: "plus")
@@ -132,8 +139,6 @@ private struct WidgetNutrientRow: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Add one step of \(nutrient.name)")
         }
-        // Name and value as one element (not the dot / check), then the "+" button.
-        .accessibilityElement(children: .contain)
     }
 }
 

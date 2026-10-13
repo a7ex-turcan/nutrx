@@ -17,7 +17,7 @@ All notable changes to nutrx are documented in this file.
 - **New welcome and first-nutrient setup** — A new welcome screen, then pick a starting point (Vitamin D, Magnesium, Omega-3, Water, Protein or Creatine) whose goal and step you can adjust before you start, or make your own. You can also skip and add nutrients later.
 - **Redesigned Settings** — Your profile at the top, colourful rows that show each setting's current state at a glance (iCloud, notifications, streaks, groups), a Rate nutrx shortcut, and a refreshed About and Edit Profile.
 - **Redesigned widgets** — The small widget shows your day at a glance (goals met, streak, what's next) on nutrx green; the quick-log widget shows each nutrient's ring in its own colour with a + button; and the Lock Screen widgets show your goals as a ring and "3/6 goals · 10-day streak".
-- **New "Next up" Lock Screen widget** — The next nutrient you haven't hit yet, with its progress.
+- **New "Next up" Lock Screen widget** — The next nutrient you still need more of, with its progress. It never suggests something you've gone over the limit on.
 
 ### Improvements
 - **No personal details needed to start** — Setup no longer asks for your name, birthday, weight or height. They're all optional now and live in Edit Profile.

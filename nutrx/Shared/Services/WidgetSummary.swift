@@ -21,10 +21,16 @@ enum WidgetSummary {
         return "\(goals) · \(streak)"
     }
 
-    /// The small widget's footer: the first goal not met yet, in Today's order — or that the day is done.
-    static func nextLine(firstUnmetName: String?, total: Int) -> String {
+    /// The small widget's footer: the first goal that still needs more, in Today's order. With none left, how
+    /// many are over a limit, or that the day is done.
+    static func nextLine(firstUnmetName: String?, overLimitCount: Int = 0, total: Int) -> String {
         guard total > 0 else { return "Add a nutrient" }
-        guard let firstUnmetName else { return "All done for today" }
-        return "Next: \(firstUnmetName)"
+        if let firstUnmetName { return "Next: \(firstUnmetName)" }
+        return overLimitCount > 0 ? overLimit(overLimitCount) : "All done for today"
+    }
+
+    /// "1 over limit": goals past an "at most" limit or a range's upper bound.
+    static func overLimit(_ count: Int) -> String {
+        "\(count) over limit"
     }
 }

@@ -1,5 +1,8 @@
 import WidgetKit
 import SwiftData
+import os.log
+
+private let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "WidgetTimeline")
 
 struct NutrxTimelineProvider: TimelineProvider {
     func placeholder(in context: Context) -> NutrxWidgetEntry {
@@ -21,21 +24,9 @@ struct NutrxTimelineProvider: TimelineProvider {
 
     @MainActor
     private func fetchEntry() -> NutrxWidgetEntry {
-        let container: ModelContainer
-        do {
-            let schema = Schema([
-                UserProfile.self,
-                Nutrient.self,
-                IntakeRecord.self,
-                Exclusion.self,
-                UserPreferences.self,
-                NutrientReminder.self,
-                NutrientGroup.self,
-            ])
-            let storeURL = ModelContainerFactory.sharedStoreURL()
-            let configuration = ModelConfiguration(schema: schema, url: storeURL, allowsSave: false)
-            container = try ModelContainer(for: schema, configurations: [configuration])
-        } catch {
+        // The extension-safe container (no CloudKit), read-only: the timeline never writes.
+        guard let container = try? ModelContainerFactory.createForExtension(allowsSave: false) else {
+            logger.error("Widget timeline couldn't open the shared store")
             return .empty
         }
 

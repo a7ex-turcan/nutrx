@@ -26,9 +26,11 @@ enum ModelContainerFactory {
     /// Extensions have no iCloud entitlement — a CloudKit configuration there can crash — and must not run the
     /// app's one-off steps in `create()` (store move, CloudKit-upgrade backup / migration keyed on their own
     /// `UserDefaults`, seeding, dedup). What they write lands in the shared store's history, and the app's
-    /// CloudKit mirroring exports it the next time the app runs.
-    static func createForExtension() throws -> ModelContainer {
-        let configuration = ModelConfiguration(schema: schema, url: sharedStoreURL(), cloudKitDatabase: .none)
+    /// CloudKit mirroring exports it the next time the app runs. Read-only callers (complications) pass
+    /// `allowsSave: false`.
+    static func createForExtension(allowsSave: Bool = true) throws -> ModelContainer {
+        let configuration = ModelConfiguration(schema: schema, url: sharedStoreURL(), allowsSave: allowsSave,
+                                               cloudKitDatabase: .none)
         return try ModelContainer(for: schema, configurations: [configuration])
     }
 

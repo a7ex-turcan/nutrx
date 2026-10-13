@@ -551,15 +551,15 @@ Five widget configurations in `NutrxWidgetsExtension`, redesigned in phase 9 (DE
 
 | Widget (gallery name) | Kind ID | Families | Content |
 |---|---|---|---|
-| Today | `NutrxSmallWidget` | `.systemSmall` | Forest card: "Today" + flame streak, `SegmentedDayRing` + "3/6 goals met", "Next: Vitamin D" (first goal not met, in Today order) |
+| Today | `NutrxSmallWidget` | `.systemSmall` | Forest card: "Today" + flame streak, `SegmentedDayRing` + "3/6 goals met", "Next: Vitamin D" (first goal that still needs more, in Today order; "1 over limit" or "All done for today" when none) |
 | Quick log | `NutrxMediumWidget` | `.systemMedium` (+ small / large) | White rows: `ProgressRing` in the tint, name, "**2,000** / 4,000 IU", interactive + (`LogNutrientIntent`). 3 rows; 2 compact in small, 6 + header in large |
 | Goals | `NutrxCircularWidget` | `.accessoryCircular` | Lock Screen capacity gauge with "3/6" |
-| Next up | `NutrxRectangularWidget` | `.accessoryRectangular` | Lock Screen: first goal not met — name, value, linear bar |
+| Next up | `NutrxRectangularWidget` | `.accessoryRectangular` | Lock Screen: first goal that still needs more — name, value, linear bar; else "1 over limit" or "All done" + "5/6 goals met" |
 | Goals and streak | `NutrxInlineWidget` | `.accessoryInline` | "3/6 goals · 10-day streak" |
 
 `NutrientSnapshot` (`WidgetEntry.swift`) carries tint, symbol and goal type and takes status / ring fraction / text from `GoalProgress`; widget text comes from `Shared/Services/WidgetSummary.swift` (tested in `WidgetSummaryTests`). `ProgressRing`, `SegmentedDayRing` and `WidgetSummary` are compiled into the widget target via membership exceptions. In widgets, set rounded numerals as `.font(.title.weight(.bold)).fontDesign(.rounded)` — `Font.system(_:design:weight:)` drops the weight there.
 
-**Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent) for interactive + buttons — target membership must include both app and widget extension. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`. Widgets refresh on intent completion and app foreground.
+**Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent) for interactive + buttons — target membership must include both app and widget extension. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`, which opens the store read-only with `ModelContainerFactory.createForExtension(allowsSave: false)`. "Next up" means `GoalProgress.needsMore` (below an "at least" target or a range's lower bound), never an "at most" goal or one over its limit. Widgets refresh on intent completion and app foreground.
 
 ---
 

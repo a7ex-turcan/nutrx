@@ -68,7 +68,8 @@ struct SmallWidgetView: View {
 
             Spacer(minLength: 6)
 
-            Text(WidgetSummary.nextLine(firstUnmetName: entry.nextUp?.name, total: entry.totalCount))
+            Text(WidgetSummary.nextLine(firstUnmetName: entry.nextUp?.name, overLimitCount: entry.overLimitCount,
+                                        total: entry.totalCount))
                 .font(.caption)
                 .foregroundStyle(Theme.onForestSecondary)
                 .lineLimit(1)
@@ -95,5 +96,6 @@ private struct StreakLabelStyle: LabelStyle {
     NutrxSmallWidget()
 } timeline: {
     NutrxWidgetEntry.placeholder
+    NutrxWidgetEntry.overLimitSample
     NutrxWidgetEntry.empty
 }
