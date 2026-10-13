@@ -81,6 +81,7 @@ private struct DayScoreCardPreviewGallery: View {
                 DayScoreCard(score: DayScore(met: 0, total: 5), nextReminder: reminder)
                 DayScoreCard(score: DayScore(met: 5, total: 6), streak: 1)
                 DayScoreCard(score: DayScore(met: 6, total: 6), streak: 31)
+                DayScoreCard(score: DayScore(met: 2, total: 3, overLimit: 1), streak: 1)
             }
             .padding(Theme.Spacing.screenMargin)
         }

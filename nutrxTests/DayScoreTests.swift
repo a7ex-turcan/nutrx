@@ -47,6 +47,38 @@ final class DayScoreTests: XCTestCase {
             GoalProgress(current: 450, goalType: .maximum, target: 400),     // over
             GoalProgress(current: 130, goalType: .range, target: 120, upperBound: 160),  // in range
         ])
-        XCTAssertEqual(score, DayScore(met: 3, total: 5))
+        XCTAssertEqual(score, DayScore(met: 3, total: 5, overLimit: 1))
+    }
+
+    func testOverLimitGoalsAreNotToGo() {
+        // 5 met, 1 still short of its target, 1 over its limit.
+        let score = DayScore(met: 5, total: 7, overLimit: 1)
+        XCTAssertEqual(score.remaining, 2)
+        XCTAssertEqual(score.toGo, 1)
+        XCTAssertEqual(score.title, "1\u{00A0}to\u{00A0}go")
+    }
+
+    func testNothingLeftButOverALimitSaysSo() {
+        XCTAssertEqual(DayScore(met: 2, total: 3, overLimit: 1).title, "1\u{00A0}over\u{00A0}limit")
+        XCTAssertEqual(DayScore(met: 1, total: 3, overLimit: 2).title, "2\u{00A0}over\u{00A0}limit")
+        XCTAssertEqual(DayScore(met: 0, total: 1, overLimit: 1).title, "1\u{00A0}over\u{00A0}limit")  // not "Let's get started"
+    }
+
+    func testHalfwayCountsOnlyGoalsToGo() {
+        XCTAssertEqual(DayScore(met: 3, total: 6, overLimit: 1).title, "Halfway there — 2\u{00A0}to\u{00A0}go")
+    }
+
+    func testOverLimitIsClampedToWhatIsNotMet() {
+        XCTAssertEqual(DayScore(met: 3, total: 4, overLimit: 5).overLimit, 1)
+    }
+
+    func testProgressesCountGoalsOverALimitOrPastARange() {
+        let score = DayScore(progresses: [
+            GoalProgress(current: 4000, goalType: .minimum, target: 4000),                // met
+            GoalProgress(current: 500, goalType: .maximum, target: 400),                  // over a limit
+            GoalProgress(current: 170, goalType: .range, target: 120, upperBound: 160),  // past a range
+        ])
+        XCTAssertEqual(score, DayScore(met: 1, total: 3, overLimit: 2))
+        XCTAssertEqual(score.title, "2\u{00A0}over\u{00A0}limit")
     }
 }
