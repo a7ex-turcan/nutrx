@@ -40,18 +40,21 @@ func makeContext(width: Int, height: Int) -> CGContext {
     return cg
 }
 
-/// The Watch capture with its status-bar clock (top right of the 416×496 screen) redrawn as 9:41.
+/// The Watch capture with its status-bar clock (top right of the screen) redrawn as 9:41. The box and position
+/// are measured on the 46mm Watch's 416×496 capture; another size would get the wrong pixels painted over.
 func watchAt941(_ capture: NSImage) -> NSImage {
     let size = capture.size
+    guard size == CGSize(width: 416, height: 496) else {
+        print("the Watch capture must be 416×496 (46mm), got \(Int(size.width))×\(Int(size.height))"); exit(1)
+    }
     let cg = makeContext(width: Int(size.width), height: Int(size.height))
     capture.draw(in: CGRect(origin: .zero, size: size), from: .zero, operation: .copy, fraction: 1,
                  respectFlipped: true, hints: nil)
-    let scale = size.width / 416
     NSColor.black.setFill()
-    CGRect(x: 296 * scale, y: 28 * scale, width: 110 * scale, height: 44 * scale).fill()
-    let font = NSFont.systemFont(ofSize: 31 * scale, weight: .regular)
+    CGRect(x: 296, y: 28, width: 110, height: 44).fill()
+    let font = NSFont.systemFont(ofSize: 31, weight: .regular)
     let time = NSAttributedString(string: "9:41", attributes: [.font: font, .foregroundColor: NSColor.white])
-    time.draw(at: CGPoint(x: 389 * scale - time.size().width, y: 66 * scale - font.ascender))
+    time.draw(at: CGPoint(x: 389 - time.size().width, y: 66 - font.ascender))
     let image = NSImage(cgImage: cg.makeImage()!, size: size)
     return image
 }
@@ -94,7 +97,8 @@ let args = CommandLine.arguments
 guard args.count == 4 || (args.count == 5 && args[4] == "--guides") else {
     print("usage: swift compose-header.swift <iPhone capture> <Watch capture> <output.png> [--guides]"); exit(2)
 }
-let toolDir = URL(fileURLWithPath: args[0]).deletingLastPathComponent()
+// Next to this file, however the script is invoked.
+let toolDir = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
 let background = load(toolDir.appendingPathComponent("background-forest-wide.jpg").path)
 let phone = load(args[1])
 let watch = watchAt941(load(args[2]))
