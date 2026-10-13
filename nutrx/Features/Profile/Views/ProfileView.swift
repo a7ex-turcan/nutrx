@@ -136,6 +136,7 @@ struct ProfileView: View {
         VStack(spacing: 20) {
             FormField(label: "Name") {
                 TextField("Optional", text: $viewModel.name)
+                    .accessibilityLabel("Name")
                     .textContentType(.name)
                     .autocorrectionDisabled()
                     .focused($focusedField, equals: .name)
@@ -154,6 +155,7 @@ struct ProfileView: View {
                         .labelsHidden()
                         Spacer()
                         Button("Remove", role: .destructive) { viewModel.birthdate = nil }
+                            .accessibilityLabel("Remove birthday")  // the "Birthday" caption is visual only
                             .font(.subheadline)
                     }
                 } else {
@@ -166,20 +168,23 @@ struct ProfileView: View {
                 Text("Weight")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(Theme.textSecondary)
+                    .accessibilityHidden(true)  // the field's own label
 
                 HStack(spacing: 10) {
                     TextField("Optional", text: $viewModel.weight)
+                        .accessibilityLabel("Weight")
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .weight)
                         .padding(12)
                         .background(Theme.surfaceCard,
                                     in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
 
-                    Picker("Unit", selection: $viewModel.weightUnit) {
+                    Picker("Weight unit", selection: $viewModel.weightUnit) {
                         Text("kg").tag("kg")
                         Text("lbs").tag("lbs")
                     }
                     .pickerStyle(.segmented)
+                    .accessibilityLabel("Weight unit")  // a segmented Picker's title doesn't reach VoiceOver
                     .frame(width: 120)
                 }
             }
@@ -188,20 +193,23 @@ struct ProfileView: View {
                 Text("Height")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(Theme.textSecondary)
+                    .accessibilityHidden(true)  // the field's own label
 
                 HStack(spacing: 10) {
                     TextField("Optional", text: $viewModel.height)
+                        .accessibilityLabel("Height")
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .height)
                         .padding(12)
                         .background(Theme.surfaceCard,
                                     in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
 
-                    Picker("Unit", selection: $viewModel.heightUnit) {
+                    Picker("Height unit", selection: $viewModel.heightUnit) {
                         Text("cm").tag("cm")
                         Text("ft").tag("ft")
                     }
                     .pickerStyle(.segmented)
+                    .accessibilityLabel("Height unit")  // a segmented Picker's title doesn't reach VoiceOver
                     .frame(width: 120)
                 }
             }

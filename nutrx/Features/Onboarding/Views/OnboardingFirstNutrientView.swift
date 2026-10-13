@@ -250,18 +250,20 @@ struct OnboardingFirstNutrientView: View {
     }
 
     private func goalField(_ label: String, text: Binding<String>, field: GoalField) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        let unit = draft.unit.trimmingCharacters(in: .whitespaces)
+        return VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(Theme.textSecondary)
+                .accessibilityHidden(true)  // the field's own label
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 TextField("0", text: text)
                     .font(Self.valueFont)
                     .keyboardType(.decimalPad)
                     .focused($focusedField, equals: field)
                     .fixedSize()
-                    .accessibilityLabel(label)
-                Text(draft.unit)
+                    .accessibilityLabel(unit.isEmpty ? label : "\(label), \(unit)")
+                Text(unit)
                     .font(Self.valueFont)
                     .lineLimit(1)
                     .accessibilityHidden(true)
