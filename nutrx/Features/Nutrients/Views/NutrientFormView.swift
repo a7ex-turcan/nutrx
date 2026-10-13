@@ -78,7 +78,7 @@ struct NutrientFormView: View {
                 // Room below the last field: the keyboard's floating Done bar isn't part of the keyboard inset, so
                 // without this Notes (last in a new nutrient's form) can't scroll above it. Constant, because
                 // removing it as the keyboard closed made the form jump back to the top.
-                .contentMargins(.bottom, 80, for: .scrollContent)
+                .contentMargins(.bottom, Theme.Spacing.keyboardBarClearance, for: .scrollContent)
                 // Bring the focused field above the keyboard (#26). The amount fields take focus from a tap gesture,
                 // which SwiftUI doesn't scroll into view by itself, and the floating Done bar covers the bottom of
                 // what's left. Wait for the keyboard to finish rising so the visible area is the one above it.
