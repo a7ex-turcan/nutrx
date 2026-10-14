@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Settings' nutrx Pro card (docs/pro/design/2-paywall: settings, settings-pro): a forest card with the ring tile.
-/// Free: what Pro adds so far (`ProText.tagline`, shipped features only) and Learn more, which opens the paywall. Pro: a check badge and
+/// Free: what Pro adds so far (`ProText.tagline`, shipped features only) and Learn more, which opens the
+/// paywall. Pro: a check badge and
 /// "Yearly · renews 14 Oct 2027", which opens the Pro screen.
 struct ProSettingsCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize

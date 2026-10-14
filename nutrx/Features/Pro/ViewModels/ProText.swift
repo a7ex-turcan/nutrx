@@ -27,15 +27,7 @@ enum ProText {
     /// "Supply, label scanning, weekly recaps, Apple Health trends and doctor reports are on. Nothing you
     /// already use has changed." — no serial comma, as in the design; "Supply is on." for one.
     static func welcome(_ features: [ProFeature]) -> String {
-        let names: [String] = features.map { feature in
-            switch feature {
-            case .supply: "supply"
-            case .scan: "label scanning"
-            case .recap: "weekly recaps"
-            case .health: "Apple Health trends"
-            case .report: "doctor reports"
-            }
-        }
+        let names = features.map(\.welcomeName)
         guard let last = names.last else { return "Nothing you already use has changed." }
         let list = names.count > 1 ? names.dropLast().joined(separator: ", ") + " and " + last : last
         let verb = names.count == 1 ? "is" : "are"
@@ -43,22 +35,15 @@ enum ProText {
     }
 
     /// Settings' card line for a free user, from what's actually shipped: one feature reads as itself ("Know when a
-    /// bottle runs out"); two as "Supply and label scan"; three or more as "Supply, label scan, recaps and more".
+    /// bottle runs out"), two or three as a list ("Supply, label scan and recaps"), and only four or more get "and
+    /// more", so it never hints at a feature that isn't there.
     static func tagline(_ features: [ProFeature]) -> String {
-        let names: [String] = features.map { feature in
-            switch feature {
-            case .supply: "supply"
-            case .scan: "label scan"
-            case .recap: "recaps"
-            case .health: "Health trends"
-            case .report: "doctor reports"
-            }
-        }
+        let names = features.map(\.shortName)
         let text: String
-        switch features.count {
+        switch names.count {
         case 0: return "More around your tracking"
         case 1: return features[0].subtitle
-        case 2: text = "\(names[0]) and \(names[1])"
+        case 2, 3: text = names.dropLast().joined(separator: ", ") + " and " + names.last!
         default: text = names.prefix(3).joined(separator: ", ") + " and more"
         }
         return text.prefix(1).uppercased() + text.dropFirst()

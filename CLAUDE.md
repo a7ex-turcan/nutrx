@@ -672,7 +672,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
 - **`ProFeature`**: the five Pro features with titles, symbols and tints. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all five until one ships, to check the design. Set `isShipped` as each phase lands.
 - **Settings:** `ProSettingsCard` sits under the profile card, only when `isStoreVisible` is true.
-  - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Know when a bottle runs out" while only supply exists; "Supply, label scan, recaps and more" once three have shipped) with **Learn more**, which opens the paywall.
+  - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Know when a bottle runs out" while only supply exists, a plain list for two or three, and "… and more" only from four) with **Learn more**, which opens the paywall.
   - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.
   - `ProStatusView` has the plan card, the included features, Manage subscription (`manageSubscriptionsSheet`; not for lifetime or family-shared) and Restore purchases.
 - **Gate:** `ProGatedButton` (`Shared/Components/ProGate.swift`). For a Pro user it runs the action; for a free user it opens the paywall, and its label gets `showsBadge` for the `ProBadge` chip. Never a lock, blur or wall, and the free version of anything stays.

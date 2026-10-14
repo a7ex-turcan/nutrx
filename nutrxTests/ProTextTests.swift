@@ -67,6 +67,8 @@ final class ProTextTests: XCTestCase {
     func testTaglineOnlyNamesShippedFeatures() {
         XCTAssertEqual(ProText.tagline([.supply]), "Know when a bottle runs out")
         XCTAssertEqual(ProText.tagline([.supply, .scan]), "Supply and label scan")
+        XCTAssertEqual(ProText.tagline([.supply, .scan, .recap]), "Supply, label scan and recaps",
+                       "three shipped: no \"and more\"")
         XCTAssertEqual(ProText.tagline(ProFeature.allCases), "Supply, label scan, recaps and more")
     }
 
