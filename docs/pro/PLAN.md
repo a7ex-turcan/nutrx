@@ -31,7 +31,7 @@ Build **one phase per session**, each through its own PR, the same way the v2 re
 
 **Later, not in this plan:** streak freeze and a shareable streak card (from the old roadmap). They're engagement features and can come after launch, once we see what Pro users ask for.
 
-### Pricing (proposal)
+### Pricing (D3, D4)
 
 | Option | Price |
 |---|---|
@@ -39,7 +39,7 @@ Build **one phase per session**, each through its own PR, the same way the v2 re
 | Yearly | $14.99 |
 | Lifetime | $29.99 |
 
-A lifetime option matters here: privacy-minded users tend to dislike subscriptions. A free one-week trial on the yearly plan is optional, to be decided at launch.
+A lifetime option matters here: privacy-minded users tend to dislike subscriptions. The yearly plan has a free one-week trial.
 
 ---
 
@@ -53,14 +53,6 @@ A lifetime option matters here: privacy-minded users tend to dislike subscriptio
 | D4 | Trial | **One week, on the yearly plan only** |
 | D5 | Order of Pro features | **Supply → Scan → Recap → Health → Report.** Supply has no AI, so it's the safest first paid feature to launch StoreKit with. Scan feeds supply (it reads the bottle size). Recap and Health need a few weeks of data. The report is the least likely to sell Pro on its own. |
 | D6 | Design | **Mockups from the designer** before each feature's phase. The prompts are in [`DESIGN-PROMPTS.md`](DESIGN-PROMPTS.md). |
-
----|---|---|
-| D1 | Validate first with a vote (phase 1)? | Yes. It's cheap, and it tells us which two Pro features to build first. |
-| D2 | Name | "nutrx Pro" (matches the website and FAQ). |
-| D3 | Prices | As above. |
-| D4 | Trial | One week on yearly only. |
-| D5 | Order of Pro features | Supply → Scan → Recap → Health → Report, re-ordered by the vote. |
-| D6 | Design | Paywall, supply UI, scan flow, recap, Health cards and report mockups from the designer, like the v2 handoff, before their phases. |
 
 ---
 
