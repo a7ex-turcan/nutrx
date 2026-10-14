@@ -28,6 +28,26 @@ struct NutrxWidgetEntry: TimelineEntry {
     let isPlaceholder: Bool
     let currentStreak: Int
     let streaksEnabled: Bool
+    /// The medium widget's "Running low: Vitamin D · 6 days" (nutrx Pro): the supply that runs out soonest.
+    var runningLow: RunningLow? = nil
+
+    struct RunningLow: Equatable {
+        let name: String
+        /// Whole days left; 0 when out.
+        let daysLeft: Int
+        let isOut: Bool
+
+        /// The part after the name, kept whole when a long name has to shorten: " · 6 days", " · 1 day",
+        /// " · today", " · out".
+        var when: String {
+            if isOut { return " · out" }
+            switch daysLeft {
+            case ...0: return " · today"
+            case 1: return " · 1 day"
+            default: return " · \(daysLeft) days"
+            }
+        }
+    }
 
     var metCount: Int { nutrients.filter(\.isMet).count }
     var totalCount: Int { nutrients.count }
@@ -72,6 +92,22 @@ struct NutrxWidgetEntry: TimelineEntry {
         }
         return NutrxWidgetEntry(date: .now, nutrients: nutrients, isPlaceholder: false, currentStreak: 0,
                                 streaksEnabled: true)
+    }
+
+    /// The placeholder with Vitamin D running low (nutrx Pro), for previews.
+    static var runningLowSample: NutrxWidgetEntry {
+        let base = placeholder
+        return NutrxWidgetEntry(date: base.date, nutrients: base.nutrients, isPlaceholder: false,
+                                currentStreak: base.currentStreak, streaksEnabled: base.streaksEnabled,
+                                runningLow: .init(name: "Vitamin D", daysLeft: 6, isOut: false))
+    }
+
+    /// A long name: only the name shortens.
+    static var runningLowLongNameSample: NutrxWidgetEntry {
+        let base = placeholder
+        return NutrxWidgetEntry(date: base.date, nutrients: base.nutrients, isPlaceholder: false,
+                                currentStreak: base.currentStreak, streaksEnabled: base.streaksEnabled,
+                                runningLow: .init(name: "Vitamin B12 Methylcobalamin Complex", daysLeft: 6, isOut: false))
     }
 
     static var empty: NutrxWidgetEntry {

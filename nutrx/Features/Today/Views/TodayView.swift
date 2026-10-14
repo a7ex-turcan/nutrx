@@ -1,6 +1,7 @@
 import Combine
 import CoreData
 import SwiftUI
+import WidgetKit
 import SwiftData
 
 struct TodayView: View {
@@ -193,6 +194,7 @@ struct TodayView: View {
                 nutrientToRefill = nil
                 viewModel.refresh(context: modelContext)
                 NotificationService.refreshAllNutrientReminders(context: modelContext)
+                WidgetCenter.shared.reloadAllTimelines()
             }
         } message: {
             Text("Starts the count again from a full bottle.")

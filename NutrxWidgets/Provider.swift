@@ -10,20 +10,25 @@ struct NutrxTimelineProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (NutrxWidgetEntry) -> Void) {
-        completion(context.isPreview ? .placeholder : fetchEntry())
+        guard !context.isPreview else { return completion(.placeholder) }
+        Task { @MainActor in
+            completion(fetchEntry(includeSupply: await ProEntitlement.current() != nil))
+        }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<NutrxWidgetEntry>) -> Void) {
-        let entry = fetchEntry()
-        let midnight = Calendar.current.startOfDay(
-            for: Calendar.current.date(byAdding: .day, value: 1, to: .now)!
-        )
-        let timeline = Timeline(entries: [entry], policy: .after(midnight))
-        completion(timeline)
+        Task { @MainActor in
+            // Supply is Pro: StoreKit answers in the extension too (nothing is cached from the app).
+            let entry = fetchEntry(includeSupply: await ProEntitlement.current() != nil)
+            let midnight = Calendar.current.startOfDay(
+                for: Calendar.current.date(byAdding: .day, value: 1, to: .now)!
+            )
+            completion(Timeline(entries: [entry], policy: .after(midnight)))
+        }
     }
 
     @MainActor
-    private func fetchEntry() -> NutrxWidgetEntry {
+    private func fetchEntry(includeSupply: Bool = false) -> NutrxWidgetEntry {
         // The extension-safe container (no CloudKit), read-only: the timeline never writes.
         let container: ModelContainer
         do {
@@ -103,6 +108,16 @@ struct NutrxTimelineProvider: TimelineProvider {
             )
         }
 
-        return NutrxWidgetEntry(date: .now, nutrients: snapshots, isPlaceholder: false, currentStreak: streakResult.current, streaksEnabled: streaksEnabled)
+        var runningLow: NutrxWidgetEntry.RunningLow?
+        if includeSupply {
+            let statuses = activeNutrients.compactMap { n in n.supplyStatus().map { (id: n.name, status: $0) } }
+            if let soonest = SupplySchedule.soonest(statuses) {
+                runningLow = .init(name: soonest.id, daysLeft: soonest.status.daysLeft ?? 0,
+                                   isOut: soonest.status.level == .out)
+            }
+        }
+
+        return NutrxWidgetEntry(date: .now, nutrients: snapshots, isPlaceholder: false, currentStreak: streakResult.current,
+                                streaksEnabled: streaksEnabled, runningLow: runningLow)
     }
 }

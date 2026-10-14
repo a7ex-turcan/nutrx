@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import StoreKit
+import WidgetKit
 
 /// Whether this person has nutrx Pro, from StoreKit 2 on the device (docs/pro/PLAN.md, phase 3). Reads
 /// `Transaction.currentEntitlements` at launch, follows `Transaction.updates` (renewals, refunds, Ask to Buy, a
@@ -15,16 +16,9 @@ final class ProAccess {
     typealias Entitlement = ProEntitlement.Entitlement
     typealias EntitlementCandidate = ProEntitlement.Candidate
 
-    /// Pro stays out of sight until its first feature (supply, phase 4) ships with it. Debug builds can show it
-    /// with the `-proStore` launch argument, or the `proStore` user default (for Xcode runs, which use the local
-    /// StoreKit configuration but no launch arguments).
-    static var isStoreVisible: Bool {
-        #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-proStore") || UserDefaults.standard.bool(forKey: "proStore")
-        #else
-        false
-        #endif
-    }
+    /// nutrx Pro is on now that its first feature (supply, phase 4) has shipped. Kept as one switch, in case Pro
+    /// ever has to be hidden again.
+    static let isStoreVisible = true
 
     private(set) var entitlement: Entitlement?
     /// The three products, once loaded (yearly, monthly, lifetime). Empty offline or before `loadProducts()`.
@@ -76,8 +70,11 @@ final class ProAccess {
            case .verified(let renewal) = status.renewalInfo {
             found?.willAutoRenew = renewal.willAutoRenew
         }
+        let changed = (entitlement != nil) != (found != nil)
         entitlement = found
         hasCheckedEntitlements = true
+        // A purchase, renewal lapse or refund changes what the widget may show (supply is Pro).
+        if changed { WidgetCenter.shared.reloadAllTimelines() }
         // Refill reminders (supply) are Pro: the scheduler follows the entitlement.
         NotificationService.supplyRemindersEnabled = Self.isStoreVisible && found != nil
     }

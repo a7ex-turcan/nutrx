@@ -124,6 +124,19 @@ final class SupplyScheduleTests: XCTestCase {
         XCTAssertEqual(status.thresholdFraction ?? 0, 14_000.0 / 120_000.0, accuracy: 1e-9)
     }
 
+    func testSoonestRunsOutFirstOutThenFewestDays() {
+        func status(_ level: SupplySchedule.Level, _ days: Int?) -> SupplySchedule.Status {
+            .init(setup: setup(), remaining: 1000, dailyUse: days == nil ? nil : 1000, daysLeft: days, level: level)
+        }
+        let items: [(id: String, status: SupplySchedule.Status)] = [
+            ("Magnesium", status(.plenty, 40)), ("Vitamin D", status(.low, 6)), ("Water", status(.low, 3)),
+            ("Omega-3", status(.noHistory, nil)),
+        ]
+        XCTAssertEqual(SupplySchedule.soonest(items)?.id, "Water")
+        XCTAssertEqual(SupplySchedule.soonest(items + [("Zinc", status(.out, 0))])?.id, "Zinc", "out comes first")
+        XCTAssertNil(SupplySchedule.soonest([("Magnesium", status(.plenty, 40))]), "nothing low")
+    }
+
     func testDaysInABottle() {
         XCTAssertEqual(SupplySchedule.daysInBottle(servings: 120, servingAmount: 1000, dailyAmount: 2000), 60)
         XCTAssertNil(SupplySchedule.daysInBottle(servings: 120, servingAmount: 1000, dailyAmount: 0))

@@ -26,8 +26,13 @@ struct MediumWidgetView: View {
         switch family {
         case .systemSmall: 2
         case .systemLarge: 6
-        default: 3
+        default: runningLow == nil ? 3 : 2  // the "Running low" line takes the third row
         }
+    }
+
+    /// Shown in the medium family only (docs/pro/design/3-supply: widget).
+    private var runningLow: NutrxWidgetEntry.RunningLow? {
+        family == .systemMedium ? entry.runningLow : nil
     }
 
     var body: some View {
@@ -53,10 +58,44 @@ struct MediumWidgetView: View {
                 if family == .systemLarge {
                     Spacer(minLength: 0)
                 }
+                if let runningLow {
+                    runningLowLine(runningLow)
+                }
             }
             .frame(maxHeight: .infinity, alignment: family == .systemLarge ? .top : .center)
             .widgetURL(URL(string: "nutrx://today"))
         }
+    }
+
+    /// A hairline, then "Running low: Vitamin D · 6 days" with an amber bottle.
+    private func runningLowLine(_ low: NutrxWidgetEntry.RunningLow) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Rectangle().fill(Theme.lineHairline).frame(height: 1)
+            HStack(spacing: 5) {
+                Image(systemName: "waterbottle")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.textAmberInk)
+                    .accessibilityHidden(true)
+                Text("Running low:")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.textAmberInk)
+                    .fixedSize()
+                // A long name shortens; the days never do.
+                HStack(spacing: 0) {
+                    Text(low.name)
+                        .lineLimit(1)
+                        .layoutPriority(0)
+                    Text(low.when)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .layoutPriority(1)
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.textPrimary)
+            }
+            .accessibilityElement(children: .combine)
+        }
+        .padding(.top, 2)
     }
 
     private var header: some View {
@@ -147,6 +186,13 @@ private struct WidgetNutrientRow: View {
 } timeline: {
     NutrxWidgetEntry.placeholder
     NutrxWidgetEntry.empty
+}
+
+#Preview("Medium, running low", as: .systemMedium) {
+    NutrxMediumWidget()
+} timeline: {
+    NutrxWidgetEntry.runningLowSample
+    NutrxWidgetEntry.runningLowLongNameSample
 }
 
 #Preview("Small", as: .systemSmall) {
