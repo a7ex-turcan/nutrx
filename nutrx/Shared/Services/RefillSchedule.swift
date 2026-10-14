@@ -93,6 +93,11 @@ enum RefillSchedule {
     static let identifierPrefix = "refill-"
 
     static func identifier(nutrientID: UUID) -> String {
-        "\(identifierPrefix)\(nutrientID.uuidString)"
+        identifier(forKey: nutrientID.uuidString)
+    }
+
+    /// The request identifier for a record key (a nutrient id string).
+    static func identifier(forKey key: String) -> String {
+        "\(identifierPrefix)\(key)"
     }
 }

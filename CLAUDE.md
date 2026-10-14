@@ -286,6 +286,7 @@ nutrx/
         ├── StackLogging.swift               # Stacks: active entries, log (with per-time amounts), undo, add, "done today".
         ├── ExportService.swift              # CSV export: entries for a period, RFC 4180 CSV, file name, temp file.
         ├── ProAccess.swift                  # nutrx Pro: StoreKit 2 entitlement (never stored), products, purchase, restore.
+        ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (app and widget).
         ├── SupplySchedule.swift             # Supply: remaining, daily use, days left, level (pure); Nutrient.supplyStatus / refillSupply.
         ├── SupplyText.swift                 # Supply copy: Today hint, analytics card, sheet sentence.
         ├── RefillSchedule.swift             # Refill reminders: when (one per bottle, 10:00), snooze, title/body (pure).
@@ -701,7 +702,8 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
   - **Content:** the title reads "Vitamin D runs out in about a week" (or "in about 3 days", "tomorrow", "has run out"), and the body "About 7 days left at your usual amount. Tap Refilled when you open a new bottle."
   - **Category** `nutrx.refill` has two actions: **Refilled** (runs in the background) and **Remind me tomorrow** (snoozes to 24 hours later).
   - **Budget:** refill reminders come first, and dose reminders share what's left of the 60 (`ReminderSchedule.occurrences(budget:)`).
-  - **Pro only:** `NotificationService.supplyRemindersEnabled` is set by `ProAccess.refreshEntitlement()`. The background refresh checks the entitlement before syncing, so it doesn't drop them.
+  - **Pro only:** `NotificationService.supplyRemindersEnabled` is three-state. It's set by `ProAccess.refreshEntitlement()`, and by `NotificationHandler` (through `ProEntitlement.current()`) before an action's resync. While it's still nil, as on a cold background launch from an action or Siri, a sync leaves pending refill reminders and their records alone. The background refresh checks the entitlement first.
+  - **Records only for what was added:** a bottle's record is saved only when its request was actually added, or when it has already fired. So a reminder removed before it fired (Pro lapsed, notifications off) can still come later.
   - Each sync logs "Refill reminders: N pending <title> @ <date>; …".
 - **`NotificationHandler`** is the app's `UNUserNotificationCenterDelegate`, set in `nutrxApp.init` with the container.
   - It handles the refill actions and shows refill banners while the app is open. Dose and check-in reminders behave as before.

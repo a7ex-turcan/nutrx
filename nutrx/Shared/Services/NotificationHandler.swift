@@ -51,6 +51,12 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
               let idString = content.userInfo[Self.nutrientIDKey] as? String, let id = UUID(uuidString: idString)
         else { return }
         let action = response.actionIdentifier
+        // The action may have launched the app in the background: know whether refill reminders are on before
+        // the resync it triggers.
+        if NotificationService.supplyRemindersEnabled == nil {
+            let isPro = await ProEntitlement.current() != nil
+            await MainActor.run { NotificationService.supplyRemindersEnabled = ProAccess.isStoreVisible && isPro }
+        }
         await MainActor.run { handle(action: action, nutrientID: id) }
     }
 
