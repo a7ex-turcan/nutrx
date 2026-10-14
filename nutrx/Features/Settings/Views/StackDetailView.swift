@@ -10,6 +10,8 @@ struct StackDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showAddNutrient = false
     @State private var confirmDelete = false
+    /// Set by Delete stack: the stack is deleted once this screen is gone, so its body never reads a deleted model.
+    @State private var deleteOnDisappear = false
     @FocusState private var nameFocused: Bool
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -83,24 +85,33 @@ struct StackDetailView: View {
         }
         .confirmationDialog("Delete \(stack.name)?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Delete Stack", role: .destructive) {
-                modelContext.delete(stack)
-                try? modelContext.save()
+                deleteOnDisappear = true
                 dismiss()
             }
         } message: {
             Text("Your logged entries stay. Only the stack goes.")
         }
         .onChange(of: nameFocused) { _, focused in
-            // An emptied name falls back to "Stack" rather than leaving a blank card on Today.
             if !focused {
-                let trimmed = stack.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                stack.name = trimmed.isEmpty ? "Stack" : trimmed
-                try? modelContext.save()
+                commitName()
             }
         }
         .onDisappear {
-            try? modelContext.save()
+            if deleteOnDisappear {
+                modelContext.delete(stack)
+                try? modelContext.save()
+            } else {
+                // Also covers closing the sheet while the name field still has focus.
+                commitName()
+            }
         }
+    }
+
+    /// Trims the name and saves; an emptied name falls back to "Stack" rather than leaving a blank card on Today.
+    private func commitName() {
+        let trimmed = stack.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        stack.name = trimmed.isEmpty ? "Stack" : trimmed
+        try? modelContext.save()
     }
 
     private func entryRow(_ entry: LogStackEntry) -> some View {
@@ -188,7 +199,9 @@ private struct AddStackNutrientSheet: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(nutrient.name)
                                         .foregroundStyle(Theme.textPrimary)
-                                    Text("\(nutrient.step.formattedAmount()) \(nutrient.unit) a step")
+                                    Text(nutrient.unit.isEmpty
+                                         ? "\(nutrient.step.formattedAmount()) a step"
+                                         : "\(nutrient.step.formattedAmount()) \(nutrient.unit) a step")
                                         .font(.subheadline)
                                         .foregroundStyle(Theme.textSecondary)
                                 }
@@ -214,4 +227,27 @@ private struct AddStackNutrientSheet: View {
         }
         .presentationDetents([.medium, .large])
     }
+}
+
+private struct StackDetailPreview: View {
+    @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
+
+    var body: some View {
+        if let stack = stacks.first {
+            NavigationStack {
+                StackDetailView(stack: stack)
+            }
+        }
+    }
+}
+
+#Preview("Stack") {
+    StackDetailPreview()
+        .modelContainer(previewContainer)
+}
+
+#Preview("Stack, Accessibility 3") {
+    StackDetailPreview()
+        .modelContainer(previewContainer)
+        .environment(\.dynamicTypeSize, .accessibility3)
 }

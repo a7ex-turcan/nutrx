@@ -382,6 +382,8 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
 - **Settings:** a Stacks row (teal tile) under Groups.
   - `StacksView` lists stacks in Today's order, with reorder, swipe to delete (with a confirmation; logged entries stay) and + to create one (named in an alert, then opened).
   - `StackDetailView` has the name, the entries with − / +, swipe to remove, drag to reorder, Add nutrient and Delete stack.
+    - Delete stack dismisses first and deletes in `onDisappear`, so the view never renders a deleted model.
+    - An emptied name falls back to "Stack" on focus loss and on disappear.
 - **Not built yet:** "Log my Morning stack" in Siri and the Siri tip card on the detail screen (next, on top of `Shared/Intents/`).
 
 ## Today Tab – Core Logging UX

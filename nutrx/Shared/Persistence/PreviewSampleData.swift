@@ -75,6 +75,19 @@ let previewContainer: ModelContainer = {
         context.insert(nutrient)
     }
 
+    // Stacks: Morning (logged today) and Evening
+    let morning = LogStack(name: "Morning", sortOrder: 0)
+    morning.lastLoggedAt = .now
+    let evening = LogStack(name: "Evening", sortOrder: 1)
+    context.insert(morning)
+    context.insert(evening)
+    for (stack, nutrient, amount, order) in [(morning, vitD, 2000.0, 0), (morning, omega3, 1000, 1),
+                                             (evening, protein, 40, 0), (evening, water, 2, 1)] {
+        let entry = LogStackEntry(nutrient: nutrient, amount: amount, sortOrder: order)
+        context.insert(entry)
+        entry.stack = stack
+    }
+
     // Some intake records for today to show progress
     context.insert(IntakeRecord(nutrient: vitD, amount: 1000))
     context.insert(IntakeRecord(nutrient: vitD, amount: 1000))

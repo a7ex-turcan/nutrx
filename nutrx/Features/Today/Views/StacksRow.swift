@@ -243,8 +243,37 @@ private struct StackDoneBadge: View {
 }
 
 enum StackAccessibility {
-    /// "Morning: Vitamin D, Omega-3 and Magnesium. Logged today."
+    /// "Morning: Vitamin D, Omega-3, Magnesium. Logged today."
     static func label(for stack: LogStack, done: Bool) -> String {
         "\(stack.name): \(StackLogging.summary(of: stack))." + (done ? " Logged today." : "")
     }
+}
+
+private struct StacksRowPreview: View {
+    @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
+    var onlyFirst = false
+
+    var body: some View {
+        ScrollView {
+            StacksRow(stacks: onlyFirst ? Array(stacks.prefix(1)) : stacks, onLog: { _ in }, onEdit: {})
+                .padding(.vertical)
+        }
+        .background(Theme.surfaceGround)
+    }
+}
+
+#Preview("Stacks") {
+    StacksRowPreview()
+        .modelContainer(previewContainer)
+}
+
+#Preview("One stack") {
+    StacksRowPreview(onlyFirst: true)
+        .modelContainer(previewContainer)
+}
+
+#Preview("Accessibility 3") {
+    StacksRowPreview()
+        .modelContainer(previewContainer)
+        .environment(\.dynamicTypeSize, .accessibility3)
 }

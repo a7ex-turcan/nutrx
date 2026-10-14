@@ -34,10 +34,10 @@ struct TodayView: View {
         case list
         case stack(LogStack)
 
-        var id: String {
+        var id: AnyHashable {
             switch self {
             case .list: "list"
-            case .stack(let stack): "\(stack.persistentModelID.hashValue)"
+            case .stack(let stack): stack.persistentModelID
             }
         }
     }

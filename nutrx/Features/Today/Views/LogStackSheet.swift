@@ -157,16 +157,25 @@ struct LogStackSheet: View {
 
     private var logFooter: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // One sentence with an inline link, so it wraps as text at any size.
-            Text("Changes here apply to this time only. [**Edit stack**](nutrx-edit-stack:)")
+            // The note and a real Edit stack button (an inline link would only be reachable through VoiceOver's
+            // Links rotor): on one line when they fit, the button under the note when they don't.
+            let note = Text("Changes here apply to this time only.")
                 .font(.footnote)
                 .foregroundStyle(Theme.textSecondary)
-                .tint(Theme.controlPrimary)
-                .environment(\.openURL, OpenURLAction { _ in
-                    dismiss()
-                    onEditStack()
-                    return .handled
-                })
+            let editButton = Button("Edit stack", action: editStack)
+                .font(.footnote.weight(.bold))
+                .foregroundStyle(Theme.controlPrimary)
+                .buttonStyle(.plain)
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    note.fixedSize()
+                    editButton.fixedSize()
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    note
+                    editButton
+                }
+            }
 
             Button {
                 logNow()
@@ -179,6 +188,7 @@ struct LogStackSheet: View {
                 }
                 .font(.headline)
                 .foregroundStyle(Theme.controlOnPrimary)
+                .padding(.vertical, 12)  // room around the label once it wraps at large text sizes
                 .frame(maxWidth: .infinity, minHeight: 56)
                 .background(Theme.controlPrimary,
                             in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
@@ -238,6 +248,11 @@ struct LogStackSheet: View {
 
     // MARK: - Actions
 
+    private func editStack() {
+        dismiss()
+        onEditStack()
+    }
+
     private func logNow() {
         let snapshot = Dictionary(uniqueKeysWithValues: entries.map { ($0.persistentModelID, amount(for: $0)) })
         let result = onLog(amounts)
@@ -255,4 +270,41 @@ struct LogStackSheet: View {
             loggedAmounts = [:]
         }
     }
+}
+
+// MARK: - Previews
+
+private struct LogStackSheetPreview: View {
+    @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
+
+    // Rendered inline: preview snapshots don't capture presented sheets.
+    var body: some View {
+        if let stack = stacks.first {
+            LogStackSheet(
+                stack: stack,
+                totalFor: { nutrient in (nutrient.intakeRecords ?? []).filter { Calendar.current.isDateInToday($0.date) }
+                    .reduce(0) { $0 + $1.amount } },
+                onLog: { _ in StackLogging.Logged(records: [], previousLastLoggedAt: nil, date: .now) },
+                onUndo: { _ in },
+                onEditStack: {}
+            )
+        }
+    }
+}
+
+#Preview("Light") {
+    LogStackSheetPreview()
+        .modelContainer(previewContainer)
+}
+
+#Preview("Dark") {
+    LogStackSheetPreview()
+        .modelContainer(previewContainer)
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Accessibility 3") {
+    LogStackSheetPreview()
+        .modelContainer(previewContainer)
+        .environment(\.dynamicTypeSize, .accessibility3)
 }
