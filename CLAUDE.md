@@ -286,7 +286,7 @@ nutrx/
         ├── StackLogging.swift               # Stacks: active entries, log (with per-time amounts), undo, add, "done today".
         ├── ExportService.swift              # CSV export: entries for a period, RFC 4180 CSV, file name, temp file.
         ├── ProAccess.swift                  # nutrx Pro: StoreKit 2 entitlement (never stored), products, purchase, restore.
-        ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (no ProAccess needed).
+        ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (no ProAccess needed; also in the widget).
         ├── SupplySchedule.swift             # Supply: remaining, daily use, days left, level (pure); Nutrient.supplyStatus / refillSupply.
         ├── SupplyText.swift                 # Supply copy: Today hint, analytics card, sheet sentence.
         ├── RefillSchedule.swift             # Refill reminders: when (one per bottle, 10:00), snooze, title/body (pure).
@@ -661,7 +661,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - `isPro` / `entitlement` (plan, expiry, family-shared), `loadProducts()`, `purchase(_:)` (verified transactions only, finished straight away; returns `.purchased` / `.pending` / `.cancelled`), and `restore()` (`AppStore.sync()`).
   - The rule is pure, in `ProAccess.entitlement(from:now:)`: revoked, upgraded-away and expired transactions don't count; lifetime beats yearly beats monthly; own purchases beat family-shared ones.
   - **Never stored**: not in SwiftData, iCloud or UserDefaults. It's derived from StoreKit every launch, and no receipt leaves the device.
-- **Hidden until phase 4:** `ProAccess.isStoreVisible` is false in Release. In Debug it's true with the `-proStore` launch argument, or the `proStore` user default for Xcode runs, which use the local StoreKit config but no launch arguments. Set it with `defaults write <app container>/Library/Preferences/nutrx-labs.nutrx proStore -bool YES`. No Pro UI ships before supply.
+- **Visible:** `ProAccess.isStoreVisible` is `true` from phase 4 on, now that supply has shipped. It stays a single switch, in case Pro ever has to be hidden again.
 - **Paywall** (`Features/Pro/`, docs/pro/design/2-paywall):
   - `PaywallView` is a full-height sheet, presented through `.proPaywall(isPresented:)`. It has a forest header (`ProWordmark`, `ProRingMotif`, close) and the `ProFeature.listed` rows.
   - The three plans are radio cards with prices from StoreKit. Lifetime sits under "or pay once", and yearly carries "1 WEEK FREE" only while `isEligibleForIntroOffer`.
@@ -709,7 +709,10 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
   - It handles the refill actions and shows refill banners while the app is open. Dose and check-in reminders behave as before.
   - A tap sets `NotificationRouter.supplyNutrientID`. `MainTabView` switches to Nutrients, `NutrientsListView` pushes that nutrient (its stack now has a `path`), and the `SupplyCard` focuses itself: a 3pt forest outline (green in dark) with Refilled as the primary button. The focus clears on refill or when the card disappears.
   - To test without waiting until 10:00, run `xcrun simctl push <UDID> nutrx-labs.nutrx payload.json` with `"category":"nutrx.refill"` in `aps` and a top-level `"nutrientID"` (the nutrient's UUID).
-- **Not built yet:** the medium widget's "Running low" line. It's next, and with it Pro's Release visibility.
+- **Widget:** the medium widget swaps its third row for a hairline and "Running low: Vitamin D · 6 days" (an amber bottle; "· out" when out). It names only the supply that runs out soonest (`SupplySchedule.soonest`: out first, then the fewest days).
+  - Pro only: the provider asks StoreKit itself through `ProEntitlement.current()`, so nothing is cached from the app.
+  - `ProEntitlement.swift` and `SupplySchedule.swift` are compiled into the widget extension.
+  - The widget process isn't attached to Xcode's local StoreKit, so in the simulator the line only shows in the "Medium, running low" preview.
 
 ---
 

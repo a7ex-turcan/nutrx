@@ -97,6 +97,17 @@ enum SupplySchedule {
         return total / Double(days)
     }
 
+    /// The supply that runs out soonest, for the medium widget's "Running low" line: anything out first, then the
+    /// fewest days left among low ones; nil when nothing is low or out.
+    static func soonest<ID>(_ items: [(id: ID, status: Status)]) -> (id: ID, status: Status)? {
+        let candidates = items.filter { $0.status.level == .out || $0.status.level == .low }
+        return candidates.min { lhs, rhs in
+            let l = lhs.status.level == .out ? -1 : (lhs.status.daysLeft ?? 0)
+            let r = rhs.status.level == .out ? -1 : (rhs.status.daysLeft ?? 0)
+            return l < r
+        }
+    }
+
     /// How long a full bottle lasts at a daily amount (the Supply sheet's "about 60 days").
     static func daysInBottle(servings: Double, servingAmount: Double, dailyAmount: Double) -> Int? {
         guard dailyAmount > 0 else { return nil }

@@ -15,16 +15,9 @@ final class ProAccess {
     typealias Entitlement = ProEntitlement.Entitlement
     typealias EntitlementCandidate = ProEntitlement.Candidate
 
-    /// Pro stays out of sight until its first feature (supply, phase 4) ships with it. Debug builds can show it
-    /// with the `-proStore` launch argument, or the `proStore` user default (for Xcode runs, which use the local
-    /// StoreKit configuration but no launch arguments).
-    static var isStoreVisible: Bool {
-        #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-proStore") || UserDefaults.standard.bool(forKey: "proStore")
-        #else
-        false
-        #endif
-    }
+    /// nutrx Pro is on now that its first feature (supply, phase 4) has shipped. Kept as one switch, in case Pro
+    /// ever has to be hidden again.
+    static let isStoreVisible = true
 
     private(set) var entitlement: Entitlement?
     /// The three products, once loaded (yearly, monthly, lifetime). Empty offline or before `loadProducts()`.
