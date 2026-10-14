@@ -6,6 +6,8 @@ import WidgetKit
 @main
 struct nutrxApp: App {
     let modelContainer = ModelContainerFactory.create()
+    /// nutrx Pro, from StoreKit. Created at launch so it hears `Transaction.updates` from the start.
+    @State private var proAccess = ProAccess()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -26,6 +28,8 @@ struct nutrxApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(proAccess)
+                .task { await proAccess.refreshEntitlement() }
         }
         .modelContainer(modelContainer)
         // Rolls the per-date dose-reminder window forward without the app being opened (#4).
@@ -34,6 +38,8 @@ struct nutrxApp: App {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                // A subscription that lapses sends no `Transaction.updates`, so look again whenever the app comes back.
+                Task { await proAccess.refreshEntitlement() }
                 StackLogging.repairDuplicateIDs(context: modelContainer.mainContext)
                 WidgetCenter.shared.reloadAllTimelines()
                 // Siri's "Log my <nutrient>" phrases use the current nutrient names.

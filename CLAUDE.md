@@ -64,7 +64,7 @@ Notable build settings in the Xcode project:
 
 nutrx is a privacy-first iOS app for tracking daily nutrient intake.
 It is intentionally simple, flexible, and fully offline — no accounts, no servers, no ads.
-A Pro plan is planned for the future but will only gate AI-powered extras;
+nutrx Pro (in progress, `docs/pro/PLAN.md`) only adds new things around tracking;
 all core tracking features remain free forever.
 
 ---
@@ -271,9 +271,12 @@ nutrx/
         ├── StreakService.swift              # Computes current/best streak from IntakeRecord + Exclusion data.
         ├── StackLogging.swift               # Stacks: active entries, log (with per-time amounts), undo, add, "done today".
         ├── ExportService.swift              # CSV export: entries for a period, RFC 4180 CSV, file name, temp file.
+        ├── ProAccess.swift                  # nutrx Pro: StoreKit 2 entitlement (never stored), products, purchase, restore.
         └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30;
                                              # writeReviewURL (App Store review page) for Settings → Rate nutrx.
 ```
+
+Outside `nutrx/`, besides the other targets: `StoreKit/nutrxPro.storekit` is the local StoreKit configuration (see nutrx Pro: StoreKit), and `Tools/` holds the App Store Connect and screenshot tools.
 
 ### Rules Claude Code must follow for file placement
 
@@ -622,9 +625,26 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 
 ## Monetisation
 
-- Free with no ads. **nutrx Pro** is the planned optional subscription; see the Pro plan below for what it adds and its prices.
-- Do not build any paywall, StoreKit, or AI infrastructure before MVP 4.
+- Free with no ads. **nutrx Pro** is an optional subscription (or lifetime purchase) that only *adds* things around tracking. Nothing that's free today becomes Pro.
+- **Being built:** phase 3 of the Pro plan (StoreKit foundation) is the first Pro work. The old "no paywall / StoreKit / AI before MVP 4" guardrail is retired. What stays is in the plan: StoreKit 2 verifies on the device, no receipts or entitlements leave it or go into SwiftData / iCloud, and AI runs on the device only.
 - **Pro plan:** `docs/pro/PLAN.md` (agreed 2026-10-14: nutrx Pro, $1.99 / $14.99 with a one-week trial / $29.99 lifetime; designer prompts in `docs/pro/DESIGN-PROMPTS.md`) — supply & refills, label scanning, weekly recap, Apple Health trends and a doctor report; on-device AI only; everything in 2.0 stays free, including stacks and Siri logging. Build it one phase per session.
+
+### nutrx Pro: StoreKit (phase 3)
+
+- **App Store Connect** (created with `Tools/asc` on 2026-10-14):
+  - Subscription group **nutrx Pro** (`22477669`): `nutrx.pro.yearly` is level 1 at $14.99 with a one-week free trial; `nutrx.pro.monthly` is level 2 at $1.99. Each has a US price plus Apple's equalized price in the other 174 territories, set one territory at a time (`POST /v1/subscriptionPrices`; the trial is likewise one `subscriptionIntroductoryOffers` call per territory).
+  - Non-consumable `nutrx.pro.lifetime` (`6822833390`) at $29.99: a price schedule with a US base, with the other territories equalized automatically.
+  - All three are Family Sharing (this can't be turned off), available in every territory and in new ones, with en-US names and descriptions.
+  - They show "Missing Metadata" until each has an App Review screenshot of the paywall.
+- **`ProAccess`** (`Shared/Services/`, `@Observable`, created in `nutrxApp` and passed down as an environment object):
+  - Reads `Transaction.currentEntitlements` at launch and follows `Transaction.updates` from launch, which brings renewals, refunds, Ask to Buy and purchases on other devices.
+  - `isPro` / `entitlement` (plan, expiry, family-shared), `loadProducts()`, `purchase(_:)` (verified transactions only, finished straight away; returns `.purchased` / `.pending` / `.cancelled`), and `restore()` (`AppStore.sync()`).
+  - The rule is pure, in `ProAccess.entitlement(from:now:)`: revoked, upgraded-away and expired transactions don't count; lifetime beats yearly beats monthly; own purchases beat family-shared ones.
+  - **Never stored**: not in SwiftData, iCloud or UserDefaults. It's derived from StoreKit every launch, and no receipt leaves the device.
+- **Hidden until phase 4:** `ProAccess.isStoreVisible` is false in Release and true in Debug only with the `-proStore` launch argument. No Pro UI ships before supply.
+- **Local testing:** `StoreKit/nutrxPro.storekit` mirrors the products. It's referenced by the nutrx scheme's Run action, so it applies to Xcode runs only, not `simctl launch`, and `ProAccessTests` load it with `SKTestSession(contentsOf:)`.
+  - Keep it a *local* config: with `_applicationInternalID` / `_developerTeamID` in its settings, StoreKit treated it as synced and returned App Store Connect's products instead.
+  - When resetting scheme churn, check out only the Watch schemes, not `nutrx.xcscheme`.
 
 ---
 
@@ -634,7 +654,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 
 **Pre-Pro Sprint:** done — goal types, data export (CSV), quick-log stacks, and Siri & App Shortcuts (see their sections above)
 
-**MVP 4:** Pro tier (StoreKit 2), AI features (on-device + third-party LLM), streak freeze, shareable streak card
+**nutrx Pro** (`docs/pro/PLAN.md`): StoreKit foundation (phase 3), then supply, label scanning, weekly recap, Health trends and the doctor report. On-device AI only, no third-party LLM. Streak freeze and a shareable streak card come later, outside the plan.
 
 **Deferred:** Localisation, iPad-specific layout
 
