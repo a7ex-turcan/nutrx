@@ -54,7 +54,8 @@ struct LogStackSheet: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(Theme.surfaceGround)
-        .presentationDetents([.medium, .large])
+        // At accessibility sizes half a screen holds only the header and one row, so it opens full height.
+        .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large])
         .presentationDragIndicator(.visible)
     }
 

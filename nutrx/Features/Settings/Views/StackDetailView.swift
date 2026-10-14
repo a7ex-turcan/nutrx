@@ -72,8 +72,10 @@ struct StackDetailView: View {
         .navigationTitle("Stack")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                EditButton()
+            if !entries.isEmpty {
+                ToolbarItem(placement: .topBarTrailing) {
+                    EditButton()
+                }
             }
         }
         .sheet(isPresented: $showAddNutrient) {
