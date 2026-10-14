@@ -384,6 +384,8 @@ The primary user goal is multi-nutrient morning routine shortcuts: one shortcut 
 
 ## MVP 4 — Pro Tier & AI 📋
 
+> **Being replaced by [`docs/pro/PLAN.md`](docs/pro/PLAN.md)** (proposed 2026-10-14): on-device AI only, no third-party LLM, no smart target suggestions (nutrx doesn't recommend amounts), stacks and Siri stay free, new prices. The text below is the original plan.
+
 **Goal:** Introduce the Pro subscription. Monetise with AI-powered features that are genuinely useful without compromising the free tier. Pro launch is also the moment to ship two high-visibility engagement features (streak freeze, shareable card) as launch content.
 
 ### Pricing (indicative)
