@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx Pro — Supply states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 393px; height: 1100px; position: relative; overflow: hidden; background: {{c.bg}}; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased; padding: 40px 16px 0 16px; box-sizing: border-box">
+
+  <h2 style="margin: 0 4px 10px 4px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{c.ink2}}">On Today</h2>
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <sc-for list="{{cards}}" as="n" hint-placeholder-count="4">
+      <span style="margin: 8px 6px 0 6px; font-size: 12px; font-weight: 600; color: {{c.ink2}}">{{n.caption}}</span>
+      <div style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 22px; background: {{c.card}}; box-shadow: {{c.shadow}}">
+        <div style="position: relative; width: 52px; height: 52px; flex: none">
+          <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
+            <circle cx="26" cy="26" r="22" fill="none" stroke="{{c.sunTrack}}" stroke-width="5"></circle>
+            <circle cx="26" cy="26" r="22" fill="none" stroke="#E5A500" stroke-width="5" stroke-linecap="round" stroke-dasharray="{{n.dash}}" transform="rotate(-90 26 26)"></circle>
+          </svg>
+          <svg style="position: absolute; left: 15px; top: 15px" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E5A500" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+        </div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+          <div style="font-size: 16px; font-weight: 600">Vitamin D</div>
+          <div style="display: flex; align-items: baseline; gap: 4px">
+            <span style="font: 700 16px/1.2 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">{{n.cur}}</span>
+            <span style="font-size: 13px; color: {{c.ink2}}">/ 4,000 IU</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: {{c.ink2}}; white-space: nowrap">
+            <span>{{n.status}}</span>
+            <sc-if value="{{n.supply}}" hint-placeholder-val="{{false}}">
+              <span aria-hidden="true">·</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{c.amberInk}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6M8 3v3l-2 3v11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9l-2-3V3"></path></svg>
+              <span style="color: {{c.amberInk}}">{{n.supply}}</span>
+            </sc-if>
+            <sc-if value="{{n.refill}}" hint-placeholder-val="{{false}}">
+              <a href="F3AnalyticsOpen.dc.html" style="color: {{c.linkInk}}; text-decoration: underline; text-underline-offset: 2px">Refilled?</a>
+            </sc-if>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; flex: none">
+          <button aria-label="Remove one step of Vitamin D" style="width: 44px; height: 44px; border-radius: 22px; border: 1.5px solid {{c.ghost}}; background: transparent; display: flex; align-items: center; justify-content: center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.ink2}}" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg>
+          </button>
+          <button aria-label="Add one step of Vitamin D" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: {{c.btn}}; display: flex; align-items: center; justify-content: center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{c.btnInk}}" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <h2 style="margin: 28px 4px 10px 4px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{c.ink2}}">Supply card in analytics</h2>
+  <div style="display: flex; flex-direction: column; gap: 6px">
+    <span style="margin: 0 6px; font-size: 12px; font-weight: 600; color: {{c.ink2}}">Never set · Pro</span>
+    <div style="padding: 14px 16px; border-radius: 22px; background: {{c.card}}; display: flex; align-items: center; gap: 12px">
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 600">Supply</span><span style="font-size: 13px; color: {{c.ink2}}">Know when this bottle runs out.</span></span>
+      <button style="height: 44px; padding: 0 16px; border-radius: 22px; border: 0; background: {{c.btn}}; color: {{c.btnInk}}; font: 600 15px -apple-system, system-ui, sans-serif">Set up</button>
+    </div>
+    <span style="margin: 10px 6px 0 6px; font-size: 12px; font-weight: 600; color: {{c.ink2}}">Never set · free</span>
+    <a href="F2Paywall.dc.html" style="padding: 14px 16px; border-radius: 22px; background: {{c.card}}; display: flex; align-items: center; gap: 12px; text-decoration: none; color: {{c.ink}}">
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+        <span style="display: flex; align-items: center; gap: 8px"><span style="font-size: 16px; font-weight: 600">Supply</span><span style="font: 800 10px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: 0.06em; padding: 4px 6px; border-radius: 6px; background: {{c.badgeBg}}; color: {{c.badgeInk}}">PRO</span></span>
+        <span style="font-size: 13px; color: {{c.ink2}}">Know when this bottle runs out.</span>
+      </span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{c.chev}}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </a>
+    <span style="margin: 10px 6px 0 6px; font-size: 12px; font-weight: 600; color: {{c.ink2}}">Set, no usage history yet</span>
+    <div style="padding: 14px 16px; border-radius: 22px; background: {{c.card}}; display: flex; flex-direction: column; gap: 10px">
+      <span style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 16px; font-weight: 600">Supply</span><span style="font-size: 13px; color: {{c.ink2}}"><span style="font: 700 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink}}">118</span> of 120 left</span></span>
+      <span aria-hidden="true" style="height: 10px; border-radius: 5px; background: {{c.chip}}; display: block"><span style="display: block; width: 98%; height: 10px; border-radius: 5px; background: #E5A500"></span></span>
+      <span style="font-size: 13px; color: {{c.ink2}}">Days-left estimate after a few days of logging.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":393,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var D = !!this.props.dark;
+    var c = D ? { bg: '#0A130E', card: '#142019', ink: '#EAF2EC', ink2: '#97AA9E', chip: 'rgba(255,255,255,0.07)', shadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)', ghost: '#2C4035', btn: '#1EB955', btnInk: '#0A130E', amberInk: '#F0B35A', linkInk: '#5BD88A', sunTrack: 'rgba(229,165,0,0.2)', chev: '#5F7268', badgeBg: 'rgba(30,185,85,0.16)', badgeInk: '#7BE3A0' }
+              : { bg: '#F2F4EF', card: '#FFFFFF', ink: '#0E1A13', ink2: '#56655C', chip: 'rgba(14,26,19,0.06)', shadow: '0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)', ghost: '#D5DCD3', btn: '#1B3B2D', btnInk: '#FFFFFF', amberInk: '#9A5A0C', linkInk: '#1B3B2D', sunTrack: 'rgba(229,165,0,0.16)', chev: '#9AA69F', badgeBg: 'rgba(27,59,45,0.09)', badgeInk: '#1B3B2D' };
+    var C = 138.23;
+    function n(caption, frac, cur, status, supply, refill) { return { caption: caption, dash: (frac * C).toFixed(1) + ' ' + C, cur: cur, status: status, supply: supply || '', refill: !!refill }; }
+    return { c: c, cards: [
+      n('Plenty left — nothing extra', 0.5, '2,000', '2,000 IU to go'),
+      n('Running low', 0.5, '2,000', '2,000 IU to go', 'About 6 days left'),
+      n('Out of supply', 0.25, '1,000', 'Out of supply ·', '', true),
+      n('No history yet — nothing extra', 0, '0', '4,000 IU to go')
+    ] };
+  }
+}
+</script>
+</body>
+</html>

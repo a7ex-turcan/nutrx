@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — New nutrient with Scan a label</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+input::placeholder{color:#7A887F}
+</style>
+</helmet>
+<div style="width: 393px; height: 852px; position: relative; overflow: hidden; background: {{c.scrim}}; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+  <section aria-label="New nutrient" style="position: absolute; left: 0; right: 0; top: 54px; bottom: 0; background: {{c.bg}}; border-radius: 38px 38px 0 0; padding: 8px 16px 0 16px; box-sizing: border-box; display: flex; flex-direction: column">
+    <div aria-hidden="true" style="align-self: center; width: 36px; height: 5px; border-radius: 3px; background: {{c.grabber}}"></div>
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px">
+      <button style="height: 44px; padding: 0 14px; border-radius: 22px; border: 0; background: {{c.card}}; font: 400 16px -apple-system, system-ui, sans-serif; color: {{c.ink}}">Cancel</button>
+      <h1 style="margin: 0; font-size: 17px; font-weight: 700">New Nutrient</h1>
+      <button style="height: 44px; padding: 0 18px; border-radius: 22px; border: 0; background: {{c.btnOff}}; font: 600 16px -apple-system, system-ui, sans-serif; color: {{c.btnOffInk}}" disabled>Add</button>
+    </div>
+
+    <a href="{{scanHref}}" style="margin-top: 14px; padding: 12px 14px; border-radius: 22px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; align-items: center; gap: 12px; text-decoration: none; color: {{c.ink}}">
+      <span aria-hidden="true" style="width: 44px; height: 44px; border-radius: 13px; background: {{c.scanTile}}; display: flex; align-items: center; justify-content: center; flex: none">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{c.scanInk}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 10h8M8 14h5"></path></svg>
+      </span>
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 1px">
+        <span style="display: flex; align-items: center; gap: 8px">
+          <span style="font-size: 16px; font-weight: 600">Scan a label</span>
+          <sc-if value="{{locked}}" hint-placeholder-val="{{true}}">
+            <span style="font: 800 10px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: 0.06em; padding: 4px 6px; border-radius: 6px; background: {{c.badgeBg}}; color: {{c.badgeInk}}">PRO</span>
+          </sc-if>
+        </span>
+        <span style="font-size: 13px; color: {{c.ink2}}">Fill this in from the bottle</span>
+      </span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{c.chev}}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </a>
+    <sc-if value="{{noai}}" hint-placeholder-val="{{false}}">
+      <p style="margin: 8px 6px 0 6px; display: flex; gap: 8px; font-size: 13px; line-height: 18px; color: {{c.ink2}}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.ink2}}" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 11v5M12 8v.01"></path></svg>
+        <span>This iPhone reads labels with basic text matching, so you may fill in a little more yourself.</span>
+      </p>
+    </sc-if>
+
+    <div style="margin: 16px 4px 0 4px; display: flex; align-items: center; gap: 10px">
+      <span style="flex: 1; height: 1px; background: {{c.rule}}"></span>
+      <span style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">or fill in by hand</span>
+      <span style="flex: 1; height: 1px; background: {{c.rule}}"></span>
+    </div>
+
+    <div style="margin-top: 14px; border-radius: 20px; background: {{c.card}}; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden">
+      <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px; border-right: 1px solid {{c.line}}">
+        <label for="nm" style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">Name</label>
+        <input id="nm" placeholder="e.g. Vitamin D" style="border: 0; padding: 0; height: 26px; font: 400 17px -apple-system, system-ui, sans-serif; color: {{c.ink}}; outline: none; background: transparent">
+      </div>
+      <div style="padding: 10px 14px; display: flex; flex-direction: column; gap: 2px">
+        <label for="un" style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">Unit</label>
+        <input id="un" placeholder="e.g. mg, IU" style="border: 0; padding: 0; height: 26px; font: 400 17px -apple-system, system-ui, sans-serif; color: {{c.ink}}; outline: none; background: transparent">
+      </div>
+    </div>
+
+    <h2 style="margin: 18px 4px 8px 4px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{c.ink2}}">Look</h2>
+    <div style="border-radius: 20px; background: {{c.card}}; padding: 14px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; justify-items: center">
+      <sc-for list="{{tints}}" as="t" hint-placeholder-count="8">
+        <span role="img" aria-label="{{t.label}}" style="width: 32px; height: 32px; border-radius: 16px; background: {{t.hex}}; box-shadow: {{t.ring}}"></span>
+      </sc-for>
+    </div>
+
+    <h2 style="margin: 18px 4px 8px 4px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{c.ink2}}">Daily goal</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <span style="height: 64px; border-radius: 18px; border: 2px solid {{c.sel}}; background: {{c.card}}; display: flex; align-items: flex-end; padding: 10px 12px; box-sizing: border-box; font-size: 15px; font-weight: 600">At least</span>
+      <span style="height: 64px; border-radius: 18px; border: 2px solid transparent; background: {{c.card}}; display: flex; align-items: flex-end; padding: 10px 12px; box-sizing: border-box; font-size: 15px; font-weight: 600">At most</span>
+      <span style="height: 64px; border-radius: 18px; border: 2px solid transparent; background: {{c.card}}; display: flex; align-items: flex-end; padding: 10px 12px; box-sizing: border-box; font-size: 15px; font-weight: 600">Between</span>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"pro":{"editor":"boolean","default":false},"noai":{"editor":"boolean","default":false},"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var D = !!this.props.dark, P = !!this.props.pro;
+    var c = D ? {
+      scrim: '#050A07', bg: '#0A130E', card: '#142019', ink: '#EAF2EC', ink2: '#97AA9E', chev: '#5F7268', grabber: '#2C4035', line: '#22332A', rule: '#22332A',
+      shadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)', scanTile: 'rgba(19,163,156,0.2)', scanInk: '#13A39C', badgeBg: 'rgba(30,185,85,0.16)', badgeInk: '#7BE3A0',
+      btnOff: 'rgba(255,255,255,0.08)', btnOffInk: '#5F7268', sel: '#1EB955', bg2: '#142019'
+    } : {
+      scrim: '#2A3A31', bg: '#F2F4EF', card: '#FFFFFF', ink: '#0E1A13', ink2: '#56655C', chev: '#9AA69F', grabber: '#CBD3CA', line: '#EEF1EC', rule: '#DDE3DA',
+      shadow: '0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)', scanTile: '#D6F1EF', scanInk: '#0F8A84', badgeBg: 'rgba(27,59,45,0.09)', badgeInk: '#1B3B2D',
+      btnOff: 'rgba(14,26,19,0.06)', btnOffInk: '#9AA69F', sel: '#1B3B2D', bg2: '#FFFFFF'
+    };
+    var pal = [['Green', '#1EB955'], ['Teal', '#13A39C'], ['Blue', '#2F80ED'], ['Indigo', '#6B5BE0'], ['Pink', '#D9539A'], ['Coral', '#E2674A'], ['Amber', '#E5A500'], ['Brown', '#9B6A45']];
+    var tints = pal.map(function (p, i) { return { label: p[0], hex: p[1], ring: i === 0 ? '0 0 0 3px ' + c.bg2 + ', 0 0 0 5px ' + p[1] : 'none' }; });
+    return { c: c, tints: tints, locked: !P, noai: !!this.props.noai, scanHref: P ? 'F4Scanner.dc.html' : 'F2Paywall.dc.html' };
+  }
+}
+</script>
+</body>
+</html>

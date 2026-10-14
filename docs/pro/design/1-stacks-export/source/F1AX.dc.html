@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — Stacks at the largest text size</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 393px; height: 940px; position: relative; overflow: hidden; background: #F2F4EF; color: #0E1A13; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased; padding: 62px 16px 0 16px; box-sizing: border-box">
+  <h1 style="margin: 0 4px; font-size: 52px; line-height: 60px; font-weight: 700; letter-spacing: -0.02em">Today</h1>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; margin: 26px 4px 12px 4px">
+    <h2 style="margin: 0; font-size: 34px; line-height: 40px; font-weight: 700">Stacks</h2>
+    <button style="height: 48px; border: 0; background: transparent; font: 600 28px -apple-system, system-ui, sans-serif; color: #1B3B2D">Edit</button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="padding: 18px; border-radius: 22px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30); display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+        <span style="font-size: 32px; line-height: 38px; font-weight: 600">Morning</span>
+        <span role="img" aria-label="Logged today" style="width: 34px; height: 34px; border-radius: 17px; background: #1EB955; display: flex; align-items: center; justify-content: center; flex: none">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E1A13" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+        </span>
+      </div>
+      <span style="font-size: 26px; line-height: 32px; color: #56655C">Vitamin D, Omega-3, Magnesium · logged 08:12</span>
+      <button style="min-height: 64px; border-radius: 32px; border: 2px solid #D5DCD3; background: transparent; color: #0E1A13; font: 600 28px -apple-system, system-ui, sans-serif">Log again</button>
+    </div>
+
+    <div style="padding: 18px; border-radius: 22px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30); display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 32px; line-height: 38px; font-weight: 600">With dinner</span>
+      <span style="font-size: 26px; line-height: 32px; color: #56655C">Iron, Omega-3</span>
+      <button style="min-height: 64px; border-radius: 32px; border: 0; background: #1B3B2D; color: #FFFFFF; font: 600 28px -apple-system, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        Log
+      </button>
+    </div>
+
+    <div style="padding: 18px; border-radius: 22px; background: #FFFFFF; box-shadow: 0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30); display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 32px; line-height: 38px; font-weight: 600">Before bed</span>
+      <span style="font-size: 26px; line-height: 32px; color: #56655C">Melatonin, Magnesium</span>
+      <button style="min-height: 64px; border-radius: 32px; border: 0; background: #1B3B2D; color: #FFFFFF; font: 600 28px -apple-system, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 10px">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+        Log
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":393,"height":940}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

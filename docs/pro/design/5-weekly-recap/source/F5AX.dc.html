@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx Pro — recap at the largest text size</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 393px; height: 840px; position: relative; overflow: hidden; background: #F2F4EF; color: #0E1A13; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased; padding: 62px 16px 0 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+  <h1 style="margin: 0 4px; font-size: 44px; line-height: 52px; font-weight: 700">Weekly recap</h1>
+  <section style="padding: 20px; border-radius: 28px; background: #1B3B2D; color: #FFFFFF; display: flex; flex-direction: column; gap: 14px">
+    <span style="font-size: 22px; font-weight: 600; color: #9FC2AE">5 – 11 October</span>
+    <span style="font-size: 34px; line-height: 40px; font-weight: 700">31 of 42 goals met</span>
+    <p style="margin: 0; font-size: 26px; line-height: 34px; color: #DCE9E0">You hit Vitamin D 7 of 7 days. Omega-3 slipped on the weekend. Caffeine went over your limit on Monday. Your streak is now 10 days.</p>
+  </section>
+  <div style="padding: 18px; border-radius: 22px; background: #FFFFFF; display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 22px; font-weight: 600; color: #56655C">Steadiest</span>
+    <span style="font-size: 30px; font-weight: 600">Vitamin D</span>
+    <span style="font-size: 22px; color: #56655C">7 of 7 days</span>
+  </div>
+  <div style="padding: 18px; border-radius: 22px; background: #FFFFFF; display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 22px; font-weight: 600; color: #56655C">Slipped</span>
+    <span style="font-size: 30px; font-weight: 600">Omega-3</span>
+    <span style="font-size: 22px; color: #56655C">Missed Saturday and Sunday</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":393,"height":840}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

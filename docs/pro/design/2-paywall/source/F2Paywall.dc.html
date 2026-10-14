@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx Pro — paywall</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 393px; height: 852px; position: relative; overflow: hidden; background: {{c.scrim}}; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+  <section aria-label="nutrx Pro" style="position: absolute; left: 0; right: 0; top: 54px; bottom: 0; background: {{c.bg}}; border-radius: 38px 38px 0 0; overflow: hidden; display: flex; flex-direction: column">
+
+    <header style="position: relative; overflow: hidden; background: #1B3B2D; padding: 26px 22px 22px 22px; color: #FFFFFF">
+      <svg aria-hidden="true" width="300" height="300" viewBox="0 0 300 300" style="position: absolute; right: -96px; top: -110px">
+        <circle cx="150" cy="150" r="118" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="30"></circle>
+        <circle cx="150" cy="150" r="118" fill="none" stroke="#1EB955" stroke-width="30" stroke-linecap="round" stroke-dasharray="120 621.4" stroke-dashoffset="-8" transform="rotate(-90 150 150)"></circle>
+        <circle cx="150" cy="150" r="118" fill="none" stroke="#1EB955" stroke-width="30" stroke-linecap="round" stroke-dasharray="120 621.4" stroke-dashoffset="-156" transform="rotate(-90 150 150)" opacity="0.7"></circle>
+        <circle cx="150" cy="150" r="118" fill="none" stroke="#7BE3A0" stroke-width="30" stroke-linecap="round" stroke-dasharray="120 621.4" stroke-dashoffset="-304" transform="rotate(-90 150 150)" opacity="0.45"></circle>
+        <circle cx="150" cy="150" r="72" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="22"></circle>
+      </svg>
+      <button aria-label="Close" style="position: absolute; right: 16px; top: 14px; width: 44px; height: 44px; border-radius: 22px; border: 0; background: rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+      <div style="position: relative; display: flex; align-items: center; gap: 8px; margin-top: 6px">
+        <span style="font: 800 30px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: -0.02em">nutrx</span>
+        <span style="font: 800 14px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: 0.06em; color: #0E1A13; background: #7BE3A0; padding: 6px 9px; border-radius: 8px">PRO</span>
+      </div>
+      <p style="position: relative; margin: 12px 0 0 0; font-size: 15px; line-height: 21px; color: #CFE0D5; max-width: 280px">More around your tracking. Private like everything else — it all runs on your iPhone.</p>
+    </header>
+
+    <ul style="list-style: none; margin: 0; padding: 12px 18px 0 18px; display: flex; flex-direction: column">
+      <sc-for list="{{features}}" as="f" hint-placeholder-count="5">
+        <li style="display: flex; align-items: center; gap: 12px; min-height: 46px">
+          <span aria-hidden="true" style="width: 34px; height: 34px; border-radius: 10px; background: {{f.tile}}; display: flex; align-items: center; justify-content: center; flex: none">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{f.ink}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{f.d}}"></path></svg>
+          </span>
+          <span style="display: flex; flex-direction: column">
+            <span style="font-size: 15px; font-weight: 600">{{f.title}}</span>
+            <span style="font-size: 13px; color: {{c.ink2}}">{{f.line}}</span>
+          </span>
+        </li>
+      </sc-for>
+    </ul>
+
+    <div role="radiogroup" aria-label="Plan" style="margin: 12px 16px 0 16px; display: flex; flex-direction: column; gap: 8px">
+      <sc-for list="{{subs}}" as="p" hint-placeholder-count="2">
+        <button role="radio" aria-checked="{{p.on}}" style="min-height: 56px; padding: 0 14px; border-radius: 16px; border: {{p.border}}; background: {{c.card}}; display: flex; align-items: center; gap: 12px; font-family: inherit; color: {{c.ink}}; text-align: left">
+          <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 11px; border: {{p.dot}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; flex: none">
+            <span style="width: 10px; height: 10px; border-radius: 5px; background: {{p.dotFill}}"></span>
+          </span>
+          <span style="flex: 1; display: flex; flex-direction: column">
+            <span style="display: flex; align-items: center; gap: 8px">
+              <span style="font-size: 16px; font-weight: 600">{{p.title}}</span>
+              <sc-if value="{{p.trial}}" hint-placeholder-val="{{false}}">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; padding: 3px 7px; border-radius: 6px; background: {{c.badgeBg}}; color: {{c.badgeInk}}">1 WEEK FREE</span>
+              </sc-if>
+            </span>
+            <span style="font-size: 13px; color: {{c.ink2}}">{{p.sub}}</span>
+          </span>
+          <span style="font: 700 17px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">{{p.price}}</span>
+        </button>
+      </sc-for>
+      <div style="display: flex; align-items: center; gap: 10px; margin: 2px 4px"><span style="flex: 1; height: 1px; background: {{c.rule}}"></span><span style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">or pay once</span><span style="flex: 1; height: 1px; background: {{c.rule}}"></span></div>
+      <sc-for list="{{once}}" as="p" hint-placeholder-count="1">
+        <button role="radio" aria-checked="{{p.on}}" style="min-height: 56px; padding: 0 14px; border-radius: 16px; border: {{p.border}}; background: {{c.card}}; display: flex; align-items: center; gap: 12px; font-family: inherit; color: {{c.ink}}; text-align: left">
+          <span aria-hidden="true" style="width: 22px; height: 22px; border-radius: 11px; border: {{p.dot}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; flex: none">
+            <span style="width: 10px; height: 10px; border-radius: 5px; background: {{p.dotFill}}"></span>
+          </span>
+          <span style="flex: 1; display: flex; flex-direction: column">
+            <span style="display: flex; align-items: center; gap: 8px">
+              <span style="font-size: 16px; font-weight: 600">{{p.title}}</span>
+              <sc-if value="{{p.trial}}" hint-placeholder-val="{{false}}">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; padding: 3px 7px; border-radius: 6px; background: {{c.badgeBg}}; color: {{c.badgeInk}}">1 WEEK FREE</span>
+              </sc-if>
+            </span>
+            <span style="font-size: 13px; color: {{c.ink2}}">{{p.sub}}</span>
+          </span>
+          <span style="font: 700 17px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">{{p.price}}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="padding: 12px 16px 0 16px; display: flex; flex-direction: column; gap: 8px">
+      <button style="height: 56px; border-radius: 18px; border: 0; background: {{c.btn}}; color: {{c.btnInk}}; font: 600 17px -apple-system, system-ui, sans-serif">{{cta}}</button>
+      <p style="margin: 0; text-align: center; font-size: 12px; line-height: 17px; color: {{c.ink2}}">{{fine}}</p>
+    </div>
+
+    <div style="flex: 1"></div>
+    <div style="padding: 0 16px 30px 16px; display: flex; flex-direction: column; align-items: center; gap: 6px">
+      <p style="margin: 0; font-size: 13px; font-weight: 600; color: {{c.greenInk}}">Everything you use today stays free.</p>
+      <nav aria-label="Purchase links" style="display: flex; gap: 2px">
+        <button style="height: 36px; padding: 0 10px; border: 0; background: transparent; font: 500 13px -apple-system, system-ui, sans-serif; color: {{c.ink2}}">Restore purchases</button>
+        <a href="#terms" style="height: 36px; padding: 0 10px; display: flex; align-items: center; font-size: 13px; font-weight: 500; color: {{c.ink2}}; text-decoration: none">Terms</a>
+        <a href="#privacy" style="height: 36px; padding: 0 10px; display: flex; align-items: center; font-size: 13px; font-weight: 500; color: {{c.ink2}}; text-decoration: none">Privacy</a>
+      </nav>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"plan":{"editor":"enum","options":["yearly","monthly","lifetime"],"default":"yearly"},"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var D = !!this.props.dark, P = this.props.plan ?? 'yearly';
+    var c = D ? {
+      scrim: '#050A07', bg: '#0A130E', card: '#142019', ink: '#EAF2EC', ink2: '#97AA9E', btn: '#1EB955', btnInk: '#0A130E', greenInk: '#5BD88A',
+      sel: '#1EB955', unsel: '#2C4035', rule: '#22332A', badgeBg: 'rgba(30,185,85,0.18)', badgeInk: '#7BE3A0', tileA: '33'
+    } : {
+      scrim: '#2A3A31', bg: '#F2F4EF', card: '#FFFFFF', ink: '#0E1A13', ink2: '#56655C', btn: '#1B3B2D', btnInk: '#FFFFFF', greenInk: '#137A3A',
+      sel: '#1B3B2D', unsel: '#D5DCD3', rule: '#DDE3DA', badgeBg: '#D9F2E2', badgeInk: '#137A3A', tileA: '2E'
+    };
+    function f(title, line, d, t, ink) { return { title: title, line: line, d: d, tile: t + c.tileA, ink: D ? t : ink }; }
+    var features = [
+      f('Supply & refills', 'Know when a bottle runs out', 'M9 3h6M8 3v3l-2 3v11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V9l-2-3V3M6 13h12', '#E5A500', '#B07E00'),
+      f('Scan a label', 'Add a nutrient from its bottle', 'M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 10h8M8 14h5', '#13A39C', '#0F8A84'),
+      f('Weekly recap', 'Your week, summarised', 'M4 5h16v15H4zM4 10h16M8 3v4M16 3v4M8 14h4', '#6B5BE0', '#5A4BCF'),
+      f('Trends with Apple Health', 'Intake against sleep and workouts', 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z', '#E2674A', '#C64A2F'),
+      f('A report for your doctor', 'A PDF of any period', 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6', '#2F80ED', '#2368C9')
+    ];
+    function plan(id, title, sub, price, trial) {
+      var on = P === id;
+      return { title: title, sub: sub, price: price, trial: trial, on: on ? 'true' : 'false',
+        border: on ? '2px solid ' + c.sel : '2px solid transparent', dot: on ? '6px solid ' + c.sel : '2px solid ' + c.unsel, dotFill: 'transparent' };
+    }
+    var plans = [
+      plan('yearly', 'Yearly', '$1.25 a month, billed yearly', '$14.99', true),
+      plan('monthly', 'Monthly', 'Billed monthly', '$1.99', false),
+      plan('lifetime', 'Lifetime', 'Pay once, keep Pro forever', '$29.99', false)
+    ];
+    var cta = P === 'lifetime' ? 'Buy lifetime' : (P === 'monthly' ? 'Subscribe' : 'Start free week');
+    var fine = P === 'lifetime' ? 'One payment of $29.99. No subscription.' : (P === 'monthly' ? '$1.99 a month. Cancel anytime in Settings.' : '1 week free, then $14.99 a year. Cancel anytime in Settings.');
+    return { c: c, features: features, subs: plans.slice(0, 2), once: plans.slice(2), cta: cta, fine: fine };
+  }
+}
+</script>
+</body>
+</html>

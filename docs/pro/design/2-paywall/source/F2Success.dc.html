@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx Pro — welcome</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 393px; height: 852px; position: relative; overflow: hidden; background: {{c.scrim}}; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+  <div aria-hidden="true" style="position: absolute; left: 14px; right: 14px; top: 48px; height: 60px; border-radius: 30px 30px 0 0; background: {{c.peek}}"></div>
+  <section aria-label="Welcome to nutrx Pro" style="position: absolute; left: 0; right: 0; top: 360px; bottom: 0; background: {{c.bg}}; border-radius: 38px 38px 0 0; padding: 8px 24px 0 24px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; text-align: center">
+    <div aria-hidden="true" style="width: 36px; height: 5px; border-radius: 3px; background: {{c.grabber}}"></div>
+    <div style="margin-top: 26px; width: 112px; height: 112px; border-radius: 56px; background: #1B3B2D; display: flex; align-items: center; justify-content: center">
+      <svg width="88" height="88" viewBox="0 0 116 116" role="img" aria-label="All five Pro features on">
+        <circle cx="58" cy="58" r="48" fill="none" stroke="#1EB955" stroke-width="12" stroke-linecap="round" stroke-dasharray="44.3 257.3" stroke-dashoffset="-8.5" transform="rotate(-90 58 58)"></circle>
+        <circle cx="58" cy="58" r="48" fill="none" stroke="#1EB955" stroke-width="12" stroke-linecap="round" stroke-dasharray="44.3 257.3" stroke-dashoffset="-68.8" transform="rotate(-90 58 58)"></circle>
+        <circle cx="58" cy="58" r="48" fill="none" stroke="#1EB955" stroke-width="12" stroke-linecap="round" stroke-dasharray="44.3 257.3" stroke-dashoffset="-129.1" transform="rotate(-90 58 58)"></circle>
+        <circle cx="58" cy="58" r="48" fill="none" stroke="#1EB955" stroke-width="12" stroke-linecap="round" stroke-dasharray="44.3 257.3" stroke-dashoffset="-189.4" transform="rotate(-90 58 58)"></circle>
+        <circle cx="58" cy="58" r="48" fill="none" stroke="#1EB955" stroke-width="12" stroke-linecap="round" stroke-dasharray="44.3 257.3" stroke-dashoffset="-249.7" transform="rotate(-90 58 58)"></circle>
+        <path d="M44 59l9 9 19-20" fill="none" stroke="#7BE3A0" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    </div>
+    <h1 style="margin: 22px 0 0 0; font-size: 26px; font-weight: 800; letter-spacing: -0.02em">Welcome to nutrx Pro</h1>
+    <p style="margin: 10px 0 0 0; font-size: 15px; line-height: 21px; color: {{c.ink2}}">Supply, label scanning, weekly recaps, Apple Health trends and doctor reports are on. Nothing you already use has changed.</p>
+    <p style="margin: 10px 0 0 0; font-size: 13px; color: {{c.ink2}}">Yearly plan · free until 21 October</p>
+    <div style="flex: 1"></div>
+    <button style="align-self: stretch; margin-bottom: 40px; height: 56px; border-radius: 18px; border: 0; background: {{c.btn}}; color: {{c.btnInk}}; font: 600 17px -apple-system, system-ui, sans-serif">Continue</button>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var D = !!this.props.dark;
+    var c = D ? { scrim: '#050A07', peek: 'rgba(255,255,255,0.08)', bg: '#0A130E', ink: '#EAF2EC', ink2: '#97AA9E', btn: '#1EB955', btnInk: '#0A130E', grabber: '#2C4035' }
+              : { scrim: '#2A3A31', peek: 'rgba(201,209,200,0.55)', bg: '#F2F4EF', ink: '#0E1A13', ink2: '#56655C', btn: '#1B3B2D', btnInk: '#FFFFFF', grabber: '#CBD3CA' };
+    return { c: c };
+  }
+}
+</script>
+</body>
+</html>
