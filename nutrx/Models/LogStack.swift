@@ -5,6 +5,8 @@ import SwiftData
 /// Omega-3 1,000 mg, Magnesium 400 mg"). Ordered by `sortOrder` on Today and in Settings → Stacks.
 @Model
 final class LogStack {
+    /// Stable id for Siri and the Shortcuts app (`StackEntity`); stacks are picked by name, never shown this.
+    var id: UUID = UUID()
     var name: String = ""
     var sortOrder: Int = 0
     var createdAt: Date = Date()
