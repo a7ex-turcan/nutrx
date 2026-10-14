@@ -192,6 +192,7 @@ struct TodayView: View {
                 try? modelContext.save()
                 nutrientToRefill = nil
                 viewModel.refresh(context: modelContext)
+                NotificationService.refreshAllNutrientReminders(context: modelContext)
             }
         } message: {
             Text("Starts the count again from a full bottle.")

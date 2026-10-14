@@ -16,6 +16,9 @@ enum NotificationService {
     private static let dailyReminderID = "daily-checkin-reminder"
     private static let nutrientReminderPrefix = "nutrient-"
 
+    /// Refill reminders are a Pro feature: set from the app whenever the entitlement changes.
+    static var supplyRemindersEnabled = false
+
     // MARK: - Permissions
 
     static func permissionStatus() async -> NotificationPermissionStatus {
@@ -129,7 +132,10 @@ enum NotificationService {
             )
         }
         let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }) { first, _ in first }
-        let requests = ReminderSchedule.occurrences(for: plans, now: now).compactMap { occurrence in
+        // Refill reminders first: they're one per bottle, and dose reminders share what's left of the budget.
+        let refillRequests = supplyRemindersEnabled ? refillReminderRequests(nutrients: nutrients, now: now) : []
+        let doseBudget = max(1, ReminderSchedule.budget - refillRequests.count)
+        let requests = refillRequests + ReminderSchedule.occurrences(for: plans, now: now, budget: doseBudget).compactMap { occurrence in
             contents[occurrence.nutrientID].map { content in
                 let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute],
                                                             from: occurrence.fireDate)
@@ -146,7 +152,10 @@ enum NotificationService {
             let center = UNUserNotificationCenter.current()
             let stale = await center.pendingNotificationRequests()
                 .map(\.identifier)
-                .filter { $0.hasPrefix(nutrientReminderPrefix) && !wanted.contains($0) }
+                .filter {
+                    ($0.hasPrefix(nutrientReminderPrefix) || $0.hasPrefix(RefillSchedule.identifierPrefix))
+                        && !wanted.contains($0)
+                }
             if !stale.isEmpty {
                 await removePendingRequests(stale)
             }
@@ -159,6 +168,68 @@ enum NotificationService {
             logger.info("Dose reminders synced: \(scheduled) of \(requests.count) scheduled, \(stale.count) removed")
         }
         return reminderSync
+    }
+
+    // MARK: - Refill reminders (nutrx Pro)
+
+    private static let refillStatesKey = "nutrx.refillReminderStates"
+
+    /// What this device has scheduled per bottle, by nutrient id (`RefillSchedule.State`).
+    private static var refillStates: [String: RefillSchedule.State] {
+        get {
+            guard let data = UserDefaults.standard.data(forKey: refillStatesKey) else { return [:] }
+            return (try? JSONDecoder().decode([String: RefillSchedule.State].self, from: data)) ?? [:]
+        }
+        set {
+            UserDefaults.standard.set(try? JSONEncoder().encode(newValue), forKey: refillStatesKey)
+        }
+    }
+
+    /// One request per supply-tracked nutrient whose reminder is still to come (`RefillSchedule`), remembering
+    /// each fire date so a bottle isn't reminded about twice.
+    private static func refillReminderRequests(nutrients: [Nutrient], now: Date) -> [UNNotificationRequest] {
+        var states = refillStates
+        var kept: [String: RefillSchedule.State] = [:]
+        var requests: [UNNotificationRequest] = []
+        for nutrient in nutrients {
+            guard let status = nutrient.supplyStatus(now: now) else { continue }
+            let key = nutrient.id.uuidString
+            let previous = states[key]
+            guard let fire = RefillSchedule.fireDate(status: status, previous: previous, now: now) else {
+                // Keep the record of a fired reminder for this bottle, so it doesn't come back.
+                if let previous, previous.refilledAt == status.setup.refilledAt { kept[key] = previous }
+                continue
+            }
+            let snoozed = previous?.refilledAt == status.setup.refilledAt && previous?.snoozed == true
+            kept[key] = RefillSchedule.State(refilledAt: status.setup.refilledAt, fireDate: fire, snoozed: snoozed)
+
+            let days = RefillSchedule.daysAtFire(status: status, fireDate: fire, now: now)
+            let content = UNMutableNotificationContent()
+            content.title = RefillSchedule.title(name: nutrient.name, daysAtFire: days, isOut: status.level == .out)
+            content.body = RefillSchedule.body(daysAtFire: days, isOut: status.level == .out)
+            content.sound = .default
+            content.categoryIdentifier = NotificationHandler.refillCategory
+            content.userInfo = [NotificationHandler.nutrientIDKey: nutrient.id.uuidString]
+            let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
+            requests.append(UNNotificationRequest(identifier: RefillSchedule.identifier(nutrientID: nutrient.id),
+                                                  content: content,
+                                                  trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)))
+        }
+        states = kept
+        refillStates = states
+        let summary = requests.map { request in
+            let date = (request.trigger as? UNCalendarNotificationTrigger)?.nextTriggerDate()
+            return "\(request.content.title) @ \(date.map { $0.formatted(date: .abbreviated, time: .shortened) } ?? "?")"
+        }
+        logger.info("Refill reminders: \(requests.count) pending \(summary.joined(separator: "; "), privacy: .public)")
+        return requests
+    }
+
+    /// "Remind me tomorrow": the next sync keeps this date for the bottle.
+    static func snoozeRefillReminder(for nutrientID: UUID, status: SupplySchedule.Status, now: Date = .now) {
+        var states = refillStates
+        states[nutrientID.uuidString] = RefillSchedule.snoozed(status, now: now)
+        refillStates = states
     }
 
     /// The background refresh's work: the same sync, run to completion.

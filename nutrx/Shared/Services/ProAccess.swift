@@ -119,6 +119,8 @@ final class ProAccess {
         }
         entitlement = found
         hasCheckedEntitlements = true
+        // Refill reminders (supply) are Pro: the scheduler follows the entitlement.
+        NotificationService.supplyRemindersEnabled = Self.isStoreVisible && found != nil
     }
 
     /// The rule, kept pure: revoked (refunded) and upgraded-away transactions don't count, nor an expired
