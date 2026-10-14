@@ -215,6 +215,7 @@ struct LogStackSheet: View {
                     .foregroundStyle(Theme.forest)
                     .frame(width: 28, height: 28)
                     .background(Theme.green, in: Circle())
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // the glyph stays inside its 28pt circle
                     .accessibilityHidden(true)
                 Text("Logged \(logged.records.count == 1 ? "1 nutrient" : "\(logged.records.count) nutrients") at \(logged.date.formatted(date: .omitted, time: .shortened))")
                     .font(.subheadline.weight(.semibold))

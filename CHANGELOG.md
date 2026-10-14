@@ -8,6 +8,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Features
 - **Stacks** — Log everything you take together in one tap. Make a "Morning" stack with Vitamin D, Omega-3 and Magnesium, then tap Log on Today. You can change the amounts for that time, undo it, and see which stacks you've already logged today. Manage them in Settings → Stacks. Say "Log my Morning stack with nutrx" to Siri, or use the "Log Stack" action in the Shortcuts app.
+- **Export your data** — Settings → Export data saves your log as a CSV file, one row per entry, for all time or the last 30 or 90 days. Open it in Numbers, Excel or Google Sheets. The file is made on your iPhone and shared wherever you choose.
 - **Siri and Shortcuts** — Say "Log my Vitamin D with nutrx", or use the new "Log Nutrient" action in the Shortcuts app with any amount (leave it empty for one step). nutrx answers with your new total, and the action finds your nutrients by name. Build a morning-routine shortcut that logs several at once.
 
 ---

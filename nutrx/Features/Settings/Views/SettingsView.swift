@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// Settings sheet (DESIGN.md §5.9): profile card, then rows with Settings-style icon tiles — iCloud Sync,
-/// Notifications, Streaks, Groups, Stacks; Rate nutrx, About — and the privacy footer.
+/// Notifications, Streaks, Groups, Stacks; Export data; Rate nutrx, About — and the privacy footer.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -67,6 +67,16 @@ struct SettingsView: View {
                 } label: {
                     row("Stacks", symbol: "square.stack.3d.up", color: Theme.SettingsTile.teal,
                         value: SettingsSummary.stacks(count: stacks.count))
+                }
+            }
+            .listRowBackground(Theme.surfaceCard)
+
+            // Your data (docs/pro/design/2-paywall: settings): Apple Health and the doctor report join it with Pro.
+            Section {
+                NavigationLink {
+                    ExportDataView()
+                } label: {
+                    row("Export data", symbol: "square.and.arrow.up", color: Theme.SettingsTile.grey, value: nil)
                 }
             }
             .listRowBackground(Theme.surfaceCard)
