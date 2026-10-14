@@ -1,6 +1,6 @@
 # nutrx Pro — implementation plan
 
-Status: **proposed** (2026-10-14). Replaces the "MVP 4 — Pro Tier & AI" section of `ROADMAP.md` once agreed.
+Status: **agreed** (2026-10-14); decisions in §2. Replaces the "MVP 4 — Pro Tier & AI" section of `ROADMAP.md`.
 
 Build **one phase per session**, each through its own PR, the same way the v2 redesign followed `docs/design/DESIGN.md` §7.
 
@@ -43,10 +43,18 @@ A lifetime option matters here: privacy-minded users tend to dislike subscriptio
 
 ---
 
-## 2. Open decisions (answer before phase 3)
+## 2. Decisions (2026-10-14)
 
-| # | Decision | Proposal |
+| # | Decision | Agreed |
 |---|---|---|
+| D1 | Validate with a vote first? | **No.** Phase 1 is skipped. |
+| D2 | Name | **nutrx Pro** |
+| D3 | Prices | **$1.99 / month, $14.99 / year, $29.99 lifetime** |
+| D4 | Trial | **One week, on the yearly plan only** |
+| D5 | Order of Pro features | **Supply → Scan → Recap → Health → Report.** Supply has no AI, so it's the safest first paid feature to launch StoreKit with. Scan feeds supply (it reads the bottle size). Recap and Health need a few weeks of data. The report is the least likely to sell Pro on its own. |
+| D6 | Design | **Mockups from the designer** before each feature's phase. The prompts are in [`DESIGN-PROMPTS.md`](DESIGN-PROMPTS.md). |
+
+---|---|---|
 | D1 | Validate first with a vote (phase 1)? | Yes. It's cheap, and it tells us which two Pro features to build first. |
 | D2 | Name | "nutrx Pro" (matches the website and FAQ). |
 | D3 | Prices | As above. |
@@ -60,7 +68,7 @@ A lifetime option matters here: privacy-minded users tend to dislike subscriptio
 
 Every phase ends with: builds clean, unit tests for all logic, previews for new views (light/dark), a real simulator run of the changed flows, `CHANGELOG.md` / `CLAUDE.md` updated, and a PR through the watcher.
 
-### Phase 1 — Validate (optional, ~½ day)
+### Phase 1 — Validate — *skipped (D1)*
 
 - **Vote page:** a page on the nutrx website listing the Pro candidates. Readers tick the ones they'd pay for and send the form through the existing Formspree endpoint. It's static and keeps no data in the app.
 - **Link to it** from the app's What's New / Settings ("Help shape nutrx Pro") and from the newsletter.
@@ -161,7 +169,7 @@ These ship to everyone and carry the model changes we want before Pro.
 
 | Risk | Mitigation |
 |---|---|
-| Too few people want to pay | Phase 1 vote; launch with the two most-wanted features; a lifetime option. |
+| Too few people want to pay | A low price, a lifetime option and a trial; supply (useful from day one) leads; watch conversions after launch before building further. |
 | AI features on devices without Apple Intelligence | A non-AI path for each, an explicit "needs Apple Intelligence" note on the paywall, and no charge for what can't run. |
 | App Review: subscriptions need ongoing value (3.1.2) | Supply, recap and trends keep working week after week; the paywall states exactly what Pro adds. |
 | App Review: health claims (1.4.1) | Descriptive only, minimum sample sizes, "seems to" wording, no advice anywhere. |

@@ -594,7 +594,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 - Free with no ads. **Pro tier** planned for MVP 4 — only AI-powered features (insights, smart targets, NLP logging, full history charts).
 - Indicative pricing: $2.99/month · $19.99/year · $49.99 lifetime.
 - Do not build any paywall, StoreKit, or AI infrastructure before MVP 4.
-- **Pro plan:** `docs/pro/PLAN.md` (proposed) — supply & refills, label scanning, weekly recap, Apple Health trends and a doctor report; on-device AI only; everything in 2.0 stays free, including stacks and Siri logging. Build it one phase per session once it's agreed.
+- **Pro plan:** `docs/pro/PLAN.md` (agreed 2026-10-14: nutrx Pro, $1.99 / $14.99 with a one-week trial / $29.99 lifetime; designer prompts in `docs/pro/DESIGN-PROMPTS.md`) — supply & refills, label scanning, weekly recap, Apple Health trends and a doctor report; on-device AI only; everything in 2.0 stays free, including stacks and Siri logging. Build it one phase per session once it's agreed.
 
 ---
 
