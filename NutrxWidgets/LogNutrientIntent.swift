@@ -8,6 +8,9 @@ private let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "LogNutrien
 struct LogNutrientIntent: AppIntent {
     static var title: LocalizedStringResource = "Log Nutrient"
     static var description: IntentDescription = "Log one step of a nutrient"
+    /// The widget's + button only. It takes a raw id, so it stays out of Shortcuts; Siri and Shortcuts use
+    /// `LogNutrientShortcutIntent` in the app.
+    static var isDiscoverable: Bool = false
 
     @Parameter(title: "Nutrient ID")
     var nutrientID: String
