@@ -1,0 +1,85 @@
+{
+  "identifier": "6F2A7C1E-3B8D-4E5F-9A10-2C4D6E8F0A12",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "29.99",
+      "familyShareable": true,
+      "internalID": "B2E6F1A4-7C3D-4F8E-9A21-5D6C7E8F9A01",
+      "localizations": [
+        {
+          "description": "Supply, label scan, recaps and more. Pay once.",
+          "displayName": "nutrx Pro Lifetime",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "nutrx.pro.lifetime",
+      "referenceName": "nutrx Pro Lifetime",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [
+    {
+      "id": "0D5E3B71-2A4C-4E6F-8B9D-1C2E3F4A5B60",
+      "localizations": [],
+      "name": "nutrx Pro",
+      "subscriptions": [
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "14.99",
+          "familyShareable": true,
+          "groupNumber": 1,
+          "internalID": "3C1D2E4F-5A6B-4C7D-8E9F-0A1B2C3D4E51",
+          "introductoryOffer": {
+            "internalID": "7E8F9A0B-1C2D-4E3F-8A5B-6C7D8E9F0A12",
+            "paymentMode": "free",
+            "subscriptionPeriod": "P1W"
+          },
+          "localizations": [
+            {
+              "description": "Supply, label scan, recaps and more. Billed yearly.",
+              "displayName": "nutrx Pro Yearly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "nutrx.pro.yearly",
+          "recurringSubscriptionPeriod": "P1Y",
+          "referenceName": "nutrx Pro Yearly",
+          "subscriptionGroupID": "0D5E3B71-2A4C-4E6F-8B9D-1C2E3F4A5B60",
+          "type": "RecurringSubscription"
+        },
+        {
+          "adHocOffers": [],
+          "codeOffers": [],
+          "displayPrice": "1.99",
+          "familyShareable": true,
+          "groupNumber": 2,
+          "internalID": "9A8B7C6D-5E4F-4A3B-8C2D-1E0F9A8B7C63",
+          "localizations": [
+            {
+              "description": "Supply, label scan, recaps and more. Billed monthly.",
+              "displayName": "nutrx Pro Monthly",
+              "locale": "en_US"
+            }
+          ],
+          "productID": "nutrx.pro.monthly",
+          "recurringSubscriptionPeriod": "P1M",
+          "referenceName": "nutrx Pro Monthly",
+          "subscriptionGroupID": "0D5E3B71-2A4C-4E6F-8B9D-1C2E3F4A5B60",
+          "type": "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}

@@ -6,6 +6,8 @@ import WidgetKit
 @main
 struct nutrxApp: App {
     let modelContainer = ModelContainerFactory.create()
+    /// nutrx Pro, from StoreKit. Created at launch so it hears `Transaction.updates` from the start.
+    @State private var proAccess = ProAccess()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -26,6 +28,8 @@ struct nutrxApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(proAccess)
+                .task { await proAccess.refreshEntitlement() }
         }
         .modelContainer(modelContainer)
         // Rolls the per-date dose-reminder window forward without the app being opened (#4).
