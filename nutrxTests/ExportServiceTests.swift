@@ -132,4 +132,13 @@ final class ExportServiceTests: XCTestCase {
         ExportService.removeExport(at: url)
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path))
     }
+
+    func testANewExportClearsOneLeftBehind() throws {
+        let leftover = try ExportService.writeExport("old", fileName: "nutrx-export-2026-10-13.csv")
+        // Never removed: the app was killed with the share sheet up.
+        let next = try ExportService.writeExport("new", fileName: "nutrx-export-2026-10-14.csv")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: leftover.path))
+        XCTAssertTrue(next.path.hasPrefix(ExportService.exportsFolder.path))
+        ExportService.removeExport(at: next)
+    }
 }

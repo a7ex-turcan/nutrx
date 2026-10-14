@@ -101,7 +101,7 @@ struct ExportDataView: View {
         .alert("Couldn't make the file", isPresented: $exportFailed) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Your iPhone may be low on storage. Try again in a moment.")
+            Text("Your \(UIDevice.current.model) may be low on storage. Try again in a moment.")
         }
     }
 
@@ -148,6 +148,7 @@ struct ExportDataView: View {
                             Image(systemName: "checkmark")
                                 .font(.body.weight(.semibold))
                                 .foregroundStyle(Theme.controlPrimary)
+                                .accessibilityHidden(true)  // the row's .isSelected says it; VoiceOver reads ✓ as "Selected"
                         }
                     }
                     .padding(.horizontal, Theme.Spacing.cardPadding + 2)
@@ -197,7 +198,7 @@ struct ExportDataView: View {
             }
             .buttonStyle(.plain)
             .disabled(summary.entryCount == 0)
-            Text("The file is made on your iPhone. nutrx never sees it.")
+            Text("The file is made on your \(UIDevice.current.model). nutrx never sees it.")
                 .font(.footnote)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)

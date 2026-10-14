@@ -411,7 +411,8 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
   - Names, units and notes that start with `= + - @` get a leading `'`, so a spreadsheet won't run them as formulas. Numbers never do.
   - Nutrients deleted since are included, because it's the user's history.
   - The name is `nutrx-export-YYYY-MM-DD.csv`.
-- **No copy stays on the device:** the file goes in its own temporary folder, which is removed when the share sheet closes, whether the file was sent, cancelled or swiped away.
+- **No copy stays on the device:** the file goes in its own folder under `tmp/nutrx-export/`, which is removed when the share sheet closes, whether the file was sent, cancelled or swiped away. Each export also clears that parent first, which covers a file left behind when the app was killed with the share sheet up.
+- The footnote and the error alert name the device (`UIDevice.current.model`: iPhone or iPad).
 
 ## Today Tab – Core Logging UX
 

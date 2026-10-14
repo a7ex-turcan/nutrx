@@ -112,10 +112,17 @@ enum ExportService {
         return String(format: "nutrx-export-%04d-%02d-%02d.csv", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }
 
-    /// Writes the CSV to a fresh folder in the temporary directory, for the share sheet. The caller removes the
-    /// folder once the sheet is done (`removeExport`), so no copy stays on the device.
+    /// Where exports are written: `tmp/nutrx-export/<uuid>/<file name>`.
+    static var exportsFolder: URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("nutrx-export", isDirectory: true)
+    }
+
+    /// Writes the CSV to a fresh folder for the share sheet. The caller removes it once the sheet is done
+    /// (`removeExport`), so no copy stays on the device; and every export first clears what an earlier one left
+    /// behind (the app was killed with the share sheet up, so `onDismiss` never ran).
     static func writeExport(_ csv: String, fileName: String) throws -> URL {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.removeItem(at: exportsFolder)
+        let folder = exportsFolder.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appendingPathComponent(fileName)
         try Data(csv.utf8).write(to: url, options: .atomic)
