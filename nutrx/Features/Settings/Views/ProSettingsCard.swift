@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Settings' nutrx Pro card (docs/pro/design/2-paywall: settings, settings-pro): a forest card with the ring tile.
-/// Free: "Supply, label scan, recaps and more" and Learn more, which opens the paywall. Pro: a check badge and
+/// Free: what Pro adds so far (`ProText.tagline`, shipped features only) and Learn more, which opens the paywall. Pro: a check badge and
 /// "Yearly · renews 14 Oct 2027", which opens the Pro screen.
 struct ProSettingsCard: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -20,7 +20,7 @@ struct ProSettingsCard: View {
             .accessibilityHint("Shows your plan and what's included")
         } else {
             Button(action: onLearnMore) {
-                content(subtitle: "Supply, label scan, recaps and more", trailing: "Learn more", isPro: false)
+                content(subtitle: ProText.tagline(ProFeature.listed), trailing: "Learn more", isPro: false)
             }
             .buttonStyle(.plain)
             .accessibilityHint("Shows what nutrx Pro adds")

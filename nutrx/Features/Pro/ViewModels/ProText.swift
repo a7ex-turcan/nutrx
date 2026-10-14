@@ -42,6 +42,28 @@ enum ProText {
         return list.prefix(1).uppercased() + list.dropFirst() + " \(verb) on. Nothing you already use has changed."
     }
 
+    /// Settings' card line for a free user, from what's actually shipped: one feature reads as itself ("Know when a
+    /// bottle runs out"); two as "Supply and label scan"; three or more as "Supply, label scan, recaps and more".
+    static func tagline(_ features: [ProFeature]) -> String {
+        let names: [String] = features.map { feature in
+            switch feature {
+            case .supply: "supply"
+            case .scan: "label scan"
+            case .recap: "recaps"
+            case .health: "Health trends"
+            case .report: "doctor reports"
+            }
+        }
+        let text: String
+        switch features.count {
+        case 0: return "More around your tracking"
+        case 1: return features[0].subtitle
+        case 2: text = "\(names[0]) and \(names[1])"
+        default: text = names.prefix(3).joined(separator: ", ") + " and more"
+        }
+        return text.prefix(1).uppercased() + text.dropFirst()
+    }
+
     static func planTitle(_ plan: ProAccess.Plan) -> String {
         switch plan {
         case .yearly: "Yearly"
