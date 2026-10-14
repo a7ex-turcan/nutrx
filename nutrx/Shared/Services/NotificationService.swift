@@ -136,7 +136,12 @@ enum NotificationService {
         let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }) { first, _ in first }
         // Refill reminders first: they're one per bottle, and dose reminders share what's left of the budget.
         // Unknown entitlement: keep what's pending and set aside room for it.
-        let refillPlan: RefillPlan? = supplyRemindersEnabled.map { $0 ? refillReminderPlan(nutrients: nutrients, now: now) : RefillPlan() }
+        // Not Pro: nothing to schedule, but the records of reminders that already fired stay, so a lapse and renewal
+        // doesn't remind about the same bottle again.
+        let refillPlan: RefillPlan? = supplyRemindersEnabled.map { enabled in
+            enabled ? refillReminderPlan(nutrients: nutrients, now: now)
+                    : RefillPlan(states: refillStates.filter { $0.value.fireDate <= now })
+        }
         let refillRequests = refillPlan?.requests ?? []
         let refillReserved = refillPlan == nil
             ? refillStates.values.filter { $0.fireDate > now }.count

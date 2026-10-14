@@ -1,9 +1,9 @@
 import Foundation
 import StoreKit
 
-/// nutrx Pro's products and the rule for what unlocks it — pure, plus one StoreKit read. Shared by the app
-/// (`ProAccess`, the notification handler) and the widget extension, which can't use `ProAccess`. Nothing here is
-/// stored: it's read from StoreKit on the device each time.
+/// nutrx Pro's products and the rule for what unlocks it — pure, plus one StoreKit read, for places that can't use
+/// `ProAccess`: the notification handler on a background launch (and the widget extension, once it shows supply).
+/// Nothing here is stored: it's read from StoreKit on the device each time.
 nonisolated enum ProEntitlement {
     /// The App Store Connect products (subscription group "nutrx Pro", plus the lifetime non-consumable).
     enum ProductID {

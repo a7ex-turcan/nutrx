@@ -286,7 +286,7 @@ nutrx/
         ├── StackLogging.swift               # Stacks: active entries, log (with per-time amounts), undo, add, "done today".
         ├── ExportService.swift              # CSV export: entries for a period, RFC 4180 CSV, file name, temp file.
         ├── ProAccess.swift                  # nutrx Pro: StoreKit 2 entitlement (never stored), products, purchase, restore.
-        ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (app and widget).
+        ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (no ProAccess needed).
         ├── SupplySchedule.swift             # Supply: remaining, daily use, days left, level (pure); Nutrient.supplyStatus / refillSupply.
         ├── SupplyText.swift                 # Supply copy: Today hint, analytics card, sheet sentence.
         ├── RefillSchedule.swift             # Refill reminders: when (one per bottle, 10:00), snooze, title/body (pure).
