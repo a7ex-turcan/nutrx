@@ -37,10 +37,8 @@ struct NutrxWidgetEntry: TimelineEntry {
         let daysLeft: Int
         let isOut: Bool
 
-        /// "Vitamin D · 6 days", "Vitamin D · 1 day", "Vitamin D · today", "Vitamin D · out".
-        var text: String { name + when }
-
-        /// The part after the name, kept whole when a long name has to shorten: " · 6 days".
+        /// The part after the name, kept whole when a long name has to shorten: " · 6 days", " · 1 day",
+        /// " · today", " · out".
         var when: String {
             if isOut { return " · out" }
             switch daysLeft {
