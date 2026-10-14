@@ -35,6 +35,28 @@ enum ProFeature: String, CaseIterable, Identifiable {
         }
     }
 
+    /// In a run of names on Settings' card: "supply, label scan, recaps…" (`ProText.tagline`).
+    var shortName: String {
+        switch self {
+        case .supply: "supply"
+        case .scan: "label scan"
+        case .recap: "recaps"
+        case .health: "Health trends"
+        case .report: "doctor reports"
+        }
+    }
+
+    /// In the welcome sentence: "supply, label scanning, weekly recaps… are on" (`ProText.welcome`).
+    var welcomeName: String {
+        switch self {
+        case .supply: "supply"
+        case .scan: "label scanning"
+        case .recap: "weekly recaps"
+        case .health: "Apple Health trends"
+        case .report: "doctor reports"
+        }
+    }
+
     var symbolName: String {
         switch self {
         case .supply: "waterbottle"
