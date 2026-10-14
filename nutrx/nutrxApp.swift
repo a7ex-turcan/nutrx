@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import SwiftData
 import WidgetKit
@@ -8,6 +9,9 @@ struct nutrxApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        // Siri and Shortcuts intents run in this process and use the app's store, not a second container.
+        let container = modelContainer
+        AppDependencyManager.shared.add(dependency: container)
         #if DEBUG
         if ScreenshotDemoData.isRequested {
             ScreenshotDemoData.replaceStore(in: modelContainer.mainContext)
@@ -27,6 +31,8 @@ struct nutrxApp: App {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 WidgetCenter.shared.reloadAllTimelines()
+                // Siri's "Log my <nutrient>" phrases use the current nutrient names.
+                NutrxShortcuts.updateAppShortcutParameters()
             }
         }
     }

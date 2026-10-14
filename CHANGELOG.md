@@ -4,6 +4,13 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## v2.1 — Unreleased
+
+### Features
+- **Siri and Shortcuts** — Say "Log my Vitamin D with nutrx", or use the new "Log Nutrient" action in the Shortcuts app with any amount (leave it empty for one step). nutrx answers with your new total, and the action finds your nutrients by name. Build a morning-routine shortcut that logs several at once.
+
+---
+
 ## v2.0 — Unreleased
 
 ### Features

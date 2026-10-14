@@ -246,6 +246,10 @@ nutrx/
     │   ├── NutrientGroup+Create.swift       # NutrientGroup.create(named:among:in:) — new user group before General.
     │   ├── PreviewSampleData.swift
     │   └── ScreenshotDemoData.swift         # DEBUG: -screenshotDemoData replaces the store with the App Store demo set.
+    ├── Intents/                         # App only. Siri & Shortcuts (see "Siri & App Shortcuts").
+    │   ├── LogNutrientShortcutIntent.swift  # "Log Nutrient": nutrient + optional amount; NutrientShortcutLogging.
+    │   ├── NutrientEntity.swift         # AppEntity + EntityStringQuery: nutrients by name, in Today's order.
+    │   └── NutrxShortcuts.swift         # AppShortcutsProvider: "Log my <nutrient> with nutrx" phrases.
     └── Services/
         ├── DayScore.swift                   # Met / total + the day-score card headline.
         ├── UpcomingReminder.swift           # Next dose reminder later today (for the day-score card).
@@ -316,48 +320,14 @@ NutrxWatchWidgets/
 
 ## Siri & App Shortcuts
 
-Expose `LogNutrientIntent` (already used for widgets) to Siri and the Shortcuts app. Primary use case: a multi-nutrient morning routine shortcut that logs several nutrients with specific amounts in one tap.
+Built in phase 2 of the Pro plan (free). Everything lives in `Shared/Intents/` and is compiled into the **app only**:
 
-### Intent design
-
-`LogNutrientIntent` gains two parameters:
-
-- **`nutrient: NutrientEntity`** — resolves by name, never by UUID. Conforming to `AppEntity` with an `EntityQuery` that fetches from the App Group SwiftData store (same container as widgets via `ModelContainerFactory`). The Shortcuts UI shows a picker populated from the user's nutrient list. Disambiguation is handled automatically by the framework if names conflict.
-- **`amount: Double?`** — optional. If `nil` → log one step increment (preserves existing widget behavior). If set → log that exact amount.
-
-### `perform()` implementation
-
-```swift
-func perform() async throws -> some IntentResult {
-    let container = ModelContainerFactory.shared
-    let context = ModelContext(container)
-    // resolve nutrient from entity ID
-    // let logAmount = amount ?? nutrient.step
-    // insert IntakeRecord(nutrient:, amount: logAmount, date: Date())
-    // try context.save()
-    // WidgetCenter.shared.reloadAllTimelines()
-    return .result()
-}
-```
-
-### Key rules
-
-- `NutrientEntity.EntityQuery` must use the App Group store — **not** the main app's in-process container. Same pattern as widget `TimelineProvider`.
-- Never expose raw UUIDs in the Shortcuts UI or suggested phrases.
-- Suggested phrase per nutrient: `"Log [nutrient name]"` — donate via `PredictableIntent` or `ShortcutsLink`.
-- Settings → Siri & Shortcuts: per-nutrient "Add to Siri" button using `SiriTipView` or `ShortcutsLink`.
-
-### File placement
-
-```
-Shared/Intents/
-  LogNutrientIntent.swift     ← already exists, extend with amount param + EntityQuery
-  NutrientEntity.swift        ← new: AppEntity + EntityQuery conformance
-Features/Settings/Views/
-  SiriShortcutsView.swift     ← new: per-nutrient "Add to Siri" list
-```
-
-`NutrientEntity` and `LogNutrientIntent` must have target membership in both `nutrx` and `NutrxWidgetsExtension` (same as today — widgets depend on `LogNutrientIntent`). Verify target membership hasn't drifted before implementing.
+- **`LogNutrientShortcutIntent`** — "Log Nutrient": `nutrient: NutrientEntity` plus an optional `amount: Double?` (empty → one step). Its parameter summary reads "Log 0.5 of Water", or "Log one step of Vitamin D" with Amount under the action's expanded options. A parameter that's in neither the summary nor the expanded options can't be set in the Shortcuts editor. `perform()` uses `NutrientShortcutLogging.log` (testable, no App Intents types) to insert one `IntakeRecord` and save. It then does a + tap's follow-ups (daily reminder, `refreshAllNutrientReminders`, widget reload) and answers "Logged 1,000 IU of Vitamin D. 3,000 of 4,000 IU today." An amount ≤ 0 or a deleted nutrient throws a spoken error.
+- **`NutrientEntity` / `NutrientEntityQuery`** — nutrients picked **by name, never by id**: an `EntityStringQuery` that ignores case and accents, puts prefixes first, and suggests non-deleted nutrients in Today's order (group, then within group; General last).
+- **`NutrxShortcuts`** (`AppShortcutsProvider`) — "Log \(nutrient) in nutrx", "Log my \(nutrient) with nutrx", "Add \(nutrient) in nutrx", "Log a nutrient in nutrx". No setup needed: they appear in Siri, Spotlight and Shortcuts. The parameters are refreshed with `updateAppShortcutParameters()` whenever the app becomes active.
+- **One store:** App Intents run in the app's process. `nutrxApp` registers its `modelContainer` with `AppDependencyManager`, and the intent and query read it through `@Dependency` — never a second `ModelContainerFactory.create()` (two CloudKit-mirrored containers on one store fight).
+- **The widget's + button** keeps its own `LogNutrientIntent` (`NutrxWidgets/`, widget extension only, raw id parameter), marked `isDiscoverable = false` so it never shows in Shortcuts.
+- Tests: `NutrientShortcutTests`. Not built yet: stacks as a Siri phrase (with stacks) and a Settings → Siri screen.
 
 ---
 
@@ -568,7 +538,7 @@ Five widget configurations in `NutrxWidgetsExtension`, redesigned in phase 9 (DE
 
 **Checking Lock Screen widgets (#24):** their `#Preview(as: .accessoryCircular / .accessoryRectangular / .accessoryInline)` previews render fully transparent in preview snapshots (the vibrant Lock Screen material only exists on a real Lock Screen), and a widget extension can only host widget previews, so a plain view preview isn't an option ("The widget extension can only host widget previews."). Check them on a simulator's Lock Screen instead (long-press → Customize → Lock Screen → add the nutrx widgets), in light and dark wallpapers. Home Screen widget previews render normally.
 
-**Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent) for interactive + buttons — target membership must include both app and widget extension. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`, which opens the store read-only with `ModelContainerFactory.createForExtension(allowsSave: false)`. "Next up" means `GoalProgress.needsMore` (below an "at least" target or a range's lower bound), never an "at most" goal or one over its limit. Widgets refresh on intent completion and app foreground.
+**Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent, widget extension only, hidden from Shortcuts) for interactive + buttons; Siri and Shortcuts use the app's `LogNutrientShortcutIntent`. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`, which opens the store read-only with `ModelContainerFactory.createForExtension(allowsSave: false)`. "Next up" means `GoalProgress.needsMore` (below an "at least" target or a range's lower bound), never an "at most" goal or one over its limit. Widgets refresh on intent completion and app foreground.
 
 ---
 
