@@ -108,6 +108,11 @@ struct TodayView: View {
                 viewModel.rescheduleReminders(context: modelContext)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .intakeLoggedByShortcut).receive(on: DispatchQueue.main)) { _ in
+            // A Siri or shortcut log while Today is on screen; the intent already rescheduled reminders.
+            viewModel.refresh(context: modelContext)
+            refreshStreak()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .NSPersistentStoreRemoteChange).receive(on: DispatchQueue.main)) { _ in
             viewModel.refresh(context: modelContext)
             refreshStreak()

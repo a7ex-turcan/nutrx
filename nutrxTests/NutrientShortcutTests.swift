@@ -109,8 +109,11 @@ final class NutrientShortcutTests: XCTestCase {
         }
     }
 
-    func testEntityShowsTheStepAsItsSubtitle() {
+    func testEntityShowsTheNameAndTheStepAsItsSubtitle() {
         let entity = NutrientEntity(id: UUID(), name: "Vitamin D", unit: "IU", step: 1000)
         XCTAssertEqual(String(localized: entity.displayRepresentation.title), "Vitamin D")
+        XCTAssertEqual(entity.stepSubtitle(locale: enUS), "1,000 IU a step")
+        XCTAssertEqual(NutrientEntity(id: UUID(), name: "Eggs", unit: "", step: 2).stepSubtitle(locale: enUS),
+                       "2 a step")
     }
 }

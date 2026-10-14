@@ -12,8 +12,13 @@ struct NutrientEntity: AppEntity {
     let step: Double
 
     var displayRepresentation: DisplayRepresentation {
+        DisplayRepresentation(title: "\(name)", subtitle: "\(stepSubtitle())")
+    }
+
+    /// "1,000 IU a step" under the name in the Shortcuts picker.
+    func stepSubtitle(locale: Locale = .current) -> String {
         let unitSuffix = unit.isEmpty ? "" : " \(unit)"
-        return DisplayRepresentation(title: "\(name)", subtitle: "\(step.formattedAmount())\(unitSuffix) a step")
+        return "\(step.formattedAmount(locale: locale))\(unitSuffix) a step"
     }
 
     init(id: UUID, name: String, unit: String, step: Double) {

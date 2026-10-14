@@ -45,8 +45,16 @@ struct LogNutrientShortcutIntent: AppIntent {
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
         WidgetCenter.shared.reloadAllTimelines()
+        // Today patches its totals in place, so tell it when a shortcut logs while it's on screen (Action button,
+        // Back Tap).
+        NotificationCenter.default.post(name: .intakeLoggedByShortcut, object: nil)
         return .result(dialog: "\(logged.confirmation)")
     }
+}
+
+extension Notification.Name {
+    /// Posted after Siri or a shortcut logs an intake in the app's process; Today reloads its totals.
+    static let intakeLoggedByShortcut = Notification.Name("nutrx.intakeLoggedByShortcut")
 }
 
 /// The logging behind `LogNutrientShortcutIntent`, kept apart from App Intents so it can be tested.
