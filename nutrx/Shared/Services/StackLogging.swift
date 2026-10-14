@@ -88,8 +88,10 @@ enum StackLogging {
     /// Gives every stack its own `id`. Adding `LogStack.id` to an existing store filled every stack made before it
     /// with the same default value, and Siri picks stacks by that id. Keeps the first stack's id, saves only if it
     /// changed something. Run at launch and whenever the app becomes active (a synced device may bring duplicates).
+    /// Returns whether it changed anything, so the caller can refresh Siri's stack phrases.
     @MainActor
-    static func repairDuplicateIDs(context: ModelContext) {
+    @discardableResult
+    static func repairDuplicateIDs(context: ModelContext) -> Bool {
         let stacks = (try? context.fetch(FetchDescriptor<LogStack>(sortBy: [SortDescriptor(\.createdAt)]))) ?? []
         var seen = Set<UUID>()
         var changed = false
@@ -103,6 +105,7 @@ enum StackLogging {
         if changed {
             try? context.save()
         }
+        return changed
     }
 
     /// The next amount a − / + step gives: a step at a time, never below one step.

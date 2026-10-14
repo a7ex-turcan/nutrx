@@ -13,7 +13,9 @@ struct nutrxApp: App {
         let container = modelContainer
         AppDependencyManager.shared.add(dependency: container)
         // Here too, not only on .active: Siri can launch the app in the background to log a stack.
-        StackLogging.repairDuplicateIDs(context: container.mainContext)
+        if StackLogging.repairDuplicateIDs(context: container.mainContext) {
+            NutrxShortcuts.updateAppShortcutParameters()  // phrases registered with the old shared id
+        }
         #if DEBUG
         if ScreenshotDemoData.isRequested {
             ScreenshotDemoData.replaceStore(in: modelContainer.mainContext)

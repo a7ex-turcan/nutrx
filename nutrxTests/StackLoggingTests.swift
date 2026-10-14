@@ -140,13 +140,13 @@ final class StackLoggingTests: XCTestCase {
         second.id = shared
         third.id = shared  // as after the migration that added `id`
 
-        StackLogging.repairDuplicateIDs(context: context)
+        XCTAssertTrue(StackLogging.repairDuplicateIDs(context: context))
 
         XCTAssertEqual(first.id, shared)
         XCTAssertEqual(Set([first.id, second.id, third.id]).count, 3)
 
         let ids = [first.id, second.id, third.id]
-        StackLogging.repairDuplicateIDs(context: context)
+        XCTAssertFalse(StackLogging.repairDuplicateIDs(context: context))
         XCTAssertEqual([first.id, second.id, third.id], ids, "unique ids are left alone")
     }
 
