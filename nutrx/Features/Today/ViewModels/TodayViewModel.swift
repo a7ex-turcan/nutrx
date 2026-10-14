@@ -20,6 +20,9 @@ final class TodayViewModel {
     }
 
     private(set) var nutrientIntakes: [(nutrient: Nutrient, total: Double)] = []
+    /// Supply (nutrx Pro): each supply-tracked nutrient's logs since the earlier of its refill and the 14-day
+    /// window — all `SupplySchedule` needs — fetched once per refresh and kept current by `updateTotal`.
+    private(set) var supplyLogs: [PersistentIdentifier: [SupplySchedule.Log]] = [:]
     private(set) var groupSections: [GroupSection] = []
 
     /// Met vs. total across every nutrient shown today (collapsed groups included).
@@ -71,6 +74,32 @@ final class TodayViewModel {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
+    /// A nutrient's supply status from the cached logs, or nil when supply isn't set.
+    func supplyStatus(for nutrient: Nutrient, now: Date = .now) -> SupplySchedule.Status? {
+        guard let setup = nutrient.supplySetup else { return nil }
+        return SupplySchedule.status(setup: setup, logs: supplyLogs[nutrient.persistentModelID] ?? [], now: now)
+    }
+
+    /// One fetch for every supply-tracked nutrient, bounded by the earliest date any of them needs.
+    private func refreshSupplyLogs(nutrients: [Nutrient], context: ModelContext, now: Date = .now) {
+        let calendar = Calendar.current
+        let windowStart = calendar.date(byAdding: .day, value: -(SupplySchedule.historyWindowDays - 1),
+                                        to: calendar.startOfDay(for: now)) ?? now
+        let tracked = nutrients.compactMap { nutrient in nutrient.supplySetup.map { (nutrient, $0) } }
+        guard let earliest = tracked.map({ min($0.1.refilledAt, windowStart) }).min() else {
+            supplyLogs = [:]
+            return
+        }
+        let descriptor = FetchDescriptor<IntakeRecord>(predicate: #Predicate { $0.date >= earliest })
+        let records = (try? context.fetch(descriptor)) ?? []
+        var byNutrient: [PersistentIdentifier: [SupplySchedule.Log]] = [:]
+        for record in records {
+            guard let id = record.nutrient?.persistentModelID else { continue }
+            byNutrient[id, default: []].append(SupplySchedule.Log(date: record.date, amount: record.amount))
+        }
+        supplyLogs = Dictionary(uniqueKeysWithValues: tracked.map { ($0.0.persistentModelID, byNutrient[$0.0.persistentModelID] ?? []) })
+    }
+
     func refresh(context: ModelContext) {
         let startOfDay = Calendar.current.startOfDay(for: .now)
         let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
@@ -112,6 +141,7 @@ final class TodayViewModel {
 
         // Build flat list (kept for backward compat with decrement lookup)
         let activeNutrients = nutrients.filter { !excludedNutrientIDs.contains($0.persistentModelID) }
+        refreshSupplyLogs(nutrients: activeNutrients, context: context)
         nutrientIntakes = activeNutrients.map { nutrient in
             (nutrient: nutrient, total: totalsByID[nutrient.persistentModelID] ?? 0)
         }
@@ -182,9 +212,10 @@ final class TodayViewModel {
     func deleteRecord(_ record: IntakeRecord, context: ModelContext) {
         guard let nutrient = record.nutrient else { return }
         let amount = record.amount
+        let date = record.date
         context.delete(record)
         try? context.save()
-        updateTotal(for: nutrient, delta: -amount)
+        updateTotal(for: nutrient, delta: -amount, at: date)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
         WidgetCenter.shared.reloadAllTimelines()
@@ -197,8 +228,13 @@ final class TodayViewModel {
 
     // MARK: - In-place total update (avoids re-fetch reordering)
 
-    private func updateTotal(for nutrient: Nutrient, delta: Double) {
+    /// `at` is when the change counts for supply: now for a + or −, the entry's own date for a deleted entry (so
+    /// deleting a dose from before a same-day refill doesn't eat into the new bottle).
+    private func updateTotal(for nutrient: Nutrient, delta: Double, at date: Date = .now) {
         let id = nutrient.persistentModelID
+        if supplyLogs[id] != nil {
+            supplyLogs[id]?.append(SupplySchedule.Log(date: date, amount: delta))
+        }
 
         // Update flat list
         if let idx = nutrientIntakes.firstIndex(where: { $0.nutrient.persistentModelID == id }) {

@@ -57,7 +57,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
 
     /// Built and in the app. The paywall never advertises a feature that isn't (phase 4 ships supply first).
     var isShipped: Bool {
-        false
+        self == .supply
     }
 
     /// What the paywall and the Pro screen list: the shipped features — or, in Debug builds before any has

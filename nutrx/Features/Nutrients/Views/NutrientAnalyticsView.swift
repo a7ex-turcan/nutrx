@@ -63,6 +63,8 @@ private struct NutrientAnalyticsContent: View {
                     .cardStyle()
                 }
 
+                SupplyCard(nutrient: nutrient)
+
                 if let pattern = viewModel.weekdayPattern {
                     WeekdayHeatmap(pattern: pattern, tint: nutrient.tint)
                         .padding(cardPadding)

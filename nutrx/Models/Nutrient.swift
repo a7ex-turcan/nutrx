@@ -25,6 +25,16 @@ final class Nutrient {
     var tintRaw: String = ""  // "" = never chosen; `tint` falls back to an id-derived tint
     var symbolName: String = "pills"
 
+    // Supply & refills (nutrx Pro, docs/pro/PLAN.md phase 4). `supplyServings == nil` means supply isn't set.
+    /// Units in one serving (one softgel = 1,000 IU); nil means one step ("each tap adds").
+    var servingAmount: Double? = nil
+    /// Servings in the bottle when it was last refilled.
+    var supplyServings: Double? = nil
+    /// When the bottle was last refilled; what's logged since then comes out of it.
+    var supplyRefilledAt: Date? = nil
+    /// Remind when this many days are left.
+    var refillReminderDays: Int = 7
+
     var goalType: GoalType {
         get { GoalType(rawValue: goalTypeRaw) ?? .minimum }
         set { goalTypeRaw = newValue.rawValue }

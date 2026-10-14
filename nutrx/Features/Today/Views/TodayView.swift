@@ -7,6 +7,9 @@ struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
+    /// Set by a card's "Refilled?"; confirmed before the count restarts.
+    @State private var nutrientToRefill: Nutrient?
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
@@ -181,6 +184,18 @@ struct TodayView: View {
         .sheet(item: $nutrientToMove) { nutrient in
             MoveToGroupSheet(nutrient: nutrient)
         }
+        .confirmationDialog("Refilled \(nutrientToRefill?.name ?? "")?",
+                            isPresented: Binding(get: { nutrientToRefill != nil }, set: { if !$0 { nutrientToRefill = nil } }),
+                            titleVisibility: .visible) {
+            Button("Refilled") {
+                nutrientToRefill?.refillSupply()
+                try? modelContext.save()
+                nutrientToRefill = nil
+                viewModel.refresh(context: modelContext)
+            }
+        } message: {
+            Text("Starts the count again from a full bottle.")
+        }
         .sheet(item: $stackToLog, onDismiss: {
             if let stack = pendingStackEdit {
                 pendingStackEdit = nil
@@ -269,6 +284,14 @@ struct TodayView: View {
         .listRowBackground(Color.clear)
     }
 
+    /// Today's supply hint (nutrx Pro): low or out only, so a card's height never changes otherwise.
+    private func supplyHint(for nutrient: Nutrient) -> NutrientCard.SupplyHint? {
+        guard ProAccess.isStoreVisible, proAccess?.isPro == true, let status = viewModel.supplyStatus(for: nutrient),
+              let text = SupplyText.todayHint(status) else { return nil }
+        return NutrientCard.SupplyHint(text: text, shortText: SupplyText.shortHint(status),
+                                       compactText: SupplyText.compactHint(status), isOut: status.level == .out)
+    }
+
     private func nutrientRow(_ entry: TodayViewModel.NutrientIntake) -> some View {
         NutrientCard(
             nutrient: entry.nutrient,
@@ -287,7 +310,9 @@ struct TodayView: View {
                     viewModel.decrement(entry.nutrient, context: modelContext)
                 }
                 checkForReview()
-            }
+            },
+            supply: supplyHint(for: entry.nutrient),
+            onRefill: { nutrientToRefill = entry.nutrient }
         )
         .listRowInsets(cardRowInsets)
         .listRowSeparator(.hidden)

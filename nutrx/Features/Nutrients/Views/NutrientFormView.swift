@@ -21,6 +21,7 @@ struct NutrientFormView: View {
     let onSave: () -> Void
 
     @State private var showRemindersSheet = false
+    @State private var showSupply = false
     @State private var showPendingReminders = false
     @State private var showGroupChooser = false
     @State private var showNewGroupAlert = false
@@ -175,6 +176,17 @@ struct NutrientFormView: View {
                 settingsRow("Reminders", value: remindersSummary)
             }
             .buttonStyle(.plain)
+
+            // Supply (nutrx Pro): a saved nutrient only, since it reads the nutrient's own log.
+            if let nutrient, ProAccess.isStoreVisible {
+                Rectangle().fill(Theme.lineHairline).frame(height: 1)
+                ProGatedButton(action: { showSupply = true }) { showsBadge in
+                    settingsRow("Supply", value: showsBadge ? "" : SupplyText.formSummary(servings: nutrient.supplyServings),
+                                badge: showsBadge)
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showSupply) { SupplySheet(nutrient: nutrient) }
+            }
         }
         .background(Theme.surfaceCard, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
     }
@@ -193,13 +205,16 @@ struct NutrientFormView: View {
         }
     }
 
-    private func settingsRow(_ title: String, value: String) -> some View {
+    private func settingsRow(_ title: String, value: String, badge: Bool = false) -> some View {
         HStack(spacing: 10) {
             if dynamicTypeSize.isAccessibilitySize {
                 // Value under the title, so neither is cut short or broken mid-word.
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .foregroundStyle(Theme.textPrimary)
+                    HStack(spacing: 8) {
+                        Text(title)
+                            .foregroundStyle(Theme.textPrimary)
+                        if badge { ProBadge() }
+                    }
                     Text(value)
                         .foregroundStyle(Theme.textSecondary)
                 }
@@ -207,6 +222,7 @@ struct NutrientFormView: View {
             } else {
                 Text(title)
                     .foregroundStyle(Theme.textPrimary)
+                if badge { ProBadge() }
                 Spacer(minLength: 8)
                 Text(value)
                     .foregroundStyle(Theme.textSecondary)
