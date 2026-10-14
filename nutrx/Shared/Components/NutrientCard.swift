@@ -76,8 +76,12 @@ struct NutrientCard: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(nutrient.name)
-        .accessibilityValue("\(progress.progressText), \(supply?.isOut == true ? "" : progress.remainingText + ", ")\(supply?.text ?? "")")
-        .accessibilityAction(named: "Refilled") { if supply?.isOut == true { onRefill() } }
+        .accessibilityValue(accessibilityValue(progress))
+        .accessibilityActions {
+            if supply?.isOut == true {
+                Button("Refilled", action: onRefill)
+            }
+        }
         .accessibilityHint("Opens logging options")
         .accessibilityAddTraits(.isButton)  // children: .ignore can drop the button's own trait
     }
@@ -139,6 +143,14 @@ struct NutrientCard: View {
         }
         .lineLimit(1)
         .fixedSize()
+    }
+
+    /// "2,000 / 4,000 IU, 2,000 IU to go", plus the supply hint when there is one (out replaces the goal status).
+    private func accessibilityValue(_ progress: GoalProgress) -> String {
+        var parts = [progress.progressText]
+        if supply?.isOut != true { parts.append(progress.remainingText) }
+        if let supply { parts.append(supply.text) }
+        return parts.joined(separator: ", ")
     }
 
     /// Same rule as `TodayViewModel.decrement`, which ignores a step that would take the total below zero.

@@ -11,7 +11,9 @@ struct SupplySheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    @State private var servings: Int
+    /// The typed count. A String, so what's typed counts straight away (a number-bound field only writes back on
+    /// Return, which the number pad doesn't have).
+    @State private var servingsText: String
     @State private var servingAmount: Double
     @State private var reminderDays: Int
     @State private var refillToday = false
@@ -19,11 +21,16 @@ struct SupplySheet: View {
     @FocusState private var servingsFocused: Bool
 
     private var isSet: Bool { nutrient.supplySetup != nil }
+    static let maxServings = 9999
+    /// The typed count, clamped to 1…9,999 (0 while the field is empty or not a number).
+    private var servings: Int {
+        Int(servingsText.filter(\.isNumber)).map { min(Self.maxServings, $0) } ?? 0
+    }
     private static let stepperWidth: CGFloat = 156
 
     init(nutrient: Nutrient) {
         self.nutrient = nutrient
-        _servings = State(initialValue: Int(nutrient.supplyServings ?? 60))
+        _servingsText = State(initialValue: String(Int(nutrient.supplyServings ?? 60)))
         _servingAmount = State(initialValue: nutrient.effectiveServingAmount)
         _reminderDays = State(initialValue: nutrient.refillReminderDays)
     }
@@ -157,8 +164,8 @@ struct SupplySheet: View {
     /// The servings capsule: − / + by one, and the number itself can be typed (a bottle of 120 is a lot of taps).
     private var servingsStepper: some View {
         HStack(spacing: 2) {
-            stepButton("minus", enabled: servings > 1) { servings = max(1, servings - 1) }
-            TextField("Servings", value: $servings, format: .number)
+            stepButton("minus", enabled: servings > 1) { servingsText = String(max(1, servings - 1)) }
+            TextField("Servings", text: $servingsText)
                 .keyboardType(.numberPad)
                 .focused($servingsFocused)
                 .multilineTextAlignment(.center)
@@ -167,7 +174,9 @@ struct SupplySheet: View {
                 .frame(minWidth: 44, maxWidth: 64)
                 .fixedSize(horizontal: true, vertical: false)
                 .accessibilityLabel("Servings in the bottle")
-            stepButton("plus", enabled: true) { servings = min(9999, servings + 1) }
+            stepButton("plus", enabled: servings < Self.maxServings) {
+                servingsText = String(min(Self.maxServings, servings + 1))
+            }
         }
         .padding(.horizontal, 4)
         .frame(minWidth: Self.stepperWidth)  // the three capsules line up, as in the design
@@ -236,7 +245,8 @@ struct SupplySheet: View {
     // MARK: - Actions
 
     private func save() {
-        nutrient.supplyServings = Double(max(1, servings))
+        servingsFocused = false
+        nutrient.supplyServings = Double(min(Self.maxServings, max(1, servings)))
         // nil while it's one step, so a later change to "each tap adds" carries over.
         nutrient.servingAmount = abs(servingAmount - nutrient.step) < 1e-9 ? nil : servingAmount
         nutrient.refillReminderDays = reminderDays

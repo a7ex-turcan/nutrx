@@ -22,8 +22,6 @@ struct NutrientFormView: View {
 
     @State private var showRemindersSheet = false
     @State private var showSupply = false
-    @State private var showPaywall = false
-    @Environment(ProAccess.self) private var proAccess: ProAccess?
     @State private var showPendingReminders = false
     @State private var showGroupChooser = false
     @State private var showNewGroupAlert = false
@@ -182,17 +180,12 @@ struct NutrientFormView: View {
             // Supply (nutrx Pro): a saved nutrient only, since it reads the nutrient's own log.
             if let nutrient, ProAccess.isStoreVisible {
                 Rectangle().fill(Theme.lineHairline).frame(height: 1)
-                let isPro = proAccess?.isPro ?? false
-                Button {
-                    if isPro { showSupply = true } else { showPaywall = true }
-                } label: {
-                    settingsRow("Supply", value: isPro ? SupplyText.formSummary(servings: nutrient.supplyServings) : "",
-                                badge: !isPro)
+                ProGatedButton(action: { showSupply = true }) { showsBadge in
+                    settingsRow("Supply", value: showsBadge ? "" : SupplyText.formSummary(servings: nutrient.supplyServings),
+                                badge: showsBadge)
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint(isPro ? "" : "Part of nutrx Pro. Opens what Pro includes.")
                 .sheet(isPresented: $showSupply) { SupplySheet(nutrient: nutrient) }
-                .proPaywall(isPresented: $showPaywall)
             }
         }
         .background(Theme.surfaceCard, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))

@@ -12,7 +12,6 @@ struct SupplyCard: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var showSheet = false
-    @State private var showPaywall = false
     @State private var confirmRefill = false
 
     /// The analytics cards' inset (design source: 18pt).
@@ -30,7 +29,6 @@ struct SupplyCard: View {
                 }
             }
             .sheet(isPresented: $showSheet) { SupplySheet(nutrient: nutrient) }
-            .proPaywall(isPresented: $showPaywall)
             .confirmationDialog("Refilled \(nutrient.name)?", isPresented: $confirmRefill, titleVisibility: .visible) {
                 Button("Refilled") { refill() }
             } message: {
@@ -42,9 +40,8 @@ struct SupplyCard: View {
     // MARK: - States
 
     private var freeCard: some View {
-        Button {
-            showPaywall = true
-        } label: {
+        // The gate: for someone who turns out to be Pro once the first check lands, the card switches to theirs.
+        ProGatedButton(action: {}) { _ in
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
@@ -68,7 +65,6 @@ struct SupplyCard: View {
         }
         .buttonStyle(.plain)
         .cardStyle()
-        .accessibilityHint("Part of nutrx Pro. Opens what Pro includes.")
     }
 
     private var setUpCard: some View {

@@ -109,6 +109,14 @@ final class SupplyScheduleTests: XCTestCase {
         XCTAssertEqual(SupplySchedule.averageDailyUse(logs: logs, now: now, calendar: calendar), 1000)
     }
 
+    func testTodayCountsOnlyOnceItHasALog() {
+        // 2,000 a day for the last three days, nothing yet this morning: still 2,000 a day, not 1,500.
+        let logs = (-3...(-1)).map { SupplySchedule.Log(date: day($0), amount: 2000) }
+        XCTAssertEqual(SupplySchedule.averageDailyUse(logs: logs, now: now, calendar: calendar), 2000)
+        XCTAssertEqual(SupplySchedule.averageDailyUse(logs: logs + [.init(date: day(0), amount: 2000)], now: now,
+                                                      calendar: calendar), 2000)
+    }
+
     func testGaugeAndThreshold() {
         let logs = daily(2000, from: -9)
         let status = SupplySchedule.status(setup: setup(), logs: logs, now: now, calendar: calendar)

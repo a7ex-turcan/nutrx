@@ -17,7 +17,7 @@ enum SupplyText {
         switch status.daysLeft ?? 0 {
         case ...0: return "Runs out today"
         case 1: return "1 day left"
-        case let days: return "\(days) days left"
+        case let days: return "\(days.formatted()) days left"
         }
     }
 
@@ -27,7 +27,7 @@ enum SupplyText {
         switch status.daysLeft ?? 0 {
         case ...0: return "Today"
         case 1: return "1 day"
-        case let days: return "\(days) days"
+        case let days: return "\(days.formatted()) days"
         }
     }
 
@@ -36,7 +36,7 @@ enum SupplyText {
         switch days {
         case ...0: "Runs out today"
         case 1: "About 1 day left"
-        default: "About \(days) days left"
+        default: "About \(days.formatted()) days left"
         }
     }
 
@@ -90,7 +90,7 @@ enum SupplyText {
     }
 
     private static func daysPhrase(_ days: Int) -> String {
-        days == 1 ? "1 day" : "\(days) days"
+        days == 1 ? "1 day" : "\(days.formatted()) days"
     }
 
     private static func amount(_ value: Double, unit: String, locale: Locale) -> String {

@@ -191,6 +191,7 @@ struct TodayView: View {
                 nutrientToRefill?.refillSupply()
                 try? modelContext.save()
                 nutrientToRefill = nil
+                viewModel.refresh(context: modelContext)
             }
         } message: {
             Text("Starts the count again from a full bottle.")
@@ -285,7 +286,7 @@ struct TodayView: View {
 
     /// Today's supply hint (nutrx Pro): low or out only, so a card's height never changes otherwise.
     private func supplyHint(for nutrient: Nutrient) -> NutrientCard.SupplyHint? {
-        guard ProAccess.isStoreVisible, proAccess?.isPro == true, let status = nutrient.supplyStatus(),
+        guard ProAccess.isStoreVisible, proAccess?.isPro == true, let status = viewModel.supplyStatus(for: nutrient),
               let text = SupplyText.todayHint(status) else { return nil }
         return NutrientCard.SupplyHint(text: text, shortText: SupplyText.shortHint(status),
                                        compactText: SupplyText.compactHint(status), isOut: status.level == .out)

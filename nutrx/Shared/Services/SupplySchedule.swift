@@ -78,8 +78,9 @@ enum SupplySchedule {
         return Status(setup: setup, remaining: remaining, dailyUse: dailyUse, daysLeft: daysLeft, level: level)
     }
 
-    /// Average use per day over the last 14 days (today included), counted from the first day with a log in them;
-    /// nil with fewer than 3 such days or no positive use.
+    /// Average use per day over the last 14 days, counted from the first day with a log in them; nil with fewer
+    /// than 3 such days or no positive use. Today counts only once it has a log, so the morning before the first
+    /// dose doesn't read as a day of no use.
     static func averageDailyUse(logs: [Log], now: Date = .now, calendar: Calendar = .current) -> Double? {
         let today = calendar.startOfDay(for: now)
         guard let windowStart = calendar.date(byAdding: .day, value: -(historyWindowDays - 1), to: today) else {
@@ -88,7 +89,8 @@ enum SupplySchedule {
         let inWindow = logs.filter { $0.date >= windowStart && $0.date <= now }
         guard let first = inWindow.map(\.date).min() else { return nil }
         let firstDay = calendar.startOfDay(for: first)
-        let days = (calendar.dateComponents([.day], from: firstDay, to: today).day ?? 0) + 1
+        let loggedToday = inWindow.contains { $0.date >= today }
+        let days = (calendar.dateComponents([.day], from: firstDay, to: today).day ?? 0) + (loggedToday ? 1 : 0)
         guard days >= minimumHistoryDays else { return nil }
         let total = inWindow.reduce(0) { $0 + $1.amount }
         guard total > 0 else { return nil }
