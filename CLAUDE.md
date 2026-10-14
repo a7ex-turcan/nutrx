@@ -204,9 +204,19 @@ nutrx/
 │   │   │   ├── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
 │   │   │   ├── StacksView.swift             # Settings → Stacks: list, reorder, swipe to delete, create; empty state.
 │   │   │   ├── StackDetailView.swift        # One stack: name, nutrients with amounts, add / remove / reorder, Siri tip, delete.
-│   │   │   └── ExportDataView.swift         # Settings → Export data: period, entry count, Export CSV → share sheet, done strip.
+│   │   │   ├── ExportDataView.swift         # Settings → Export data: period, entry count, Export CSV → share sheet, done strip.
+│   │   │   └── ProSettingsCard.swift        # Settings' nutrx Pro card (free: Learn more → paywall; Pro: status → ProStatusView).
 │   │   └── ViewModels/
 │   │       └── SettingsSummary.swift        # Row values: "On", "Noon check-in", "No account", group count, profile title.
+│   │
+│   ├── Pro/                     # nutrx Pro (hidden until phase 4; see nutrx Pro: StoreKit).
+│   │   ├── Views/
+│   │   │   ├── PaywallView.swift            # The paywall sheet; .proPaywall(isPresented:).
+│   │   │   ├── ProWelcomeView.swift         # "Welcome to nutrx Pro" after buying or restoring.
+│   │   │   └── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
+│   │   └── ViewModels/
+│   │       ├── ProFeature.swift             # The five Pro features; `listed` = shipped ones only.
+│   │       └── ProText.swift                # Paywall / status copy (pure).
 │   │
 │   └── Profile/
 │       ├── Views/
@@ -244,7 +254,9 @@ nutrx/
     │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
     │   ├── SyncBannerView.swift             # Dismissible iCloud sync banner.
     │   ├── ProfileMenuButton.swift          # 44pt ProfileAvatar with the Edit Profile / Settings menu.
-    │   └── ProfileToolbarModifier.swift     # .withProfileMenu() modifier.
+    │   ├── ProfileToolbarModifier.swift     # .withProfileMenu() modifier.
+    │   ├── ProBadge.swift                   # PRO chip, ProWordmark, ProRingMotif, ProRingTile.
+    │   └── ProGate.swift                    # ProGatedButton: Pro entry points (badge + paywall for free users).
     ├── Persistence/
     │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback; createForExtension() for widgets / complications (no CloudKit).
     │   │                                    # Backs up local store before first CloudKit init to prevent data loss.
@@ -641,7 +653,21 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - `isPro` / `entitlement` (plan, expiry, family-shared), `loadProducts()`, `purchase(_:)` (verified transactions only, finished straight away; returns `.purchased` / `.pending` / `.cancelled`), and `restore()` (`AppStore.sync()`).
   - The rule is pure, in `ProAccess.entitlement(from:now:)`: revoked, upgraded-away and expired transactions don't count; lifetime beats yearly beats monthly; own purchases beat family-shared ones.
   - **Never stored**: not in SwiftData, iCloud or UserDefaults. It's derived from StoreKit every launch, and no receipt leaves the device.
-- **Hidden until phase 4:** `ProAccess.isStoreVisible` is false in Release and true in Debug only with the `-proStore` launch argument. No Pro UI ships before supply.
+- **Hidden until phase 4:** `ProAccess.isStoreVisible` is false in Release. In Debug it's true with the `-proStore` launch argument, or the `proStore` user default for Xcode runs, which use the local StoreKit config but no launch arguments. Set it with `defaults write <app container>/Library/Preferences/nutrx-labs.nutrx proStore -bool YES`. No Pro UI ships before supply.
+- **Paywall** (`Features/Pro/`, docs/pro/design/2-paywall):
+  - `PaywallView` is a full-height sheet, presented through `.proPaywall(isPresented:)`. It has a forest header (`ProWordmark`, `ProRingMotif`, close) and the `ProFeature.listed` rows.
+  - The three plans are radio cards with prices from StoreKit. Lifetime sits under "or pay once", and yearly carries "1 WEEK FREE" only while `isEligibleForIntroOffer`.
+  - The button reads Start free week / Subscribe / Buy lifetime, with the terms under it and "Everything you use today stays free." Restore purchases · Terms (Apple's standard EULA) · Privacy (the website).
+  - A purchase or restore that unlocks Pro turns the sheet into `ProWelcomeView` at medium height. Pending, failed and nothing-to-restore show alerts. Offline, the plans area offers Try again.
+  - At accessibility sizes the button scrolls with the content.
+  - The paywall never claims a store it can't reach, and never says nothing was charged.
+  - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
+- **`ProFeature`**: the five Pro features with titles, symbols and tints. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all five until one ships, to check the design. Set `isShipped` as each phase lands.
+- **Settings:** `ProSettingsCard` sits under the profile card, only when `isStoreVisible` is true.
+  - Free: "Supply, label scan, recaps and more" with **Learn more**, which opens the paywall.
+  - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.
+  - `ProStatusView` has the plan card, the included features, Manage subscription (`manageSubscriptionsSheet`; not for lifetime or family-shared) and Restore purchases.
+- **Gate:** `ProGatedButton` (`Shared/Components/ProGate.swift`). For a Pro user it runs the action; for a free user it opens the paywall, and its label gets `showsBadge` for the `ProBadge` chip. Never a lock, blur or wall, and the free version of anything stays.
 - **Local testing:** `StoreKit/nutrxPro.storekit` mirrors the products. It's referenced by the nutrx scheme's Run action, so it applies to Xcode runs only, not `simctl launch`, and `ProAccessTests` load it with `SKTestSession(contentsOf:)`.
   - Keep it a *local* config: with `_applicationInternalID` / `_developerTeamID` in its settings, StoreKit treated it as synced and returned App Store Connect's products instead.
   - When resetting scheme churn, check out only the Watch schemes, not `nutrx.xcscheme`.

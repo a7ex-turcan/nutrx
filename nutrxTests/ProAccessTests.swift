@@ -119,6 +119,8 @@ final class ProAccessTests: XCTestCase {
         XCTAssertEqual(outcome, .purchased)
         XCTAssertEqual(pro.entitlement?.plan, .yearly)
         XCTAssertNotNil(pro.entitlement?.expirationDate)
+        XCTAssertEqual(pro.entitlement?.isTrial, true, "a first yearly purchase starts with the free week")
+        XCTAssertEqual(pro.entitlement?.willAutoRenew, true)
     }
 
     func testASubscriptionThatLapsesLocksProAgain() async throws {

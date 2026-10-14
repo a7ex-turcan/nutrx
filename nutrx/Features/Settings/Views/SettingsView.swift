@@ -12,6 +12,9 @@ struct SettingsView: View {
     @Query private var profiles: [UserProfile]
     @Query(filter: #Predicate<NutrientGroup> { !$0.isSystem }) private var userGroups: [NutrientGroup]
     @Query private var stacks: [LogStack]
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
+    @State private var showPaywall = false
+    @State private var showProStatus = false
 
     @State private var showProfile = false
     /// Decoded once per photo change, not on every body pass.
@@ -27,6 +30,17 @@ struct SettingsView: View {
                 profileCard
             }
             .listRowBackground(Theme.surfaceCard)
+
+            // docs/pro/design/2-paywall: settings / settings-pro. Hidden until Pro ships (phase 4).
+            if ProAccess.isStoreVisible, let proAccess, proAccess.hasCheckedEntitlements {
+                Section {
+                    ProSettingsCard(entitlement: proAccess.entitlement, onLearnMore: { showPaywall = true },
+                                    onOpenStatus: { showProStatus = true })
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+                .listSectionSpacing(12)
+            }
 
             Section {
                 NavigationLink {
@@ -123,6 +137,10 @@ struct SettingsView: View {
                 Button("Done") { dismiss() }
             }
         }
+        .proPaywall(isPresented: $showPaywall)
+        .navigationDestination(isPresented: $showProStatus) {
+            ProStatusView()
+        }
         .sheet(isPresented: $showProfile) {
             NavigationStack {
                 ProfileView()
@@ -214,6 +232,7 @@ struct SettingsView: View {
         SettingsView()
     }
     .modelContainer(previewContainer)
+    .environment(ProAccess())
 }
 
 #Preview("Dark") {
