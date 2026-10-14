@@ -255,7 +255,9 @@ nutrx/
     ├── Intents/                         # App only. Siri & Shortcuts (see "Siri & App Shortcuts").
     │   ├── LogNutrientShortcutIntent.swift  # "Log Nutrient": nutrient + optional amount; NutrientShortcutLogging.
     │   ├── NutrientEntity.swift         # AppEntity + EntityStringQuery: nutrients by name, in Today's order.
-    │   └── NutrxShortcuts.swift         # AppShortcutsProvider: "Log my <nutrient> with nutrx" phrases.
+    │   ├── LogStackShortcutIntent.swift # "Log Stack": a stack by name; StackShortcutLogging (+ the Siri tip's phrase).
+    │   ├── StackEntity.swift            # AppEntity + EntityStringQuery: stacks by name, in Today's order.
+    │   └── NutrxShortcuts.swift         # AppShortcutsProvider: "Log my <nutrient> with nutrx", "Log my <stack> stack with nutrx".
     └── Services/
         ├── DayScore.swift                   # Met / total + the day-score card headline.
         ├── UpcomingReminder.swift           # Next dose reminder later today (for the day-score card).
@@ -334,7 +336,11 @@ Built in phase 2 of the Pro plan (free). Everything lives in `Shared/Intents/` a
 - **`NutrxShortcuts`** (`AppShortcutsProvider`) — "Log \(nutrient) in nutrx", "Log my \(nutrient) with nutrx", "Add \(nutrient) in nutrx", "Log a nutrient in nutrx". No setup needed: they appear in Siri, Spotlight and Shortcuts. The parameters are refreshed with `updateAppShortcutParameters()` whenever the app becomes active.
 - **One store:** App Intents run in the app's process. `nutrxApp` registers its `modelContainer` with `AppDependencyManager`, and the intent and query read it through `@Dependency` — never a second `ModelContainerFactory.create()` (two CloudKit-mirrored containers on one store fight).
 - **The widget's + button** keeps its own `LogNutrientIntent` (`NutrxWidgets/`, widget extension only, raw id parameter), marked `isDiscoverable = false` so it never shows in Shortcuts.
-- Tests: `NutrientShortcutTests`. Not built yet: stacks as a Siri phrase (with stacks) and a Settings → Siri screen.
+- **`LogStackShortcutIntent`** — "Log Stack": `stack: StackEntity` ("Log the Morning stack"). `perform()` uses `StackShortcutLogging.log` → `StackLogging.log` (the same records and `lastLoggedAt` as Log on Today), does the same follow-ups, and answers "Logged Morning: 2,000 IU Vitamin D, 1,000 mg Omega-3, and 400 mg Magnesium." A stack that's gone or has nothing to log throws a spoken error. Phrases: "Log my \(stack) stack with nutrx" (first — the Siri tip shows it), "… in nutrx", "Log the \(stack) stack in nutrx", "Log a stack in nutrx".
+- **`LogStack.id` and migration:** adding a property with a `UUID()` default to an existing store gives every existing row the *same* value (checked: stacks from a #54 build all got one id). `StackLogging.repairDuplicateIDs` gives duplicates new ids (keeping the oldest stack's). `nutrxApp` runs it at launch, because Siri can launch the app in the background, and whenever the app becomes active, because a synced device can bring duplicates. Any future UUID field on an existing model needs the same.
+- **`StackEntity` / `StackEntityQuery`** — stacks by name (`LogStack.id`, a UUID, is only an identifier), suggested in Today's order and only when they have something to log; an empty stack still resolves by id. Stack names change, so `StackShortcutLogging.stacksChanged()` refreshes the phrase parameters after a stack is created, renamed or deleted (Settings → Stacks, the detail screen), besides the refresh when the app becomes active.
+- **Siri phrases always name the app**, so the Siri tip says “Log my Morning stack **with nutrx**”, not the design's “Log my Morning stack”.
+- Tests: `NutrientShortcutTests`, `StackShortcutTests`. Not built yet: a Settings → Siri screen, and the Watch (the App Shortcuts are the iPhone app's).
 
 ---
 
@@ -384,7 +390,7 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
   - `StackDetailView` has the name, the entries with − / +, swipe to remove, drag to reorder, Add nutrient and Delete stack.
     - Delete stack dismisses first and deletes in `onDisappear`, so the view never renders a deleted model.
     - An emptied name falls back to "Stack" on focus loss and on disappear.
-- **Not built yet:** "Log my Morning stack" in Siri and the Siri tip card on the detail screen (next, on top of `Shared/Intents/`).
+- **Siri:** "Log my Morning stack with nutrx" (see Siri & App Shortcuts). The detail screen shows a Siri tip card with that phrase when the stack has something to log; its ✕ hides it on that device for every stack (`@AppStorage("hidesStackSiriTip")`).
 
 ## Today Tab – Core Logging UX
 
@@ -746,6 +752,7 @@ A named set of nutrients with preset amounts, logged in one go (see Stacks).
 
 | Field | Type | Notes |
 |---|---|---|
+| `id` | `UUID = UUID()` | Identifies the stack to Siri and Shortcuts (`StackEntity`) |
 | `name` | `String` | "Morning" |
 | `sortOrder` | `Int` | Order on Today and in Settings → Stacks |
 | `createdAt` | `Date = Date()` | |

@@ -14,6 +14,9 @@ struct StackDetailView: View {
     @State private var deleteOnDisappear = false
     @FocusState private var nameFocused: Bool
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// The Siri tip's ✕ hides it on this device for every stack.
+    @AppStorage("hidesStackSiriTip") private var hidesSiriTip = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var entries: [LogStackEntry] { StackLogging.activeEntries(of: stack) }
 
@@ -44,10 +47,15 @@ struct StackDetailView: View {
                 Button {
                     showAddNutrient = true
                 } label: {
-                    Label("Add nutrient", systemImage: "plus")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Theme.controlPrimary)
-                        .frame(minHeight: Theme.minTouchTarget)
+                    // Not a Label: at accessibility sizes its title wrapped back under the icon.
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        Image(systemName: "plus")
+                            .accessibilityHidden(true)
+                        Text("Add nutrient")
+                    }
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Theme.controlPrimary)
+                    .frame(minHeight: Theme.minTouchTarget)
                 }
             } header: {
                 Text("Nutrients & amounts")
@@ -56,6 +64,16 @@ struct StackDetailView: View {
                 Text("Amounts start at each nutrient's step. You can still change them each time you log.")
             }
             .listRowBackground(Theme.surfaceCard)
+
+            if !hidesSiriTip && !entries.isEmpty {
+                Section {
+                    StackSiriTip(stackName: stack.name) {
+                        withAnimation(.unlessReduceMotion(reduceMotion, .default)) { hidesSiriTip = true }
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                }
+            }
 
             Section {
                 Button(role: .destructive) {
@@ -104,6 +122,7 @@ struct StackDetailView: View {
                 // Also covers closing the sheet while the name field still has focus.
                 commitName()
             }
+            StackShortcutLogging.stacksChanged()
         }
     }
 
@@ -168,6 +187,83 @@ struct StackDetailView: View {
     private func remove(_ entry: LogStackEntry) {
         modelContext.delete(entry)
         try? modelContext.save()
+    }
+}
+
+/// "Say “Log my Morning stack with nutrx” to Siri" (docs/pro/design/1-stacks-export: stack-detail): Forest @ 6%
+/// (Card in dark), a waveform tile and a ✕ that hides it. The phrase is the first "Log Stack" App Shortcut phrase,
+/// app name included, since Siri only runs an app's phrases when they name the app.
+private struct StackSiriTip: View {
+    let stackName: String
+    let onHide: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        Group {
+            // At accessibility sizes the text gets the card's full width under the tile and ✕.
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top) {
+                        tile
+                        Spacer(minLength: 8)
+                        hideButton
+                    }
+                    text
+                }
+            } else {
+                HStack(alignment: .top, spacing: 12) {
+                    tile
+                    text
+                    hideButton
+                }
+            }
+        }
+        .padding(Theme.Spacing.cardPadding)
+        .background(colorScheme == .dark ? Theme.surfaceCard : Theme.forest.opacity(0.06),
+                    in: RoundedRectangle(cornerRadius: Theme.Radius.tip, style: .continuous))
+    }
+
+    private var tile: some View {
+        let dark = colorScheme == .dark
+        return Image(systemName: "waveform")
+            .font(.body.weight(.semibold))
+            .foregroundStyle(dark ? Theme.green : Theme.forest)
+            .frame(width: 36, height: 36)
+            .background(dark ? Theme.green.opacity(0.15) : Theme.surfaceCard,
+                        in: RoundedRectangle(cornerRadius: Theme.Radius.iconTile, style: .continuous))
+            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+            .accessibilityHidden(true)
+    }
+
+    private var text: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Say “\(StackShortcutLogging.siriPhrase(for: stackName))” to Siri")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Theme.textPrimary)
+            Text("Also works from the Shortcuts app.")
+                .font(.subheadline)
+                .foregroundStyle(Theme.textSecondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var hideButton: some View {
+        Button(action: onHide) {
+            Image(systemName: "xmark")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary)
+                .frame(width: 32, height: 32)
+                // A 44pt hit area around the 32pt glyph box, without making the row taller.
+                .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                .contentShape(Rectangle())
+                .padding(-(Theme.minTouchTarget - 32) / 2)
+        }
+        .buttonStyle(.plain)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .accessibilityLabel("Hide Siri tip")
     }
 }
 

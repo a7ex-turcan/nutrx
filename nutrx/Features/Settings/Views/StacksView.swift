@@ -190,6 +190,7 @@ struct StacksView: View {
         modelContext.delete(stack)
         try? modelContext.save()
         stackToDelete = nil
+        StackShortcutLogging.stacksChanged()
     }
 }
 
