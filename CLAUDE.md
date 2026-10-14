@@ -197,13 +197,14 @@ nutrx/
 │   │
 │   ├── Settings/
 │   │   ├── Views/
-│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Rate nutrx, About) with values, privacy footer.
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups, Stacks; Export data; Rate nutrx, About) with values, privacy footer.
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
 │   │   │   ├── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
 │   │   │   ├── StacksView.swift             # Settings → Stacks: list, reorder, swipe to delete, create; empty state.
-│   │   │   └── StackDetailView.swift        # One stack: name, nutrients with amounts, add / remove / reorder, delete.
+│   │   │   ├── StackDetailView.swift        # One stack: name, nutrients with amounts, add / remove / reorder, Siri tip, delete.
+│   │   │   └── ExportDataView.swift         # Settings → Export data: period, entry count, Export CSV → share sheet, done strip.
 │   │   └── ViewModels/
 │   │       └── SettingsSummary.swift        # Row values: "On", "Noon check-in", "No account", group count, profile title.
 │   │
@@ -269,6 +270,7 @@ nutrx/
         ├── ReminderSchedule.swift           # Dose reminders as one-off requests per date (rolling window).
         ├── StreakService.swift              # Computes current/best streak from IntakeRecord + Exclusion data.
         ├── StackLogging.swift               # Stacks: active entries, log (with per-time amounts), undo, add, "done today".
+        ├── ExportService.swift              # CSV export: entries for a period, RFC 4180 CSV, file name, temp file.
         └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30;
                                              # writeReviewURL (App Store review page) for Settings → Rate nutrx.
 ```
@@ -391,6 +393,26 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
     - Delete stack dismisses first and deletes in `onDisappear`, so the view never renders a deleted model.
     - An emptied name falls back to "Stack" on focus loss and on disappear.
 - **Siri:** "Log my Morning stack with nutrx" (see Siri & App Shortcuts). The detail screen shows a Siri tip card with that phrase when the stack has something to log; its ✕ hides it on that device for every stack (`@AppStorage("hidesStackSiriTip")`).
+
+## Data Export (CSV)
+
+Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-export/export*.png`.
+
+- **Settings → Export data** (grey tile, its own section; Apple Health and the doctor report join it with Pro) pushes `ExportDataView`. It has a document tile with the title, what the file holds, and a period card: All time, Last 30 days or Last 90 days. "Last 30 days" is today and the 29 days before it.
+  - The count line reads "**1,284** entries · 6 nutrients · since 2 March 2026", or "No entries in this period", which disables the button.
+  - **Export CSV** writes the file and opens the system share sheet. It's a `UIActivityViewController` wrapper, because `ShareLink` has no completion and the done state needs to know the file was sent.
+  - Once the file is sent, a green strip shows "Exported N entries" with the file name, and the button reads **Export again**. Changing the period clears it.
+- **The file** (`ExportService`, tested in `ExportServiceTests`):
+  - One row per `IntakeRecord`, newest first, with the header `date,time,nutrient,amount,unit,note`.
+  - Dates are `yyyy-MM-dd` and times are 24-hour `HH:mm`, in the user's time zone.
+  - Amounts are plain `en_US_POSIX` numbers with no grouping. Decrements stay negative.
+  - The file follows RFC 4180: CRLF line ends, and fields are quoted when they hold a comma, quote or line break. Quoting checks Unicode scalars, because `"\r\n"` is one `Character`.
+  - It starts with a UTF-8 BOM for Excel.
+  - Names, units and notes that start with `= + - @` get a leading `'`, so a spreadsheet won't run them as formulas. Numbers never do.
+  - Nutrients deleted since are included, because it's the user's history.
+  - The name is `nutrx-export-YYYY-MM-DD.csv`.
+- **No copy stays on the device:** the file goes in its own folder under `tmp/nutrx-export/`, which is removed when the share sheet closes, whether the file was sent, cancelled or swiped away. Each export also clears that parent first, which covers a file left behind when the app was killed with the share sheet up.
+- The footnote and the error alert name the device (`UIDevice.current.model`: iPhone or iPad).
 
 ## Today Tab – Core Logging UX
 
@@ -610,7 +632,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 
 **MVP 3 (remaining):** Apple Health integration (HealthKit write)
 
-**Pre-Pro Sprint:** Nutrient goal types (min/max/range), data export (CSV), quick-log stacks, Siri & App Shortcuts — see ROADMAP.md for full specs and the Siri & App Shortcuts section below for implementation details
+**Pre-Pro Sprint:** done — goal types, data export (CSV), quick-log stacks, and Siri & App Shortcuts (see their sections above)
 
 **MVP 4:** Pro tier (StoreKit 2), AI features (on-device + third-party LLM), streak freeze, shareable streak card
 
