@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx Pro — Apple Health card states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 393px; height: 852px; position: relative; overflow: hidden; background: {{c.bg}}; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased; padding: 50px 16px 0 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px">
+
+  <span style="margin: 0 6px; font-size: 12px; font-weight: 600; color: {{c.ink2}}">Not enough data yet</span>
+  <section style="padding: 18px; border-radius: 24px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; gap: 8px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E2674A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>
+      <h2 style="margin: 0; font-size: 17px; font-weight: 700">With Apple Health</h2>
+    </div>
+    <p style="margin: 0; font-size: 15px; line-height: 21px">Trends appear after about two weeks of logging with Apple Health connected.</p>
+    <div role="progressbar" aria-valuemin="0" aria-valuemax="14" aria-valuenow="9" aria-label="9 of 14 days" style="display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: 3px">
+      <sc-for list="{{days}}" as="d" hint-placeholder-count="14">
+        <span style="height: 10px; border-radius: 3px; background: {{d}}"></span>
+      </sc-for>
+    </div>
+    <span style="font-size: 13px; color: {{c.ink2}}"><span style="font: 700 13px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink}}">9</span> of 14 days</span>
+  </section>
+
+  <span style="margin: 12px 6px 0 6px; font-size: 12px; font-weight: 600; color: {{c.ink2}}">Nothing notable</span>
+  <section style="padding: 18px; border-radius: 24px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; align-items: center; gap: 8px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E2674A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>
+      <h2 style="margin: 0; font-size: 17px; font-weight: 700">With Apple Health</h2>
+    </div>
+    <p style="margin: 0; font-size: 15px; line-height: 21px">No clear pattern yet. Your Omega-3 looks about the same on workout days, rest days and after short nights.</p>
+    <span style="font-size: 12px; color: {{c.ink2}}">Checked 28 days · updates daily</span>
+  </section>
+
+  <span style="margin: 12px 6px 0 6px; font-size: 12px; font-weight: 600; color: {{c.ink2}}">Free user</span>
+  <a href="F2Paywall.dc.html" style="padding: 18px; border-radius: 24px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; flex-direction: column; gap: 10px; text-decoration: none; color: {{c.ink}}">
+    <div style="display: flex; align-items: center; gap: 8px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E2674A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>
+      <h2 style="margin: 0; font-size: 17px; font-weight: 700; flex: 1">With Apple Health</h2>
+      <span style="font: 800 10px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: 0.06em; padding: 4px 6px; border-radius: 6px; background: {{c.badgeBg}}; color: {{c.badgeInk}}">PRO</span>
+    </div>
+    <p style="margin: 0; font-size: 15px; line-height: 21px; color: {{c.ink2}}">See how this nutrient lines up with your sleep and workouts. Private — read on your iPhone only.</p>
+    <div aria-hidden="true" style="display: flex; flex-direction: column; gap: 6px; opacity: 0.55">
+      <span style="height: 10px; width: 78%; border-radius: 5px; background: {{c.ghost}}"></span>
+      <span style="height: 10px; width: 56%; border-radius: 5px; background: {{c.ghost}}"></span>
+    </div>
+    <span style="font-size: 15px; font-weight: 600; color: {{c.linkInk}}">Learn about nutrx Pro</span>
+  </a>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var D = !!this.props.dark;
+    var c = D ? { bg: '#0A130E', card: '#142019', ink: '#EAF2EC', ink2: '#97AA9E', shadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)', off: 'rgba(255,255,255,0.1)', badgeBg: 'rgba(30,185,85,0.16)', badgeInk: '#7BE3A0', linkInk: '#5BD88A', ghost: 'rgba(255,255,255,0.14)' }
+              : { bg: '#F2F4EF', card: '#FFFFFF', ink: '#0E1A13', ink2: '#56655C', shadow: '0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)', off: '#E3E8E1', badgeBg: 'rgba(27,59,45,0.09)', badgeInk: '#1B3B2D', linkInk: '#1B3B2D', ghost: '#DDE3DA' };
+    var days = []; for (var i = 0; i < 14; i++) days.push(i < 9 ? '#E2674A' : c.off);
+    return { c: c, days: days };
+  }
+}
+</script>
+</body>
+</html>

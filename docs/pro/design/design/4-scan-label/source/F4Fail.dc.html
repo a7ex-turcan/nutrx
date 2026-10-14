@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx Pro — couldn't read the label</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 393px; height: 852px; position: relative; overflow: hidden; background: #111613; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+  <div aria-hidden="true" style="position: absolute; left: 50%; top: 150px; transform: translateX(-50%) rotate(14deg); width: 250px; height: 420px; border-radius: 34px; background: #3A2A1E; filter: blur(5px); opacity: 0.8">
+    <div style="position: absolute; left: 18px; right: 18px; top: 70px; bottom: 50px; border-radius: 10px; background: #D9D4C6"></div>
+  </div>
+
+  <section aria-label="Couldn't read the label" style="position: absolute; left: 0; right: 0; bottom: 0; background: {{c.bg}}; border-radius: 38px 38px 0 0; padding: 8px 20px 40px 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; text-align: center">
+    <div aria-hidden="true" style="width: 36px; height: 5px; border-radius: 3px; background: {{c.grabber}}"></div>
+    <span aria-hidden="true" style="margin-top: 22px; width: 64px; height: 64px; border-radius: 20px; background: {{c.tile}}; display: flex; align-items: center; justify-content: center">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="{{c.tileInk}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M9 12h.01M15 12h.01M9.5 16c1.5-1 3.5-1 5 0"></path></svg>
+    </span>
+    <h1 style="margin: 16px 0 0 0; font-size: 22px; font-weight: 700">Couldn't read this label</h1>
+    <p style="margin: 8px 0 0 0; font-size: 15px; line-height: 21px; color: {{c.ink2}}">Try brighter light, hold the bottle steady, and fill the frame with the Supplement Facts panel.</p>
+    <button style="margin-top: 22px; align-self: stretch; height: 56px; border-radius: 18px; border: 0; background: {{c.btn}}; color: {{c.btnInk}}; font: 600 17px -apple-system, system-ui, sans-serif">Try again</button>
+    <button style="margin-top: 10px; align-self: stretch; height: 52px; border-radius: 18px; border: 1.5px solid {{c.ghost}}; background: transparent; color: {{c.ink}}; font: 600 16px -apple-system, system-ui, sans-serif">Fill in by hand</button>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var D = !!this.props.dark;
+    var c = D ? { bg: '#0A130E', ink: '#EAF2EC', ink2: '#97AA9E', grabber: '#2C4035', btn: '#1EB955', btnInk: '#0A130E', ghost: '#2C4035', tile: 'rgba(224,138,30,0.16)', tileInk: '#F0B35A' }
+              : { bg: '#F2F4EF', ink: '#0E1A13', ink2: '#56655C', grabber: '#CBD3CA', btn: '#1B3B2D', btnInk: '#FFFFFF', ghost: '#D5DCD3', tile: '#FDF3E4', tileInk: '#9A5A0C' };
+    return { c: c };
+  }
+}
+</script>
+</body>
+</html>

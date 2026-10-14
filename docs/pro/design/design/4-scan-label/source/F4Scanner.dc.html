@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx Pro — label scanner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+<div style="width: 393px; height: 852px; position: relative; overflow: hidden; background: #111613; color: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+
+  <div aria-hidden="true" style="position: absolute; left: 50%; top: 170px; transform: translateX(-50%) rotate(-3deg); width: 250px; height: 420px; border-radius: 34px; background: #3A2A1E; box-shadow: 0 30px 60px rgba(0,0,0,0.5)">
+    <div style="position: absolute; left: -6px; right: -6px; top: -28px; height: 46px; border-radius: 14px; background: #E9EEEA"></div>
+    <div style="position: absolute; left: 18px; right: 18px; top: 70px; bottom: 50px; border-radius: 10px; background: #F4F1E8; padding: 14px; box-sizing: border-box; color: #2A2A2A; display: flex; flex-direction: column; gap: 6px; filter: {{blur}}">
+      <span style="font-size: 18px; font-weight: 800; letter-spacing: -0.01em">VITAMIN D3</span>
+      <span style="font-size: 12px; font-weight: 600">Dietary supplement · 120 softgels</span>
+      <span style="margin-top: 8px; padding: 6px; border: 2px solid #2A2A2A; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 13px; font-weight: 800">Supplement Facts</span>
+        <span style="font-size: 10px">Serving size: 1 softgel</span>
+        <span style="font-size: 10px">Servings per container: 120</span>
+        <span style="height: 4px; background: #2A2A2A"></span>
+        <span style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 700"><span>Vitamin D3</span><span>1,000 IU</span></span>
+        <span style="font-size: 9px; color: #555">(as cholecalciferol)</span>
+      </span>
+    </div>
+  </div>
+
+  <sc-if value="{{live}}" hint-placeholder-val="{{true}}">
+    <div aria-hidden="true" style="position: absolute; left: 0; top: 0; right: 0; bottom: 0">
+      <span style="position: absolute; left: 102px; top: 252px; width: 120px; height: 26px; border-radius: 6px; border: 2px solid #7BE3A0; background: rgba(123,227,160,0.16); transform: rotate(-3deg)"></span>
+      <span style="position: absolute; left: 112px; top: 303px; width: 128px; height: 18px; border-radius: 5px; border: 2px solid #7BE3A0; background: rgba(123,227,160,0.16); transform: rotate(-3deg)"></span>
+      <span style="position: absolute; left: 117px; top: 377px; width: 150px; height: 16px; border-radius: 5px; border: 2px solid #7BE3A0; background: rgba(123,227,160,0.16); transform: rotate(-3deg)"></span>
+      <span style="position: absolute; left: 118px; top: 404px; width: 160px; height: 18px; border-radius: 5px; border: 2px solid #7BE3A0; background: rgba(123,227,160,0.16); transform: rotate(-3deg)"></span>
+    </div>
+  </sc-if>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 58px; display: flex; justify-content: space-between">
+    <button style="height: 44px; padding: 0 16px; border-radius: 22px; border: 0; background: rgba(255,255,255,0.16); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #FFFFFF; font: 600 16px -apple-system, system-ui, sans-serif">Cancel</button>
+    <button aria-label="Torch" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: rgba(255,255,255,0.16); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h10v4l-2 4v10H9V11L7 7zM12 14v2"></path></svg>
+    </button>
+  </div>
+
+  <sc-if value="{{live}}" hint-placeholder-val="{{true}}">
+    <div style="position: absolute; left: 0; right: 0; bottom: 40px; display: flex; flex-direction: column; align-items: center; gap: 18px">
+      <span style="padding: 9px 16px; border-radius: 999px; background: rgba(0,0,0,0.55); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); font-size: 15px; font-weight: 600">Point at the Supplement Facts</span>
+      <button aria-label="Capture" style="width: 76px; height: 76px; border-radius: 38px; border: 4px solid #FFFFFF; background: transparent; display: flex; align-items: center; justify-content: center">
+        <span style="width: 60px; height: 60px; border-radius: 30px; background: #FFFFFF"></span>
+      </button>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: rgba(255,255,255,0.75)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4"></path></svg>
+        Read on your iPhone. Nothing is uploaded.
+      </span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{reading}}" hint-placeholder-val="{{false}}">
+    <div role="status" style="position: absolute; inset: 0; background: rgba(5,10,7,0.55); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px">
+      <span style="padding: 18px 22px; border-radius: 24px; background: rgba(20,32,25,0.88); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); display: flex; align-items: center; gap: 12px">
+        <svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" style="animation: spin 1s linear infinite"><circle cx="12" cy="12" r="9" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="3"></circle><path d="M12 3a9 9 0 0 1 9 9" fill="none" stroke="#1EB955" stroke-width="3" stroke-linecap="round"></path></svg>
+        <span style="font-size: 17px; font-weight: 600">Reading the label…</span>
+      </span>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["live","reading"],"default":"live"},"$preview":{"width":393,"height":852}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var S = this.props.state ?? 'live';
+    return { live: S === 'live', reading: S === 'reading', blur: S === 'reading' ? 'none' : 'none' };
+  }
+}
+</script>
+</body>
+</html>

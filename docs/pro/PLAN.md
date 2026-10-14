@@ -52,7 +52,7 @@ A lifetime option matters here: privacy-minded users tend to dislike subscriptio
 | D3 | Prices | **$1.99 / month, $14.99 / year, $29.99 lifetime** |
 | D4 | Trial | **One week, on the yearly plan only** |
 | D5 | Order of Pro features | **Supply → Scan → Recap → Health → Report.** Supply has no AI, so it's the safest first paid feature to launch StoreKit with. Scan feeds supply (it reads the bottle size). Recap and Health need a few weeks of data. The report is the least likely to sell Pro on its own. |
-| D6 | Design | **Mockups from the designer** before each feature's phase. The prompts are in [`DESIGN-PROMPTS.md`](DESIGN-PROMPTS.md). |
+| D6 | Design | **Mockups from the designer** before each feature's phase. The prompts are in [`DESIGN-PROMPTS.md`](DESIGN-PROMPTS.md); the handoff for all seven is in [`design/`](design/README.md) (renders are the visual target, sources for exact values only). |
 
 ---
 
