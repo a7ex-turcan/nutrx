@@ -19,10 +19,11 @@ final class ProAccess {
     }
 
     /// Pro stays out of sight until its first feature (supply, phase 4) ships with it. Debug builds can show it
-    /// with the `-proStore` launch argument.
+    /// with the `-proStore` launch argument, or the `proStore` user default (for Xcode runs, which use the local
+    /// StoreKit configuration but no launch arguments).
     static var isStoreVisible: Bool {
         #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-proStore")
+        ProcessInfo.processInfo.arguments.contains("-proStore") || UserDefaults.standard.bool(forKey: "proStore")
         #else
         false
         #endif
@@ -50,6 +51,10 @@ final class ProAccess {
         let expirationDate: Date?
         /// Bought by a family member and shared through Family Sharing.
         let isFamilyShared: Bool
+        /// In the yearly plan's free week.
+        var isTrial: Bool = false
+        /// A subscription that renews at `expirationDate` (false once cancelled; false for lifetime).
+        var willAutoRenew: Bool = false
     }
 
     /// One verified transaction, reduced to what decides the entitlement (so the rule is testable without StoreKit).
@@ -59,6 +64,7 @@ final class ProAccess {
         let expirationDate: Date?
         let isUpgraded: Bool
         let isFamilyShared: Bool
+        var isTrial: Bool = false
     }
 
     private(set) var entitlement: Entitlement?
@@ -93,12 +99,25 @@ final class ProAccess {
 
     /// Re-reads the current entitlements. Unverified transactions never count.
     func refreshEntitlement() async {
-        var candidates: [EntitlementCandidate] = []
+        var transactions: [Transaction] = []
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result else { continue }
-            candidates.append(EntitlementCandidate(transaction))
+            transactions.append(transaction)
         }
-        entitlement = Self.entitlement(from: candidates)
+        var found = Self.entitlement(from: transactions.map(EntitlementCandidate.init))
+        // Whether the winning subscription renews lives in its renewal info, not the transaction.
+        if let current = found, current.plan != .lifetime,
+           let transaction = transactions.first(where: { candidate in
+               // The transaction the entitlement came from: same plan and ownership, still valid.
+               Plan(productID: candidate.productID) == current.plan
+                   && (candidate.ownershipType == .familyShared) == current.isFamilyShared
+                   && candidate.revocationDate == nil && !candidate.isUpgraded
+           }),
+           let status = await transaction.subscriptionStatus,
+           case .verified(let renewal) = status.renewalInfo {
+            found?.willAutoRenew = renewal.willAutoRenew
+        }
+        entitlement = found
         hasCheckedEntitlements = true
     }
 
@@ -122,7 +141,7 @@ final class ProAccess {
         guard let best = valid.max(by: { rank($0) < rank($1) }), let plan = Plan(productID: best.productID)
         else { return nil }
         return Entitlement(plan: plan, expirationDate: plan == .lifetime ? nil : best.expirationDate,
-                           isFamilyShared: best.isFamilyShared)
+                           isFamilyShared: best.isFamilyShared, isTrial: plan != .lifetime && best.isTrial)
     }
 
     // MARK: - Store
@@ -181,6 +200,7 @@ extension ProAccess.EntitlementCandidate {
                   revocationDate: transaction.revocationDate,
                   expirationDate: transaction.expirationDate,
                   isUpgraded: transaction.isUpgraded,
-                  isFamilyShared: transaction.ownershipType == .familyShared)
+                  isFamilyShared: transaction.ownershipType == .familyShared,
+                  isTrial: transaction.offer?.type == .introductory)
     }
 }

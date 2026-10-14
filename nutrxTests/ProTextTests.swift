@@ -1,0 +1,74 @@
+import XCTest
+@testable import nutrx
+
+/// The paywall's and Pro screens' words: buttons, price terms, plan rows, status lines.
+final class ProTextTests: XCTestCase {
+    private let enUS = Locale(identifier: "en_US")
+    private let renews = Date(timeIntervalSince1970: 1_823_501_100)  // 2027-10-14 08:05 UTC
+
+    func testPrimaryButton() {
+        XCTAssertEqual(ProText.primaryTitle(plan: .yearly, trialEligible: true), "Start free week")
+        XCTAssertEqual(ProText.primaryTitle(plan: .yearly, trialEligible: false), "Subscribe")
+        XCTAssertEqual(ProText.primaryTitle(plan: .monthly, trialEligible: true), "Subscribe")
+        XCTAssertEqual(ProText.primaryTitle(plan: .lifetime, trialEligible: true), "Buy lifetime")
+    }
+
+    func testTermsSayWhatsChargedAndHowToCancel() {
+        XCTAssertEqual(ProText.terms(plan: .yearly, price: "$14.99", trialEligible: true),
+                       "1 week free, then $14.99 a year. Cancel anytime in Settings.")
+        XCTAssertEqual(ProText.terms(plan: .yearly, price: "$14.99", trialEligible: false),
+                       "$14.99 a year. Cancel anytime in Settings.")
+        XCTAssertEqual(ProText.terms(plan: .monthly, price: "$1.99", trialEligible: false),
+                       "$1.99 a month. Cancel anytime in Settings.")
+        XCTAssertEqual(ProText.terms(plan: .lifetime, price: "$29.99", trialEligible: false),
+                       "One payment of $29.99. No subscription.")
+    }
+
+    func testPlanRows() {
+        XCTAssertEqual(ProText.planSubtitle(.yearly, monthlyEquivalent: "$1.25"), "$1.25 a month, billed yearly")
+        XCTAssertEqual(ProText.planSubtitle(.monthly, monthlyEquivalent: nil), "Billed monthly")
+        XCTAssertEqual(ProText.planSubtitle(.lifetime, monthlyEquivalent: nil), "Pay once, keep Pro forever")
+    }
+
+    func testMonthlyEquivalentRoundsToCents() {
+        let usd = Decimal.FormatStyle.Currency(code: "USD", locale: enUS)
+        XCTAssertEqual(ProText.monthlyEquivalent(ofYearly: Decimal(string: "14.99")!, format: usd), "$1.25")
+        let eur = Decimal.FormatStyle.Currency(code: "EUR", locale: Locale(identifier: "de_DE"))
+        XCTAssertEqual(ProText.monthlyEquivalent(ofYearly: Decimal(string: "17.99")!, format: eur), "1,50\u{00A0}€")  // a no-break space before €
+    }
+
+    func testStatusLines() {
+        let renewing = ProAccess.Entitlement(plan: .yearly, expirationDate: renews, isFamilyShared: false, willAutoRenew: true)
+        XCTAssertEqual(ProText.shortStatus(renewing, locale: enUS), "Yearly · renews Oct 14, 2027")
+        XCTAssertEqual(ProText.longStatus(renewing, locale: enUS), "Yearly plan · renews October 14, 2027")
+
+        let cancelled = ProAccess.Entitlement(plan: .monthly, expirationDate: renews, isFamilyShared: false, willAutoRenew: false)
+        XCTAssertEqual(ProText.shortStatus(cancelled, locale: enUS), "Monthly · ends Oct 14, 2027")
+
+        let trial = ProAccess.Entitlement(plan: .yearly, expirationDate: renews, isFamilyShared: false,
+                                          isTrial: true, willAutoRenew: true)
+        XCTAssertEqual(ProText.shortStatus(trial, locale: enUS), "Yearly · free until Oct 14, 2027")
+
+        let lifetime = ProAccess.Entitlement(plan: .lifetime, expirationDate: nil, isFamilyShared: false)
+        XCTAssertEqual(ProText.shortStatus(lifetime, locale: enUS), "Lifetime")
+        XCTAssertEqual(ProText.longStatus(lifetime, locale: enUS), "Lifetime · yours for good")
+    }
+
+    func testReleaseListsOnlyShippedFeatures() {
+        XCTAssertEqual(ProFeature.listed(shipped: [], debug: false), [])
+        XCTAssertEqual(ProFeature.listed(shipped: [.supply], debug: false), [.supply])
+    }
+
+    func testDebugListsEveryFeatureUntilOneShips() {
+        XCTAssertEqual(ProFeature.listed(shipped: [], debug: true), ProFeature.allCases)
+        XCTAssertEqual(ProFeature.listed(shipped: [.supply], debug: true), [.supply])
+    }
+
+    func testWelcomeNamesWhatsOn() {
+        XCTAssertEqual(ProText.welcome([.supply]), "Supply is on. Nothing you already use has changed.")
+        XCTAssertEqual(ProText.welcome([.supply, .scan]),
+                       "Supply and label scanning are on. Nothing you already use has changed.")
+        XCTAssertEqual(ProText.welcome(ProFeature.allCases),
+                       "Supply, label scanning, weekly recaps, Apple Health trends and doctor reports are on. Nothing you already use has changed.")
+    }
+}
