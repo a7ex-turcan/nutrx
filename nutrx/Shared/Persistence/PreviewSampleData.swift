@@ -4,7 +4,7 @@ import SwiftData
 @MainActor
 let previewContainer: ModelContainer = {
     let container = try! ModelContainer(
-        for: UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self, UserPreferences.self, NutrientReminder.self, NutrientGroup.self,
+        for: UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self, UserPreferences.self, NutrientReminder.self, NutrientGroup.self, LogStack.self, LogStackEntry.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let context = container.mainContext
@@ -73,6 +73,19 @@ let previewContainer: ModelContainer = {
 
     for nutrient in [vitD, omega3, caffeine, water, protein] {
         context.insert(nutrient)
+    }
+
+    // Stacks: Morning (logged today) and Evening
+    let morning = LogStack(name: "Morning", sortOrder: 0)
+    morning.lastLoggedAt = .now
+    let evening = LogStack(name: "Evening", sortOrder: 1)
+    context.insert(morning)
+    context.insert(evening)
+    for (stack, nutrient, amount, order) in [(morning, vitD, 2000.0, 0), (morning, omega3, 1000, 1),
+                                             (evening, protein, 40, 0), (evening, water, 2, 1)] {
+        let entry = LogStackEntry(nutrient: nutrient, amount: amount, sortOrder: order)
+        context.insert(entry)
+        entry.stack = stack
     }
 
     // Some intake records for today to show progress

@@ -20,6 +20,11 @@ enum SettingsSummary {
         userGroupCount == 0 ? "None" : "\(userGroupCount)"
     }
 
+    /// Stacks the user made.
+    static func stacks(count: Int) -> String {
+        count == 0 ? "None" : "\(count)"
+    }
+
     /// The profile card's title: the name, or a prompt when there isn't one.
     static func profileTitle(name: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)

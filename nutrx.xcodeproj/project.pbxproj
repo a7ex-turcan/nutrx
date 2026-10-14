@@ -100,6 +100,8 @@
 			membershipExceptions = (
 				Models/Exclusion.swift,
 				Models/IntakeRecord.swift,
+				Models/LogStack.swift,
+				Models/LogStackEntry.swift,
 				Models/Nutrient.swift,
 				Models/NutrientGroup.swift,
 				Models/NutrientReminder.swift,
@@ -130,6 +132,8 @@
 			membershipExceptions = (
 				Models/Exclusion.swift,
 				Models/IntakeRecord.swift,
+				Models/LogStack.swift,
+				Models/LogStackEntry.swift,
 				Models/Nutrient.swift,
 				Models/NutrientGroup.swift,
 				Models/NutrientReminder.swift,
@@ -167,6 +171,8 @@
 			membershipExceptions = (
 				Models/Exclusion.swift,
 				Models/IntakeRecord.swift,
+				Models/LogStack.swift,
+				Models/LogStackEntry.swift,
 				Models/Nutrient.swift,
 				Models/NutrientGroup.swift,
 				Models/NutrientReminder.swift,
