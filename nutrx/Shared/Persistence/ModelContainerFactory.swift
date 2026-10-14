@@ -18,6 +18,8 @@ enum ModelContainerFactory {
             UserPreferences.self,
             NutrientReminder.self,
             NutrientGroup.self,
+            LogStack.self,
+            LogStackEntry.self,
         ])
     }
 

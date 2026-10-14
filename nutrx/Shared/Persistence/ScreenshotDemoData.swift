@@ -22,6 +22,7 @@ enum ScreenshotDemoData {
     static func replaceStore(in context: ModelContext, now: Date = .now) {
         // Children first. A failed delete would leave the demo set on top of the old data, so say so.
         let models: [any PersistentModel.Type] = [IntakeRecord.self, NutrientReminder.self, Exclusion.self,
+                                                  LogStackEntry.self, LogStack.self,
                                                   Nutrient.self, NutrientGroup.self, UserProfile.self,
                                                   UserPreferences.self]
         for model in models {
@@ -130,6 +131,20 @@ enum ScreenshotDemoData {
             ? calendar.date(bySettingHour: 23, minute: 59, second: 0, of: today)
             : calendar.date(bySettingHour: laterHour, minute: 0, second: 0, of: today) {
             context.insert(NutrientReminder(nutrient: protein, timeOfDay: later))
+        }
+
+        // Stacks: the morning three (not logged today) and an evening pair.
+        let morningStack = LogStack(name: "Morning", sortOrder: 0)
+        let daytimeStack = LogStack(name: "Through the day", sortOrder: 1)
+        context.insert(morningStack)
+        context.insert(daytimeStack)
+        for (stack, items) in [(morningStack, [(vitaminD, 2000.0), (omega3, 1000), (magnesium, 400)]),
+                               (daytimeStack, [(water, 0.5), (protein, 40)])] {
+            for (order, item) in items.enumerated() {
+                let entry = LogStackEntry(nutrient: item.0, amount: item.1, sortOrder: order)
+                context.insert(entry)
+                entry.stack = stack
+            }
         }
 
         try? context.save()

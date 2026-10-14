@@ -9,6 +9,7 @@ struct TodayView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
+    @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
     @State private var viewModel = TodayViewModel()
     @State private var nutrientToLog: Nutrient?
     @State private var nutrientToEdit: Nutrient?
@@ -23,6 +24,28 @@ struct TodayView: View {
     @State private var addDraft = NutrientDraft()
     @State private var selectedGroupForAdd: NutrientGroup?
     @AppStorage("wasSyncRestored") private var wasSyncRestored = false
+    @State private var stackToLog: LogStack?
+    /// Stack management, opened from the row's Edit (the list) or the log sheet's "Edit stack" (that stack).
+    @State private var stackEditing: StackEditing?
+    /// Set by the log sheet's "Edit stack"; opened once that sheet is gone.
+    @State private var pendingStackEdit: LogStack?
+
+    enum StackEditing: Identifiable {
+        case list
+        case stack(LogStack)
+
+        var id: String {
+            switch self {
+            case .list: "list"
+            case .stack(let stack): "\(stack.persistentModelID.hashValue)"
+            }
+        }
+    }
+
+    /// Stacks with something to log; an empty one only shows in Settings → Stacks.
+    private var stacksToShow: [LogStack] {
+        stacks.filter { !StackLogging.activeEntries(of: $0).isEmpty }
+    }
 
     private var hasCustomGroups: Bool {
         allGroups.contains(where: { !$0.isSystem })
@@ -69,6 +92,18 @@ struct TodayView: View {
                             dismissSyncBanner()
                         }
                         .listRowInsets(cardRowInsets)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                    }
+
+                    if !stacksToShow.isEmpty {
+                        StacksRow(
+                            stacks: stacksToShow,
+                            onLog: { stackToLog = $0 },
+                            onEdit: { stackEditing = .list }
+                        )
+                        .listRowInsets(EdgeInsets(top: Theme.Spacing.sectionTop - Theme.Spacing.cardGap / 2,
+                                                  leading: 0, bottom: Theme.Spacing.cardGap / 2, trailing: 0))
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                     }
@@ -145,6 +180,56 @@ struct TodayView: View {
         }
         .sheet(item: $nutrientToMove) { nutrient in
             MoveToGroupSheet(nutrient: nutrient)
+        }
+        .sheet(item: $stackToLog, onDismiss: {
+            if let stack = pendingStackEdit {
+                pendingStackEdit = nil
+                stackEditing = .stack(stack)
+            }
+        }) { stack in
+            LogStackSheet(
+                stack: stack,
+                totalFor: { viewModel.total(for: $0) },
+                onLog: { amounts in
+                    let result = withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) {
+                        viewModel.logStack(stack, amounts: amounts, context: modelContext)
+                    }
+                    Haptics.logged(reachingGoal: result.reachedGoal)
+                    refreshStreak()
+                    checkForReview()
+                    return result.logged
+                },
+                onUndo: { logged in
+                    withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) {
+                        viewModel.undoStack(logged, of: stack, context: modelContext)
+                    }
+                    refreshStreak()
+                },
+                onEditStack: { pendingStackEdit = stack }
+            )
+        }
+        .sheet(item: $stackEditing, onDismiss: {
+            viewModel.refresh(context: modelContext)
+        }) { editing in
+            NavigationStack {
+                Group {
+                    switch editing {
+                    case .list: StacksView()
+                    case .stack(let stack): StackDetailView(stack: stack)
+                    }
+                }
+                .toolbar {
+                    // Leading close, so it never sits next to the list's own Edit / Done.
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            stackEditing = nil
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .accessibilityLabel("Close")
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showAddSheet) {
             NutrientFormView(

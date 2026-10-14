@@ -39,6 +39,38 @@ final class TodayViewModel {
         return UpcomingReminder.next(after: now, among: candidates)
     }
 
+    /// Today's total for a nutrient, as shown on its card (0 for one that isn't on Today).
+    func total(for nutrient: Nutrient) -> Double {
+        nutrientIntakes.first { $0.nutrient.persistentModelID == nutrient.persistentModelID }?.total ?? 0
+    }
+
+    /// Logs a stack (with any amounts changed for this time) and does a + tap's follow-ups. Returns what was logged
+    /// so the sheet can show it and undo it, and whether any of it met a goal (for the haptic).
+    @discardableResult
+    func logStack(_ stack: LogStack, amounts: [PersistentIdentifier: Double],
+                  context: ModelContext) -> (logged: StackLogging.Logged, reachedGoal: Bool) {
+        let reachedGoal = StackLogging.activeEntries(of: stack).contains { entry in
+            guard let nutrient = entry.nutrient else { return false }
+            let amount = amounts[entry.persistentModelID] ?? entry.amount
+            return GoalProgress(nutrient: nutrient, current: total(for: nutrient)).reachesGoal(adding: amount)
+        }
+        let logged = StackLogging.log(stack, amounts: amounts, context: context)
+        afterStackChange(context: context)
+        return (logged, reachedGoal)
+    }
+
+    func undoStack(_ logged: StackLogging.Logged, of stack: LogStack, context: ModelContext) {
+        StackLogging.undo(logged, of: stack, context: context)
+        afterStackChange(context: context)
+    }
+
+    private func afterStackChange(context: ModelContext) {
+        refresh(context: context)
+        NotificationService.refreshDailyReminder(context: context)
+        NotificationService.refreshAllNutrientReminders(context: context)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
     func refresh(context: ModelContext) {
         let startOfDay = Calendar.current.startOfDay(for: .now)
         let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!

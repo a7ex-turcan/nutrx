@@ -134,6 +134,8 @@ nutrx/
 │   ├── IntakeRecord.swift
 │   ├── Exclusion.swift
 │   ├── NutrientReminder.swift   # One row per dose reminder per nutrient.
+│   ├── LogStack.swift           # A named set of nutrients with preset amounts, logged in one go (stacks).
+│   ├── LogStackEntry.swift      # One nutrient + amount in a LogStack.
 │   ├── NutrientGroup.swift      # Named group for organising nutrients. System "General" group seeded on first launch.
 │   └── NutrientTint.swift       # User-chosen nutrient colour (pure enum) + stable id-derived fallback.
 │
@@ -152,6 +154,8 @@ nutrx/
 │   │   │   ├── TodayView.swift              # Day-score card, banners, grouped NutrientCards with swipe actions + context menu.
 │   │   │   │                                # Listens for NSPersistentStoreRemoteChange to refresh on CloudKit sync.
 │   │   │   ├── LogSheet.swift               # Log an exact amount (stepper, ½×/1×/2×/Fill-to-goal chips, note) + today's entries with delete.
+│   │   │   ├── StacksRow.swift              # Today's "Stacks" header + Edit and the stack cards (sideways, or one full-width card).
+│   │   │   ├── LogStackSheet.swift          # Log a stack: per-entry amounts for this time, then the done state with Undo.
 │   │   │   └── NotificationBannerView.swift
 │   │   └── ViewModels/
 │   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords.
@@ -197,7 +201,9 @@ nutrx/
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
-│   │   │   └── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
+│   │   │   ├── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
+│   │   │   ├── StacksView.swift             # Settings → Stacks: list, reorder, swipe to delete, create; empty state.
+│   │   │   └── StackDetailView.swift        # One stack: name, nutrients with amounts, add / remove / reorder, delete.
 │   │   └── ViewModels/
 │   │       └── SettingsSummary.swift        # Row values: "On", "Noon check-in", "No account", group count, profile title.
 │   │
@@ -260,6 +266,7 @@ nutrx/
         │                                    # refreshAllNutrientReminders: one data-driven, serialized sync.
         ├── ReminderSchedule.swift           # Dose reminders as one-off requests per date (rolling window).
         ├── StreakService.swift              # Computes current/best streak from IntakeRecord + Exclusion data.
+        ├── StackLogging.swift               # Stacks: active entries, log (with per-time amounts), undo, add, "done today".
         └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30;
                                              # writeReviewURL (App Store review page) for Settings → Rate nutrx.
 ```
@@ -353,6 +360,29 @@ Users create and manage their own nutrients. No preset list — fully user-defin
 Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Logging a nutrient silences the rest of **today's** reminders for it (today's total above 0); later days are untouched. Reminders can be configured both during nutrient creation (inline in the form) and via the "Reminders" section in the Edit Nutrient form. Notification permission is requested on first reminder add if not yet granted.
 
 ---
+
+## Stacks
+
+Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-export/`.
+
+- **What:** `LogStack` (name, `sortOrder`, `lastLoggedAt`) with ordered `LogStackEntry`s (nutrient + amount, starting at the nutrient's step). Logging a stack inserts one `IntakeRecord` per entry — the same records as a + tap, so totals, streaks, History, widgets and the Watch need nothing new.
+- **Rules** (`StackLogging`, tested in `StackLoggingTests`):
+  - A stack skips entries whose nutrient is deleted, since a soft-deleted nutrient keeps its entries for history.
+  - Zero amounts are skipped.
+  - `lastLoggedAt` is set only when something was logged, and "done today" is the same calendar day, from any device.
+  - Undo deletes exactly the records that log added and restores the previous `lastLoggedAt`.
+  - − / + in a stack move by the nutrient's step and never go below one step.
+- **Today:** `StacksRow` sits between the day-score card (and banners) and the first group, with only stacks that have something to log.
+  - Several stacks scroll sideways as 176pt cards; a single stack is one full-width card.
+  - Logged today: a green check and a ghost "Log again".
+  - Edit opens Settings → Stacks in a sheet.
+- **Log sheet:** `LogStackSheet` changes amounts for **this time only**; the entry amounts don't change. It logs through `TodayViewModel.logStack`, which does a + tap's follow-ups (reminders, widgets) and the success haptic when an entry meets a goal.
+  - The done state shows "+1,000 IU" per row and "Logged 3 nutrients at 08:12", with Undo and Done.
+  - "Edit stack" closes the sheet and then opens that stack's detail (chained through the sheet's `onDismiss`, never two sheets at once).
+- **Settings:** a Stacks row (teal tile) under Groups.
+  - `StacksView` lists stacks in Today's order, with reorder, swipe to delete (with a confirmation; logged entries stay) and + to create one (named in an alert, then opened).
+  - `StackDetailView` has the name, the entries with − / +, swipe to remove, drag to reorder, Add nutrient and Delete stack.
+- **Not built yet:** "Log my Morning stack" in Siri and the Siri tip card on the detail screen (next, on top of `Shared/Intents/`).
 
 ## Today Tab – Core Logging UX
 
@@ -556,6 +586,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 - **Settings:** iCloud Sync section with toggle, status display, and "Delete iCloud Data" option.
 - **Banners:** one-time sync-restored and sync-enabled banners on Today screen (priority below notification banner).
 - **CloudKit model rules:** all relationships optional arrays (`[T]?`), no `@Attribute(.unique)`, all scalars need property-level defaults.
+- **New models need their CloudKit schema deployed before release:** run a Debug build signed in to iCloud so the new record types (e.g. `LogStack`, `LogStackEntry`) are created in the development environment, then deploy the schema to production in the CloudKit Console. Without it, App Store builds can't sync the new types.
 
 ---
 
@@ -581,7 +612,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 
 ## Data Models
 
-All persistence is handled via SwiftData. Seven model classes. No data is ever sent off-device.
+All persistence is handled via SwiftData. Nine model classes. No data is ever sent off-device.
 
 ### Design principles
 - **Everything is derived from raw records** — no pre-aggregated totals. Today's intake = SUM of `IntakeRecord` rows for today's calendar day.
@@ -704,6 +735,32 @@ Scheduled dose reminder for a nutrient. Maps to one one-off local notification p
 |---|---|---|
 | `nutrient` | `Nutrient` | Relationship |
 | `timeOfDay` | `Date` | Only time component used |
+
+---
+
+### LogStack
+
+A named set of nutrients with preset amounts, logged in one go (see Stacks).
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | `String` | "Morning" |
+| `sortOrder` | `Int` | Order on Today and in Settings → Stacks |
+| `createdAt` | `Date = Date()` | |
+| `lastLoggedAt` | `Date?` | Last time it was logged, from any device; drives "done today" |
+
+**Relationships:** → many `LogStackEntry`? (cascade)
+
+---
+
+### LogStackEntry
+
+| Field | Type | Notes |
+|---|---|---|
+| `stack` | `LogStack?` | Relationship |
+| `nutrient` | `Nutrient?` | Relationship. `Nutrient.stackEntries` is the inverse (cascade on hard delete) |
+| `amount` | `Double` | Logged each time, in the nutrient's unit; starts at its step |
+| `sortOrder` | `Int` | Order within the stack |
 
 ---
 

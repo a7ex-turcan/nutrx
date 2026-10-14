@@ -6,7 +6,7 @@ extension ModelContainer {
     static func inMemoryForTests() throws -> ModelContainer {
         try ModelContainer(
             for: UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self,
-            UserPreferences.self, NutrientReminder.self, NutrientGroup.self,
+            UserPreferences.self, NutrientReminder.self, NutrientGroup.self, LogStack.self, LogStackEntry.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         )
     }

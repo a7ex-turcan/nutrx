@@ -44,6 +44,10 @@ final class Nutrient {
     @Relationship(deleteRule: .cascade, inverse: \NutrientReminder.nutrient)
     var reminders: [NutrientReminder]? = []
 
+    /// The stacks this nutrient is in. A deleted (soft-deleted) nutrient keeps its entries, but stacks skip it.
+    @Relationship(deleteRule: .cascade, inverse: \LogStackEntry.nutrient)
+    var stackEntries: [LogStackEntry]? = []
+
     init(name: String, unit: String, step: Double, dailyTarget: Double, sortOrder: Int, isDeleted: Bool = false, goalType: GoalType = .minimum, upperBound: Double? = nil) {
         self.name = name
         self.unit = unit
