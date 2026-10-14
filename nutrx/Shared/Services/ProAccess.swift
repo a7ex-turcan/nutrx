@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import StoreKit
+import WidgetKit
 
 /// Whether this person has nutrx Pro, from StoreKit 2 on the device (docs/pro/PLAN.md, phase 3). Reads
 /// `Transaction.currentEntitlements` at launch, follows `Transaction.updates` (renewals, refunds, Ask to Buy, a
@@ -69,8 +70,11 @@ final class ProAccess {
            case .verified(let renewal) = status.renewalInfo {
             found?.willAutoRenew = renewal.willAutoRenew
         }
+        let changed = (entitlement != nil) != (found != nil)
         entitlement = found
         hasCheckedEntitlements = true
+        // A purchase, renewal lapse or refund changes what the widget may show (supply is Pro).
+        if changed { WidgetCenter.shared.reloadAllTimelines() }
         // Refill reminders (supply) are Pro: the scheduler follows the entitlement.
         NotificationService.supplyRemindersEnabled = Self.isStoreVisible && found != nil
     }

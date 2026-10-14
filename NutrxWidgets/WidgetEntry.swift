@@ -38,12 +38,15 @@ struct NutrxWidgetEntry: TimelineEntry {
         let isOut: Bool
 
         /// "Vitamin D · 6 days", "Vitamin D · 1 day", "Vitamin D · today", "Vitamin D · out".
-        var text: String {
-            if isOut { return "\(name) · out" }
+        var text: String { name + when }
+
+        /// The part after the name, kept whole when a long name has to shorten: " · 6 days".
+        var when: String {
+            if isOut { return " · out" }
             switch daysLeft {
-            case ...0: return "\(name) · today"
-            case 1: return "\(name) · 1 day"
-            default: return "\(name) · \(daysLeft) days"
+            case ...0: return " · today"
+            case 1: return " · 1 day"
+            default: return " · \(daysLeft) days"
             }
         }
     }
@@ -99,6 +102,14 @@ struct NutrxWidgetEntry: TimelineEntry {
         return NutrxWidgetEntry(date: base.date, nutrients: base.nutrients, isPlaceholder: false,
                                 currentStreak: base.currentStreak, streaksEnabled: base.streaksEnabled,
                                 runningLow: .init(name: "Vitamin D", daysLeft: 6, isOut: false))
+    }
+
+    /// A long name: only the name shortens.
+    static var runningLowLongNameSample: NutrxWidgetEntry {
+        let base = placeholder
+        return NutrxWidgetEntry(date: base.date, nutrients: base.nutrients, isPlaceholder: false,
+                                currentStreak: base.currentStreak, streaksEnabled: base.streaksEnabled,
+                                runningLow: .init(name: "Vitamin B12 Methylcobalamin Complex", daysLeft: 6, isOut: false))
     }
 
     static var empty: NutrxWidgetEntry {

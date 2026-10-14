@@ -75,13 +75,23 @@ struct MediumWidgetView: View {
                 Image(systemName: "waterbottle")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.textAmberInk)
+                    .accessibilityHidden(true)
                 Text("Running low:")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.textAmberInk)
-                Text(low.text)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.textPrimary)
-                    .lineLimit(1)
+                    .fixedSize()
+                // A long name shortens; the days never do.
+                HStack(spacing: 0) {
+                    Text(low.name)
+                        .lineLimit(1)
+                        .layoutPriority(0)
+                    Text(low.when)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .layoutPriority(1)
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.textPrimary)
             }
             .accessibilityElement(children: .combine)
         }
@@ -182,6 +192,7 @@ private struct WidgetNutrientRow: View {
     NutrxMediumWidget()
 } timeline: {
     NutrxWidgetEntry.runningLowSample
+    NutrxWidgetEntry.runningLowLongNameSample
 }
 
 #Preview("Small", as: .systemSmall) {
