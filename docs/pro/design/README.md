@@ -2,7 +2,7 @@
 
 Mockups for the seven prompts in [`../DESIGN-PROMPTS.md`](../DESIGN-PROMPTS.md), one folder per feature in build order. Each folder has:
 
-- `screens/*.png` — @2x renders. **The visual target.** Light and dark for every screen, plus one key screen at the largest accessibility text size (`largest-text.png`).
+- `screens/*.png` — @2x renders. **The visual target.** Light and dark for each main screen (extra states such as `today-one`, `log-stack-done`, `export-done`, `paywall-lifetime`, `settings-pro`, `review-partial`, `history-free` and the PDF pages are light only; build their dark versions from the same tokens), plus one key screen at the largest accessibility text size (`largest-text.png`).
 - `source/*.dc.html` — design-tool source, for reading exact values only. Never port or ship it.
 
 Everything follows the v2 tokens and components in [`../../design/DESIGN.md`](../../design/DESIGN.md). This file only lists what's **new**. Sample data (Vitamin D, "Morning" stack, prices, dates) is illustrative.
@@ -15,8 +15,8 @@ The only Pro marker a free user sees. It's never a lock, blur or wall.
 
 | | Light | Dark |
 |---|---|---|
-| Inline badge (in rows and cards) | text `PRO`, SF Pro Rounded Heavy 10pt, tracking 0.6, padding 4×6, radius 6, background Forest @ 9%, text Forest | Green @ 16%, text `#7BE3A0` |
-| Corner badge (toolbar icon buttons) | 9pt, padding 3×4, radius 5, solid Forest, white text, offset −6 / −4 from the button's top-right corner | solid Green, text `#0A130E` |
+| Inline badge (in rows and cards) | text `PRO`, SF Pro Rounded Heavy 10pt, tracking 0.6, padding 4×6, radius 6, background Forest @ 9%, text Forest | Green @ 16%, text `Brand/GreenSoft` (`#7BE3A0`) |
+| Corner badge (toolbar icon buttons) | 9pt, padding 3×4, radius 5, solid Forest, white text, offset −6 / −4 from the button's top-right corner | solid Green, text `Control/OnPrimary` (`#0A130E`) |
 
 Tapping anything with a badge opens the paywall sheet. The free version of a screen never hides content; it only adds the badge.
 
@@ -63,7 +63,7 @@ Tapping anything with a badge opens the paywall sheet. The free version of a scr
 
 **Paywall** (large-detent sheet, built around `SubscriptionStoreView`):
 
-1. **Header:** Forest, padding 26/22/22. It has the ring motif (Green arcs at 30pt stroke, partly offscreen top-right), the "nutrx" wordmark (Rounded Heavy 30) with a `PRO` chip (`#7BE3A0` on Forest text) and one line of copy. Close button: 44pt, white @ 12%.
+1. **Header:** Forest, padding 26/22/22. It has the ring motif (Green arcs at 30pt stroke, partly offscreen top-right), the "nutrx" wordmark (Rounded Heavy 30) with a `PRO` chip (`Brand/GreenSoft` with Forest text) and one line of copy. Close button: 44pt, white @ 12%.
 2. **Feature rows:** 46pt min height, a 34pt tinted tile (radius 10), title (15 semibold) and one line (13 secondary). The five features use tints amber, teal, indigo, coral and blue.
 3. **Plan picker:**
    - Radio cards: 56pt min, radius 16, Card background. Selected: 2pt Forest border (dark: Green) and a 22pt radio with a 6pt ring.
@@ -109,7 +109,7 @@ Pro-only rows elsewhere in Settings (Apple Health, Report) get the inline badge 
 - **Analytics supply card:**
   - Days left: Rounded Bold 34 in AmberInk when low.
   - "12 of 120 softgels".
-  - A 12pt gauge: fill `#E08A1E` when low (tint otherwise), with a 2pt tick at the reminder threshold.
+  - A 12pt gauge: fill `Status/Amber` (`#E08A1E`) when low (tint otherwise), with a 2pt tick at the reminder threshold.
   - An explanation line, the last refill date, and **Refilled** (ghost; primary when opened from the reminder).
   - Focus state: a 3pt Forest outline (dark: Green).
 - **Widget:** a hairline divider, then a 12pt line: amber bottle + "Running low:" (AmberInk) + "Vitamin D · 6 days". It shows only for the soonest-running-out nutrient.
@@ -129,7 +129,7 @@ Pro-only rows elsewhere in Settings (Apple Health, Report) get the inline badge 
 **New components**
 
 - **Scan entry card:** a 44pt teal tile with the doc-scanner symbol, the title, "Fill this in from the bottle", and a chevron. Below it is an "or fill in by hand" divider, then the normal form.
-- **Recognised-text highlight:** 2pt `#7BE3A0` outline with a 16% fill, radius 5–6, following the text's rotation. Use VisionKit's own highlighting where possible.
+- **Recognised-text highlight:** 2pt `Brand/GreenSoft` outline with a 16% fill, radius 5–6, following the text's rotation. Use VisionKit's own highlighting where possible.
 - **Camera chrome:** glass buttons (white @ 16%, blur) for Cancel and Torch, an instruction pill (black @ 55%, blur), a 76pt shutter (4pt ring), and the privacy line "Read on your iPhone. Nothing is uploaded." (13pt, white @ 75%).
 - **"from label" tag:** 11pt bold teal-ink on a teal tint, with a small scan symbol, aligned right on the field label row. It disappears once the user edits that field.
 - **Unread field:** the row background is amber @ ~8%, with an AmberInk hint under the empty field ("Couldn't read the bottle size — it's usually “servings per container”.").
@@ -153,7 +153,7 @@ Pro-only rows elsewhere in Settings (Apple Health, Report) get the inline badge 
 - **Recap hero:**
   - Forest, radius 28, padding 18.
   - An 88pt ring with **7 segments, one per day** (lit = every goal met that day), with "5/7 · full days" in the centre.
-  - The date range in uppercase 13pt `#9FC2AE`, a headline ("31 of 42 goals met"), and the 3–4 sentence summary in 15/22 `#DCE9E0`.
+  - The date range in uppercase 13pt `#9FC2AE`, a headline ("31 of 42 goals met"), and the 3–4 sentence summary in 15/22 `#DCE9E0`. These two on-forest colours are new; add them as tokens (`OnForest/Caption`, `OnForest/Body`) when phase 6 builds the recap, rather than hard-coding them.
   - The summary is built from computed facts. The on-device model only phrases them.
 - **Fact card** (2×2 grid, gap 10): label (12 secondary), a 28pt tinted tile + value (16 semibold), and a sub-line. Fixed set: Steadiest · Slipped · Day you tend to miss · Streak.
 - **Week strip:** eight 60pt cells, each with a 28pt ring (week hit %) and the week's start day. The selected cell has a chip background.

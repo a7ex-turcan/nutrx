@@ -89,7 +89,7 @@ These ship to everyone and carry the model changes we want before Pro.
   - No receipts leave the device. StoreKit 2 verifies on the device.
   - The entitlement is never stored in SwiftData or iCloud. It's derived from StoreKit every launch.
 - **Paywall:** use `SubscriptionStoreView` (system, App Review-friendly, handles the trial, terms and restore) styled with the brand, with a lifetime button next to it. It lists exactly what Pro adds and repeats that everything else stays free.
-- **Gate:** `.proGated()`. A Pro feature's entry point shows a lock badge and opens the paywall. The UI never hides the free version of anything.
+- **Gate:** `.proGated()`. A Pro feature's entry point shows the small "Pro" badge from the handoff (never a lock, blur or wall) and opens the paywall. The UI never hides the free version of anything.
 - **Settings:** a "nutrx Pro" row (status, manage subscription, restore).
 - **Tests:** `StoreKitTest` sessions for buying, expiry, refund, restore and lifetime.
 - **Not shipped on its own:** this phase merges, but stays hidden behind a flag until phase 4 lands.
@@ -118,7 +118,7 @@ These ship to everyone and carry the model changes we want before Pro.
 - **Capture:** VisionKit `DataScannerViewController` (live text), or a photo. Vision text recognition runs on the device.
 - **Extract:** Foundation Models with guided generation into a `@Generable struct SupplementLabel { name, unit, amountPerServing, servingsPerContainer }`, prompted with the recognised text only. If the model isn't available (`SystemLanguageModel.default.availability`), a rule-based parser (regex for "1000 IU", "120 softgels") fills in what it can.
 - **Prefill:** a `NutrientDraft` (name, unit, step = amount per serving), plus supply (phase 4). The user always confirms in the normal form. Nothing is created automatically.
-- **Entry point:** "Scan a label" in the new-nutrient form only. Not in onboarding: a new user shouldn't meet a lock badge or a paywall before logging anything. For free users the form shows the option with a small Pro badge, and tapping it opens the paywall.
+- **Entry point:** "Scan a label" in the new-nutrient form only. Not in onboarding: a new user shouldn't meet a Pro badge or a paywall before logging anything. For free users the form shows the option with a small Pro badge, and tapping it opens the paywall.
 - **Tests:** a corpus of real label texts covers both the parser and the model output mapping. The model is mocked in unit tests.
 
 ### Phase 6 — Weekly recap (Pro, on-device phrasing)
