@@ -24,7 +24,8 @@ struct SupplySheet: View {
     static let maxServings = 9999
     /// The typed count, clamped to 1…9,999 (0 while the field is empty or not a number).
     private var servings: Int {
-        Int(servingsText.filter(\.isNumber)).map { min(Self.maxServings, $0) } ?? 0
+        // The locale's own digits and grouping, as the number-bound field read them.
+        (try? Int(servingsText, format: .number)).map { min(Self.maxServings, max(0, $0)) } ?? 0
     }
     private static let stepperWidth: CGFloat = 156
 

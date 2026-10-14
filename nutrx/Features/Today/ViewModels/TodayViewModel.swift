@@ -212,9 +212,10 @@ final class TodayViewModel {
     func deleteRecord(_ record: IntakeRecord, context: ModelContext) {
         guard let nutrient = record.nutrient else { return }
         let amount = record.amount
+        let date = record.date
         context.delete(record)
         try? context.save()
-        updateTotal(for: nutrient, delta: -amount)
+        updateTotal(for: nutrient, delta: -amount, at: date)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
         WidgetCenter.shared.reloadAllTimelines()
@@ -227,11 +228,12 @@ final class TodayViewModel {
 
     // MARK: - In-place total update (avoids re-fetch reordering)
 
-    private func updateTotal(for nutrient: Nutrient, delta: Double) {
+    /// `at` is when the change counts for supply: now for a + or −, the entry's own date for a deleted entry (so
+    /// deleting a dose from before a same-day refill doesn't eat into the new bottle).
+    private func updateTotal(for nutrient: Nutrient, delta: Double, at date: Date = .now) {
         let id = nutrient.persistentModelID
-        // A + or − (or a deleted entry) changes what's left in the bottle too.
         if supplyLogs[id] != nil {
-            supplyLogs[id]?.append(SupplySchedule.Log(date: .now, amount: delta))
+            supplyLogs[id]?.append(SupplySchedule.Log(date: date, amount: delta))
         }
 
         // Update flat list
