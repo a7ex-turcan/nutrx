@@ -8,7 +8,7 @@ Build **one phase per session**, each through its own PR, the same way the v2 re
 
 ## 0. Principles (read first)
 
-1. **Everything nutrx does today stays free, forever.** That covers tracking, widgets, the Watch, history, analytics and iCloud sync. CSV export, Siri and stacks (phase 2) are free when they ship. The website and support FAQ promise that "logging, history, and everything you use daily will never be gated". So **stacks and Siri logging are free too.** Pro only adds new things around tracking.
+1. **Everything nutrx does today stays free, forever.** That covers tracking, widgets, the Watch, history, analytics and iCloud sync. The website and support FAQ promise that "logging, history, and everything you use daily will never be gated", so **CSV export, Siri and stacks (phase 2) are free too** when they ship. Pro only adds new things around tracking.
 2. **No servers, no exceptions.** All AI runs on the device (Apple's Foundation Models framework). Nothing is sent to us or to any AI company. This replaces the old roadmap's "third-party LLM API" idea, which would break the privacy promise.
 3. **No advice.** nutrx doesn't suggest amounts. Pro features say *what happened* ("Omega-3 slips on weekends"), never *what to take*. That rules out the old "smart target suggestions" and any interaction checks. It also keeps us inside App Review's health-claims rule (guideline 1.4.1).
 4. **No chat box.** AI shows up as features that use the user's own data and save them taps. That's the answer to "why not just ask ChatGPT": it doesn't have your logs, it can't act in the app, and it's not private.
@@ -83,6 +83,7 @@ These ship to everyone and carry the model changes we want before Pro.
 
 ### Phase 3 — StoreKit foundation (no feature yet)
 
+- **First:** retire the StoreKit / AI guardrail in CLAUDE.md and AGENTS.md (see phase 9, "CLAUDE.md and AGENTS.md"), so this phase doesn't conflict with it.
 - **App Store Connect:** a subscription group "nutrx Pro" with monthly and yearly plans, plus a non-consumable lifetime purchase. The user creates these in the web UI, or with the API if asked. Add a `.storekit` configuration file for local testing.
 - **`ProAccess`** (`Shared/Services/`): an `@Observable` that reads `Transaction.currentEntitlements` at launch and listens to `Transaction.updates`. It exposes `isPro`, calls `AppStore.sync()` for Restore Purchases, and handles family sharing.
   - No receipts leave the device. StoreKit 2 verifies on the device.
