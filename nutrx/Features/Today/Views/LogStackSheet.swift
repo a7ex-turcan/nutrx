@@ -162,10 +162,19 @@ struct LogStackSheet: View {
             let note = Text("Changes here apply to this time only.")
                 .font(.footnote)
                 .foregroundStyle(Theme.textSecondary)
-            let editButton = Button("Edit stack", action: editStack)
-                .font(.footnote.weight(.bold))
-                .foregroundStyle(Theme.controlPrimary)
-                .buttonStyle(.plain)
+            // The taps reach 12pt beyond the text (closer to 44pt) without moving it; the Log button below wins any
+            // overlap.
+            let editButton = Button(action: editStack) {
+                Text("Edit stack")
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 8)
+                    .contentShape(Rectangle())
+                    .padding(.vertical, -12)
+                    .padding(.horizontal, -8)
+            }
+            .font(.footnote.weight(.bold))
+            .foregroundStyle(Theme.controlPrimary)
+            .buttonStyle(.plain)
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     note.fixedSize()
