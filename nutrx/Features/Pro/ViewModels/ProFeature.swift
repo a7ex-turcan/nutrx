@@ -63,11 +63,15 @@ enum ProFeature: String, CaseIterable, Identifiable {
     /// What the paywall and the Pro screen list: the shipped features — or, in Debug builds before any has
     /// shipped, all of them, so the screens can be checked against the design.
     static var listed: [ProFeature] {
-        let shipped = allCases.filter(\.isShipped)
         #if DEBUG
-        return shipped.isEmpty ? allCases : shipped
+        listed(shipped: allCases.filter(\.isShipped), debug: true)
         #else
-        return shipped
+        listed(shipped: allCases.filter(\.isShipped), debug: false)
         #endif
+    }
+
+    /// The rule behind `listed`, testable for both build configurations.
+    static func listed(shipped: [ProFeature], debug: Bool) -> [ProFeature] {
+        debug && shipped.isEmpty ? allCases : shipped
     }
 }

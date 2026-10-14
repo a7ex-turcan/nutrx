@@ -13,7 +13,14 @@ struct ProGatedButton<Label: View>: View {
     var body: some View {
         let isPro = proAccess?.isPro ?? false
         Button {
-            if isPro { action() } else { showPaywall = true }
+            Task {
+                // Right after launch a Pro user isn't known yet: wait for the first check rather than show the
+                // paywall to someone who already paid.
+                if let proAccess, !proAccess.hasCheckedEntitlements {
+                    await proAccess.refreshEntitlement()
+                }
+                if proAccess?.isPro ?? false { action() } else { showPaywall = true }
+            }
         } label: {
             label(!isPro)
         }

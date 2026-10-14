@@ -25,7 +25,7 @@ struct ProWelcomeView: View {
                 .foregroundStyle(Theme.textPrimary)
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
-            Text("\(ProFeature.welcomeList) are on. Nothing you already use has changed.")
+            Text(ProText.welcome(ProFeature.listed))
                 .font(.body)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)
@@ -63,24 +63,6 @@ private struct SegmentedRingMark: View {
             }
         }
         .rotationEffect(.degrees(-90))
-    }
-}
-
-extension ProFeature {
-    /// "Supply, label scanning, weekly recaps, Apple Health trends and doctor reports" for what's listed.
-    static var welcomeList: String {
-        let names: [String] = listed.map { feature in
-            switch feature {
-            case .supply: "Supply"
-            case .scan: "label scanning"
-            case .recap: "weekly recaps"
-            case .health: "Apple Health trends"
-            case .report: "doctor reports"
-            }
-        }
-        // "a, b and c", as in the design (no serial comma).
-        let sentence = names.count > 1 ? names.dropLast().joined(separator: ", ") + " and " + names.last! : names.joined()
-        return sentence.prefix(1).uppercased() + sentence.dropFirst()
     }
 }
 

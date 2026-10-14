@@ -107,7 +107,12 @@ final class ProAccess {
         var found = Self.entitlement(from: transactions.map(EntitlementCandidate.init))
         // Whether the winning subscription renews lives in its renewal info, not the transaction.
         if let current = found, current.plan != .lifetime,
-           let transaction = transactions.first(where: { Plan(productID: $0.productID) == current.plan }),
+           let transaction = transactions.first(where: { candidate in
+               // The transaction the entitlement came from: same plan and ownership, still valid.
+               Plan(productID: candidate.productID) == current.plan
+                   && (candidate.ownershipType == .familyShared) == current.isFamilyShared
+                   && candidate.revocationDate == nil && !candidate.isUpgraded
+           }),
            let status = await transaction.subscriptionStatus,
            case .verified(let renewal) = status.renewalInfo {
             found?.willAutoRenew = renewal.willAutoRenew

@@ -87,7 +87,7 @@ struct ProRingTile: View {
                 .rotationEffect(.degrees(-60))
         }
         .frame(width: size, height: size)
-        .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: Theme.Radius.iconTile, style: .continuous))
+        .background(Theme.onForestTrack, in: RoundedRectangle(cornerRadius: Theme.Radius.iconTile, style: .continuous))
         .accessibilityHidden(true)
     }
 }

@@ -40,11 +40,7 @@ struct PaywallView: View {
         }
         .presentationDetents(welcomed ? [.medium] : [.large])
         .presentationDragIndicator(welcomed ? .visible : .hidden)
-        .task {
-            await proAccess.loadProducts()
-            trialEligible = await proAccess.product(.yearly)?.subscription?.isEligibleForIntroOffer ?? false
-            loading = false
-        }
+        .task { await loadStore() }
         .alert(item: $message) { message in
             Alert(title: Text(message.title), message: Text(message.body), dismissButton: .default(Text("OK")))
         }
@@ -95,7 +91,7 @@ struct PaywallView: View {
                         .font(.body.weight(.semibold))
                         .foregroundStyle(Theme.onForestPrimary)
                         .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
-                        .background(Color.white.opacity(0.12), in: Circle())
+                        .background(Theme.onForestTrack, in: Circle())
                 }
                 .buttonStyle(.plain)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
@@ -161,10 +157,7 @@ struct PaywallView: View {
                     .foregroundStyle(Theme.textSecondary)
                 Button("Try again") {
                     loading = true
-                    Task {
-                        await proAccess.loadProducts()
-                        loading = false
-                    }
+                    Task { await loadStore() }
                 }
                 .font(.body.weight(.semibold))
                 .foregroundStyle(Theme.controlPrimary)
@@ -313,6 +306,13 @@ struct PaywallView: View {
     }
 
     // MARK: - Actions
+
+    /// Products and trial eligibility together, so the button and terms always match what a purchase will do.
+    private func loadStore() async {
+        await proAccess.loadProducts()
+        trialEligible = await proAccess.product(.yearly)?.subscription?.isEligibleForIntroOffer ?? false
+        loading = false
+    }
 
     private func buy(_ product: Product) {
         purchasing = true

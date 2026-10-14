@@ -54,9 +54,21 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.longStatus(lifetime, locale: enUS), "Lifetime · yours for good")
     }
 
-    func testThePaywallOnlyListsShippedFeaturesInRelease() {
-        // Debug builds list every feature until one ships (to check the design); Release lists shipped ones only.
-        XCTAssertEqual(ProFeature.listed.isEmpty, false)
-        XCTAssertTrue(ProFeature.allCases.allSatisfy { !$0.isShipped }, "update this when supply ships (phase 4)")
+    func testReleaseListsOnlyShippedFeatures() {
+        XCTAssertEqual(ProFeature.listed(shipped: [], debug: false), [])
+        XCTAssertEqual(ProFeature.listed(shipped: [.supply], debug: false), [.supply])
+    }
+
+    func testDebugListsEveryFeatureUntilOneShips() {
+        XCTAssertEqual(ProFeature.listed(shipped: [], debug: true), ProFeature.allCases)
+        XCTAssertEqual(ProFeature.listed(shipped: [.supply], debug: true), [.supply])
+    }
+
+    func testWelcomeNamesWhatsOn() {
+        XCTAssertEqual(ProText.welcome([.supply]), "Supply is on. Nothing you already use has changed.")
+        XCTAssertEqual(ProText.welcome([.supply, .scan]),
+                       "Supply and label scanning are on. Nothing you already use has changed.")
+        XCTAssertEqual(ProText.welcome(ProFeature.allCases),
+                       "Supply, label scanning, weekly recaps, Apple Health trends and doctor reports are on. Nothing you already use has changed.")
     }
 }

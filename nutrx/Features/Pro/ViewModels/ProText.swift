@@ -24,6 +24,24 @@ enum ProText {
         }
     }
 
+    /// "Supply, label scanning, weekly recaps, Apple Health trends and doctor reports are on. Nothing you
+    /// already use has changed." — no serial comma, as in the design; "Supply is on." for one.
+    static func welcome(_ features: [ProFeature]) -> String {
+        let names: [String] = features.map { feature in
+            switch feature {
+            case .supply: "supply"
+            case .scan: "label scanning"
+            case .recap: "weekly recaps"
+            case .health: "Apple Health trends"
+            case .report: "doctor reports"
+            }
+        }
+        guard let last = names.last else { return "Nothing you already use has changed." }
+        let list = names.count > 1 ? names.dropLast().joined(separator: ", ") + " and " + last : last
+        let verb = names.count == 1 ? "is" : "are"
+        return list.prefix(1).uppercased() + list.dropFirst() + " \(verb) on. Nothing you already use has changed."
+    }
+
     static func planTitle(_ plan: ProAccess.Plan) -> String {
         switch plan {
         case .yearly: "Yearly"
