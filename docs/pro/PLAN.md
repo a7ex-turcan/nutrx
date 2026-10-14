@@ -8,7 +8,7 @@ Build **one phase per session**, each through its own PR, the same way the v2 re
 
 ## 0. Principles (read first)
 
-1. **Everything nutrx does today stays free, forever.** That covers tracking, widgets, the Watch, history, analytics, iCloud sync and data export. The website and support FAQ promise that "logging, history, and everything you use daily will never be gated". So **stacks and Siri logging are free too.** Pro only adds new things around tracking.
+1. **Everything nutrx does today stays free, forever.** That covers tracking, widgets, the Watch, history, analytics and iCloud sync. CSV export, Siri and stacks (phase 2) are free when they ship. The website and support FAQ promise that "logging, history, and everything you use daily will never be gated". So **stacks and Siri logging are free too.** Pro only adds new things around tracking.
 2. **No servers, no exceptions.** All AI runs on the device (Apple's Foundation Models framework). Nothing is sent to us or to any AI company. This replaces the old roadmap's "third-party LLM API" idea, which would break the privacy promise.
 3. **No advice.** nutrx doesn't suggest amounts. Pro features say *what happened* ("Omega-3 slips on weekends"), never *what to take*. That rules out the old "smart target suggestions" and any interaction checks. It also keeps us inside App Review's health-claims rule (guideline 1.4.1).
 4. **No chat box.** AI shows up as features that use the user's own data and save them taps. That's the answer to "why not just ask ChatGPT": it doesn't have your logs, it can't act in the app, and it's not private.
@@ -96,7 +96,7 @@ These ship to everyone and carry the model changes we want before Pro.
 ### Phase 4 — Supply & refills (first Pro feature, ship with phase 3)
 
 - **Model:** add optional fields to `Nutrient` (CloudKit-safe defaults):
-  - `servingAmount` (units per serving, e.g. 1,000 IU);
+  - `servingAmount` (units per serving, e.g. 1,000 IU). It defaults to `step`, since "each tap adds" is one serving for most supplements. The Supply row shows it pre-filled and only asks again if a serving differs from a tap.
   - `supplyServings` (servings when last refilled);
   - `supplyRefilledAt`;
   - `refillReminderDays` (e.g. 7).
@@ -117,7 +117,7 @@ These ship to everyone and carry the model changes we want before Pro.
 - **Capture:** VisionKit `DataScannerViewController` (live text), or a photo. Vision text recognition runs on the device.
 - **Extract:** Foundation Models with guided generation into a `@Generable struct SupplementLabel { name, unit, amountPerServing, servingsPerContainer }`, prompted with the recognised text only. If the model isn't available (`SystemLanguageModel.default.availability`), a rule-based parser (regex for "1000 IU", "120 softgels") fills in what it can.
 - **Prefill:** a `NutrientDraft` (name, unit, step = amount per serving), plus supply (phase 4). The user always confirms in the normal form. Nothing is created automatically.
-- **Entry points:** "Scan a label" in the new-nutrient form and in onboarding's "Something else".
+- **Entry point:** "Scan a label" in the new-nutrient form only. Not in onboarding: a new user shouldn't meet a lock badge or a paywall before logging anything. For free users the form shows the option with a small Pro badge, and tapping it opens the paywall.
 - **Tests:** a corpus of real label texts covers both the parser and the model output mapping. The model is mocked in unit tests.
 
 ### Phase 6 — Weekly recap (Pro, on-device phrasing)
@@ -137,7 +137,7 @@ These ship to everyone and carry the model changes we want before Pro.
 
 ### Phase 8 — Report for your doctor (Pro)
 
-- **Build:** a PDF from SwiftUI views with `ImageRenderer`. It has a period picker (30/90 days or custom) and covers each nutrient's goal, daily totals, hit rate and notes, plus optional trends.
+- **Build:** a PDF from SwiftUI views with `ImageRenderer`. It has a period picker (30/90 days or custom) and covers each nutrient's goal, daily totals, hit rate and notes, plus optional trends. `ImageRenderer` renders one view per page, so the report splits its content into page-sized views itself (a summary page, then a fixed number of days per page), each drawn into its own page of one PDF context.
 - **Share:** through the share sheet. Nothing is stored or sent by the app.
 - **Tests:** pagination and a snapshot of a fixture report.
 
@@ -152,7 +152,7 @@ These ship to everyone and carry the model changes we want before Pro.
   - a Pro section on the homepage and features page;
   - the FAQ "Is nutrx free?" updated;
   - the privacy policy covering Apple Health (read-only, never leaves the device, never in iCloud) and on-device AI.
-- **CLAUDE.md:** the "Monetisation" section rewritten from this plan, and the "Do not build StoreKit / AI before MVP 4" rule retired.
+- **CLAUDE.md and AGENTS.md:** the "Monetisation" section rewritten from this plan. The "Do not build StoreKit / AI before MVP 4" guardrail is retired in both files, and AGENTS.md stops naming the Pre-Pro sprint as next. Do this at the start of phase 3, so its StoreKit work doesn't conflict with the guardrail.
 
 ---
 
