@@ -38,6 +38,8 @@ struct nutrxApp: App {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                // A subscription that lapses sends no `Transaction.updates`, so look again whenever the app comes back.
+                Task { await proAccess.refreshEntitlement() }
                 StackLogging.repairDuplicateIDs(context: modelContainer.mainContext)
                 WidgetCenter.shared.reloadAllTimelines()
                 // Siri's "Log my <nutrient>" phrases use the current nutrient names.

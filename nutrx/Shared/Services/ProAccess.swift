@@ -142,6 +142,9 @@ final class ProAccess {
         /// Waiting for approval (Ask to Buy, a bank check); the update arrives through `Transaction.updates`.
         case pending
         case cancelled
+        /// Bought but not verifiable on this device (or an outcome StoreKit added later): nothing unlocked, and
+        /// the paywall says so rather than looking like the user backed out.
+        case failed
     }
 
     /// Buys a product. A verified transaction is finished and unlocks Pro straight away.
@@ -154,13 +157,13 @@ final class ProAccess {
         case .success(.unverified):
             // StoreKit couldn't verify it on the device; it doesn't unlock anything.
             await refreshEntitlement()
-            return .cancelled
+            return .failed
         case .pending:
             return .pending
         case .userCancelled:
             return .cancelled
         @unknown default:
-            return .cancelled
+            return .failed
         }
     }
 

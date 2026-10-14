@@ -271,9 +271,12 @@ nutrx/
         ├── StreakService.swift              # Computes current/best streak from IntakeRecord + Exclusion data.
         ├── StackLogging.swift               # Stacks: active entries, log (with per-time amounts), undo, add, "done today".
         ├── ExportService.swift              # CSV export: entries for a period, RFC 4180 CSV, file name, temp file.
+        ├── ProAccess.swift                  # nutrx Pro: StoreKit 2 entitlement (never stored), products, purchase, restore.
         └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30;
                                              # writeReviewURL (App Store review page) for Settings → Rate nutrx.
 ```
+
+Outside `nutrx/`, besides the other targets: `StoreKit/nutrxPro.storekit` is the local StoreKit configuration (see nutrx Pro: StoreKit), and `Tools/` holds the App Store Connect and screenshot tools.
 
 ### Rules Claude Code must follow for file placement
 

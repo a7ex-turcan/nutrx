@@ -158,6 +158,14 @@ final class ProAccessTests: XCTestCase {
         XCTAssertEqual(pro.entitlement?.plan, .lifetime)
     }
 
+    func testRestoreFindsAPurchaseMadeElsewhere() async throws {
+        session = try makeSession()
+        let pro = ProAccess()
+        try await session.buyProduct(identifier: ProAccess.ProductID.lifetime)
+        try await pro.restore()  // AppStore.sync() against the test session, then a fresh entitlement check
+        XCTAssertEqual(pro.entitlement?.plan, .lifetime)
+    }
+
     func testAPurchaseMadeElsewhereIsPickedUpOnRefresh() async throws {
         session = try makeSession()
         let pro = ProAccess()
