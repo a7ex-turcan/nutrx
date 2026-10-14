@@ -11,6 +11,10 @@ struct SupplyCard: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(NotificationRouter.self) private var router: NotificationRouter?
+
+    /// Opened from a refill reminder: a forest outline (green in dark) and Refilled as the primary button.
+    private var isFocused: Bool { router?.supplyNutrientID == nutrient.id }
     @State private var showSheet = false
     @State private var confirmRefill = false
 
@@ -137,11 +141,16 @@ struct SupplyCard: View {
             } label: {
                 Label("Refilled", systemImage: "arrow.clockwise")
                     .font(.headline)
-                    .foregroundStyle(Theme.textPrimary)
+                    .foregroundStyle(isFocused ? Theme.controlOnPrimary : Theme.textPrimary)
                     .frame(maxWidth: .infinity, minHeight: 50)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
-                            .strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
+                    .background {
+                        if isFocused {
+                            RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                                .fill(Theme.controlPrimary)
+                        } else {
+                            RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                                .strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
+                        }
                     }
                     .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
             }
@@ -149,6 +158,15 @@ struct SupplyCard: View {
         }
         .padding(padding)
         .cardStyle()
+        .overlay {
+            if isFocused {
+                RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+                    .strokeBorder(colorScheme == .dark ? Theme.green : Theme.forest, lineWidth: 3)
+            }
+        }
+        .onDisappear {
+            if isFocused { router?.supplyNutrientID = nil }
+        }
     }
 
     @ViewBuilder
@@ -201,5 +219,7 @@ struct SupplyCard: View {
     private func refill() {
         nutrient.refillSupply()
         try? modelContext.save()
+        router?.supplyNutrientID = nil
+        NotificationService.refreshAllNutrientReminders(context: modelContext)
     }
 }

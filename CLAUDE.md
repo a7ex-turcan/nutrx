@@ -286,8 +286,11 @@ nutrx/
         ├── StackLogging.swift               # Stacks: active entries, log (with per-time amounts), undo, add, "done today".
         ├── ExportService.swift              # CSV export: entries for a period, RFC 4180 CSV, file name, temp file.
         ├── ProAccess.swift                  # nutrx Pro: StoreKit 2 entitlement (never stored), products, purchase, restore.
+        ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (no ProAccess needed).
         ├── SupplySchedule.swift             # Supply: remaining, daily use, days left, level (pure); Nutrient.supplyStatus / refillSupply.
         ├── SupplyText.swift                 # Supply copy: Today hint, analytics card, sheet sentence.
+        ├── RefillSchedule.swift             # Refill reminders: when (one per bottle, 10:00), snooze, title/body (pure).
+        ├── NotificationHandler.swift        # UNUserNotificationCenterDelegate (refill actions, taps) + NotificationRouter.
         └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30;
                                              # writeReviewURL (App Store review page) for Settings → Rate nutrx.
 ```
@@ -558,10 +561,11 @@ No new SwiftData models, services, or files required beyond the above edits.
 
 ## Notifications
 
-All local — no push infrastructure. Two notification types:
+All local — no push infrastructure. Three notification types:
 
 1. **Daily check-in reminder** — fires at noon if no intake logged. Opt-in via Settings. Smart one-shot scheduling refreshed on foreground and after every intake action. ID: `daily-checkin-reminder`.
 2. **Per-nutrient dose reminders** — configurable times per nutrient, scheduled as **one-off requests per date** for a rolling window (`ReminderSchedule`: up to 14 days, fewer with many reminders so all fit under iOS's 64 pending; the daily check-in takes one more). The rest of today is left out for a nutrient already logged today. `NotificationService.refreshAllNutrientReminders(context:)` is the only scheduler: it rebuilds the set from the data after every log change, on foreground and remote (iCloud) changes, and after reminder or nutrient edits, so logs from the widget, Watch or Siri count from the next sync. Syncs are serialized; requests for deleted nutrients, past times and the old repeating format are removed. Today's "next reminder" line uses the same rule. **Keeping the window rolling:** every sync asks for a background app refresh (`NotificationService.reminderRefreshTaskID`, `BGTaskSchedulerPermittedIdentifiers` + the `fetch` background mode in `Info.plist`, handled by `.backgroundTask(.appRefresh(...))` in `nutrxApp`) about 12 hours out, which runs the same sync. iOS decides when it runs, and it doesn't with Background App Refresh off, so the fallback is opening the app: with neither, reminders run out only after the full window (14 days for a few reminders; a single day only with 60+ reminders a day). IDs: `nutrient-{id}-reminder-{HHmm}-{yyyyMMdd}`. The sync logs "Dose reminders synced: N of M scheduled, K removed" (category `NotificationService`).
+3. **Refill reminders** (nutrx Pro, supply): see nutrx Pro: Supply & refills. They're scheduled first; dose reminders share the rest of the budget.
 
 Permission flow handles not-asked, granted, and denied states. A one-time notification banner appears on Today after onboarding.
 
@@ -692,7 +696,20 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
 - **`SupplySheet`:** servings, which can be typed or stepped; each serving, stepped by the nutrient's step and pre-filled with it; and remind-me days. Then the sentence ("That's 120,000 IU — about 60 days at your usual 2,000 IU a day", or "at your goal of…" without history), Refilled today, and Stop tracking supply. The first Save starts the count.
 - **Analytics:** a `SupplyCard` under the stats card. Free: the PRO chip, which opens the paywall. Pro, not set: Set up. Set: days left (rounded 34, amber when low), "12 of 120 left", a 12pt gauge (amber when low, the tint otherwise) with a tick at the reminder threshold, the explanation, and Refilled.
 - **Demo data** (`-screenshotDemoData`, iOS only): Vitamin D is low, Omega-3 is out and Magnesium has plenty. The bottle sizes are worked out from the demo log.
-- **Not built yet:** refill reminders (with Refilled / Remind me tomorrow actions, within the notification budget) and the medium widget's "Running low" line. Both are next in phase 4.
+- **Refill reminders** (`RefillSchedule`, pure and tested in `RefillScheduleTests`; scheduled by `NotificationService`):
+  - **Timing:** one per bottle, at 10:00 on the day the estimate reaches `refillReminderDays`, or at the next 10:00 when the supply is already low or out. There's nothing without an estimate.
+  - **Never twice for a bottle:** what's been scheduled is remembered per bottle *on this device* (UserDefaults `nutrx.refillReminderStates`, keyed by nutrient id with the refill date). A refill starts a new bottle.
+  - **Content:** the title reads "Vitamin D runs out in about a week" (or "in about 3 days", "tomorrow", "has run out"), and the body "About 7 days left at your usual amount. Tap Refilled when you open a new bottle."
+  - **Category** `nutrx.refill` has two actions: **Refilled** (runs in the background) and **Remind me tomorrow** (snoozes to 24 hours later).
+  - **Budget:** refill reminders come first, and dose reminders share what's left of the 60 (`ReminderSchedule.occurrences(budget:)`).
+  - **Pro only:** `NotificationService.supplyRemindersEnabled` is three-state. It's set by `ProAccess.refreshEntitlement()`, and by `NotificationHandler` (through `ProEntitlement.current()`) before an action's resync. While it's still nil, as on a cold background launch from an action or Siri, a sync leaves pending refill reminders and their records alone. The background refresh checks the entitlement first.
+  - **Records only for what was added:** a bottle's record is saved only when its request was actually added, or when it has already fired. So a reminder removed before it fired (Pro lapsed, notifications off) can still come later.
+  - Each sync logs "Refill reminders: N pending <title> @ <date>; …".
+- **`NotificationHandler`** is the app's `UNUserNotificationCenterDelegate`, set in `nutrxApp.init` with the container.
+  - It handles the refill actions and shows refill banners while the app is open. Dose and check-in reminders behave as before.
+  - A tap sets `NotificationRouter.supplyNutrientID`. `MainTabView` switches to Nutrients, `NutrientsListView` pushes that nutrient (its stack now has a `path`), and the `SupplyCard` focuses itself: a 3pt forest outline (green in dark) with Refilled as the primary button. The focus clears on refill or when the card disappears.
+  - To test without waiting until 10:00, run `xcrun simctl push <UDID> nutrx-labs.nutrx payload.json` with `"category":"nutrx.refill"` in `aps` and a top-level `"nutrientID"` (the nutrient's UUID).
+- **Not built yet:** the medium widget's "Running low" line. It's next, and with it Pro's Release visibility.
 
 ---
 

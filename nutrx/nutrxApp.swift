@@ -1,5 +1,6 @@
 import AppIntents
 import SwiftUI
+import UserNotifications
 import SwiftData
 import WidgetKit
 
@@ -18,6 +19,11 @@ struct nutrxApp: App {
         if StackLogging.repairDuplicateIDs(context: container.mainContext) {
             NutrxShortcuts.updateAppShortcutParameters()  // phrases registered with the old shared id
         }
+        // Refill reminder actions (Refilled, Remind me tomorrow) and taps; actions can arrive with the app in the
+        // background.
+        NotificationHandler.shared.container = container
+        UNUserNotificationCenter.current().delegate = NotificationHandler.shared
+        NotificationHandler.registerCategories()
         #if DEBUG
         if ScreenshotDemoData.isRequested {
             ScreenshotDemoData.replaceStore(in: modelContainer.mainContext)
@@ -29,11 +35,18 @@ struct nutrxApp: App {
         WindowGroup {
             ContentView()
                 .environment(proAccess)
+                .environment(NotificationRouter.shared)
                 .task { await proAccess.refreshEntitlement() }
+                .onChange(of: proAccess.isPro) {
+                    // Becoming Pro (or lapsing) adds or removes refill reminders.
+                    NotificationService.refreshAllNutrientReminders(context: modelContainer.mainContext)
+                }
         }
         .modelContainer(modelContainer)
         // Rolls the per-date dose-reminder window forward without the app being opened (#4).
-        .backgroundTask(.appRefresh(NotificationService.reminderRefreshTaskID)) { [modelContainer] in
+        .backgroundTask(.appRefresh(NotificationService.reminderRefreshTaskID)) { [modelContainer, proAccess] in
+            // Pro decides whether refill reminders stay, so check it before syncing.
+            await proAccess.refreshEntitlement()
             await NotificationService.refreshRemindersInBackground(container: modelContainer)
         }
         .onChange(of: scenePhase) { _, newPhase in

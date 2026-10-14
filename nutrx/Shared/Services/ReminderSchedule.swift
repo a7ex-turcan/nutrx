@@ -35,14 +35,17 @@ enum ReminderSchedule {
     static let maxDays = 14
 
     /// Days to schedule ahead so `reminderCount` reminders a day fit the budget; at least today.
-    static func days(forReminderCount reminderCount: Int) -> Int {
+    /// `budget` is what's left after refill reminders (nutrx Pro), which are scheduled first.
+    static func days(forReminderCount reminderCount: Int, budget: Int = budget) -> Int {
         guard reminderCount > 0 else { return 0 }
         return min(maxDays, max(1, budget / reminderCount))
     }
 
-    /// Every occurrence to have pending for these plans, from `now`.
-    static func occurrences(for plans: [Plan], now: Date, calendar: Calendar = .current) -> [Occurrence] {
-        let days = days(forReminderCount: plans.reduce(0) { $0 + $1.times.count })
+    /// Every occurrence to have pending for these plans, from `now`, within `budget` requests a day's worth at a
+    /// time.
+    static func occurrences(for plans: [Plan], now: Date, budget: Int = budget,
+                            calendar: Calendar = .current) -> [Occurrence] {
+        let days = days(forReminderCount: plans.reduce(0) { $0 + $1.times.count }, budget: budget)
         let today = calendar.startOfDay(for: now)
         return plans.flatMap { plan in
             (0..<days).flatMap { offset -> [Occurrence] in

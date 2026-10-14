@@ -52,8 +52,12 @@ struct NutrientsListView: View {
         }
     }
 
+    /// Pushed analytics; set by a refill reminder.
+    @State private var path: [PersistentIdentifier] = []
+    @Environment(NotificationRouter.self) private var router: NotificationRouter?
+
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             Group {
                 if nutrients.isEmpty {
                     emptyState
@@ -86,6 +90,12 @@ struct NutrientsListView: View {
                 }
                 .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
                 Button("Cancel", role: .cancel) {}
+            }
+            .onChange(of: router?.supplyNutrientID, initial: true) { _, id in
+                // A refill reminder: show that nutrient's analytics (its Supply card focuses itself).
+                if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
+                    path = [nutrient.persistentModelID]
+                }
             }
             .navigationDestination(for: PersistentIdentifier.self) { id in
                 if let nutrient = nutrients.first(where: { $0.persistentModelID == id }) {

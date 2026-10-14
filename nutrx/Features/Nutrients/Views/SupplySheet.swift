@@ -255,6 +255,7 @@ struct SupplySheet: View {
             nutrient.refillSupply()
         }
         try? modelContext.save()
+        NotificationService.refreshAllNutrientReminders(context: modelContext)
         dismiss()
     }
 
@@ -263,6 +264,7 @@ struct SupplySheet: View {
         nutrient.supplyRefilledAt = nil
         nutrient.servingAmount = nil
         try? modelContext.save()
+        NotificationService.refreshAllNutrientReminders(context: modelContext)
         dismiss()
     }
 }
