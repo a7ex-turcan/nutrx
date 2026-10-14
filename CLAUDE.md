@@ -168,6 +168,8 @@ nutrx/
 │   │   │   ├── NutrientFormView.swift           # Create/edit sheet: preview row, NutrientFormFields, Group + Reminders rows, notes.
 │   │   │   ├── PendingRemindersSheet.swift      # Reminder times for a nutrient that isn't saved yet (kept on the draft).
 │   │   │   ├── NutrientRemindersSheet.swift     # Per-nutrient dose reminder management.
+│   │   │   ├── SupplySheet.swift                # Supply (Pro): servings, each serving, remind me, sentence, Refilled today.
+│   │   │   ├── SupplyCard.swift                 # Analytics Supply card: free teaser / Set up / days left, gauge, Refilled.
 │   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics, pushed on row tap: header, period picker, stats + chart card, heatmap, Reminders row, Edit.
 │   │   │   ├── StatTriplet.swift                # Hit rate / Daily avg / Best day columns (stack at accessibility sizes).
 │   │   │   ├── DailyIntakeChart.swift           # Swift Charts bars in the tint, dashed today outline, dashed goal rule(s) + labels.
@@ -284,6 +286,8 @@ nutrx/
         ├── StackLogging.swift               # Stacks: active entries, log (with per-time amounts), undo, add, "done today".
         ├── ExportService.swift              # CSV export: entries for a period, RFC 4180 CSV, file name, temp file.
         ├── ProAccess.swift                  # nutrx Pro: StoreKit 2 entitlement (never stored), products, purchase, restore.
+        ├── SupplySchedule.swift             # Supply: remaining, daily use, days left, level (pure); Nutrient.supplyStatus / refillSupply.
+        ├── SupplyText.swift                 # Supply copy: Today hint, analytics card, sheet sentence.
         └── ReviewService.swift              # SKStoreReviewController prompt at streak milestones or intake count 30;
                                              # writeReviewURL (App Store review page) for Settings → Rate nutrx.
 ```
@@ -672,6 +676,24 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - Keep it a *local* config: with `_applicationInternalID` / `_developerTeamID` in its settings, StoreKit treated it as synced and returned App Store Connect's products instead.
   - When resetting scheme churn, check out only the Watch schemes, not `nutrx.xcscheme`.
 
+### nutrx Pro: Supply & refills (phase 4)
+
+The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
+- **Model:** four optional fields on `Nutrient`, all CloudKit-safe. `supplyServings` holds the servings when last refilled; nil means supply isn't set. `supplyRefilledAt` is the refill date. `servingAmount` is the units per serving; nil means one step ("each tap adds"), read through `effectiveServingAmount`. `refillReminderDays` defaults to 7.
+- **`SupplySchedule`** (`Shared/Services/`) is pure and tested in `SupplyScheduleTests`:
+  - remaining = servings × serving − what's been logged since the refill. Decrements count back in, and it never goes below 0 or above a full bottle.
+  - Daily use is the last 14 days' total divided by the days since the first log in them, once there are at least 3. It's deliberately not tied to the refill, so refilling doesn't throw the estimate away.
+  - Days left = remaining ÷ daily use, rounded down.
+  - Levels: `out` (less than a fifth of a serving left, shown even without history), `low` (days left ≤ `refillReminderDays`), `plenty`, and `noHistory`.
+  - `Nutrient.supplyStatus()` reads the nutrient's own records; `refillSupply()` restarts the count.
+- **Copy:** `SupplyText`, tested in `SupplyTextTests`.
+- **Today** (`NutrientCard.supply`) shows a hint only for Pro users, and only when low or out, so the card's height never changes. Low reads "2,000 IU to go · About 6 days left": an amber bottle and the text in AmberInk, on one line. If that doesn't fit beside the buttons, it tries "· 6 days left", then the bottle with "6 days", then the hint alone. At accessibility sizes both wrap on their own lines. Out reads "Out of supply · Refilled?", replacing the goal status. "Refilled?" is its own button (and a VoiceOver "Refilled" action) and asks for confirmation.
+- **Nutrient form:** a Supply row after Reminders, for saved nutrients only. Pro opens `SupplySheet`; free shows the PRO chip and opens the paywall.
+- **`SupplySheet`:** servings, which can be typed or stepped; each serving, stepped by the nutrient's step and pre-filled with it; and remind-me days. Then the sentence ("That's 120,000 IU — about 60 days at your usual 2,000 IU a day", or "at your goal of…" without history), Refilled today, and Stop tracking supply. The first Save starts the count.
+- **Analytics:** a `SupplyCard` under the stats card. Free: the PRO chip, which opens the paywall. Pro, not set: Set up. Set: days left (rounded 34, amber when low), "12 of 120 left", a 12pt gauge (amber when low, the tint otherwise) with a tick at the reminder threshold, the explanation, and Refilled.
+- **Demo data** (`-screenshotDemoData`, iOS only): Vitamin D is low, Omega-3 is out and Magnesium has plenty. The bottle sizes are worked out from the demo log.
+- **Not built yet:** refill reminders (with Refilled / Remind me tomorrow actions, within the notification budget) and the medium widget's "Running low" line. Both are next in phase 4.
+
 ---
 
 ## Out of Scope — Not Yet Built
@@ -742,6 +764,10 @@ User-defined nutrient to track.
 | `upperBound` | `Double? = nil` | Only non-nil when `goalType == .range`. `dailyTarget` acts as the lower bound. |
 | `tintRaw` | `String = ""` | `""` = never chosen. Read via `tint: NutrientTint`, which falls back to a stable id-derived tint (no migration). |
 | `symbolName` | `String = "pills"` | SF Symbol shown in the nutrient's ring and icon tile. |
+| `servingAmount` | `Double? = nil` | Supply (Pro): units per serving; nil = one step |
+| `supplyServings` | `Double? = nil` | Supply: servings when last refilled; nil = supply not set |
+| `supplyRefilledAt` | `Date? = nil` | Supply: when the bottle was last refilled |
+| `refillReminderDays` | `Int = 7` | Supply: remind when this many days are left |
 
 **Relationships:** → many `IntakeRecord`? (cascade), → many `Exclusion`? (cascade), → many `NutrientReminder`? (cascade), → one `NutrientGroup?` (nullify)
 

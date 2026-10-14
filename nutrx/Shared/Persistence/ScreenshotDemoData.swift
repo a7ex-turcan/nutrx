@@ -148,6 +148,24 @@ enum ScreenshotDemoData {
         }
 
         try? context.save()
+
+        #if os(iOS)
+        // Supply (nutrx Pro): Vitamin D running low, Omega-3 out, Magnesium with plenty left. The bottle sizes are
+        // worked out from the demo's own log, so the states hold whatever the history looks like.
+        func setSupply(_ item: Nutrient, refilledDaysAgo: Int, daysLeft: Double) {
+            let refilled = calendar.date(byAdding: .day, value: -refilledDaysAgo, to: calendar.startOfDay(for: now))!
+            let logs = (item.intakeRecords ?? []).map { SupplySchedule.Log(date: $0.date, amount: $0.amount) }
+            let used = logs.filter { $0.date >= refilled && $0.date <= now }.reduce(0) { $0 + $1.amount }
+            let daily = SupplySchedule.averageDailyUse(logs: logs, now: now, calendar: calendar) ?? item.dailyTarget
+            item.supplyRefilledAt = refilled
+            let servings = (used + daily * daysLeft) / item.effectiveServingAmount
+            item.supplyServings = max(1, daysLeft == 0 ? servings.rounded(.down) : servings.rounded(.up))
+        }
+        setSupply(vitaminD, refilledDaysAgo: 40, daysLeft: 6)
+        setSupply(omega3, refilledDaysAgo: 30, daysLeft: 0)
+        setSupply(magnesium, refilledDaysAgo: 10, daysLeft: 50)
+        try? context.save()
+        #endif
     }
 }
 #endif

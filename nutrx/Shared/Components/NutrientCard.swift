@@ -9,6 +9,19 @@ struct NutrientCard: View {
     var onOpen: () -> Void = {}
     var onIncrement: () -> Void = {}
     var onDecrement: () -> Void = {}
+    /// The supply hint for the third line (nutrx Pro): low or out, nil otherwise.
+    var supply: SupplyHint? = nil
+    var onRefill: () -> Void = {}
+
+    /// What Today shows about supply: "About 6 days left", or out with a Refilled? link.
+    struct SupplyHint: Equatable {
+        let text: String
+        /// "6 days left", tried next to the goal status before the hint takes the line alone.
+        var shortText: String? = nil
+        /// "6 days" with the bottle, the last try before the hint takes the line alone.
+        var compactText: String? = nil
+        let isOut: Bool
+    }
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -52,9 +65,7 @@ struct NutrientCard: View {
                     Text("\(Text(progress.currentText).font(.system(.body, design: .rounded, weight: .bold)).foregroundStyle(Theme.textPrimary)) \(Text(progress.goalText).font(.subheadline).foregroundStyle(Theme.textSecondary))")
                         .monospacedDigit()
 
-                    Text(progress.remainingText)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(progress.status.textColor)
+                    statusLine(progress)
                 }
                 .multilineTextAlignment(.leading)
 
@@ -65,9 +76,69 @@ struct NutrientCard: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(nutrient.name)
-        .accessibilityValue("\(progress.progressText), \(progress.remainingText)")
+        .accessibilityValue("\(progress.progressText), \(supply?.isOut == true ? "" : progress.remainingText + ", ")\(supply?.text ?? "")")
+        .accessibilityAction(named: "Refilled") { if supply?.isOut == true { onRefill() } }
         .accessibilityHint("Opens logging options")
         .accessibilityAddTraits(.isButton)  // children: .ignore can drop the button's own trait
+    }
+
+    /// The third line. With a supply hint it's shared, so the card's height never changes: "2,000 IU to go ·
+    /// About 6 days left" (amber with a bottle), or "Out of supply · Refilled?" in place of the goal status. If both
+    /// don't fit on one line, the supply part stays.
+    @ViewBuilder
+    private func statusLine(_ progress: GoalProgress) -> some View {
+        let goal = Text(progress.remainingText)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(progress.status.textColor)
+        if let supply, supply.isOut {
+            HStack(spacing: 4) {
+                Text("\(supply.text) ·")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.textSecondary)
+                Button("Refilled?", action: onRefill)
+                    .font(.caption.weight(.semibold))
+                    .underline()
+                    .foregroundStyle(Theme.textGreenInk)
+                    .buttonStyle(.plain)
+                    .accessibilityHidden(true)  // the card's "Refilled" action
+            }
+            .lineLimit(1)
+        } else if let supply {
+            if dynamicTypeSize.isAccessibilitySize {
+                // Wrapping is fine here: the card already grows at these sizes.
+                VStack(alignment: .leading, spacing: 2) { goal; supplyHint(supply.text) }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    sharedLine(goal, supply.text)
+                    if let short = supply.shortText { sharedLine(goal, short) }
+                    if let compact = supply.compactText { sharedLine(goal, compact) }
+                    supplyHint(supply.text).lineLimit(1)
+                }
+            }
+        } else {
+            goal
+        }
+    }
+
+    private func supplyHint(_ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 3) {
+            Image(systemName: "waterbottle")
+                .font(.caption2.weight(.semibold))
+                .accessibilityHidden(true)
+            Text(text)
+                .font(.caption.weight(.semibold))
+        }
+        .foregroundStyle(Theme.textAmberInk)
+    }
+
+    private func sharedLine(_ goal: some View, _ text: String) -> some View {
+        HStack(spacing: 4) {
+            goal
+            Text("·").font(.caption.weight(.semibold)).foregroundStyle(Theme.textSecondary)
+            supplyHint(text)
+        }
+        .lineLimit(1)
+        .fixedSize()
     }
 
     /// Same rule as `TodayViewModel.decrement`, which ignores a step that would take the total below zero.
