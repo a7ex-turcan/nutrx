@@ -16,6 +16,7 @@ struct StackDetailView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// The Siri tip's ✕ hides it on this device for every stack.
     @AppStorage("hidesStackSiriTip") private var hidesSiriTip = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var entries: [LogStackEntry] { StackLogging.activeEntries(of: stack) }
 
@@ -67,7 +68,7 @@ struct StackDetailView: View {
             if !hidesSiriTip && !entries.isEmpty {
                 Section {
                     StackSiriTip(stackName: stack.name) {
-                        withAnimation { hidesSiriTip = true }
+                        withAnimation(.unlessReduceMotion(reduceMotion, .default)) { hidesSiriTip = true }
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
@@ -221,7 +222,7 @@ private struct StackSiriTip: View {
         }
         .padding(Theme.Spacing.cardPadding)
         .background(colorScheme == .dark ? Theme.surfaceCard : Theme.forest.opacity(0.06),
-                    in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    in: RoundedRectangle(cornerRadius: Theme.Radius.tip, style: .continuous))
     }
 
     private var tile: some View {
@@ -255,7 +256,10 @@ private struct StackSiriTip: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.textSecondary)
                 .frame(width: 32, height: 32)
+                // A 44pt hit area around the 32pt glyph box, without making the row taller.
+                .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
                 .contentShape(Rectangle())
+                .padding(-(Theme.minTouchTarget - 32) / 2)
         }
         .buttonStyle(.plain)
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)

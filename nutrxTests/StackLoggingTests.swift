@@ -130,6 +130,26 @@ final class StackLoggingTests: XCTestCase {
         XCTAssertEqual(StackLogging.activeEntries(of: stack).count, 2)
     }
 
+    func testDuplicateIDsAreRepairedKeepingTheFirst() {
+        let first = StackLogging.createStack(named: "Morning", context: context)
+        let second = StackLogging.createStack(named: "Evening", context: context)
+        let third = StackLogging.createStack(named: "Night", context: context)
+        second.createdAt = first.createdAt.addingTimeInterval(1)
+        third.createdAt = first.createdAt.addingTimeInterval(2)
+        let shared = first.id
+        second.id = shared
+        third.id = shared  // as after the migration that added `id`
+
+        StackLogging.repairDuplicateIDs(context: context)
+
+        XCTAssertEqual(first.id, shared)
+        XCTAssertEqual(Set([first.id, second.id, third.id]).count, 3)
+
+        let ids = [first.id, second.id, third.id]
+        StackLogging.repairDuplicateIDs(context: context)
+        XCTAssertEqual([first.id, second.id, third.id], ids, "unique ids are left alone")
+    }
+
     func testSettingsSummaryCountsStacks() {
         XCTAssertEqual(SettingsSummary.stacks(count: 0), "None")
         XCTAssertEqual(SettingsSummary.stacks(count: 3), "3")

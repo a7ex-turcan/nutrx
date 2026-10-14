@@ -86,6 +86,8 @@ enum Theme {
         static let appIcon: CGFloat = 20
         /// Apple Watch list rows (`Watch/Cell`).
         static let watchCell: CGFloat = 18
+        /// Tip cards, such as the Siri tip on a stack's detail screen.
+        static let tip: CGFloat = 20
     }
 
     /// Minimum hit area for anything tappable.
