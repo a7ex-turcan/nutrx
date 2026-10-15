@@ -42,7 +42,7 @@ Update the three living documentation files — `CHANGELOG.md`, `ROADMAP.md`, an
 
 ### 5. Version bump (if requested)
 
-- Update `MARKETING_VERSION` in `nutrx.xcodeproj/project.pbxproj` (appears twice — Debug and Release). Use `replace_all`.
+- Update `MARKETING_VERSION` in `nutrx.xcodeproj/project.pbxproj`: it appears eight times (Debug and Release for the app, the widgets, the Watch app and its complications), and all of them move together. Use `replace_all`; the test target's own version stays as it is.
 
 ### 6. Present a summary
 
