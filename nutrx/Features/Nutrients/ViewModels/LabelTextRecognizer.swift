@@ -6,11 +6,11 @@ import Vision
 /// the same row is joined left to right ("Vitamin D3 … 1,000 IU" can come back as two pieces), rows top to bottom,
 /// so the parser and the model see the label the way it's printed.
 enum LabelTextRecognizer {
-    static func text(in image: CGImage) async throws -> String {
+    static func text(in image: CGImage, orientation: CGImagePropertyOrientation = .up) async throws -> String {
         var request = RecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
-        let observations = try await request.perform(on: image)
+        let observations = try await request.perform(on: image, orientation: orientation)
         let pieces = observations.compactMap { observation -> Piece? in
             guard let text = observation.topCandidates(1).first?.string else { return nil }
             let box = observation.boundingBox.cgRect

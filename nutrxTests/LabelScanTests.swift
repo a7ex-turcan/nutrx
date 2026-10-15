@@ -171,4 +171,50 @@ final class LabelScanTests: XCTestCase {
         XCTAssertEqual(label.unit, "IU", text)
         XCTAssertEqual(label.servingsPerContainer, 120, text)
     }
+
+    // MARK: - Review
+
+    func testPrefillKeepsTheFormsLookForAnUnknownSupplement() {
+        let draft = NutrientDraft()
+        draft.tint = .indigo
+        draft.symbolName = "leaf"
+        draft.notes = "With breakfast"
+        LabelPrefill.apply(.init(name: "Calm Night", unit: "mg", amountPerServing: 450), to: draft)
+        XCTAssertEqual(draft.tint, .indigo)
+        XCTAssertEqual(draft.symbolName, "leaf")
+        XCTAssertEqual(draft.notes, "With breakfast")
+        LabelPrefill.apply(.init(name: "Vitamin D3"), to: draft)
+        XCTAssertEqual(draft.symbolName, "sun.max", "a known supplement still gets its symbol")
+    }
+
+    func testEditingAScannedFieldMakesItTheUsers() {
+        let draft = NutrientDraft()
+        LabelPrefill.apply(.init(name: "Vitamin C", unit: "mg", amountPerServing: 500), to: draft)
+        draft.edited(.unit, isEmpty: false)
+        XCTAssertEqual(draft.scannedFields, [.name, .step], "no more \"from label\" on the unit")
+        draft.edited(.supply, isEmpty: true)
+        XCTAssertEqual(draft.unreadFields, [.supply], "still asks while it's empty")
+        draft.edited(.supply, isEmpty: false)
+        XCTAssertTrue(draft.unreadFields.isEmpty)
+        XCTAssertTrue(draft.wasScanned, "the form stays in its review layout")
+    }
+
+    func testScanNotes() {
+        XCTAssertNil(ScanText.entryNote(.model, device: "iPhone"))
+        XCTAssertEqual(ScanText.entryNote(.basic, device: "iPhone"),
+                       "This iPhone reads labels with basic text matching, so you may fill in a little more yourself.")
+        XCTAssertEqual(ScanText.entryNote(.modelTurnedOff, device: "iPhone"),
+                       "Turn on Apple Intelligence in Settings to read more from labels.")
+        XCTAssertNil(ScanText.paywallNote(.model, device: "iPhone"))
+        XCTAssertEqual(ScanText.paywallNote(.basic, device: "iPad"), "Basic text reading on this iPad")
+    }
+
+    func testAPhotoWithoutALabelReadsAsNothing() async throws {
+        let image = try XCTUnwrap(UIGraphicsImageRenderer(size: CGSize(width: 200, height: 200)).image { context in
+            UIColor.gray.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
+        }.cgImage)
+        let label = await LabelScan.read(image, orientation: .up)
+        XCTAssertNil(label, "\"Couldn't read this label\"")
+    }
 }

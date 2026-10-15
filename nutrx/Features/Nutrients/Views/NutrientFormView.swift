@@ -2,7 +2,8 @@ import SwiftUI
 import SwiftData
 
 /// New / edit nutrient sheet (DESIGN.md §5.7): Cancel / title / Add in the toolbar, then a live preview,
-/// the shared fields, Group and Reminders rows, and notes.
+/// the shared fields, Group and Reminders rows, and notes. A new nutrient outside onboarding can start from
+/// "Scan a label" (nutrx Pro), which fills the fields for the user to check.
 struct NutrientFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -17,6 +18,8 @@ struct NutrientFormView: View {
     var nutrient: Nutrient?
     @Binding var selectedGroup: NutrientGroup?
     var showGroupPicker: Bool = false
+    /// Offers "Scan a label" at the top (new nutrients, never onboarding: docs/pro/PLAN.md phase 5).
+    var offersScan: Bool = false
     var onDelete: (() -> Void)?
     let onSave: () -> Void
 
@@ -26,6 +29,7 @@ struct NutrientFormView: View {
     @State private var showGroupChooser = false
     @State private var showNewGroupAlert = false
     @State private var newGroupName = ""
+    @State private var showScanner = false
     @FocusState private var focusedField: NutrientFormField?
 
     init(
@@ -35,6 +39,7 @@ struct NutrientFormView: View {
         nutrient: Nutrient? = nil,
         selectedGroup: Binding<NutrientGroup?> = .constant(nil),
         showGroupPicker: Bool = false,
+        offersScan: Bool = false,
         onDelete: (() -> Void)? = nil,
         onSave: @escaping () -> Void
     ) {
@@ -44,6 +49,7 @@ struct NutrientFormView: View {
         self.nutrient = nutrient
         self._selectedGroup = selectedGroup
         self.showGroupPicker = showGroupPicker
+        self.offersScan = offersScan && nutrient == nil && ProAccess.isStoreVisible
         self.onDelete = onDelete
         self.onSave = onSave
     }
@@ -53,6 +59,14 @@ struct NutrientFormView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(spacing: Theme.Spacing.cardGap) {
+                        if offersScan {
+                            if draft.wasScanned {
+                                ScanReviewBanner(unread: draft.unreadFields.count) { showScanner = true }
+                            } else {
+                                ScanLabelEntry { showScanner = true }
+                            }
+                        }
+
                         NutrientPreviewRow(draft: draft)
 
                         NutrientFormFields(draft: draft, focusedField: $focusedField) {
@@ -137,6 +151,16 @@ struct NutrientFormView: View {
                 }
             }
         }
+        // On the stack, outside the scroll view reader: hung from inside it, the cover's content was rebuilt when
+        // the photo picker opened over it, which closed the picker straight away.
+        .fullScreenCover(isPresented: $showScanner) {
+            LabelScannerView { label in
+                focusedField = nil
+                LabelPrefill.apply(label, to: draft)
+            }
+        }
+        // A swipe would throw away what the label filled in; Cancel still closes it.
+        .interactiveDismissDisabled(draft.wasScanned)
     }
 
     // MARK: - Group / Reminders

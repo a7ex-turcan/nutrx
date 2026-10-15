@@ -170,6 +170,8 @@ nutrx/
 │   │   │   ├── NutrientRemindersSheet.swift     # Per-nutrient dose reminder management.
 │   │   │   ├── SupplySheet.swift                # Supply (Pro): servings, each serving, remind me, sentence, Refilled today.
 │   │   │   ├── SupplyCard.swift                 # Analytics Supply card: free teaser / Set up / days left, gauge, Refilled.
+│   │   │   ├── ScanLabelEntry.swift             # Scan a label (Pro): entry card + reading note + divider; ScanReviewBanner.
+│   │   │   ├── LabelScannerView.swift           # Full-screen VisionKit scanner (or a photo), reading pill, ScanFailCard.
 │   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics, pushed on row tap: header, period picker, stats + chart card, heatmap, Reminders row, Edit.
 │   │   │   ├── StatTriplet.swift                # Hit rate / Daily avg / Best day columns (stack at accessibility sizes).
 │   │   │   ├── DailyIntakeChart.swift           # Swift Charts bars in the tint, dashed today outline, dashed goal rule(s) + labels.
@@ -181,6 +183,7 @@ nutrx/
 │   │       ├── LabelExtractor.swift             # On-device model (guided generation), checked against the text, parser fallback.
 │   │       ├── LabelPrefill.swift               # Fills the new-nutrient draft from a read label; banner and unread hints.
 │   │       ├── LabelTextRecognizer.swift        # Vision text recognition, pieces joined into rows.
+│   │       ├── LabelScan.swift                  # Photo → label (recognise, extract; nil = couldn't read) + ScanText copy.
 │   │       ├── WeekdayPattern.swift             # Per-weekday hit rate over the last 28 days, weakest-day insight, heatmap fill levels (pure).
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       └── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
@@ -676,7 +679,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
 - **`ProFeature`**: the five Pro features with titles, symbols and tints. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all five until one ships, to check the design. Set `isShipped` as each phase lands.
 - **Settings:** `ProSettingsCard` sits under the profile card, only when `isStoreVisible` is true.
-  - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Know when a bottle runs out" while only supply exists, a plain list for two or three, and "… and more" only from four) with **Learn more**, which opens the paywall.
+  - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Supply and label scan" now, a plain list for two or three, and "… and more" only from four) with **Learn more**, which opens the paywall.
   - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.
   - `ProStatusView` has the plan card, the included features, Manage subscription (`manageSubscriptionsSheet`; not for lifetime or family-shared) and Restore purchases.
 - **Gate:** `ProGatedButton` (`Shared/Components/ProGate.swift`). For a Pro user it runs the action; for a free user it opens the paywall, and its label gets `showsBadge` for the `ProBadge` chip. Never a lock, blur or wall, and the free version of anything stays.
@@ -720,10 +723,10 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
 
 ### nutrx Pro: Scan a label (phase 5)
 
-Mockups: `docs/pro/design/4-scan-label/`. The reading logic is built first; the scanner UI follows in a separate PR.
+Mockups: `docs/pro/design/4-scan-label/`.
 - **`LabelTextRecognizer`** runs Vision `RecognizeTextRequest` (accurate, on the device) on an image. It joins pieces on the same row left to right (Vision can split "Vitamin D3 … 1,000 IU" in two), then orders rows top to bottom.
 - **`LabelParser`** is the rule-based reader, pure and tested against a corpus of real label texts in `LabelParserTests`:
-  - **Name:** above "Supplement Facts" first: a known supplement name, earliest in the line, the longer one on a tie ("Omega-3 Fish Oil" → Omega-3; "Vitamin D3" over "Vitamin D"), else the first short line that isn't boilerplate, passing over a brand-looking line ("Nature's Best", "®") when another follows. Only then a known name inside the facts, so "Sleep Blend" listing melatonin keeps its title. It's title-cased with codes kept (D3, B12, CoQ10).
+  - **Name:** above "Supplement Facts" first: a known supplement name, earliest in the line, the longer one on a tie ("Omega-3 Fish Oil" → Omega-3; "Vitamin D3" over "Vitamin D"), else the first short line that isn't boilerplate or a brand ("®", "Labs"…), passing over a possessive line ("Nature's Best") only when another follows ("Women's Multi" alone is the name). Only then a known name inside the facts, so "Sleep Blend" listing melatonin keeps its title. It's title-cased with codes kept (D3, B12, CoQ10).
   - **Numbers** (`numberPattern`, shared with the extractor's check) never start right after a letter, digit or hyphen, so the 12 of "B12 500 mcg" or the 3 of "Omega-3 600 mg" isn't glued to the amount, and thousands group in threes with a comma or a space, never across lines.
   - **Amount and unit:** from the line naming the product, else the first amount in the facts panel, skipping calories, fat, carbohydrate and sodium. IU wins over mcg on the same line. Units are normalised (µg/ug → mcg, iu → IU).
   - **Servings:** "Servings per container", else "120 softgels" divided by the serving size.
@@ -735,6 +738,12 @@ Mockups: `docs/pro/design/4-scan-label/`. The reading logic is built first; the 
 - **`LabelPrefill`** fills a `NutrientDraft`: name, unit, step (the amount per serving) and `supplyServings`, plus a known supplement's tint and symbol from `StartingPoint`.
   - It records `scannedFields` (shown as "from label") and `unreadFields` (asked for, with `unreadHint`). The banner reads "Filled from the label. One field needs you." and so on.
   - The goal is never filled, because nutrx doesn't suggest amounts. A scanned bottle size starts supply tracking when the nutrient is added (`insertNutrient`).
+  - A known supplement gets its tint and symbol; otherwise the form's look, reminder times and notes stay.
+- **Entry** (`ScanLabelEntry`): at the top of `NutrientFormView` when the caller passes `offersScan` (My Nutrients' + and Today's empty state: new nutrients only, never onboarding, only while `ProAccess.isStoreVisible`). A 44pt teal tile, "Scan a label", "Fill this in from the bottle", chevron, then "or fill in by hand". It's a `ProGatedButton`: free users see the PRO chip and get the paywall. `ScanText.Reading` picks the note under it: none with Apple Intelligence; "This iPhone reads labels with basic text matching…" without it; "Turn on Apple Intelligence in Settings to read more from labels." when it's turned off (a strip without the design's Settings button: there's no public link to the Apple Intelligence settings, and the app's own settings page would be the wrong place).
+- **Scanner** (`LabelScannerView`, full screen, always dark): VisionKit `DataScannerViewController` with text highlights (a UIKit representable; VisionKit has no SwiftUI scanner), glass Cancel and torch (through `AVCaptureDevice`, since VisionKit has no torch control), "Point at the Supplement Facts", a 76pt shutter (`capturePhoto()`), a photo-library button, and "Read on your iPhone. Nothing is uploaded." Without live scanning (the simulator, no camera, camera access off) it explains why and offers **Choose a photo** (plus Open Settings when access is off). Reading shows a "Reading the label…" pill; `LabelScan.read` returning nil opens `ScanFailCard` ("Couldn't read this label" with Try again / Fill in by hand), a bottom card drawn in the scanner rather than a sheet presented over it, so it follows the system appearance and nothing is stacked on the cover. `NSCameraUsageDescription` covers the profile photo and labels. The cover hangs from the form's `NavigationStack`: hung from inside its `ScrollViewReader`, the scanner was rebuilt when the photo picker opened, which closed the picker at once. The photo picker is one `.photosPicker` modifier at the scanner's root. A scanned form can't be swiped away (`interactiveDismissDisabled`); Cancel still closes it.
+- **Review** (`draft.wasScanned`): `ScanReviewBanner` (`LabelPrefill.bannerText`, live as fields get filled) with Scan again replaces the entry card. `NutrientFormFields` shows one card with Name, Unit, "Each tap adds (one serving)" and "Supply · servings in the bottle" ("120 softgels"), each with a "from label" tag (`Text/TealInk` on the teal tile; under the value at accessibility sizes) that goes when the user types in it (`NutrientDraft.edited`). Unread rows are amber at 10% with the `unreadHint` in AmberInk. The goal card drops its step field and adds "Set the amount you're aiming for. nutrx doesn't suggest one."
+- **Paywall:** without Apple Intelligence, the Scan a label row adds "ⓘ Basic text reading on this iPhone" and the list ends with `ProText.appleIntelligenceNote` ("Apple Intelligence makes label scanning richer. Every Pro feature still works on this iPhone."; recaps join it when they ship).
+- **Testing in the simulator:** `xcrun simctl addmedia <UDID> label.jpg`, then Scan a label → Choose a photo.
 
 ---
 
@@ -744,7 +753,7 @@ Mockups: `docs/pro/design/4-scan-label/`. The reading logic is built first; the 
 
 **Pre-Pro Sprint:** done — goal types, data export (CSV), quick-log stacks, and Siri & App Shortcuts (see their sections above)
 
-**nutrx Pro** (`docs/pro/PLAN.md`): StoreKit foundation (phase 3), then supply, label scanning, weekly recap, Health trends and the doctor report. On-device AI only, no third-party LLM. Streak freeze and a shareable streak card come later, outside the plan.
+**nutrx Pro** (`docs/pro/PLAN.md`): StoreKit, supply and label scanning are built; weekly recap, Health trends and the doctor report come next. On-device AI only, no third-party LLM. Streak freeze and a shareable streak card come later, outside the plan.
 
 **Deferred:** Localisation, iPad-specific layout
 

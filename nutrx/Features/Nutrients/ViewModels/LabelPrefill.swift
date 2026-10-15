@@ -2,10 +2,13 @@ import Foundation
 
 /// Fills the new-nutrient form from a read label (nutrx Pro, docs/pro/design/4-scan-label: review). The user always
 /// checks it in the normal form: nothing is created until Add. The goal is never filled — nutrx doesn't suggest
-/// amounts — and a known supplement gets its usual colour and symbol.
+/// amounts. A known supplement gets its usual colour and symbol; otherwise the form's look stays, and so do reminder
+/// times and notes already set.
 enum LabelPrefill {
     static func apply(_ label: SupplementLabel, to draft: NutrientDraft) {
+        let (tint, symbol, reminders, notes) = (draft.tint, draft.symbolName, draft.pendingReminderTimes, draft.notes)
         draft.reset()
+        (draft.tint, draft.symbolName, draft.pendingReminderTimes, draft.notes) = (tint, symbol, reminders, notes)
         var read: Set<NutrientDraft.ScannedField> = []
         if let name = label.name {
             draft.name = name
