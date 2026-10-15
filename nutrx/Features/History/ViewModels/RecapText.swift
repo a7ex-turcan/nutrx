@@ -58,7 +58,7 @@ struct RecapText {
             sentences.append("\(over.name) went over \(limit) \(when(over.overLimitDays)).")
         }
         if let streak = recap.streak, streak.now > 0 {
-            sentences.append("Your streak is now \(days(streak.now)).")
+            sentences.append("Your streak stood at \(days(streak.now)).")
         }
         return sentences.joined(separator: " ")
     }
@@ -107,14 +107,24 @@ struct RecapText {
 
     // MARK: - Elsewhere
 
-    /// Today's card: "31 of 42 goals · Vitamin D steadiest" (the first number bold).
+    /// Today's card: "31 of 42 goals · Vitamin D steadiest" (the first number bold). Each part keeps together
+    /// (no-break spaces), so a narrow line breaks at the dot, never inside "Vitamin D".
     var todayLine: String {
-        let goals = "**\(recap.goalsMet)** of \(recap.goalsCounted) goals"
-        return recap.steadiest.map { "\(goals) · \($0.name) steadiest" } ?? goals
+        let goals = Self.together("**\(recap.goalsMet)** of \(recap.goalsCounted) goals")
+        return recap.steadiest.map { "\(goals) · \(Self.together("\($0.name) steadiest"))" } ?? goals
     }
 
-    /// History's row: "Latest: 5 – 11 October · 31 of 42 goals".
-    var historyLine: String { "Latest: \(range) · \(recap.goalsMet) of \(recap.goalsCounted) goals" }
+    /// History's row: "Latest: 5 – 11 October · 31 of 42 goals", breaking only between the parts.
+    var historyLine: String {
+        "Latest: \(Self.together(range)) · \(Self.together("\(recap.goalsMet) of \(recap.goalsCounted) goals"))"
+    }
+
+    /// No-break spaces, and word joiners around a dash (a line may otherwise break after "5 –"), so the phrase
+    /// wraps as one piece.
+    static func together(_ phrase: String) -> String {
+        phrase.replacingOccurrences(of: " ", with: "\u{00A0}")
+            .replacingOccurrences(of: "–", with: "\u{2060}–\u{2060}")
+    }
 
     static let notificationTitle = "Your week in nutrx"
 

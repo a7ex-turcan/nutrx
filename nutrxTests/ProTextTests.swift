@@ -80,9 +80,18 @@ final class ProTextTests: XCTestCase {
                        "Apple Intelligence makes label scanning and recaps richer. Every Pro feature still works on this iPad.")
     }
 
-    func testScanIsShipped() {
-        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), [.supply, .scan])
-        XCTAssertEqual(ProText.tagline(ProFeature.allCases.filter(\.isShipped)), "Supply and label scan")
+    func testShippedFeatures() {
+        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), [.supply, .scan, .recap])
+        XCTAssertEqual(ProText.tagline(ProFeature.allCases.filter(\.isShipped)), "Supply, label scan and recaps")
+    }
+
+    func testAppleIntelligenceRowNotes() {
+        XCTAssertEqual(ProText.appleIntelligenceRowNote(.recap, reading: .basic, device: "iPhone"),
+                       "Simpler wording on this iPhone")
+        XCTAssertEqual(ProText.appleIntelligenceRowNote(.scan, reading: .modelTurnedOff, device: "iPad"),
+                       "Basic text reading on this iPad")
+        XCTAssertNil(ProText.appleIntelligenceRowNote(.recap, reading: .model, device: "iPhone"))
+        XCTAssertNil(ProText.appleIntelligenceRowNote(.supply, reading: .basic, device: "iPhone"))
     }
 
     func testWelcomeNamesWhatsOn() {

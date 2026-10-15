@@ -13,6 +13,8 @@ final class NotificationRouter {
 
     /// The nutrient whose Supply card a refill reminder opened; cleared once it's been shown and left.
     var supplyNutrientID: UUID?
+    /// A recap notification was tapped: History opens the weekly recap, then clears it.
+    var showsRecap = false
 }
 
 /// The app's notification delegate: refill reminder actions (Refilled, Remind me tomorrow) and taps. Dose and
@@ -36,17 +38,27 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
                                           icon: UNNotificationActionIcon(systemImageName: "clock"))
         let category = UNNotificationCategory(identifier: refillCategory, actions: [refilled, snooze],
                                               intentIdentifiers: [])
-        UNUserNotificationCenter.current().setNotificationCategories([category])
+        // The recap: tapping opens it; "Turn off weekly recaps" does what the Settings switch does.
+        let turnOff = UNNotificationAction(identifier: RecapSchedule.turnOffAction, title: "Turn off weekly recaps",
+                                           icon: UNNotificationActionIcon(systemImageName: "bell.slash"))
+        let recap = UNNotificationCategory(identifier: RecapSchedule.category, actions: [turnOff], intentIdentifiers: [])
+        UNUserNotificationCenter.current().setNotificationCategories([category, recap])
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        notification.request.content.categoryIdentifier == Self.refillCategory ? [.banner, .list, .sound] : []
+        let category = notification.request.content.categoryIdentifier
+        return category == Self.refillCategory || category == RecapSchedule.category ? [.banner, .list, .sound] : []
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse) async {
         let content = response.notification.request.content
+        if content.categoryIdentifier == RecapSchedule.category {
+            let action = response.actionIdentifier
+            await MainActor.run { handleRecap(action: action) }
+            return
+        }
         guard content.categoryIdentifier == Self.refillCategory,
               let idString = content.userInfo[Self.nutrientIDKey] as? String, let id = UUID(uuidString: idString)
         else { return }
@@ -58,6 +70,19 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
             await MainActor.run { NotificationService.supplyRemindersEnabled = ProAccess.isStoreVisible && isPro }
         }
         await MainActor.run { handle(action: action, nutrientID: id) }
+    }
+
+    @MainActor
+    private func handleRecap(action: String) {
+        switch action {
+        case RecapSchedule.turnOffAction:
+            UserDefaults.standard.set(false, forKey: RecapSchedule.enabledKey)
+            if let context = container?.mainContext { NotificationService.refreshAllNutrientReminders(context: context) }
+        case UNNotificationDismissActionIdentifier:
+            break
+        default:
+            NotificationRouter.shared.showsRecap = true
+        }
     }
 
     @MainActor

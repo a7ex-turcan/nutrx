@@ -14,6 +14,8 @@ struct SettingsView: View {
     @Query private var stacks: [LogStack]
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @State private var showPaywall = false
+    @State private var notificationsAllowed = false
+    @AppStorage(RecapSchedule.enabledKey) private var weeklyRecapEnabled = true
     @State private var showProStatus = false
 
     @State private var showProfile = false
@@ -58,8 +60,12 @@ struct SettingsView: View {
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
                     row("Notifications", symbol: "bell", color: Theme.SettingsTile.coral,
-                        value: SettingsSummary.notifications(dailyReminderEnabled: preferences?.dailyReminderEnabled ?? false))
+                        value: SettingsSummary.notifications(
+                            dailyReminderEnabled: preferences?.dailyReminderEnabled ?? false,
+                            weeklyRecap: ProAccess.isStoreVisible && proAccess?.isPro == true && weeklyRecapEnabled
+                                && notificationsAllowed))
                 }
+                .task { notificationsAllowed = await NotificationService.permissionStatus() == .granted }
                 NavigationLink {
                     StreaksSettingsView()
                         .navigationTitle("Streaks")

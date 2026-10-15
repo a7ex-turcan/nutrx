@@ -16,9 +16,9 @@ enum NotificationService {
     private static let dailyReminderID = "daily-checkin-reminder"
     private static let nutrientReminderPrefix = "nutrient-"
 
-    /// Refill reminders are a Pro feature: set whenever the entitlement is checked. nil until then (a cold
-    /// background launch — a notification action, Siri — syncs before it), which leaves pending refill reminders
-    /// and their records alone instead of treating the user as free and removing them.
+    /// Refill reminders and the weekly recap are Pro features: set whenever the entitlement is checked. nil until
+    /// then (a cold background launch — a notification action, Siri — syncs before it), which leaves pending refill
+    /// and recap notifications, and the refill records, alone instead of treating the user as free and removing them.
     static var supplyRemindersEnabled: Bool?
 
     // MARK: - Permissions
@@ -146,8 +146,13 @@ enum NotificationService {
         let refillReserved = refillPlan == nil
             ? refillStates.values.filter { $0.fireDate > now }.count
             : refillRequests.count
-        let doseBudget = max(1, ReminderSchedule.budget - refillReserved)
-        let requests = refillRequests + ReminderSchedule.occurrences(for: plans, now: now, budget: doseBudget).compactMap { occurrence in
+        // The Sunday recap (Pro, unless turned off in Settings); unknown entitlement keeps a pending one.
+        let recapRequests = supplyRemindersEnabled == true && RecapSchedule.isEnabled
+            ? recapRequest(context: context, now: now).map { [$0] } ?? []
+            : []
+        let recapReserved = supplyRemindersEnabled == nil ? 1 : recapRequests.count
+        let doseBudget = max(1, ReminderSchedule.budget - refillReserved - recapReserved)
+        let requests = refillRequests + recapRequests + ReminderSchedule.occurrences(for: plans, now: now, budget: doseBudget).compactMap { occurrence in
             contents[occurrence.nutrientID].map { content in
                 let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute],
                                                             from: occurrence.fireDate)
@@ -166,7 +171,8 @@ enum NotificationService {
                 .map(\.identifier)
                 .filter {
                     ($0.hasPrefix(nutrientReminderPrefix)
-                        || (refillPlan != nil && $0.hasPrefix(RefillSchedule.identifierPrefix)))
+                        || (refillPlan != nil && $0.hasPrefix(RefillSchedule.identifierPrefix))
+                        || (supplyRemindersEnabled != nil && $0.hasPrefix(RecapSchedule.identifierPrefix)))
                         && !wanted.contains($0)
                 }
             if !stale.isEmpty {
@@ -190,6 +196,27 @@ enum NotificationService {
             logger.info("Dose reminders synced: \(scheduled) of \(requests.count) scheduled, \(stale.count) removed")
         }
         return reminderSync
+    }
+
+    // MARK: - Weekly recap (nutrx Pro)
+
+    /// The next Sunday's recap notification, or nil when that week has nothing logged yet.
+    private static func recapRequest(context: ModelContext, now: Date) -> UNNotificationRequest? {
+        // Only the coming week's entries: this runs after every log.
+        let week = RecapSchedule.upcomingWeek(at: now)
+        let (log, nutrients) = HistoryViewModel.loadLog(context: context, now: now, from: week)
+        let names = Dictionary(nutrients.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: false)
+        guard let plan = RecapSchedule.plan(recap: recap, now: now) else { return nil }
+        let content = UNMutableNotificationContent()
+        content.title = RecapText.notificationTitle
+        content.body = plan.body
+        content.sound = .default
+        content.categoryIdentifier = RecapSchedule.category
+        let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: plan.fireDate)
+        logger.info("Weekly recap: pending @ \(plan.fireDate.formatted(date: .abbreviated, time: .shortened), privacy: .public)")
+        return UNNotificationRequest(identifier: plan.identifier, content: content,
+                                     trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false))
     }
 
     // MARK: - Refill reminders (nutrx Pro)

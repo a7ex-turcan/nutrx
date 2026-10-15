@@ -156,6 +156,7 @@ nutrx/
 │   │   │   ├── LogSheet.swift               # Log an exact amount (stepper, ½×/1×/2×/Fill-to-goal chips, note) + today's entries with delete.
 │   │   │   ├── StacksRow.swift              # Today's "Stacks" header + Edit and the stack cards (sideways, or one full-width card).
 │   │   │   ├── LogStackSheet.swift          # Log a stack: per-entry amounts for this time, then the done state with Undo.
+│   │   │   ├── RecapTodayCard.swift         # "Your week" (Pro): Sunday 18:00 through Monday, ✕ hides it for that week.
 │   │   │   └── NotificationBannerView.swift
 │   │   └── ViewModels/
 │   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords.
@@ -193,7 +194,8 @@ nutrx/
 │   │   │   ├── HistoryListView.swift        # Large title; StreakCard, MonthCalendar card, "Recent days" (dots + score). Taps push HistoryDayView.
 │   │   │   ├── StreakCard.swift             # Forest card: flame, "10 days · Current streak", divider, best streak.
 │   │   │   ├── MonthCalendar.swift          # Month grid (first weekday from the locale), all / some / none fills, today ring, chevrons, legend.
-│   │   │   └── HistoryDayView.swift         # Weekday + date header, SegmentedDayRing summary, tint-bar rows with met badge, entries sheet.
+│   │   │   ├── HistoryDayView.swift         # Weekday + date header, SegmentedDayRing summary, tint-bar rows with met badge, entries sheet.
+│   │   │   └── WeeklyRecapView.swift        # Recap (Pro): forest hero, fact cards, earlier weeks, share; first-week state.
 │   │   └── ViewModels/
 │   │       ├── HistoryViewModel.swift       # Fetches nutrients / intake / exclusions into a HistoryLog; streak; displayed month.
 │   │       ├── HistoryLog.swift             # HistoryDay / DayCompletion — which nutrients count on a day and whether they were met (pure).
@@ -201,7 +203,9 @@ nutrx/
 │   │       ├── HistoryText.swift            # "10 days", "4 of 6 goals", "Missed Omega-3 and Protein".
 │   │       ├── WeeklyRecap.swift            # Recap (Pro): a Monday–Sunday week's facts from a HistoryLog (pure).
 │   │       ├── RecapText.swift              # Recap copy: range, headline, template summary, cards, notification.
-│   │       └── RecapPhrasing.swift          # On-device rewording of the summary, checked against the facts, cached per week.
+│   │       ├── RecapPhrasing.swift          # On-device rewording of the summary, checked against the facts, cached per week.
+│   │       ├── RecapViewModel.swift         # The last 8 weeks' recaps, the running week, summaries (template, then rewording).
+│   │       └── RecapSchedule.swift          # Sunday 18:00 recap notification (plan, body), Today card window, settings key.
 │   │
 │   ├── About/
 │   │   └── Views/
@@ -571,11 +575,12 @@ No new SwiftData models, services, or files required beyond the above edits.
 
 ## Notifications
 
-All local — no push infrastructure. Three notification types:
+All local — no push infrastructure. Four notification types:
 
 1. **Daily check-in reminder** — fires at noon if no intake logged. Opt-in via Settings. Smart one-shot scheduling refreshed on foreground and after every intake action. ID: `daily-checkin-reminder`.
 2. **Per-nutrient dose reminders** — configurable times per nutrient, scheduled as **one-off requests per date** for a rolling window (`ReminderSchedule`: up to 14 days, fewer with many reminders so all fit under iOS's 64 pending; the daily check-in takes one more). The rest of today is left out for a nutrient already logged today. `NotificationService.refreshAllNutrientReminders(context:)` is the only scheduler: it rebuilds the set from the data after every log change, on foreground and remote (iCloud) changes, and after reminder or nutrient edits, so logs from the widget, Watch or Siri count from the next sync. Syncs are serialized; requests for deleted nutrients, past times and the old repeating format are removed. Today's "next reminder" line uses the same rule. **Keeping the window rolling:** every sync asks for a background app refresh (`NotificationService.reminderRefreshTaskID`, `BGTaskSchedulerPermittedIdentifiers` + the `fetch` background mode in `Info.plist`, handled by `.backgroundTask(.appRefresh(...))` in `nutrxApp`) about 12 hours out, which runs the same sync. iOS decides when it runs, and it doesn't with Background App Refresh off, so the fallback is opening the app: with neither, reminders run out only after the full window (14 days for a few reminders; a single day only with 60+ reminders a day). IDs: `nutrient-{id}-reminder-{HHmm}-{yyyyMMdd}`. The sync logs "Dose reminders synced: N of M scheduled, K removed" (category `NotificationService`).
 3. **Refill reminders** (nutrx Pro, supply): see nutrx Pro: Supply & refills. They're scheduled first; dose reminders share the rest of the budget.
+4. **Weekly recap** (nutrx Pro): Sunday 18:00, one slot of the budget; see nutrx Pro: Weekly recap.
 
 Permission flow handles not-asked, granted, and denied states. A one-time notification banner appears on Today after onboarding.
 
@@ -750,7 +755,7 @@ Mockups: `docs/pro/design/4-scan-label/`.
 
 ### nutrx Pro: Weekly recap (phase 6)
 
-Mockups: `docs/pro/design/5-weekly-recap/`. The facts and words come first; the screens, Today card, History row and Sunday notification follow in a separate PR.
+Mockups: `docs/pro/design/5-weekly-recap/`.
 - **`WeeklyRecap`** (`Features/History/ViewModels/`, pure, `WeeklyRecapTests`) is built from a `HistoryLog`, so a goal counts on a day exactly as in History and for streaks.
   - **Weeks** run Monday to Sunday whatever the locale's first weekday (`weekStart(containing:)`). A week's recap is ready on its Sunday at 18:00 (`releaseDate`, `latestWeek(at:)`). **Only completed days count** (`lastDay` is Sunday, or yesterday while the week runs): on Sunday evening the recap covers Monday to Saturday and picks up Sunday on Monday, so an evening dose not logged yet never reads as missed. `daysLoggedSoFar` includes today, for the first-week state.
   - **Goals:** "31 of 42 goals met" sums each counted day's goals. A day with nothing logged meets nothing, not even an "at most" goal: not opening the app isn't a result. The hero ring has a segment per day, lit for full days (every goal met, the streak rule).
@@ -758,8 +763,13 @@ Mockups: `docs/pro/design/5-weekly-recap/`. The facts and words come first; the 
   - **Day you tend to miss:** over the four weeks ending on `lastDay`, the weekday most often not a full day, when it stands out (missed more than any other weekday, at least twice, on at least half of three or more weeks).
   - **Streak:** consecutive full days through this week's Sunday (or yesterday) and through the Sunday before; left out with Streaks off, or when both are 0.
   - `ScreenshotDemoDataTests` builds the latest recap from the App Store demo set (a perfect week, Sunday as the day you tend to miss).
-- **`RecapText`** has every string: range ("5 – 11 October"), headline, ring, the template summary ("You hit Vitamin D 7 of 7 days. Omega-3 slipped on the weekend. Caffeine went over your limit on Monday. Your streak is now 10 days."; a perfect week reads "You met every goal on all 7 days." (the full days, so a nutrient added on Wednesday gives "all 5 days"), several nutrients at 100% "You hit Vitamin D and Omega-3 every day."), the four fact cards, the Today and History lines, the notification (a numbers-free body when set up before the week's facts are in) and the first-week copy. It describes and never advises.
+- **`RecapText`** has every string: range ("5 – 11 October"), headline, ring, the template summary ("You hit Vitamin D 7 of 7 days. Omega-3 slipped on the weekend. Caffeine went over your limit on Monday. Your streak stood at 10 days." — past tense, since a past week's streak isn't today's; a perfect week reads "You met every goal on all 7 days." (the full days, so a nutrient added on Wednesday gives "all 5 days"), several nutrients at 100% "You hit Vitamin D and Omega-3 every day."), the four fact cards, the Today and History lines (each part joined with no-break spaces, so they wrap at the dot, never inside "Vitamin D"), the notification (a numbers-free body when set up before the week's facts are in) and the first-week copy. It describes and never advises.
 - **`RecapPhrasing`:** with Apple Intelligence, `FoundationRecapModel` rewords the template summary, prompted with those facts only. The result is used only if every number in it is one of the recap's (`RecapText.factNumbers`, including numbers in names like Omega-3), it contains no advice words, it keeps the steadiest nutrient's name when the template has it, and it's 20–420 characters; spelled-out numbers (one to twenty, once, twice) are checked too; otherwise the template stays. The result, a rewording or the template after a rejection or model error, is kept per week in UserDefaults (`nutrx.recapSummaries`, the last 12 weeks, never synced) and redone only when the facts change, so the recap reads the same each time it's opened.
+- **Screen** (`WeeklyRecapView`): large "Weekly recap", share (the range, headline and summary as text). A forest hero with `SegmentedDayRing(met: fullDays, total: 7, caption: "full days")`, the range, "31 of 42 goals met" and the summary (the template at once, the on-device rewording when ready, `RecapViewModel`). Fact cards in two columns (one, without icons, at accessibility sizes; the hero drops its ring there too). "Earlier weeks": the last eight weeks with something in them as mini rings (goals met), selectable. Before any week has data: "Your first recap arrives Sunday" with days logged so far and the explainer.
+- **History:** a "Weekly recaps" row under the streak card (indigo calendar tile, `RecapRow`, a `ProGatedButton`): Pro reads "Latest: 5 – 11 October · 31 of 42 goals" (`HistoryViewModel.latestRecap`, computed in `refresh`) and pushes the screen; free shows the PRO chip and "A short summary of each week", and opens the paywall.
+- **Today:** `RecapTodayCard` ("Your week", a goals ring, "**31** of 42 goals · Vitamin D steadiest", ✕) right under the day-score card, for Pro users from the recap's Sunday 18:00 through Monday when the week has data: `RecapSchedule.todayCardWeek` (pure, tested) picks the week, `RecapViewModel.recap(forWeek:…)` reads only that week's entries (`HistoryViewModel.loadLog(from:)`). ✕ hides it for that week (`@AppStorage("nutrx.dismissedRecapWeek")`). Tapping opens the recap in a sheet with Done. In Debug builds `simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.showRecapCard -bool YES` shows it on any day.
+- **Notification** (`RecapSchedule`, scheduled by `NotificationService` with the other reminders): "Your week in nutrx" at the coming Sunday 18:00, for Pro users with Settings → Notifications → **Weekly recap** on (per device, `nutrx.weeklyRecapNotifications`, on by default; the switch shows on only while notifications are allowed, and turning it on asks for permission), once something was logged that week. The sync runs after every log, so it reads only the coming week's entries. The body has the numbers ("You hit 31 of 42 goals. Vitamin D was your steadiest.") only when set up on that Sunday; earlier it reads "See what you hit this week and what slipped." It takes one slot of the 60, and an unknown entitlement keeps a pending one (as for refills). Category `nutrx.recap`: tapping sets `NotificationRouter.showsRecap` (Today → History, which pushes the recap, rebuilt with a new `.id` so it opens on the newest week even over an older one; only while Pro, checking the entitlement first on a cold launch); **Turn off weekly recaps** turns the setting off and resyncs. Shown as a banner while the app is open. Test with `simctl push` and `"category":"nutrx.recap"`.
+- **Paywall:** Weekly recap is shipped (tagline "Supply, label scan and recaps"). Without Apple Intelligence its row adds "ⓘ Simpler wording on this iPhone" (`ProText.appleIntelligenceRowNote`), and the list's note names label scanning and recaps.
 
 ---
 

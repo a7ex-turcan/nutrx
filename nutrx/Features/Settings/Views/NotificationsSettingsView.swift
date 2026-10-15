@@ -1,11 +1,15 @@
 import SwiftUI
 import SwiftData
 
-/// Settings → Notifications: the noon check-in reminder, with the permission flow.
+/// Settings → Notifications: the noon check-in reminder, with the permission flow, and for nutrx Pro the Sunday
+/// weekly recap (on unless turned off, per device).
 struct NotificationsSettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Query private var allPreferences: [UserPreferences]
     @State private var showDeniedAlert = false
+    @AppStorage(RecapSchedule.enabledKey) private var weeklyRecapEnabled = true
+    @State private var notificationsAllowed = false
 
     private var preferences: UserPreferences {
         if let existing = allPreferences.first {
@@ -33,6 +37,39 @@ struct NotificationsSettingsView: View {
                 Text("Receive a reminder at noon if you haven't logged any intake for the day.")
             }
             .listRowBackground(Theme.surfaceCard)
+
+            if ProAccess.isStoreVisible, proAccess?.isPro == true {
+                Section {
+                    // On only when it can actually arrive: the setting and notification permission.
+                    Toggle("Weekly recap", isOn: Binding(
+                        get: { weeklyRecapEnabled && notificationsAllowed },
+                        set: { newValue in
+                            guard newValue else {
+                                weeklyRecapEnabled = false
+                                NotificationService.refreshAllNutrientReminders(context: modelContext)
+                                return
+                            }
+                            Task {
+                                switch await NotificationService.permissionStatus() {
+                                case .granted:
+                                    notificationsAllowed = true
+                                case .notDetermined:
+                                    notificationsAllowed = await NotificationService.requestPermission()
+                                case .denied:
+                                    showDeniedAlert = true
+                                }
+                                if notificationsAllowed {
+                                    weeklyRecapEnabled = true
+                                    NotificationService.refreshAllNutrientReminders(context: modelContext)
+                                }
+                            }
+                        }
+                    ))
+                } footer: {
+                    Text("On Sunday evening, a short summary of your week: what you hit, what slipped and which day.")
+                }
+                .listRowBackground(Theme.surfaceCard)
+            }
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -59,12 +96,14 @@ struct NotificationsSettingsView: View {
             switch status {
             case .notDetermined:
                 let granted = await NotificationService.requestPermission()
+                notificationsAllowed = granted
                 if granted {
                     preferences.dailyReminderEnabled = true
                     NotificationService.refreshDailyReminder(context: modelContext)
                 }
 
             case .granted:
+                notificationsAllowed = true
                 preferences.dailyReminderEnabled = true
                 NotificationService.refreshDailyReminder(context: modelContext)
 
@@ -82,6 +121,7 @@ struct NotificationsSettingsView: View {
     private func refreshPermissionState() {
         Task {
             let status = await NotificationService.permissionStatus()
+            notificationsAllowed = status == .granted
             if (status == .denied || status == .notDetermined) && preferences.dailyReminderEnabled {
                 preferences.dailyReminderEnabled = false
                 NotificationService.cancelDailyReminder()
