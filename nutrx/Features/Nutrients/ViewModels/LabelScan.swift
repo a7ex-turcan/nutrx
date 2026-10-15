@@ -1,10 +1,39 @@
 import CoreGraphics
 import ImageIO
+import os
 import UIKit
 
 /// From a photo of a label to what the form fills in (nutrx Pro, docs/pro/PLAN.md phase 5): text recognition, then
 /// the on-device model or the parser. All on the device.
 enum LabelScan {
+    static let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "LabelScan")
+
+    /// Enough to skip the photo: the name and the amount per serving (the bottle size is a bonus).
+    static func isComplete(_ label: SupplementLabel?) -> Bool {
+        label?.name != nil && label?.amountPerServing != nil
+    }
+
+    /// The live read with the photo's fields filling its gaps; nil when neither read anything. The unit and amount
+    /// stay a pair, from whichever read has the amount, so a unit from one row never meets an amount from another.
+    static func combined(_ live: SupplementLabel?, _ photo: SupplementLabel?) -> SupplementLabel? {
+        let live = live ?? SupplementLabel(), photo = photo ?? SupplementLabel()
+        var merged = LabelExtractor.merge(live, photo)
+        let amountFrom = live.amountPerServing != nil ? live : photo
+        if amountFrom.amountPerServing != nil {
+            merged.amountPerServing = amountFrom.amountPerServing
+            merged.unit = amountFrom.unit
+        }
+        return merged.isEmpty ? nil : merged
+    }
+
+    /// What the live scanner's text says, or nil when it gives nothing usable.
+    static func read(text: String) async -> SupplementLabel? {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        let label = await LabelExtractor.extract(from: text).label
+        logger.info("Live text: \(text.count) characters, \(label.isEmpty ? "nothing read" : "read", privacy: .public)")
+        return label.isEmpty ? nil : label
+    }
+
     /// What was read, or nil when the photo gave nothing usable ("Couldn't read this label").
     static func read(_ image: CGImage, orientation: CGImagePropertyOrientation) async -> SupplementLabel? {
         guard let text = try? await LabelTextRecognizer.text(in: image, orientation: orientation),

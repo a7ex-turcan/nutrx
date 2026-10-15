@@ -1,12 +1,14 @@
 import AVFoundation
+import os
 import PhotosUI
 import SwiftUI
 import VisionKit
 
 /// The full-screen label scanner (nutrx Pro, docs/pro/design/4-scan-label: scanner, reading, fail). Live text
-/// highlights from VisionKit's `DataScannerViewController`; the shutter freezes a photo, which `LabelScan` reads on
-/// the device. Where live scanning isn't possible (no camera, camera access off, the simulator) a photo from the
-/// library does the same job. A label that gives nothing usable opens "Couldn't read this label".
+/// highlights from VisionKit's `DataScannerViewController`; the shutter reads that recognised text (and a photo
+/// when it misses the name or amount), all on the device. Where live scanning isn't possible (no camera, camera
+/// access off, the simulator) a photo from the library does the same job. A label that gives nothing usable opens
+/// "Couldn't read this label".
 struct LabelScannerView: View {
     let onRead: (SupplementLabel) -> Void
 
@@ -38,6 +40,7 @@ struct LabelScannerView: View {
                     .accessibilityHidden(true)
             case .unsupported, .denied:
                 unavailablePanel
+                    .disabled(isReading)
             }
 
             if isReading {
@@ -231,9 +234,26 @@ struct LabelScannerView: View {
 
     // MARK: - Reading
 
+    /// The shutter reads the text the scanner is already recognising (the highlighted pieces). When that misses the
+    /// name or the amount, it also takes a photo — while the scanner is still running, which `capturePhoto()` needs —
+    /// and fills the gaps from it. Nothing usable from either ends on "Couldn't read this label", never in silence.
     private func capture() async {
-        guard !isReading, let photo = await scanner.capturePhoto() else { return }
-        await read(photo)
+        guard !isReading else { return }
+        isReading = true
+        AccessibilityNotification.Announcement(ScanText.reading).post()
+        let live = await LabelScan.read(text: scanner.liveText())
+        var label = live
+        if !LabelScan.isComplete(live), let photo = await scanner.capturePhoto(), let image = photo.cgImage {
+            let fromPhoto = await LabelScan.read(image, orientation: LabelScan.orientation(of: photo))
+            label = LabelScan.combined(live, fromPhoto)
+        }
+        isReading = false
+        if let label {
+            onRead(label)
+            dismiss()
+        } else {
+            showFailure = true
+        }
     }
 
     private func readPhoto(_ item: PhotosPickerItem) async {
@@ -279,15 +299,52 @@ struct LabelScannerView: View {
 
 // MARK: - VisionKit
 
-/// The scanner's controls, held by the SwiftUI view: VisionKit's controller is created by the representable.
+/// The scanner's controls, held by the SwiftUI view: VisionKit's controller is created by the representable. As its
+/// delegate it keeps the items being recognised, which the shutter reads.
 @MainActor
-final class ScannerHandle {
+final class ScannerHandle: NSObject, DataScannerViewControllerDelegate {
     fileprivate weak var controller: DataScannerViewController?
+    private var items: [RecognizedItem] = []
 
     var hasTorch: Bool { AVCaptureDevice.default(for: .video)?.hasTorch ?? false }
 
+    /// The recognised text, row by row as printed (VisionKit's bounds are in view points, origin top left).
+    func liveText() -> String {
+        let pieces = items.compactMap { item -> LabelTextRecognizer.Piece? in
+            guard case .text(let text) = item else { return nil }
+            let b = text.bounds
+            return LabelTextRecognizer.piece(text.transcript, topLeft: b.topLeft, topRight: b.topRight,
+                                             bottomLeft: b.bottomLeft, bottomRight: b.bottomRight)
+        }
+        return LabelTextRecognizer.rows(pieces).joined(separator: "\n")
+    }
+
     func capturePhoto() async -> UIImage? {
-        try? await controller?.capturePhoto()
+        guard let controller else {
+            LabelScan.logger.error("Shutter: no scanner to take a photo with")
+            return nil
+        }
+        do {
+            return try await controller.capturePhoto()
+        } catch {
+            LabelScan.logger.error("Shutter: photo failed: \(String(describing: error), privacy: .public)")
+            return nil
+        }
+    }
+
+    func dataScanner(_ dataScanner: DataScannerViewController, didAdd addedItems: [RecognizedItem],
+                     allItems: [RecognizedItem]) {
+        items = allItems
+    }
+
+    func dataScanner(_ dataScanner: DataScannerViewController, didUpdate updatedItems: [RecognizedItem],
+                     allItems: [RecognizedItem]) {
+        items = allItems
+    }
+
+    func dataScanner(_ dataScanner: DataScannerViewController, didRemove removedItems: [RecognizedItem],
+                     allItems: [RecognizedItem]) {
+        items = allItems
     }
 
     func pause() { controller?.stopScanning() }
@@ -318,7 +375,12 @@ private struct DataScannerView: UIViewControllerRepresentable {
             isHighlightingEnabled: true
         )
         handle.controller = controller
-        try? controller.startScanning()
+        controller.delegate = handle
+        do {
+            try controller.startScanning()
+        } catch {
+            LabelScan.logger.error("Scanner didn't start: \(String(describing: error), privacy: .public)")
+        }
         return controller
     }
 
