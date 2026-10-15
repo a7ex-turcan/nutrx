@@ -16,6 +16,7 @@ struct NutrientsListView: View {
     @State private var nutrientToEdit: Nutrient?
     @State private var nutrientToDelete: Nutrient?
     @State private var nutrientToMove: Nutrient?
+    @State private var nutrientToStack: Nutrient?
     @State private var showNewGroupAlert = false
     @State private var newGroupName = ""
     @Query private var allPreferences: [UserPreferences]
@@ -131,6 +132,9 @@ struct NutrientsListView: View {
             .sheet(item: $nutrientToMove) { nutrient in
                 MoveToGroupSheet(nutrient: nutrient)
             }
+            .sheet(item: $nutrientToStack) { nutrient in
+                StackPickerSheet(mode: .nutrient(nutrient))
+            }
             .alert(
                 "Delete \(nutrientToDelete?.name ?? "Nutrient")?",
                 isPresented: Binding(
@@ -225,6 +229,12 @@ struct NutrientsListView: View {
                                 nutrientToMove = nutrient
                             } label: {
                                 Label("Move to Group", systemImage: "folder")
+                            }
+
+                            Button {
+                                nutrientToStack = nutrient
+                            } label: {
+                                Label("Add to Stack…", systemImage: "square.stack.3d.up")
                             }
 
                             Button(role: .destructive) {

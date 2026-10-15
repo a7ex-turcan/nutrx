@@ -154,4 +154,76 @@ final class StackLoggingTests: XCTestCase {
         XCTAssertEqual(SettingsSummary.stacks(count: 0), "None")
         XCTAssertEqual(SettingsSummary.stacks(count: 3), "3")
     }
+
+    // MARK: - Adding to stacks from My Nutrients and the form
+
+    func testToggleAddsAndRemoves() {
+        let stack = StackLogging.createStack(named: "Morning", context: context)
+        let zinc = nutrient("Zinc", step: 15)
+        StackLogging.toggle(zinc, in: stack, context: context)
+        XCTAssertTrue(StackLogging.contains(stack, zinc))
+        XCTAssertEqual(stack.entries?.first?.amount, 15, "joins at one step")
+        StackLogging.toggle(zinc, in: stack, context: context)
+        XCTAssertFalse(StackLogging.contains(stack, zinc))
+        XCTAssertEqual(stack.entries?.count ?? 0, 0)
+    }
+
+    func testANewNutrientJoinsThePickedStacksAndCreatesNewOnes() throws {
+        let morning = StackLogging.createStack(named: "Morning", context: context)
+        let draft = NutrientDraft()
+        draft.name = "Zinc"
+        draft.unit = "mg"
+        draft.step = "15"
+        draft.dailyTarget = "15"
+        draft.pendingStacks = [.existing(morning.id), .new("Evening")]
+        let zinc = try XCTUnwrap(draft.insertNutrient(into: context, group: nil, sortOrder: 0))
+        XCTAssertTrue(StackLogging.contains(morning, zinc))
+        let stacks = try context.fetch(FetchDescriptor<LogStack>(sortBy: [SortDescriptor(\.sortOrder)]))
+        XCTAssertEqual(stacks.map(\.name), ["Morning", "Evening"])
+        XCTAssertTrue(StackLogging.contains(stacks[1], zinc))
+    }
+
+    func testResetClearsTheFormsStacks() {
+        // The form resets its draft before it's opened again, so a cancelled form's choices don't come back.
+        let draft = NutrientDraft()
+        draft.pendingStacks = [.new("Evening")]
+        draft.reset()
+        XCTAssertTrue(draft.pendingStacks.isEmpty)
+    }
+
+    func testANameThatsAlreadyAStackFindsIt() {
+        let morning = StackLogging.createStack(named: "Morning", context: context)
+        let stacks = [morning, StackLogging.createStack(named: "Evening", context: context)]
+        XCTAssertEqual(StackLogging.stack(named: " morning ", in: stacks)?.id, morning.id)
+        XCTAssertNil(StackLogging.stack(named: "Night", in: stacks))
+    }
+
+    func testTodaySuggestsAStackUntilThereIsOneOrItsHidden() {
+        XCTAssertTrue(StackLogging.suggestsStack(nutrientCount: 3, stackCount: 0, hidden: false))
+        XCTAssertFalse(StackLogging.suggestsStack(nutrientCount: 2, stackCount: 0, hidden: false), "too few to stack")
+        XCTAssertFalse(StackLogging.suggestsStack(nutrientCount: 5, stackCount: 1, hidden: false))
+        XCTAssertFalse(StackLogging.suggestsStack(nutrientCount: 5, stackCount: 0, hidden: true))
+    }
+
+    func testStacksRowSummary() {
+        XCTAssertEqual(StackLogging.summary(names: []), "None")
+        XCTAssertEqual(StackLogging.summary(names: ["Morning"]), "Morning")
+        XCTAssertEqual(StackLogging.summary(names: ["Morning", "Evening"]), "Morning and Evening")
+        XCTAssertEqual(StackLogging.summary(names: ["A", "B", "C"]), "3 stacks")
+    }
+
+    func testScanningKeepsThePickedStacks() {
+        let draft = NutrientDraft()
+        draft.pendingStacks = [.new("Morning")]
+        LabelPrefill.apply(.init(name: "Vitamin D3", unit: "IU", amountPerServing: 1000), to: draft)
+        XCTAssertEqual(draft.pendingStacks, [.new("Morning")])
+    }
+
+    func testTheNewStackPlaceholderSuggestsAnUnusedName() {
+        XCTAssertEqual(StackLogging.suggestedName(existing: []), "Morning")
+        XCTAssertEqual(StackLogging.suggestedName(existing: ["morning"]), "Evening")
+        XCTAssertEqual(StackLogging.suggestedName(existing: ["Morning", "Evening", "Night", "With meals", "Workout"]), "Stack")
+        XCTAssertEqual(StackLogging.newStackMessage(existing: ["Morning"]),
+                       "A stack logs several nutrients in one tap. Name it after when you take them, like “Evening”.")
+    }
 }

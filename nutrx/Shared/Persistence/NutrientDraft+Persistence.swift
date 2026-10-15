@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 extension NutrientDraft {
-    /// Inserts a new nutrient built from this draft, with its pending reminders, at the end of `group`.
+    /// Inserts a new nutrient built from this draft, with its pending reminders and stacks, at the end of `group`.
     /// Returns nil (and inserts nothing) if the step or target don't parse.
     @discardableResult
     func insertNutrient(into context: ModelContext, group: NutrientGroup?, sortOrder: Int) -> Nutrient? {
@@ -40,6 +40,10 @@ extension NutrientDraft {
         }
         if !pendingReminderTimes.isEmpty {
             NotificationService.refreshAllNutrientReminders(context: context)
+        }
+        // The stacks picked in the form, new ones created now (so a cancelled form leaves none behind).
+        if StackLogging.add(nutrient, toStacks: pendingStacks, context: context) {
+            StackShortcutLogging.stacksChanged()
         }
         return nutrient
     }

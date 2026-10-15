@@ -51,11 +51,12 @@ struct StacksView: View {
             StackDetailView(stack: stack)
         }
         .alert("New Stack", isPresented: $showNewStackAlert) {
-            TextField("Stack name", text: $newStackName, prompt: Text("e.g. Morning"))
+            TextField("Stack name", text: $newStackName)
             Button("Create") { createStack() }
+                .disabled(newStackName.trimmingCharacters(in: .whitespaces).isEmpty)
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Name it after when you take it.")
+            Text(StackLogging.newStackMessage(existing: stacks.map(\.name)))
         }
         .confirmationDialog(
             "Delete \(stackToDelete?.name ?? "stack")?",
@@ -174,7 +175,9 @@ struct StacksView: View {
     private func createStack() {
         let name = newStackName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
-        openedStack = StackLogging.createStack(named: name, context: modelContext)
+        // A name that's already a stack opens that one.
+        openedStack = StackLogging.stack(named: name, in: stacks)
+            ?? StackLogging.createStack(named: name, context: modelContext)
     }
 
     private func move(from source: IndexSet, to destination: Int) {

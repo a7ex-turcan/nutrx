@@ -75,6 +75,87 @@ enum StackLogging {
         return entry
     }
 
+    /// Whether the nutrient is in the stack.
+    static func contains(_ stack: LogStack, _ nutrient: Nutrient) -> Bool {
+        (stack.entries ?? []).contains { $0.nutrient?.persistentModelID == nutrient.persistentModelID }
+    }
+
+    /// Adds the nutrient to the stack (at its step) or takes it out ("Add to Stack…" in My Nutrients).
+    @MainActor
+    static func toggle(_ nutrient: Nutrient, in stack: LogStack, context: ModelContext) {
+        let entries = (stack.entries ?? []).filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }
+        if entries.isEmpty {
+            add(nutrient, to: stack, context: context)
+        } else {
+            entries.forEach(context.delete)
+            try? context.save()
+        }
+    }
+
+    /// A stack picked for a nutrient that isn't saved yet: an existing one, or a new one created with it.
+    enum Choice: Hashable {
+        case existing(UUID)
+        case new(String)
+    }
+
+    /// Puts a just-added nutrient in the stacks picked in its form, creating the new ones. Returns whether any stack
+    /// was created or changed, so the caller can refresh Siri's stack phrases.
+    @MainActor
+    @discardableResult
+    static func add(_ nutrient: Nutrient, toStacks choices: [Choice], context: ModelContext) -> Bool {
+        guard !choices.isEmpty else { return false }
+        let stacks = (try? context.fetch(FetchDescriptor<LogStack>())) ?? []
+        for choice in choices {
+            switch choice {
+            case .existing(let id):
+                if let stack = stacks.first(where: { $0.id == id }), !contains(stack, nutrient) {
+                    add(nutrient, to: stack, context: context)
+                }
+            case .new(let name):
+                add(nutrient, to: createStack(named: name, context: context), context: context)
+            }
+        }
+        return true
+    }
+
+    /// Today suggests making a stack once there are a few nutrients to put in one, until there's a stack or the
+    /// suggestion is hidden.
+    static func suggestsStack(nutrientCount: Int, stackCount: Int, hidden: Bool) -> Bool {
+        nutrientCount >= suggestionNutrientCount && stackCount == 0 && !hidden
+    }
+
+    static let suggestionNutrientCount = 3
+
+    /// A stack with this name already (ignoring case and surrounding spaces), so "New Stack… Morning" picks the
+    /// existing Morning instead of making a second one Siri couldn't tell apart.
+    static func stack(named name: String, in stacks: [LogStack]) -> LogStack? {
+        let key = name.trimmingCharacters(in: .whitespaces).lowercased()
+        return stacks.first { $0.name.trimmingCharacters(in: .whitespaces).lowercased() == key }
+    }
+
+    /// The New Stack alert's message, wherever a stack is made, suggesting a name nobody has used yet. (The field's
+    /// placeholder is "Stack name": in an alert it's the only name VoiceOver gets for the field.)
+    static func newStackMessage(existing: [String]) -> String {
+        "A stack logs several nutrients in one tap. Name it after when you take them, like “\(suggestedName(existing: existing))”."
+    }
+
+    /// A usual stack name nobody has used yet.
+    static func suggestedName(existing: [String]) -> String {
+        let taken = Set(existing.map { $0.lowercased() })
+        return ["Morning", "Evening", "Night", "With meals", "Workout"].first { !taken.contains($0.lowercased()) }
+            ?? "Stack"
+    }
+
+    /// "None", "Morning", "Morning and Evening", "3 stacks" for the form's Stacks row.
+    static func summary(names: [String]) -> String {
+        switch names.count {
+        case 0: "None"
+        case 1: names[0]
+        case 2: "\(names[0]) and \(names[1])"
+        default: "\(names.count) stacks"
+        }
+    }
+
     /// A new, empty stack at the end of the list.
     @MainActor
     static func createStack(named name: String, context: ModelContext) -> LogStack {
