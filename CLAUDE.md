@@ -177,6 +177,10 @@ nutrx/
 │   │   └── ViewModels/
 │   │       ├── NutrientAnalyticsViewModel.swift # Fetches day totals for the nutrient; exposes goal, summary, stats, weekdayPattern for the selected period.
 │   │       ├── AnalyticsSummary.swift           # AnalyticsDay / AnalyticsGoal / AnalyticsSummary — period days, hit rate, average, best day (pure).
+│   │       ├── LabelParser.swift                # Scan a label: SupplementLabel + the rule-based reader (pure).
+│   │       ├── LabelExtractor.swift             # On-device model (guided generation), checked against the text, parser fallback.
+│   │       ├── LabelPrefill.swift               # Fills the new-nutrient draft from a read label; banner and unread hints.
+│   │       ├── LabelTextRecognizer.swift        # Vision text recognition, pieces joined into rows.
 │   │       ├── WeekdayPattern.swift             # Per-weekday hit rate over the last 28 days, weakest-day insight, heatmap fill levels (pure).
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       └── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
@@ -713,6 +717,23 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
   - Pro only: the provider asks StoreKit itself through `ProEntitlement.current()`, so nothing is cached from the app.
   - `ProEntitlement.swift` and `SupplySchedule.swift` are compiled into the widget extension.
   - The widget process isn't attached to Xcode's local StoreKit, so in the simulator the line only shows in the "Medium, running low" preview.
+
+### nutrx Pro: Scan a label (phase 5)
+
+Mockups: `docs/pro/design/4-scan-label/`. The reading logic is built first; the scanner UI follows in a separate PR.
+- **`LabelTextRecognizer`** runs Vision `RecognizeTextRequest` (accurate, on the device) on an image. It joins pieces on the same row left to right (Vision can split "Vitamin D3 … 1,000 IU" in two), then orders rows top to bottom.
+- **`LabelParser`** is the rule-based reader, pure and tested against a corpus of real label texts in `LabelParserTests`:
+  - **Name:** a known supplement name, earliest in the line, the longer one on a tie ("Omega-3 Fish Oil" → Omega-3; "Vitamin D3" over "Vitamin D"). Failing that, the first short non-boilerplate line above "Supplement Facts". It's title-cased with codes kept (D3, B12, CoQ10).
+  - **Amount and unit:** from the line naming the product, else the first amount in the facts panel, skipping calories, fat, carbohydrate and sodium. IU wins over mcg on the same line. Units are normalised (µg/ug → mcg, iu → IU).
+  - **Servings:** "Servings per container", else "120 softgels" divided by the serving size.
+- **`LabelExtractor`:** with Apple Intelligence (`SystemLanguageModel.default.availability`), `FoundationLabelModel` reads the text with guided generation into `@Generable GeneratedLabel`, prompted with the label text only.
+  - Its output is checked: numbers must appear on the label (`numbersOnLabel`), values must be in range, and the unit must be one of IU, mcg, mg or g.
+  - Gaps are filled from the parser. Any model error falls back to the parser alone.
+  - The model sits behind `LabelExtractor.Model` so tests can stub it (`LabelScanTests`).
+  - The simulator can report the model available yet fail to load it (`ModelManagerError 1026`); the real-model test then skips.
+- **`LabelPrefill`** fills a `NutrientDraft`: name, unit, step (the amount per serving) and `supplyServings`, plus a known supplement's tint and symbol from `StartingPoint`.
+  - It records `scannedFields` (shown as "from label") and `unreadFields` (asked for, with `unreadHint`). The banner reads "Filled from the label. One field needs you." and so on.
+  - The goal is never filled, because nutrx doesn't suggest amounts. A scanned bottle size starts supply tracking when the nutrient is added (`insertNutrient`).
 
 ---
 
