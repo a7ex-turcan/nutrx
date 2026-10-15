@@ -198,7 +198,10 @@ nutrx/
 │   │       ├── HistoryViewModel.swift       # Fetches nutrients / intake / exclusions into a HistoryLog; streak; displayed month.
 │   │       ├── HistoryLog.swift             # HistoryDay / DayCompletion — which nutrients count on a day and whether they were met (pure).
 │   │       ├── MonthGrid.swift              # Month layout: leading blanks, days, weekday symbols (pure).
-│   │       └── HistoryText.swift            # "10 days", "4 of 6 goals", "Missed Omega-3 and Protein".
+│   │       ├── HistoryText.swift            # "10 days", "4 of 6 goals", "Missed Omega-3 and Protein".
+│   │       ├── WeeklyRecap.swift            # Recap (Pro): a Monday–Sunday week's facts from a HistoryLog (pure).
+│   │       ├── RecapText.swift              # Recap copy: range, headline, template summary, cards, notification.
+│   │       └── RecapPhrasing.swift          # On-device rewording of the summary, checked against the facts, cached per week.
 │   │
 │   ├── About/
 │   │   └── Views/
@@ -744,6 +747,19 @@ Mockups: `docs/pro/design/4-scan-label/`.
 - **Review** (`draft.wasScanned`): `ScanReviewBanner` (`LabelPrefill.bannerText`, live as fields get filled) with Scan again replaces the entry card. `NutrientFormFields` shows one card with Name, Unit, "Each tap adds (one serving)" and "Supply · servings in the bottle" ("120 softgels"), each with a "from label" tag (`Text/TealInk` on the teal tile; under the value at accessibility sizes) that goes when the user types in it (`NutrientDraft.edited`). `wasScanned` is a stored flag (set by `LabelPrefill` through `markScanned`, cleared by `reset()`), so editing every field doesn't drop the form out of review mid-keystroke. Scan again keeps the goal the user set. Unread rows are amber at 10% with the `unreadHint` in AmberInk. The goal card drops its step field and adds "Set the amount you're aiming for. nutrx doesn't suggest one."
 - **Paywall:** without Apple Intelligence, the Scan a label row adds "ⓘ Basic text reading on this iPhone" and the list ends with `ProText.appleIntelligenceNote` ("Apple Intelligence makes label scanning richer. Every Pro feature still works on this iPhone."; recaps join it when they ship).
 - **Testing in the simulator:** `xcrun simctl addmedia <UDID> label.jpg`, then Scan a label → Choose a photo.
+
+### nutrx Pro: Weekly recap (phase 6)
+
+Mockups: `docs/pro/design/5-weekly-recap/`. The facts and words come first; the screens, Today card, History row and Sunday notification follow in a separate PR.
+- **`WeeklyRecap`** (`Features/History/ViewModels/`, pure, `WeeklyRecapTests`) is built from a `HistoryLog`, so a goal counts on a day exactly as in History and for streaks.
+  - **Weeks** run Monday to Sunday whatever the locale's first weekday (`weekStart(containing:)`). A week's recap is ready on its Sunday at 18:00 (`releaseDate`, `latestWeek(at:)`). **Only completed days count** (`lastDay` is Sunday, or yesterday while the week runs): on Sunday evening the recap covers Monday to Saturday and picks up Sunday on Monday, so an evening dose not logged yet never reads as missed. `daysLoggedSoFar` includes today, for the first-week state.
+  - **Goals:** "31 of 42 goals met" sums each counted day's goals. A day with nothing logged meets nothing, not even an "at most" goal: not opening the app isn't a result. The hero ring has a segment per day, lit for full days (every goal met, the streak rule).
+  - **Steadiest:** the best hit rate with at least one day met. **Slipped:** another nutrient's lowest rate below that. **Over limit:** the most days over an "at most" limit or a range's maximum. Ties go to display order.
+  - **Day you tend to miss:** over the four weeks ending on `lastDay`, the weekday most often not a full day, when it stands out (missed more than any other weekday, at least twice, on at least half of three or more weeks).
+  - **Streak:** consecutive full days through this week's Sunday (or yesterday) and through the Sunday before; left out with Streaks off, or when both are 0.
+  - `ScreenshotDemoDataTests` builds the latest recap from the App Store demo set (a perfect week, Sunday as the day you tend to miss).
+- **`RecapText`** has every string: range ("5 – 11 October"), headline, ring, the template summary ("You hit Vitamin D 7 of 7 days. Omega-3 slipped on the weekend. Caffeine went over your limit on Monday. Your streak is now 10 days."; a perfect week reads "You met every goal on all 7 days." (the full days, so a nutrient added on Wednesday gives "all 5 days"), several nutrients at 100% "You hit Vitamin D and Omega-3 every day."), the four fact cards, the Today and History lines, the notification (a numbers-free body when set up before the week's facts are in) and the first-week copy. It describes and never advises.
+- **`RecapPhrasing`:** with Apple Intelligence, `FoundationRecapModel` rewords the template summary, prompted with those facts only. The result is used only if every number in it is one of the recap's (`RecapText.factNumbers`, including numbers in names like Omega-3), it contains no advice words, it keeps the steadiest nutrient's name when the template has it, and it's 20–420 characters; spelled-out numbers (one to twenty, once, twice) are checked too; otherwise the template stays. The result, a rewording or the template after a rejection or model error, is kept per week in UserDefaults (`nutrx.recapSummaries`, the last 12 weeks, never synced) and redone only when the facts change, so the recap reads the same each time it's opened.
 
 ---
 

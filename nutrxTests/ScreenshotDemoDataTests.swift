@@ -55,6 +55,24 @@ final class ScreenshotDemoDataTests: XCTestCase {
         XCTAssertEqual(pattern.weakestWeekday, 1)
     }
 
+    func testLastWeeksRecapHasSomethingToSay() throws {
+        let history = HistoryViewModel()
+        history.refresh(context: context)
+        let log = try XCTUnwrap(history.log)
+        let names = Dictionary(try nutrients().map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let week = WeeklyRecap.latestWeek(at: .now, calendar: .current)
+        let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: true)
+        let text = RecapText(recap)
+        XCTAssertTrue(recap.hasData)
+        // Six goals on each counted day: seven, or six on a Sunday evening (Sunday counts once it's over).
+        let counted = (Calendar.current.dateComponents([.day], from: recap.weekStart, to: recap.lastDay).day ?? 0) + 1
+        XCTAssertEqual(recap.goalsCounted, 6 * counted)
+        XCTAssertNotNil(recap.steadiest)
+        XCTAssertNotNil(recap.streak)
+        XCTAssertEqual(recap.weakestWeekday?.weekday, 1, "Vitamin D's Sundays, as on the heatmap")
+        XCTAssertTrue(RecapPhrasing.isAcceptable(text.summary, for: text), "the template passes its own check")
+    }
+
     func testReplacingTwiceLeavesOneSet() throws {
         ScreenshotDemoData.replaceStore(in: context)
         XCTAssertEqual(try nutrients().count, 6)
