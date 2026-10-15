@@ -40,11 +40,13 @@ final class RecapViewModel {
         if let selectedWeek, !weeks.contains(where: { $0.weekStart == selectedWeek }) { self.selectedWeek = nil }
     }
 
-    /// One week's recap, or nil when it has nothing in it (Today's card). Only that week's entries are read.
-    static func recap(forWeek week: Date, context: ModelContext, streaksEnabled: Bool, now: Date = .now) -> WeeklyRecap? {
+    /// One week's recap, or nil when it has nothing in it (Today's card). Only that week's entries are read, so it
+    /// has the week's goals, full days, steadiest, slipped and over-limit, but no streak and no weekday you tend to
+    /// miss (both look further back): use the full log for those.
+    static func recap(forWeek week: Date, context: ModelContext, now: Date = .now) -> WeeklyRecap? {
         let (log, nutrients) = HistoryViewModel.loadLog(context: context, now: now, from: week)
         let names = Dictionary(nutrients.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
-        let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: streaksEnabled)
+        let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: false)
         return recap.hasData ? recap : nil
     }
 

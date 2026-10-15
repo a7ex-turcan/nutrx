@@ -80,9 +80,7 @@ struct TodayView: View {
             at: .now, isPro: ProAccess.isStoreVisible && proAccess?.isPro == true,
             dismissedWeek: dismissedRecapWeek > 0 ? Date(timeIntervalSince1970: dismissedRecapWeek) : nil,
             ignoresWindow: ignoresWindow)
-        weekRecap = week.flatMap {
-            RecapViewModel.recap(forWeek: $0, context: modelContext, streaksEnabled: preferences.streaksEnabled)
-        }
+        weekRecap = week.flatMap { RecapViewModel.recap(forWeek: $0, context: modelContext) }
     }
 
     var body: some View {
