@@ -258,9 +258,9 @@ enum LabelParser {
         let keyword = words.prefix(2).joined(separator: " ")
         // "Vitamin D3" can't fall back to "vitamin": that's every vitamin on the panel.
         let head = words.first == "vitamin" ? keyword : (words.first ?? keyword)
-        // Whole words: "vitamin b" (B Complex) isn't "Vitamin B6".
+        // Whole words: "vitamin b" (B Complex) isn't "Vitamin B6"; a plural is fine ("Omega-3s").
         func has(_ phrase: String, in line: String, atStart: Bool) -> Bool {
-            let pattern = (atStart ? "^" : "\\b") + NSRegularExpression.escapedPattern(for: phrase) + "\\b"
+            let pattern = (atStart ? "^" : "\\b") + NSRegularExpression.escapedPattern(for: phrase) + "s?\\b"
             return line.lowercased().range(of: pattern, options: .regularExpression) != nil
         }
         let withName = lines.filter { has(keyword, in: $0, atStart: false) }

@@ -348,6 +348,17 @@ final class LabelParserTests: XCTestCase {
             """, name: "Vitamin D3", unit: "IU", amount: 1000, servings: 120)
     }
 
+    func testOmega3sIsFoundAfterAFishOilLine() {
+        // A plural "Omega-3s" row after the fish oil it comes from: the omega-3 amount, not the fish oil's.
+        assertLabel("""
+            Omega-3
+            Supplement Facts
+            Servings Per Container 60
+            Fish Oil 2000 mg
+            Total Omega-3s 1280 mg
+            """, name: "Omega-3", unit: "mg", amount: 1280, servings: 60)
+    }
+
     func testBComplexDoesntTakeVitaminB6sAmount() {
         XCTAssertNil(LabelParser.namedAmount(in: ["Vitamin B6 2.5 mg"], name: "Vitamin B Complex"))
     }
