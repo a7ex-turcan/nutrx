@@ -78,16 +78,15 @@ enum LabelParser {
     private static let brandMarks = ["'s ", "’s ", "®", "™", " labs", " naturals", " nutrition", " inc", " co.",
                                      " pharma", " organics"]
 
-    /// The first short line that isn't boilerplate, a number or a brand.
+    /// The first short line that isn't boilerplate or a number, passing over brand-looking lines while another line
+    /// follows: "Nature's Best" above "Calm Night" gives Calm Night, but "Women's Multi" on its own is the name.
     private static func titleLine(in lines: [String]) -> String? {
-        for line in lines {
-            let lower = line.lowercased() + " "
-            guard (3...30).contains(line.count), !boilerplate.contains(where: lower.contains),
-                  !brandMarks.contains(where: lower.contains),
-                  line.rangeOfCharacter(from: .letters) != nil, line.first?.isNumber == false else { continue }
-            return titleCased(line)
+        let candidates = lines.filter { line in
+            (3...30).contains(line.count) && !boilerplate.contains(where: line.lowercased().contains)
+                && line.rangeOfCharacter(from: .letters) != nil && line.first?.isNumber == false
         }
-        return nil
+        let named = candidates.first { !brandMarks.contains(where: ($0.lowercased() + " ").contains) } ?? candidates.first
+        return named.map(titleCased)
     }
 
     /// The known name as the label writes it ("VITAMIN D3" → "Vitamin D3"), keeping codes like D3, B12, Q10.
@@ -120,10 +119,11 @@ enum LabelParser {
 
     // MARK: - Amount per serving
 
-    /// A number on a label: "1,000", "1 000", "2.5", "25". It can't start right after a letter, digit, point or comma,
-    /// so the 3 of "D3" or the 12 of "B12" never joins the amount after it ("Vitamin B12 500 mcg" is 500, not
-    /// 12,500), and thousands are grouped with a comma or a plain space only, never across a line break.
-    static let numberPattern = #"(?<![A-Za-z\d.,])(?:\d{1,3}(?:[, ]\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?)"#
+    /// A number on a label: "1,000", "1 000", "2.5", "25". It can't start right after a letter, digit, point, comma
+    /// or hyphen, so the 3 of "D3", "Omega-3" or "D-3" and the 12 of "B12" never join the amount after it ("Vitamin
+    /// B12 500 mcg" is 500, not 12,500). Thousands are grouped with a comma or a plain space only, never across a line
+    /// break, and a group is exactly three digits ("1 0000" isn't 10,000).
+    static let numberPattern = #"(?<![A-Za-z\d.,\-])(?:\d{1,3}(?:[, ]\d{3})+(?!\d)(?:\.\d+)?|\d+(?:[.,]\d+)?)"#
 
     /// A number followed by a unit.
     private static let amountPattern = "(" + numberPattern + #")\s*(mcg|µg|ug|mg|g|iu)\b"#

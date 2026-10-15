@@ -154,6 +154,31 @@ final class LabelParserTests: XCTestCase {
             """, name: "CoQ10", unit: "mg", amount: 100, servings: 30)
     }
 
+    func testAHyphenatedCodeNeverJoinsTheAmount() {
+        assertLabel("""
+            Omega-3
+            Supplement Facts
+            Servings Per Container 60
+            Total Omega-3 600 mg
+            """, name: "Omega-3", unit: "mg", amount: 600, servings: 60)
+        assertLabel("""
+            Vitamin K2
+            Supplement Facts
+            Servings Per Container 60
+            Vitamin K2 (as MK-7) 100 mcg
+            """, name: "Vitamin K2", unit: "mcg", amount: 100, servings: 60)
+        XCTAssertEqual(LabelParser.amounts(in: "Vitamin D-3 400 IU").map(\.0), [400])
+    }
+
+    func testABrandLikeLineOnItsOwnIsTheName() {
+        assertLabel("""
+            Women's Multi
+            Supplement Facts
+            Servings Per Container 30
+            Calcium 200 mg
+            """, name: "Women's Multi", unit: "mg", amount: 200, servings: 30)
+    }
+
     func testAnIngredientInTheFactsDoesntNameABlend() {
         assertLabel("""
             Sleep Blend

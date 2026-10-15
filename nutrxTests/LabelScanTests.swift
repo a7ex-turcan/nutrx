@@ -68,6 +68,16 @@ final class LabelScanTests: XCTestCase {
         // The 3 of "D3" is a code, not a number; "120" on the next line stays 120, never 3,120.
         XCTAssertEqual(LabelExtractor.numbersOnLabel("Vitamin D3 1,000 IU 125% · 2.5 mg"), [1000, 125, 2.5])
         XCTAssertEqual(LabelExtractor.numbersOnLabel("VITAMIN D3\n120 softgels\nD3 400 IU"), [120, 400])
+        XCTAssertEqual(LabelExtractor.numbersOnLabel("Omega-3 1000 mg · MK-7"), [1000])
+    }
+
+    func testADroppedAmountTakesItsUnitWithIt() async {
+        // 2,000 isn't on the label, so mcg mustn't stay to sit next to the parser's 1,000 (IU).
+        let model = StubModel(label: .init(name: "Vitamin D3", unit: "mcg", amountPerServing: 2000, servingsPerContainer: 120))
+        let result = await LabelExtractor.extract(from: "Vitamin D3\nSupplement Facts\nVitamin D3 25 mcg (1,000 IU)",
+                                                  model: model)
+        XCTAssertEqual(result.label.amountPerServing, 1000)
+        XCTAssertEqual(result.label.unit, "IU")
     }
 
     func testAUnitThatIsntWrittenAfterTheAmountIsDropped() async {

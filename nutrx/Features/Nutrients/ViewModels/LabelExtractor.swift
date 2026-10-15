@@ -55,10 +55,12 @@ enum LabelExtractor {
         if let amount = label.amountPerServing, amount > 0, amount < 1_000_000, numbers.contains(amount) {
             result.amountPerServing = amount
         }
-        // The unit has to be written right after an amount on the label, after the model's amount when it kept one,
-        // so "mg" for a label that says mcg (a 1,000× slip) doesn't pass.
+        // The unit has to be written right after an amount on the label: after the model's amount when it kept one,
+        // so "mg" for a label that says mcg (a 1,000× slip) doesn't pass. When the model's amount was dropped, its
+        // unit goes too, or the parser's amount could end up with it ("25 mcg (1,000 IU)" read as 1,000 mcg).
         let written = text.components(separatedBy: .newlines).flatMap(LabelParser.amounts(in:))
-        if let unit = label.unit.map(LabelParser.normalisedUnit), ["IU", "mcg", "mg", "g"].contains(unit),
+        let amountDropped = label.amountPerServing != nil && result.amountPerServing == nil
+        if let unit = label.unit.map(LabelParser.normalisedUnit), ["IU", "mcg", "mg", "g"].contains(unit), !amountDropped,
            written.contains(where: { $0.1 == unit && (result.amountPerServing == nil || $0.0 == result.amountPerServing) }) {
             result.unit = unit
         }
