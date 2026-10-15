@@ -11,6 +11,10 @@ struct TodayView: View {
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     /// Set by a card's "Refilled?"; confirmed before the count restarts.
     @State private var nutrientToRefill: Nutrient?
+    /// Last week's recap, for the "Your week" card (nutrx Pro): Sunday 18:00 through Monday.
+    @State private var weekRecap: WeeklyRecap?
+    @State private var showRecap = false
+    @AppStorage("nutrx.dismissedRecapWeek") private var dismissedRecapWeek: Double = 0
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
@@ -64,6 +68,27 @@ struct TodayView: View {
         return new
     }
 
+    /// The "Your week" card's recap: only for Pro, in its window, not hidden for that week, and with something in it.
+    private func refreshWeekRecap() {
+        let now = Date.now
+        let week = WeeklyRecap.latestWeek(at: now, calendar: .current)
+        var inWindow = RecapSchedule.showsTodayCard(forWeekStarting: week, at: now)
+        #if DEBUG
+        // Checking the card on a weekday: `simctl spawn <UDID> defaults write nutrx-labs.nutrx
+        // nutrx.debug.showRecapCard -bool YES` (Debug builds only).
+        if UserDefaults.standard.bool(forKey: "nutrx.debug.showRecapCard") { inWindow = true }
+        #endif
+        guard ProAccess.isStoreVisible, proAccess?.isPro == true, inWindow,
+              week.timeIntervalSince1970 != dismissedRecapWeek else {
+            weekRecap = nil
+            return
+        }
+        let (log, nutrients) = HistoryViewModel.loadLog(context: modelContext, now: now)
+        let names = Dictionary(nutrients.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: preferences.streaksEnabled)
+        weekRecap = recap.hasData ? recap : nil
+    }
+
     var body: some View {
         Group {
             if viewModel.groupSections.isEmpty {
@@ -82,6 +107,18 @@ struct TodayView: View {
                                               bottom: Theme.Spacing.cardGap / 2, trailing: Theme.Spacing.screenMargin))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
+
+                    if let weekRecap {
+                        RecapTodayCard(recap: weekRecap, onOpen: { showRecap = true }, onDismiss: {
+                            dismissedRecapWeek = weekRecap.weekStart.timeIntervalSince1970
+                            withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                                self.weekRecap = nil
+                            }
+                        })
+                        .listRowInsets(cardRowInsets)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                    }
 
                     if showBanner {
                         NotificationBannerView(
@@ -134,6 +171,18 @@ struct TodayView: View {
             refreshNotificationPermission()
             refreshSyncBannerVisibility()
             refreshStreak()
+            refreshWeekRecap()
+        }
+        .onChange(of: proAccess?.isPro) { refreshWeekRecap() }
+        .sheet(isPresented: $showRecap) {
+            NavigationStack {
+                WeeklyRecapView()
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Done") { showRecap = false }
+                        }
+                    }
+            }
         }
         .onChange(of: allGroups.count) {
             viewModel.refresh(context: modelContext)
@@ -142,6 +191,7 @@ struct TodayView: View {
             if newPhase == .active {
                 viewModel.refresh(context: modelContext)
                 refreshStreak()
+                refreshWeekRecap()
                 refreshNotificationPermission()
                 NotificationService.refreshDailyReminder(context: modelContext)
                 viewModel.rescheduleReminders(context: modelContext)

@@ -1,14 +1,19 @@
 import SwiftUI
 import SwiftData
 
-/// History tab (DESIGN.md §5.4): streak card, month calendar, and the most recent days. Tapping a past day — in
-/// the calendar or the list — pushes `HistoryDayView`.
+/// History tab (DESIGN.md §5.4): streak card, the weekly recaps row (nutrx Pro), month calendar, and the most recent
+/// days. Tapping a past day — in the calendar or the list — pushes `HistoryDayView`; the recaps row (or a recap
+/// notification) pushes `WeeklyRecapView`.
 struct HistoryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Query private var allPreferences: [UserPreferences]
     @State private var viewModel = HistoryViewModel()
     @State private var selectedDay: Date?
+    @State private var showRecap = false
+    /// A new value rebuilds the recap screen, so a notification opens the newest week even over an older one.
+    @State private var recapID = UUID()
+    @Environment(NotificationRouter.self) private var router: NotificationRouter?
 
     private var streaksEnabled: Bool { allPreferences.first?.streaksEnabled != false }
 
@@ -27,13 +32,27 @@ struct HistoryListView: View {
         .navigationDestination(item: $selectedDay) { date in
             HistoryDayView(date: date, viewModel: viewModel)
         }
+        .navigationDestination(isPresented: $showRecap) {
+            WeeklyRecapView().id(recapID)
+        }
         .onAppear {
             viewModel.refresh(context: modelContext)
+            openRecapIfAsked()
         }
+        .onChange(of: router?.showsRecap) { openRecapIfAsked() }
         .onChange(of: scenePhase) { _, phase in
             // Back from the background, possibly on a new day: move today's ring and pick up synced entries.
             if phase == .active { viewModel.refresh(context: modelContext) }
         }
+    }
+
+    /// A tapped recap notification (the tab bar has already switched here).
+    private func openRecapIfAsked() {
+        guard router?.showsRecap == true else { return }
+        router?.showsRecap = false
+        selectedDay = nil
+        recapID = UUID()
+        showRecap = true
     }
 
     private var emptyState: some View {
@@ -51,6 +70,10 @@ struct HistoryListView: View {
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap + 2) {
                 if streaksEnabled, let streak = viewModel.streak, streak.current > 0 || streak.best > 0 {
                     StreakCard(current: streak.current, best: streak.best)
+                }
+
+                if ProAccess.isStoreVisible {
+                    RecapRow(latest: viewModel.latestRecap) { showRecap = true }
                 }
 
                 MonthCalendar(
@@ -92,6 +115,49 @@ struct HistoryListView: View {
         }
         .background(Theme.surfaceGround)
         .refreshable { viewModel.refresh(context: modelContext) }
+    }
+}
+
+/// "Weekly recaps" (docs/pro/design/5-weekly-recap: history): the latest week's line for Pro, or the PRO chip and
+/// "A short summary of each week" for free users (the paywall).
+private struct RecapRow: View {
+    let latest: WeeklyRecap?
+    let onOpen: () -> Void
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        ProGatedButton(action: onOpen) { showsBadge in
+            HStack(spacing: 14) {
+                if !dynamicTypeSize.isAccessibilitySize {
+                    NutrientIconTile(tint: .indigo, symbolName: "calendar", size: 40)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text("Weekly recaps")
+                            .font(.headline)
+                            .foregroundStyle(Theme.textPrimary)
+                        if showsBadge { ProBadge() }
+                    }
+                    Text(showsBadge ? "A short summary of each week"
+                         : latest.map { RecapText($0).historyLine } ?? RecapText.firstTitle)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Theme.textSecondary)
+                    .accessibilityHidden(true)
+            }
+            .padding(Theme.Spacing.cardPadding)
+            .cardStyle()
+            .contentShape(Rectangle())
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+        }
+        .buttonStyle(.plain)
     }
 }
 

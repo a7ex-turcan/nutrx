@@ -7,8 +7,14 @@ enum SettingsSummary {
         return syncEnabled ? "On" : "Off"
     }
 
-    static func notifications(dailyReminderEnabled: Bool) -> String {
-        dailyReminderEnabled ? "Noon check-in" : "Off"
+    /// `weeklyRecap`: the Pro recap will actually arrive (Pro, its switch on, notifications allowed).
+    static func notifications(dailyReminderEnabled: Bool, weeklyRecap: Bool = false) -> String {
+        switch (dailyReminderEnabled, weeklyRecap) {
+        case (true, true): "Check-in and recap"
+        case (true, false): "Noon check-in"
+        case (false, true): "Weekly recap"
+        case (false, false): "Off"
+        }
     }
 
     static func streaks(enabled: Bool) -> String {

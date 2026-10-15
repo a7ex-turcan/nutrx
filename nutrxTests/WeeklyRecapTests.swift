@@ -74,8 +74,8 @@ final class WeeklyRecapTests: XCTestCase {
         XCTAssertEqual(text.range, "5 – 11 October")
         XCTAssertEqual(text.cards.map(\.label), ["Steadiest", "Slipped"])
         XCTAssertEqual(text.cards[1].detail, "Missed Sat and Sun")
-        XCTAssertEqual(text.todayLine, "**18** of 21 goals · Vitamin D steadiest")
-        XCTAssertEqual(text.historyLine, "Latest: 5 – 11 October · 18 of 21 goals")
+        XCTAssertEqual(text.todayLine, RecapText.together("**18** of 21 goals") + " · " + RecapText.together("Vitamin D steadiest"))
+        XCTAssertEqual(text.historyLine, "Latest: " + RecapText.together("5 – 11 October") + " · " + RecapText.together("18 of 21 goals"))
         XCTAssertEqual(text.notificationBody, "You hit 18 of 21 goals. Vitamin D was your steadiest.")
     }
 
@@ -116,7 +116,7 @@ final class WeeklyRecapTests: XCTestCase {
         let recap = recap(all, today: day(10, 12))
         XCTAssertEqual(recap.streak, WeeklyRecap.StreakChange(now: 2, previous: 7))
         let text = RecapText(recap, calendar: calendar)
-        XCTAssertTrue(text.summary.hasSuffix("Your streak is now 2 days."))
+        XCTAssertTrue(text.summary.hasSuffix("Your streak stood at 2 days."))
         XCTAssertEqual(text.cards.last?.detail, "Down from 7 last Sunday")
         XCTAssertNil(self.recap(all, today: day(10, 12), streaks: false).streak, "Streaks turned off")
     }
@@ -149,9 +149,9 @@ final class WeeklyRecapTests: XCTestCase {
     func testAPerfectWeek() {
         let all = totals(from: day(10, 5), through: day(10, 11))
         let text = RecapText(recap(all, today: day(10, 12)), calendar: calendar)
-        XCTAssertEqual(text.summary, "You met every goal on all 7 days. Your streak is now 7 days.")
+        XCTAssertEqual(text.summary, "You met every goal on all 7 days. Your streak stood at 7 days.")
         let running = RecapText(recap(totals(from: day(10, 5), through: day(10, 7)), today: day(10, 7)), calendar: calendar)
-        XCTAssertEqual(running.summary, "You met every goal on both days. Your streak is now 2 days.")
+        XCTAssertEqual(running.summary, "You met every goal on both days. Your streak stood at 2 days.")
         // The first nutrient added on Wednesday: five days with goals, not "all 7".
         let late = totals(from: day(10, 7), through: day(10, 11))
         let log = HistoryLog(nutrients: nutrients.map {
@@ -167,7 +167,7 @@ final class WeeklyRecapTests: XCTestCase {
         let all = totals(from: day(10, 5), through: day(10, 11), overrides: [day(10, 7): [omega: 0]])
         let text = RecapText(recap(all, today: day(10, 12)), calendar: calendar)
         XCTAssertEqual(text.summary, "You hit Vitamin D and Caffeine every day. Omega-3 slipped on Wednesday. "
-                       + "Your streak is now 4 days.")
+                       + "Your streak stood at 4 days.")
     }
 
     func testNothingMetSaysSo() {
@@ -203,6 +203,38 @@ final class WeeklyRecapTests: XCTestCase {
                        "You've logged 3 days so far. Sunday's recap will cover the whole week.")
         XCTAssertEqual(RecapText.firstBody(daysLogged: 1),
                        "You've logged 1 day so far. Sunday's recap will cover the whole week.")
+    }
+
+    // MARK: - Notification and Today card
+
+    func testTheRecapNotification() {
+        // Wednesday: the coming Sunday's notification, without numbers that would be stale by then.
+        let midweek = recap(totals(from: day(10, 5), through: day(10, 7)), today: day(10, 7))
+        let plan = RecapSchedule.plan(recap: midweek, now: day(10, 7, hour: 9), calendar: calendar)
+        XCTAssertEqual(plan?.fireDate, day(10, 11, hour: 18))
+        XCTAssertEqual(plan?.identifier, "weekly-recap-20261005")
+        XCTAssertEqual(plan?.body, RecapText.notificationBodyWithoutFacts)
+        // On the Sunday itself: the week's numbers (Monday to Saturday).
+        let sunday = recap(designWeek, today: day(10, 11))
+        XCTAssertEqual(RecapSchedule.plan(recap: sunday, now: day(10, 11, hour: 9), calendar: calendar)?.body,
+                       RecapText(sunday, calendar: calendar).notificationBody)
+        // Past 18:00 there's nothing left to schedule for that week; a quiet week gets none.
+        XCTAssertNil(RecapSchedule.plan(recap: sunday, now: day(10, 11, hour: 19), calendar: calendar))
+        let quiet = recap([:], today: day(10, 7))
+        XCTAssertNil(RecapSchedule.plan(recap: quiet, now: day(10, 7, hour: 9), calendar: calendar))
+    }
+
+    func testWhichWeekTheNotificationIsFor() {
+        XCTAssertEqual(RecapSchedule.upcomingWeek(at: day(10, 11, hour: 17), calendar: calendar), day(10, 5))
+        XCTAssertEqual(RecapSchedule.upcomingWeek(at: day(10, 11, hour: 18), calendar: calendar), day(10, 12))
+    }
+
+    func testTodayShowsYourWeekFromSundayEveningThroughMonday() {
+        let week = day(10, 5)
+        XCTAssertFalse(RecapSchedule.showsTodayCard(forWeekStarting: week, at: day(10, 11, hour: 17), calendar: calendar))
+        XCTAssertTrue(RecapSchedule.showsTodayCard(forWeekStarting: week, at: day(10, 11, hour: 18), calendar: calendar))
+        XCTAssertTrue(RecapSchedule.showsTodayCard(forWeekStarting: week, at: day(10, 12, hour: 23), calendar: calendar))
+        XCTAssertFalse(RecapSchedule.showsTodayCard(forWeekStarting: week, at: day(10, 13), calendar: calendar))
     }
 
     // MARK: - Rewording

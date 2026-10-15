@@ -39,6 +39,10 @@ struct MainTabView: View {
         .onChange(of: router?.supplyNutrientID) { _, id in
             if id != nil { selection = .nutrients }
         }
+        // A recap notification opens the recap (History pushes it).
+        .onChange(of: router?.showsRecap) { _, shows in
+            if shows == true { selection = .history }
+        }
     }
 }
 

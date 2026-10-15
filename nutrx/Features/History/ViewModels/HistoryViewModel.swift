@@ -11,6 +11,8 @@ final class HistoryViewModel {
     private(set) var log: HistoryLog?
     private(set) var recentDays: [HistoryDay] = []
     private(set) var streak: StreakResult?
+    /// For History's "Weekly recaps" row.
+    private(set) var latestRecap: WeeklyRecap?
     private(set) var month = MonthGrid(containing: .now)
 
     private var nutrientsByID: [UUID: Nutrient] = [:]
@@ -18,9 +20,19 @@ final class HistoryViewModel {
     var hasPastEntries: Bool { log?.hasPastEntries ?? false }
 
     func refresh(context: ModelContext, now: Date = .now) {
+        let (log, nutrients) = Self.loadLog(context: context, now: now)
+        nutrientsByID = Dictionary(nutrients.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        self.log = log
+        recentDays = log.recentDays(limit: Self.recentDayCount)
+        streak = StreakService.compute(context: context)
+        latestRecap = Self.latestRecap(log: log, names: nutrientsByID.mapValues(\.name), now: now)
+    }
+
+    /// Every nutrient, entry and exclusion as a `HistoryLog`, with the nutrients in display order (also used by the
+    /// weekly recap and its notification).
+    static func loadLog(context: ModelContext, now: Date = .now) -> (HistoryLog, [Nutrient]) {
         let calendar = Calendar.current
         let nutrients = orderedNutrients(context: context)
-        nutrientsByID = Dictionary(nutrients.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
         let records = (try? context.fetch(FetchDescriptor<IntakeRecord>())) ?? []
         var totals: [Date: [UUID: Double]] = [:]
@@ -43,12 +55,21 @@ final class HistoryViewModel {
             },
             totals: totals, exclusions: excluded, today: now, calendar: calendar
         )
-        self.log = log
-        recentDays = log.recentDays(limit: Self.recentDayCount)
-        streak = StreakService.compute(context: context)
+        return (log, nutrients)
     }
 
     func nutrient(_ id: UUID) -> Nutrient? { nutrientsByID[id] }
+
+    /// The newest weekly recap with something in it, within the recap screen's eight weeks (nutrx Pro).
+    static func latestRecap(log: HistoryLog, names: [UUID: String], now: Date) -> WeeklyRecap? {
+        let newest = WeeklyRecap.latestWeek(at: now, calendar: log.calendar)
+        for back in 0..<RecapViewModel.weekCount {
+            let week = log.calendar.date(byAdding: .day, value: -7 * back, to: newest)!
+            let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: false)
+            if recap.hasData { return recap }
+        }
+        return nil
+    }
 
     func day(_ date: Date) -> HistoryDay? { log?.day(date) }
 
@@ -90,7 +111,7 @@ final class HistoryViewModel {
     }
 
     /// All nutrients, deleted ones included, in Today's order: group, then position within the group.
-    private func orderedNutrients(context: ModelContext) -> [Nutrient] {
+    private static func orderedNutrients(context: ModelContext) -> [Nutrient] {
         let nutrients = (try? context.fetch(FetchDescriptor<Nutrient>())) ?? []
         let groups = (try? context.fetch(FetchDescriptor<NutrientGroup>())) ?? []
         // Nutrients without a group belong to General.

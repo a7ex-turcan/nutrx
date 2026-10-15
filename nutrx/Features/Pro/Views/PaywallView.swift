@@ -135,7 +135,7 @@ struct PaywallView: View {
                         Text(feature.subtitle)
                             .font(.footnote)
                             .foregroundStyle(Theme.textSecondary)
-                        if feature == .scan, let note = ScanText.paywallNote(reading, device: device) {
+                        if let note = ProText.appleIntelligenceRowNote(feature, reading: reading, device: device) {
                             Label(note, systemImage: "info.circle")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(Theme.textSecondary)

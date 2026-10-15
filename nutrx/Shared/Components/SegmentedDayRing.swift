@@ -18,6 +18,10 @@ struct SegmentedDayRing: View {
     var lineWidth: CGFloat? = nil
     /// "3/6 goals met" in the centre.
     var showsLabel: Bool = true
+    /// The words under the score: "goals met", or the weekly recap's "full days" / "days logged".
+    var caption: String = "goals met"
+    /// "3/6", or just "3" (the recap's first week: days logged so far).
+    var showsTotal: Bool = true
 
     static let maxSegments = 12
 
@@ -66,7 +70,7 @@ struct SegmentedDayRing: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("\(metCount) of \(total) goals met"))
+        .accessibilityLabel(Text(showsTotal ? "\(metCount) of \(total) \(caption)" : "\(metCount) \(caption)"))
     }
 
     /// Trim ranges (0…1, clockwise from 12 o'clock) for each segment, or nil to draw a continuous ring.
@@ -85,7 +89,7 @@ struct SegmentedDayRing: View {
         let primary = style == .onForest ? Theme.onForestPrimary : Theme.textPrimary
         let secondary = style == .onForest ? Theme.onForestSecondary : Theme.textSecondary
         let score = Text("\(metCount)").foregroundStyle(primary)
-        let outOf = Text("/\(total)").foregroundStyle(secondary)
+        let outOf = Text(showsTotal ? "/\(total)" : "").foregroundStyle(secondary)
 
         let scoreText = Text("\(score)\(outOf)")
             .font(.system(.largeTitle, design: .rounded, weight: .bold))
@@ -96,7 +100,7 @@ struct SegmentedDayRing: View {
         return ViewThatFits {
             VStack(spacing: side * 4 / 116) {
                 scoreText
-                Text("goals met")
+                Text(caption)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(secondary)
             }

@@ -58,6 +58,16 @@ enum ProText {
         return "Apple Intelligence makes \(list) richer. Every Pro feature still works on this \(device)."
     }
 
+    /// The note under a paywall row that Apple Intelligence improves, on a device without it: "Basic text reading
+    /// on this iPhone" (scan), "Simpler wording on this iPhone" (recap).
+    static func appleIntelligenceRowNote(_ feature: ProFeature, reading: ScanText.Reading, device: String) -> String? {
+        switch feature {
+        case .scan: ScanText.paywallNote(reading, device: device)
+        case .recap: reading.mentionsAppleIntelligence ? "Simpler wording on this \(device)" : nil
+        case .supply, .health, .report: nil
+        }
+    }
+
     static func planTitle(_ plan: ProAccess.Plan) -> String {
         switch plan {
         case .yearly: "Yearly"
