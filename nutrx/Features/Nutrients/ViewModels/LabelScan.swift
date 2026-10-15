@@ -8,6 +8,17 @@ import UIKit
 enum LabelScan {
     static let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "LabelScan")
 
+    /// Enough to skip the photo: the name and the amount per serving (the bottle size is a bonus).
+    static func isComplete(_ label: SupplementLabel?) -> Bool {
+        label?.name != nil && label?.amountPerServing != nil
+    }
+
+    /// The live read with the photo's fields filling its gaps; nil when neither read anything.
+    static func combined(_ live: SupplementLabel?, _ photo: SupplementLabel?) -> SupplementLabel? {
+        let merged = LabelExtractor.merge(live ?? SupplementLabel(), photo ?? SupplementLabel())
+        return merged.isEmpty ? nil : merged
+    }
+
     /// What the live scanner's text says, or nil when it gives nothing usable.
     static func read(text: String) async -> SupplementLabel? {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }

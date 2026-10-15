@@ -263,4 +263,16 @@ final class LabelScanTests: XCTestCase {
         let nothing = await LabelScan.read(text: "  ")
         XCTAssertNil(nothing)
     }
+
+    func testAThinLiveReadIsFilledFromThePhoto() {
+        let live = SupplementLabel(name: "Vitamin D3")
+        XCTAssertFalse(LabelScan.isComplete(live), "no amount: take the photo too")
+        XCTAssertTrue(LabelScan.isComplete(SupplementLabel(name: "Vitamin D3", amountPerServing: 1000)))
+        let photo = SupplementLabel(name: "Vitamin D", unit: "IU", amountPerServing: 1000, servingsPerContainer: 120)
+        XCTAssertEqual(LabelScan.combined(live, photo),
+                       SupplementLabel(name: "Vitamin D3", unit: "IU", amountPerServing: 1000, servingsPerContainer: 120),
+                       "the live name stays; the photo fills the rest")
+        XCTAssertEqual(LabelScan.combined(nil, photo), photo)
+        XCTAssertNil(LabelScan.combined(nil, nil))
+    }
 }

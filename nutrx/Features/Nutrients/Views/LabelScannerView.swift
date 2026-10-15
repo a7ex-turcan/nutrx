@@ -5,8 +5,8 @@ import SwiftUI
 import VisionKit
 
 /// The full-screen label scanner (nutrx Pro, docs/pro/design/4-scan-label: scanner, reading, fail). Live text
-/// highlights from VisionKit's `DataScannerViewController`; the shutter freezes a photo, which `LabelScan` reads on
-/// the device. Where live scanning isn't possible (no camera, camera access off, the simulator) a photo from the
+/// highlights from VisionKit's `DataScannerViewController`; the shutter reads that recognised text (and a photo when
+/// it misses the name or amount), all on the device. Where live scanning isn't possible (no camera, camera access off, the simulator) a photo from the
 /// library does the same job. A label that gives nothing usable opens "Couldn't read this label".
 struct LabelScannerView: View {
     let onRead: (SupplementLabel) -> Void
@@ -233,28 +233,26 @@ struct LabelScannerView: View {
 
     // MARK: - Reading
 
-    /// The shutter reads the text the scanner is already recognising (the highlighted pieces); a photo only when
-    /// there's none or it gives nothing usable. Any failure ends on "Couldn't read this label", never in silence.
+    /// The shutter reads the text the scanner is already recognising (the highlighted pieces). When that misses the
+    /// name or the amount, it also takes a photo — while the scanner is still running, which `capturePhoto()` needs —
+    /// and fills the gaps from it. Nothing usable from either ends on "Couldn't read this label", never in silence.
     private func capture() async {
         guard !isReading else { return }
-        let text = scanner.liveText()
-        if !text.isEmpty {
-            scanner.pause()
-            isReading = true
-            AccessibilityNotification.Announcement(ScanText.reading).post()
-            if let label = await LabelScan.read(text: text) {
-                isReading = false
-                onRead(label)
-                dismiss()
-                return
-            }
-            isReading = false
+        isReading = true
+        AccessibilityNotification.Announcement(ScanText.reading).post()
+        let live = await LabelScan.read(text: scanner.liveText())
+        var label = live
+        if !LabelScan.isComplete(live), let photo = await scanner.capturePhoto(), let image = photo.cgImage {
+            let fromPhoto = await LabelScan.read(image, orientation: LabelScan.orientation(of: photo))
+            label = LabelScan.combined(live, fromPhoto)
         }
-        guard let photo = await scanner.capturePhoto() else {
+        isReading = false
+        if let label {
+            onRead(label)
+            dismiss()
+        } else {
             showFailure = true
-            return
         }
-        await read(photo)
     }
 
     private func readPhoto(_ item: PhotosPickerItem) async {
