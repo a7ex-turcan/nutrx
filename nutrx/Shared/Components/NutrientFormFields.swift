@@ -23,6 +23,8 @@ final class NutrientDraft {
     var unreadFields: Set<ScannedField> = []
     /// What one serving is ("softgels"), from the label, for "120 softgels".
     var servingForm: String?
+    /// Stacks to put a new nutrient in when it's added (existing ones, or new ones to create with it).
+    var pendingStacks: [StackLogging.Choice] = []
 
     /// The fields "Scan a label" fills.
     enum ScannedField: Hashable, CaseIterable {
@@ -89,6 +91,7 @@ final class NutrientDraft {
         unreadFields = []
         wasScanned = false
         servingForm = nil
+        pendingStacks = []
     }
 
     func populate(from nutrient: Nutrient) {

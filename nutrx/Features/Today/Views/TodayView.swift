@@ -14,6 +14,9 @@ struct TodayView: View {
     /// Last week's recap, for the "Your week" card (nutrx Pro): Sunday 18:00 through Monday.
     @State private var weekRecap: WeeklyRecap?
     @State private var showRecap = false
+    @AppStorage("nutrx.hidesStackSuggestion") private var hidesStackSuggestion = false
+    @State private var showNewStack = false
+    @State private var newStackName = ""
     @AppStorage("nutrx.dismissedRecapWeek") private var dismissedRecapWeek: Double = 0
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
@@ -131,6 +134,25 @@ struct TodayView: View {
                         .listRowBackground(Color.clear)
                     }
 
+                    if stacksToShow.isEmpty, StackLogging.suggestsStack(
+                        nutrientCount: viewModel.groupSections.reduce(0) { $0 + $1.intakes.count },
+                        stackCount: stacks.count, hidden: hidesStackSuggestion) {
+                        StackSuggestionCard(
+                            onMake: {
+                                newStackName = ""
+                                showNewStack = true
+                            },
+                            onHide: {
+                                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                                    hidesStackSuggestion = true
+                                }
+                            }
+                        )
+                        .listRowInsets(cardRowInsets)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                    }
+
                     if !stacksToShow.isEmpty {
                         StacksRow(
                             stacks: stacksToShow,
@@ -168,6 +190,21 @@ struct TodayView: View {
             refreshWeekRecap()
         }
         .onChange(of: proAccess?.isPro) { refreshWeekRecap() }
+        // "Make a stack": name it, then open it to add nutrients.
+        .alert("New Stack", isPresented: $showNewStack) {
+            TextField(StackLogging.suggestedName(existing: stacks.map(\.name)), text: $newStackName)
+            Button("Create") {
+                let name = newStackName.trimmingCharacters(in: .whitespaces)
+                guard !name.isEmpty else { return }
+                let stack = StackLogging.createStack(named: name, context: modelContext)
+                StackShortcutLogging.stacksChanged()
+                stackEditing = .stack(stack)
+            }
+            .disabled(newStackName.trimmingCharacters(in: .whitespaces).isEmpty)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(StackLogging.newStackMessage)
+        }
         .sheet(isPresented: $showRecap) {
             NavigationStack {
                 WeeklyRecapView()

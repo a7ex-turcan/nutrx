@@ -51,11 +51,13 @@ struct StacksView: View {
             StackDetailView(stack: stack)
         }
         .alert("New Stack", isPresented: $showNewStackAlert) {
-            TextField("Stack name", text: $newStackName, prompt: Text("e.g. Morning"))
+            TextField("Stack name", text: $newStackName,
+                      prompt: Text(StackLogging.suggestedName(existing: stacks.map(\.name))))
             Button("Create") { createStack() }
+                .disabled(newStackName.trimmingCharacters(in: .whitespaces).isEmpty)
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Name it after when you take it.")
+            Text(StackLogging.newStackMessage)
         }
         .confirmationDialog(
             "Delete \(stackToDelete?.name ?? "stack")?",

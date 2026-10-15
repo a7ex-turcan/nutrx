@@ -11,6 +11,7 @@ struct NutrientFormView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var allReminders: [NutrientReminder]
     @Query(sort: \NutrientGroup.sortOrder) private var allGroups: [NutrientGroup]
+    @Query(sort: \LogStack.sortOrder) private var allStacks: [LogStack]
     @Bindable var draft: NutrientDraft
     let title: String
     /// Toolbar confirm button, e.g. "Add" or "Save".
@@ -30,6 +31,7 @@ struct NutrientFormView: View {
     @State private var showNewGroupAlert = false
     @State private var newGroupName = ""
     @State private var showScanner = false
+    @State private var showStackPicker = false
     @FocusState private var focusedField: NutrientFormField?
 
     init(
@@ -188,6 +190,17 @@ struct NutrientFormView: View {
                 }
 
                 Rectangle().fill(Theme.lineHairline).frame(height: 1)
+
+                // Stacks to put the new nutrient in, or a new one (created when it's added).
+                Button {
+                    showStackPicker = true
+                } label: {
+                    settingsRow("Stacks", value: StackLogging.summary(names: pendingStackNames))
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showStackPicker) { StackPickerSheet(mode: .draft(draft)) }
+
+                Rectangle().fill(Theme.lineHairline).frame(height: 1)
             }
 
             Button {
@@ -213,6 +226,16 @@ struct NutrientFormView: View {
             }
         }
         .background(Theme.surfaceCard, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+    }
+
+    /// The draft's stacks by name, in the order picked.
+    private var pendingStackNames: [String] {
+        draft.pendingStacks.compactMap { choice in
+            switch choice {
+            case .existing(let id): allStacks.first { $0.id == id }?.name
+            case .new(let name): name
+            }
+        }
     }
 
     private var remindersSummary: String {
