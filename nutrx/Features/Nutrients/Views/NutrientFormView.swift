@@ -32,6 +32,8 @@ struct NutrientFormView: View {
     @State private var newGroupName = ""
     @State private var showScanner = false
     @State private var showStackPicker = false
+    /// After adding a nutrient from a label with more ingredients: offer the next one.
+    @State private var showNextIngredient = false
     @FocusState private var focusedField: NutrientFormField?
 
     init(
@@ -64,6 +66,7 @@ struct NutrientFormView: View {
                         if offersScan {
                             if draft.wasScanned {
                                 ScanReviewBanner(unread: draft.unreadFields.count) { showScanner = true }
+                                    .id(Self.formTop)
                             } else {
                                 ScanLabelEntry { showScanner = true }
                             }
@@ -92,6 +95,12 @@ struct NutrientFormView: View {
                     .padding(Theme.Spacing.screenMargin)
                 }
                 .scrollDismissesKeyboard(.interactively)
+                // The next ingredient from a label starts at the top, where its name and amount are.
+                .onChange(of: draft.addedFromLabel.count) {
+                    withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                        proxy.scrollTo(Self.formTop, anchor: .top)
+                    }
+                }
                 // Room below the last field: the keyboard's floating Done bar isn't part of the keyboard inset, so
                 // without this Notes (last in a new nutrient's form) can't scroll above it. Constant, because
                 // removing it as the keyboard closed made the form jump back to the top.
@@ -116,7 +125,12 @@ struct NutrientFormView: View {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(buttonLabel) {
                             onSave()
-                            dismiss()
+                            // A label with more ingredients (Vitamin B6 next to Magnesium): offer the next one.
+                            if offersScan, draft.wasScanned, !LabelPrefill.otherIngredients(on: draft).isEmpty {
+                                showNextIngredient = true
+                            } else {
+                                dismiss()
+                            }
                         }
                         .fontWeight(.semibold)
                         .buttonStyle(.glassProminent)
@@ -163,6 +177,18 @@ struct NutrientFormView: View {
         }
         // A swipe would throw away what the label filled in; Cancel still closes it.
         .interactiveDismissDisabled(draft.wasScanned)
+        // An alert, not a confirmation dialog: presented from the toolbar, a dialog becomes a popover that hides Done.
+        .alert("\(draft.name) added", isPresented: $showNextIngredient) {
+            ForEach(LabelPrefill.otherIngredients(on: draft), id: \.self) { ingredient in
+                Button("Add \(ingredient.name) · \(NutrientFormFields<EmptyView>.amountText(ingredient))") {
+                    focusedField = nil
+                    LabelPrefill.startNext(ingredient, on: draft)
+                }
+            }
+            Button("Done", role: .cancel) { dismiss() }
+        } message: {
+            Text("Also add another ingredient from this label?")
+        }
     }
 
     // MARK: - Group / Reminders
@@ -237,6 +263,8 @@ struct NutrientFormView: View {
             }
         }
     }
+
+    private static let formTop = "formTop"
 
     private var remindersSummary: String {
         let count: Int

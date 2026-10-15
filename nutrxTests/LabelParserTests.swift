@@ -188,6 +188,28 @@ final class LabelParserTests: XCTestCase {
             """, name: "Women's Multi", unit: "mg", amount: 200, servings: 30)
     }
 
+    func testTheNamedIngredientsAmountBeatsOneListedFirst() {
+        // Magnesium Glycinate with Vitamin B6 first, and the glycinate form on its own line without an amount.
+        assertLabel("""
+            MAGNESIUM GLYCINATE
+            High absorption
+            Supplement Facts
+            Serving Size 2 Capsules
+            Servings Per Container 60
+            Amount Per Serving %DV
+            Vitamin B6 (as pyridoxine HCl) 2.5 mg 147%
+            Magnesium 200 mg 48%
+            (as magnesium glycinate)
+            """, name: "Magnesium Glycinate", unit: "mg", amount: 200, servings: 60)
+    }
+
+    func testAVitaminDoesntTakeAnotherVitaminsAmount() {
+        // "Vitamin D3" mustn't fall back to any line starting with "vitamin", or the model's answer would be
+        // replaced with Vitamin K2's.
+        XCTAssertNil(LabelParser.namedAmount(in: ["Vitamin K2 (as MK-7) 100 mcg"], name: "Vitamin D3"))
+        XCTAssertEqual(LabelParser.namedAmount(in: ["Vitamin K2 100 mcg", "Vitamin D3 1,000 IU"], name: "Vitamin D3")?.0, 1000)
+    }
+
     func testAnIngredientInTheFactsDoesntNameABlend() {
         assertLabel("""
             Sleep Blend
@@ -207,6 +229,184 @@ final class LabelParserTests: XCTestCase {
             Serving Size 1 Capsule
             Proprietary blend 450 mg
             """, name: "Calm Night", unit: "mg", amount: 450, servings: 60)
+    }
+
+
+    // MARK: - Real photos (back panels only), as on-device text recognition read them
+
+    func testRealPhotoNordicOmega3() {
+        assertLabel("""
+            Supplement Facts
+            Serving Size: 2 Soft Gels
+            Servings Per Container: 60
+            Amount Per Serving % Daily Value**1
+            Calories 20
+            Total Fat 2 g 3%
+            Total Omega-3s® 1280 mg
+            EPA (Eicosapentaenoic Acid) 650 mg
+            DHA (Docosahexaenoic Acid) 450 mg
+            **Percent Daily Values are based on a 2,000 calorie diet.
+            1 Daily Value (DV) for adults.
+            + Daily Value not established.
+            o Includes EPA, DHA, and Other Omega-3s in triglyceride form (rIG).
+            Res Less than 5 mg of Cholesterol per serving (<1% Daily Value).
+            Ingredients: purified deep sea fish oil (from anchovies, sardines,
+            mackerel, and herring), soft gel capsule gelatin, glycerin, water,
+            natural flavor), natural flavor, RRR-alpha tocopherol (antioxidant).
+            rosemary extract a natural preservative).
+            No gluten, milk derivatives, or synthetic dyes.
+            Fish oil processed in Norway I Manufactured in the U.S. by: Nordic Naturals Mfg, Inc.
+            111 Jennings Drive, Watsonville, CA 95076 | 800.662.2544 | nordic.com
+            Learn more at
+            nordic.com
+            EXP 05/28 LOT 252083
+            """, name: "Omega-3", unit: "mg", amount: 1280, servings: 60)
+    }
+
+    func testRealPhotoPollockOmega3OverFishOil() {
+        assertLabel("""
+            Supplement Facts
+            Servings Per Container: 90 Serving Size: 1 Softgel
+            Amount Per Serving DV
+            Calories 15
+            Total Fat 1.5 g 26"
+            Wild Alaska Pollock Fish Oil Concentrate 1250 mg
+            Total Omega-3 Fatty Acids (TG as rTG) 1040 mg
+            EPA (Eicosapentaenoic Acid) 690 mg
+            DHA (Docosahexaenoic Acid) 260 mg
+            * Percent Daily Values are based on a 2,000 calorie det.
+            * Daily Value (DV) not established.
+            [tilapia-sourced], vegetable glycerin, purified water. OTHER INGREDIENTS: Softgel capsule (fish gelatin
+            tocopherols.
+            CONTAINS: Fish (Alaska pollock).
+            """, name: "Omega-3", unit: "mg", amount: 1040, servings: 90)
+    }
+
+    func testRealPhotoCollagenNotProtein() {
+        assertLabel("""
+            Suggested Use: Take 3 tablets twice daily, on an empty stomach at least 1 hour before or 2 hours after meals. Best
+            Avoid taking with other foods containing protein as they may when taken as directed by a qualified healthcare professional.
+            interfere with collagen absorption.
+            Serving Size 3 Tablets Supplement Facts
+            Servings Per Container About 83
+            Amount %Daily
+            Per Serving license
+            Value
+            heatron
+            Calories 15
+            Protein <1%*
+            3 g
+            Vitamin C (as Calcium Ascorbate) 30 mg 33%
+            Sodium 10 mg <1%
+            Hydrolyzed Bovine Collagen Peptides 3 g
+            + Daily Value not established. *Percent Daily Values are based on a 2,000 calorie diet.
+            Magnesium Stearate. Other Ingredients: Stearic Acid, Silicon Dioxide (Silic), and
+            Not manufactured with milk, eggs, fish, crustacean shellfish, tree nuts, peanuts, wheat, soy, sesame, or gluten. Produced in
+            facility that may process other products that contain thes an FDA-registered, third-party audited, and cGMP-compliant
+            allergens or ingredients.
+            Gudrantee, It you are not completely satiefied with vour purchase Guarantee If vou are not comnletely cotisfiod With vour burches. All California Gold Nutrition® products come with a 100% GOLD
+            return the unused portion within on days for a full refund.
+            """, name: "Collagen", unit: "g", amount: 3, servings: 83)
+    }
+
+    func testRealPhotoMagnesiumOverVitaminB6() {
+        assertLabel("""
+            SupplementFacts
+            Serving Size 1 Vegan Tablet
+            Amount Per Serving % Daily Value
+            Vitamin B6 2.5 mg 147%
+            (as pyridoxal 5-phosphate)
+            Magnesium 200 mg 48%
+            (from Albion® magnesium bisglycinate
+            chelate buffered)
+            Benfotiamine 18 mg
+            Other ingredients: Citric acid, hydroxy- *Daily Value not established.
+            propyl methylcellulose, microcrystalline cellulose (plant fiber), stearic acid, silica.
+            aqueous film coating (puritied water. maltodextrin, guar gum, xanthan gum,
+            table glenn callin hydroxypropyl methylcellulose, veg salmitate.
+            """, name: "Magnesium", unit: "mg", amount: 200, servings: nil)
+    }
+
+    func testAProteinPowdersBackPanelIsProtein() {
+        assertLabel("""
+            Supplement Facts
+            Servings Per Container 30
+            Calories 120
+            Total Fat 2 g
+            Protein 25 g
+            Sodium 50 mg
+            """, name: "Protein", unit: "g", amount: 25, servings: 30)
+    }
+
+    func testALongFrontPanelLineStillNamesTheProduct() {
+        assertLabel("""
+            Extra Strength Vitamin D3 1000 IU Softgels
+            Supplement Facts
+            Servings Per Container 120
+            Vitamin K2 (as MK-7) 100 mcg
+            Vitamin D3 25 mcg (1,000 IU)
+            """, name: "Vitamin D3", unit: "IU", amount: 1000, servings: 120)
+    }
+
+    func testOmega3sIsFoundAfterAFishOilLine() {
+        // A plural "Omega-3s" row after the fish oil it comes from: the omega-3 amount, not the fish oil's.
+        assertLabel("""
+            Omega-3
+            Supplement Facts
+            Servings Per Container 60
+            Fish Oil 2000 mg
+            Total Omega-3s 1280 mg
+            """, name: "Omega-3", unit: "mg", amount: 1280, servings: 60)
+    }
+
+    func testBComplexDoesntTakeVitaminB6sAmount() {
+        XCTAssertNil(LabelParser.namedAmount(in: ["Vitamin B6 2.5 mg"], name: "Vitamin B Complex"))
+    }
+
+    func testAFactsPanelsIngredientsAreListedWithoutNutritionRows() {
+        let label = LabelParser.parse("""
+            Suggested Use: Take 3 tablets twice daily, on an empty stomach at least 1 hour before or 2 hours after meals. Best
+            Avoid taking with other foods containing protein as they may when taken as directed by a qualified healthcare professional.
+            interfere with collagen absorption.
+            Serving Size 3 Tablets Supplement Facts
+            Servings Per Container About 83
+            Amount %Daily
+            Per Serving license
+            Value
+            heatron
+            Calories 15
+            Protein <1%*
+            3 g
+            Vitamin C (as Calcium Ascorbate) 30 mg 33%
+            Sodium 10 mg <1%
+            Hydrolyzed Bovine Collagen Peptides 3 g
+            + Daily Value not established. *Percent Daily Values are based on a 2,000 calorie diet.
+            Magnesium Stearate. Other Ingredients: Stearic Acid, Silicon Dioxide (Silic), and
+            Not manufactured with milk, eggs, fish, crustacean shellfish, tree nuts, peanuts, wheat, soy, sesame, or gluten. Produced in
+            facility that may process other products that contain thes an FDA-registered, third-party audited, and cGMP-compliant
+            allergens or ingredients.
+            Gudrantee, It you are not completely satiefied with vour purchase Guarantee If vou are not comnletely cotisfiod With vour burches. All California Gold Nutrition® products come with a 100% GOLD
+            return the unused portion within on days for a full refund.
+            """)
+        XCTAssertEqual(label.ingredients.map(\.name), ["Vitamin C", "Collagen"], "Protein and Sodium are nutrition rows")
+        let magnesium = LabelParser.parse("""
+            SupplementFacts
+            Serving Size 1 Vegan Tablet
+            Amount Per Serving % Daily Value
+            Vitamin B6 2.5 mg 147%
+            (as pyridoxal 5-phosphate)
+            Magnesium 200 mg 48%
+            (from Albion® magnesium bisglycinate
+            chelate buffered)
+            Benfotiamine 18 mg
+            Other ingredients: Citric acid, hydroxy- *Daily Value not established.
+            propyl methylcellulose, microcrystalline cellulose (plant fiber), stearic acid, silica.
+            aqueous film coating (puritied water. maltodextrin, guar gum, xanthan gum,
+            table glenn callin hydroxypropyl methylcellulose, veg salmitate.
+            """)
+        XCTAssertEqual(magnesium.ingredients, [LabelIngredient(name: "Vitamin B6", amount: 2.5, unit: "mg"),
+                                               LabelIngredient(name: "Magnesium", amount: 200, unit: "mg"),
+                                               LabelIngredient(name: "Benfotiamine", amount: 18, unit: "mg")])
     }
 
     func testNumbersAndUnits() {

@@ -32,7 +32,8 @@ final class LabelScanTests: XCTestCase {
         let result = await LabelExtractor.extract(from: vitaminD, model: model)
         XCTAssertTrue(result.usedModel)
         XCTAssertEqual(result.label, .init(name: "Vitamin D3", unit: "IU", amountPerServing: 1000,
-                                           servingsPerContainer: 120, servingForm: "softgels"))
+                                           servingsPerContainer: 120, servingForm: "softgels",
+                                           ingredients: [LabelIngredient(name: "Vitamin D3", amount: 1000, unit: "IU")]))
     }
 
     func testANumberThatIsntOnTheLabelIsDroppedAndTheParserFillsIn() async {
@@ -276,5 +277,87 @@ final class LabelScanTests: XCTestCase {
         // The live read had a unit but no amount: the photo's amount comes with its own unit.
         XCTAssertEqual(LabelScan.combined(SupplementLabel(name: "Vitamin D3", unit: "mcg"), photo)?.unit, "IU")
         XCTAssertNil(LabelScan.combined(nil, nil))
+    }
+
+    func testTheNamedIngredientOverridesTheModelsPick() async {
+        let text = """
+            MAGNESIUM GLYCINATE
+            Supplement Facts
+            Servings Per Container 60
+            Vitamin B6 (as pyridoxine HCl) 2.5 mg
+            Magnesium 200 mg
+            (as magnesium glycinate)
+            """
+        // The model answered with B6's amount; it's on the label, so the number check alone lets it through.
+        let model = StubModel(label: .init(name: "Magnesium Glycinate", unit: "mg", amountPerServing: 2.5, servingsPerContainer: 60))
+        let result = await LabelExtractor.extract(from: text, model: model)
+        XCTAssertEqual(result.label.amountPerServing, 200)
+        XCTAssertEqual(result.label.unit, "mg")
+    }
+
+    // MARK: - Several ingredients on one label
+
+    private var magnesiumLabel: SupplementLabel {
+        SupplementLabel(name: "Magnesium", unit: "mg", amountPerServing: 200, servingsPerContainer: 60,
+                        ingredients: [LabelIngredient(name: "Vitamin B6", amount: 2.5, unit: "mg"),
+                                      LabelIngredient(name: "Magnesium", amount: 200, unit: "mg"),
+                                      LabelIngredient(name: "Benfotiamine", amount: 18, unit: "mg")])
+    }
+
+    func testTheLabelsOtherIngredientsAreOffered() {
+        let draft = NutrientDraft()
+        LabelPrefill.apply(magnesiumLabel, to: draft)
+        XCTAssertEqual(LabelPrefill.otherIngredients(on: draft).map(\.name), ["Vitamin B6", "Benfotiamine"])
+    }
+
+    func testSwitchingToAnotherIngredientKeepsTheBottleAndGoal() {
+        let draft = NutrientDraft()
+        LabelPrefill.apply(magnesiumLabel, to: draft)
+        draft.dailyTarget = "400"
+        LabelPrefill.switchTo(LabelIngredient(name: "Vitamin B6", amount: 2.5, unit: "mg"), on: draft)
+        XCTAssertEqual(draft.name, "Vitamin B6")
+        XCTAssertEqual(draft.step, NutrientDraft.editableText(2.5))
+        XCTAssertEqual(draft.supplyServings, "60", "same bottle")
+        XCTAssertEqual(draft.dailyTarget, "400", "the goal the user typed stays")
+        XCTAssertTrue(draft.scannedFields.isSuperset(of: [.name, .unit, .step, .supply]))
+        XCTAssertEqual(LabelPrefill.otherIngredients(on: draft).map(\.name), ["Magnesium", "Benfotiamine"])
+    }
+
+    func testAfterAddingTheNextIngredientStartsAFreshNutrient() {
+        let draft = NutrientDraft()
+        draft.pendingStacks = [.new("Morning")]
+        LabelPrefill.apply(magnesiumLabel, to: draft)
+        draft.dailyTarget = "400"
+        draft.notes = "With dinner"
+        LabelPrefill.startNext(LabelIngredient(name: "Vitamin B6", amount: 2.5, unit: "mg"), on: draft)
+        XCTAssertEqual(draft.name, "Vitamin B6")
+        XCTAssertEqual(draft.dailyTarget, "", "a new nutrient's goal is the user's to set")
+        XCTAssertEqual(draft.notes, "")
+        XCTAssertEqual(draft.supplyServings, "60")
+        XCTAssertEqual(draft.pendingStacks, [.new("Morning")])
+        XCTAssertTrue(draft.wasScanned)
+        XCTAssertEqual(LabelPrefill.otherIngredients(on: draft).map(\.name), ["Benfotiamine"], "Magnesium is added already")
+    }
+
+    func testARenamedIngredientIsntOfferedAgain() {
+        let draft = NutrientDraft()
+        LabelPrefill.apply(magnesiumLabel, to: draft)
+        draft.name = "Magnesium Glycinate"
+        XCTAssertEqual(LabelPrefill.otherIngredients(on: draft).map(\.name), ["Vitamin B6", "Benfotiamine"])
+        LabelPrefill.startNext(LabelIngredient(name: "Vitamin B6", amount: 2.5, unit: "mg"), on: draft)
+        XCTAssertEqual(LabelPrefill.otherIngredients(on: draft).map(\.name), ["Benfotiamine"])
+    }
+
+    func testATypedBottleSizeIsntMarkedFromLabelForTheNextIngredient() {
+        let draft = NutrientDraft()
+        var label = magnesiumLabel
+        label.servingsPerContainer = nil  // not on the label: the user types it
+        LabelPrefill.apply(label, to: draft)
+        draft.supplyServings = "60"
+        draft.edited(.supply, isEmpty: false)
+        LabelPrefill.startNext(LabelIngredient(name: "Vitamin B6", amount: 2.5, unit: "mg"), on: draft)
+        XCTAssertEqual(draft.supplyServings, "60")
+        XCTAssertFalse(draft.scannedFields.contains(.supply), "typed, not from the label")
+        XCTAssertFalse(draft.unreadFields.contains(.supply), "and filled in")
     }
 }

@@ -112,7 +112,10 @@ enum StackLogging {
                     add(nutrient, to: stack, context: context)
                 }
             case .new(let name):
-                add(nutrient, to: createStack(named: name, context: context), context: context)
+                // Made by an earlier nutrient from the same label (or since): join it rather than make a second one.
+                let current = (try? context.fetch(FetchDescriptor<LogStack>())) ?? []
+                let stack = stack(named: name, in: current) ?? createStack(named: name, context: context)
+                if !contains(stack, nutrient) { add(nutrient, to: stack, context: context) }
             }
         }
         return true

@@ -226,4 +226,20 @@ final class StackLoggingTests: XCTestCase {
         XCTAssertEqual(StackLogging.newStackMessage(existing: ["Morning"]),
                        "A stack logs several nutrients in one tap. Name it after when you take them, like “Evening”.")
     }
+
+    func testTwoNutrientsFromOneLabelShareTheNewStack() throws {
+        // The label's second ingredient keeps the form's .new("Morning"): it joins the Morning the first one made.
+        for name in ["Magnesium", "Vitamin B6"] {
+            let draft = NutrientDraft()
+            draft.name = name
+            draft.unit = "mg"
+            draft.step = "1"
+            draft.dailyTarget = "1"
+            draft.pendingStacks = [.new("Morning")]
+            draft.insertNutrient(into: context, group: nil, sortOrder: 0)
+        }
+        let stacks = try context.fetch(FetchDescriptor<LogStack>())
+        XCTAssertEqual(stacks.map(\.name), ["Morning"])
+        XCTAssertEqual(stacks.first?.entries?.count, 2)
+    }
 }
