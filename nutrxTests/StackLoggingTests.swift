@@ -183,12 +183,19 @@ final class StackLoggingTests: XCTestCase {
         XCTAssertTrue(StackLogging.contains(stacks[1], zinc))
     }
 
-    func testCancellingTheFormCreatesNoStack() throws {
+    func testResetClearsTheFormsStacks() {
+        // The form resets its draft before it's opened again, so a cancelled form's choices don't come back.
         let draft = NutrientDraft()
         draft.pendingStacks = [.new("Evening")]
-        draft.reset()  // what the form does before it's opened again
+        draft.reset()
         XCTAssertTrue(draft.pendingStacks.isEmpty)
-        XCTAssertEqual(try context.fetchCount(FetchDescriptor<LogStack>()), 0)
+    }
+
+    func testANameThatsAlreadyAStackFindsIt() {
+        let morning = StackLogging.createStack(named: "Morning", context: context)
+        let stacks = [morning, StackLogging.createStack(named: "Evening", context: context)]
+        XCTAssertEqual(StackLogging.stack(named: " morning ", in: stacks)?.id, morning.id)
+        XCTAssertNil(StackLogging.stack(named: "Night", in: stacks))
     }
 
     func testTodaySuggestsAStackUntilThereIsOneOrItsHidden() {
@@ -216,5 +223,7 @@ final class StackLoggingTests: XCTestCase {
         XCTAssertEqual(StackLogging.suggestedName(existing: []), "Morning")
         XCTAssertEqual(StackLogging.suggestedName(existing: ["morning"]), "Evening")
         XCTAssertEqual(StackLogging.suggestedName(existing: ["Morning", "Evening", "Night", "With meals", "Workout"]), "Stack")
+        XCTAssertEqual(StackLogging.newStackMessage(existing: ["Morning"]),
+                       "A stack logs several nutrients in one tap. Name it after when you take them, like “Evening”.")
     }
 }

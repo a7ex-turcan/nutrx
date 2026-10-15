@@ -55,12 +55,12 @@ struct StackPickerSheet: View {
                 }
             }
             .alert("New Stack", isPresented: $showNewStack) {
-                TextField(StackLogging.suggestedName(existing: stacks.map(\.name) + pendingNewNames), text: $newStackName)
+                TextField("Stack name", text: $newStackName)
                 Button("Create") { createStack() }
                     .disabled(newStackName.trimmingCharacters(in: .whitespaces).isEmpty)
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text(StackLogging.newStackMessage)
+                Text(StackLogging.newStackMessage(existing: stacks.map(\.name) + pendingNewNames))
             }
         }
         .presentationDetents([.medium, .large])
@@ -131,6 +131,11 @@ struct StackPickerSheet: View {
     private func createStack() {
         let name = newStackName.trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty else { return }
+        // A name that's already a stack picks that stack.
+        if let existing = StackLogging.stack(named: name, in: stacks) {
+            if !isSelected(existing) { toggle(existing) }
+            return
+        }
         switch mode {
         case .nutrient(let nutrient):
             let stack = StackLogging.createStack(named: name, context: modelContext)
@@ -138,7 +143,9 @@ struct StackPickerSheet: View {
             StackShortcutLogging.stacksChanged()
         case .draft(let draft):
             // Created with the nutrient, so Cancel on the form leaves no empty stack behind.
-            if !draft.pendingStacks.contains(.new(name)) { draft.pendingStacks.append(.new(name)) }
+            if !newNames(draft).contains(where: { $0.lowercased() == name.lowercased() }) {
+                draft.pendingStacks.append(.new(name))
+            }
         }
     }
 }

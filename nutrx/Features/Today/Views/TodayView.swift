@@ -192,10 +192,14 @@ struct TodayView: View {
         .onChange(of: proAccess?.isPro) { refreshWeekRecap() }
         // "Make a stack": name it, then open it to add nutrients.
         .alert("New Stack", isPresented: $showNewStack) {
-            TextField(StackLogging.suggestedName(existing: stacks.map(\.name)), text: $newStackName)
+            TextField("Stack name", text: $newStackName)
             Button("Create") {
                 let name = newStackName.trimmingCharacters(in: .whitespaces)
                 guard !name.isEmpty else { return }
+                if let existing = StackLogging.stack(named: name, in: stacks) {
+                    stackEditing = .stack(existing)
+                    return
+                }
                 let stack = StackLogging.createStack(named: name, context: modelContext)
                 StackShortcutLogging.stacksChanged()
                 stackEditing = .stack(stack)
@@ -203,7 +207,7 @@ struct TodayView: View {
             .disabled(newStackName.trimmingCharacters(in: .whitespaces).isEmpty)
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(StackLogging.newStackMessage)
+            Text(StackLogging.newStackMessage(existing: stacks.map(\.name)))
         }
         .sheet(isPresented: $showRecap) {
             NavigationStack {

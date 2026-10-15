@@ -126,10 +126,20 @@ enum StackLogging {
 
     static let suggestionNutrientCount = 3
 
-    /// The New Stack alert's message, wherever a stack is made.
-    static let newStackMessage = "A stack logs several nutrients in one tap. Name it after when you take them."
+    /// A stack with this name already (ignoring case and surrounding spaces), so "New Stack… Morning" picks the
+    /// existing Morning instead of making a second one Siri couldn't tell apart.
+    static func stack(named name: String, in stacks: [LogStack]) -> LogStack? {
+        let key = name.trimmingCharacters(in: .whitespaces).lowercased()
+        return stacks.first { $0.name.trimmingCharacters(in: .whitespaces).lowercased() == key }
+    }
 
-    /// The New Stack alert's placeholder: a usual name nobody has used yet.
+    /// The New Stack alert's message, wherever a stack is made, suggesting a name nobody has used yet. (The field's
+    /// placeholder is "Stack name": in an alert it's the only name VoiceOver gets for the field.)
+    static func newStackMessage(existing: [String]) -> String {
+        "A stack logs several nutrients in one tap. Name it after when you take them, like “\(suggestedName(existing: existing))”."
+    }
+
+    /// A usual stack name nobody has used yet.
     static func suggestedName(existing: [String]) -> String {
         let taken = Set(existing.map { $0.lowercased() })
         return ["Morning", "Evening", "Night", "With meals", "Workout"].first { !taken.contains($0.lowercased()) }

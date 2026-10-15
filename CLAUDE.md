@@ -267,7 +267,7 @@ nutrx/
     │   ├── SymbolPicker.swift               # 16-symbol grid (DESIGN.md §3 set).
     │   ├── GoalTypePicker.swift             # At least / At most / Between cards.
     │   ├── MoveToGroupSheet.swift
-│   ├── StackPickerSheet.swift           # Stacks a nutrient is in + New Stack… (My Nutrients' Add to Stack…, the new-nutrient form).
+    │   ├── StackPickerSheet.swift           # Stacks a nutrient is in + New Stack… (My Nutrients' Add to Stack…, the new-nutrient form).
     │   ├── CameraView.swift                 # UIImagePickerController wrapper for camera capture.
     │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
     │   ├── SyncBannerView.swift             # Dismissible iCloud sync banner.
@@ -434,6 +434,7 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
   - **Today** shows `StackSuggestionCard` ("Log several at once", **Make a stack**, ✕) where the Stacks row would be, once there are three or more nutrients and no stack yet, until it's hidden (`@AppStorage("nutrx.hidesStackSuggestion")`; the rule is `StackLogging.suggestsStack`). Make a stack names it in an alert, then opens its detail to add nutrients.
   - **My Nutrients:** long-press → **Add to Stack…** opens `StackPickerSheet` (checklist of stacks + New Stack…); each tap adds the nutrient at one step or takes it out (`StackLogging.toggle`).
   - **New-nutrient form:** a **Stacks** row under Group (not in onboarding) with the same sheet. Choices are kept on the draft (`NutrientDraft.pendingStacks`: existing stacks by id, new ones by name) and applied by `insertNutrient` (`StackLogging.add(_:toStacks:)`), so a new stack is created only when the nutrient is added and Cancel leaves none behind. Scan a label keeps the choices.
+  - **New Stack** reads the same everywhere (`StackLogging.newStackMessage`, which suggests an unused name; the field's placeholder is "Stack name" because in an alert it's the field's only accessible name, and a `prompt:` drops the title; Create off while empty), and a name that's already a stack picks or opens that one (`StackLogging.stack(named:in:)`), so there are never two stacks Siri can't tell apart.
 - **Siri:** "Log my Morning stack with nutrx" (see Siri & App Shortcuts). The detail screen shows a Siri tip card with that phrase when the stack has something to log; its ✕ hides it on that device for every stack (`@AppStorage("hidesStackSiriTip")`).
 
 ## Data Export (CSV)
