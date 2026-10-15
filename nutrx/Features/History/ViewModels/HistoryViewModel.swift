@@ -29,19 +29,21 @@ final class HistoryViewModel {
     }
 
     /// Every nutrient, entry and exclusion as a `HistoryLog`, with the nutrients in display order (also used by the
-    /// weekly recap and its notification).
-    static func loadLog(context: ModelContext, now: Date = .now) -> (HistoryLog, [Nutrient]) {
+    /// weekly recap and its notification). `from` limits entries and exclusions to that day on, for a single week's
+    /// recap on the logging path (the notification, Today's card).
+    static func loadLog(context: ModelContext, now: Date = .now, from: Date? = nil) -> (HistoryLog, [Nutrient]) {
         let calendar = Calendar.current
         let nutrients = orderedNutrients(context: context)
+        let start = from.map { calendar.startOfDay(for: $0) } ?? .distantPast
 
-        let records = (try? context.fetch(FetchDescriptor<IntakeRecord>())) ?? []
+        let records = (try? context.fetch(FetchDescriptor<IntakeRecord>(predicate: #Predicate { $0.date >= start }))) ?? []
         var totals: [Date: [UUID: Double]] = [:]
         for record in records {
             guard let nutrient = record.nutrient else { continue }
             totals[calendar.startOfDay(for: record.date), default: [:]][nutrient.id, default: 0] += record.amount
         }
 
-        let exclusions = (try? context.fetch(FetchDescriptor<Exclusion>())) ?? []
+        let exclusions = (try? context.fetch(FetchDescriptor<Exclusion>(predicate: #Predicate { $0.date >= start }))) ?? []
         var excluded: [Date: Set<UUID>] = [:]
         for exclusion in exclusions {
             guard let nutrient = exclusion.nutrient else { continue }

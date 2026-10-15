@@ -202,10 +202,11 @@ enum NotificationService {
 
     /// The next Sunday's recap notification, or nil when that week has nothing logged yet.
     private static func recapRequest(context: ModelContext, now: Date) -> UNNotificationRequest? {
-        let (log, nutrients) = HistoryViewModel.loadLog(context: context, now: now)
+        // Only the coming week's entries: this runs after every log.
+        let week = RecapSchedule.upcomingWeek(at: now)
+        let (log, nutrients) = HistoryViewModel.loadLog(context: context, now: now, from: week)
         let names = Dictionary(nutrients.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
-        let recap = WeeklyRecap.build(log: log, names: names, week: RecapSchedule.upcomingWeek(at: now),
-                                      streaksEnabled: false)
+        let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: false)
         guard let plan = RecapSchedule.plan(recap: recap, now: now) else { return nil }
         let content = UNMutableNotificationContent()
         content.title = RecapText.notificationTitle

@@ -237,6 +237,22 @@ final class WeeklyRecapTests: XCTestCase {
         XCTAssertFalse(RecapSchedule.showsTodayCard(forWeekStarting: week, at: day(10, 13), calendar: calendar))
     }
 
+    func testWhichWeekTodaysCardShows() {
+        let sundayEvening = day(10, 11, hour: 19)
+        XCTAssertEqual(RecapSchedule.todayCardWeek(at: sundayEvening, isPro: true, dismissedWeek: nil, calendar: calendar),
+                       day(10, 5))
+        XCTAssertNil(RecapSchedule.todayCardWeek(at: sundayEvening, isPro: false, dismissedWeek: nil, calendar: calendar),
+                     "Pro only")
+        XCTAssertNil(RecapSchedule.todayCardWeek(at: sundayEvening, isPro: true, dismissedWeek: day(10, 5),
+                                                 calendar: calendar), "hidden with ✕ for that week")
+        XCTAssertEqual(RecapSchedule.todayCardWeek(at: sundayEvening, isPro: true, dismissedWeek: day(9, 28),
+                                                   calendar: calendar), day(10, 5), "last week's ✕ doesn't count")
+        XCTAssertNil(RecapSchedule.todayCardWeek(at: day(10, 15), isPro: true, dismissedWeek: nil, calendar: calendar),
+                     "Thursday: outside the window")
+        XCTAssertEqual(RecapSchedule.todayCardWeek(at: day(10, 15), isPro: true, dismissedWeek: nil, ignoresWindow: true,
+                                                   calendar: calendar), day(10, 5))
+    }
+
     // MARK: - Rewording
 
     private struct StubModel: RecapPhrasing.Model {

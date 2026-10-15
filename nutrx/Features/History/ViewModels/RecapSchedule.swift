@@ -41,6 +41,17 @@ enum RecapSchedule {
             : calendar.date(byAdding: .day, value: 7, to: thisWeek)!
     }
 
+    /// The week whose "Your week" card Today shows at `now`, if any: Pro only, from its Sunday 18:00 through Monday
+    /// (or any day with `ignoresWindow`, the Debug flag), and not hidden with ✕ for that week. The card also needs
+    /// the week to have something in it (`RecapViewModel.recap(forWeek:…)`).
+    static func todayCardWeek(at now: Date, isPro: Bool, dismissedWeek: Date?, ignoresWindow: Bool = false,
+                              calendar: Calendar = .current) -> Date? {
+        let week = WeeklyRecap.latestWeek(at: now, calendar: calendar)
+        guard isPro, ignoresWindow || showsTodayCard(forWeekStarting: week, at: now, calendar: calendar),
+              week != dismissedWeek else { return nil }
+        return week
+    }
+
     /// Today's "Your week" card shows from the recap's Sunday 18:00 until Monday ends.
     static func showsTodayCard(forWeekStarting weekStart: Date, at now: Date, calendar: Calendar = .current) -> Bool {
         let release = WeeklyRecap.releaseDate(ofWeekStarting: weekStart, calendar: calendar)

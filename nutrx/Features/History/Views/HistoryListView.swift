@@ -14,6 +14,7 @@ struct HistoryListView: View {
     /// A new value rebuilds the recap screen, so a notification opens the newest week even over an older one.
     @State private var recapID = UUID()
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
 
     private var streaksEnabled: Bool { allPreferences.first?.streaksEnabled != false }
 
@@ -46,13 +47,19 @@ struct HistoryListView: View {
         }
     }
 
-    /// A tapped recap notification (the tab bar has already switched here).
+    /// A tapped recap notification (the tab bar has already switched here) — still Pro only: one left in
+    /// Notification Center doesn't open the recap after Pro has lapsed.
     private func openRecapIfAsked() {
         guard router?.showsRecap == true else { return }
         router?.showsRecap = false
-        selectedDay = nil
-        recapID = UUID()
-        showRecap = true
+        Task {
+            // A tap can cold-launch the app before the entitlement is known.
+            if let proAccess, !proAccess.hasCheckedEntitlements { await proAccess.refreshEntitlement() }
+            guard ProAccess.isStoreVisible, proAccess?.isPro == true else { return }
+            selectedDay = nil
+            recapID = UUID()
+            showRecap = true
+        }
     }
 
     private var emptyState: some View {

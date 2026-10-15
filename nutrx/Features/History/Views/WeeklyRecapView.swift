@@ -60,7 +60,8 @@ struct WeeklyRecapView: View {
 
     private func firstWeekHero(_ running: WeeklyRecap) -> some View {
         heroCard(
-            ring: SegmentedDayRing(met: running.daysLoggedSoFar, total: 7, caption: "days logged", showsTotal: false),
+            ring: SegmentedDayRing(met: running.daysLoggedSoFar, total: 7,
+                                   caption: running.daysLoggedSoFar == 1 ? "day logged" : "days logged", showsTotal: false),
             ringSummary: running.daysLoggedSoFar == 1 ? "1 day logged" : "\(running.daysLoggedSoFar) days logged",
             eyebrow: "This week",
             title: RecapText.firstTitle,

@@ -96,12 +96,14 @@ struct NotificationsSettingsView: View {
             switch status {
             case .notDetermined:
                 let granted = await NotificationService.requestPermission()
+                notificationsAllowed = granted
                 if granted {
                     preferences.dailyReminderEnabled = true
                     NotificationService.refreshDailyReminder(context: modelContext)
                 }
 
             case .granted:
+                notificationsAllowed = true
                 preferences.dailyReminderEnabled = true
                 NotificationService.refreshDailyReminder(context: modelContext)
 

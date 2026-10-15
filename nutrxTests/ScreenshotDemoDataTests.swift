@@ -73,6 +73,20 @@ final class ScreenshotDemoDataTests: XCTestCase {
         XCTAssertTrue(RecapPhrasing.isAcceptable(text.summary, for: text), "the template passes its own check")
     }
 
+    func testOneWeeksRecapFromThatWeeksEntriesMatchesTheFullHistory() throws {
+        // Today's card and the notification read only the week's entries; the facts must be the same.
+        let week = WeeklyRecap.latestWeek(at: .now, calendar: .current)
+        let (log, nutrients) = HistoryViewModel.loadLog(context: context)
+        let names = Dictionary(nutrients.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let full = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: false)
+        let partial = try XCTUnwrap(RecapViewModel.recap(forWeek: week, context: context, streaksEnabled: false))
+        XCTAssertEqual(partial.goalsMet, full.goalsMet)
+        XCTAssertEqual(partial.goalsCounted, full.goalsCounted)
+        XCTAssertEqual(partial.fullDayFlags, full.fullDayFlags)
+        XCTAssertEqual(partial.steadiest, full.steadiest)
+        XCTAssertEqual(RecapText(partial).notificationBody, RecapText(full).notificationBody)
+    }
+
     func testReplacingTwiceLeavesOneSet() throws {
         ScreenshotDemoData.replaceStore(in: context)
         XCTAssertEqual(try nutrients().count, 6)

@@ -68,25 +68,21 @@ struct TodayView: View {
         return new
     }
 
-    /// The "Your week" card's recap: only for Pro, in its window, not hidden for that week, and with something in it.
+    /// The "Your week" card's recap (`RecapSchedule.todayCardWeek`, `RecapViewModel.recap(forWeek:…)`).
     private func refreshWeekRecap() {
-        let now = Date.now
-        let week = WeeklyRecap.latestWeek(at: now, calendar: .current)
-        var inWindow = RecapSchedule.showsTodayCard(forWeekStarting: week, at: now)
+        var ignoresWindow = false
         #if DEBUG
         // Checking the card on a weekday: `simctl spawn <UDID> defaults write nutrx-labs.nutrx
         // nutrx.debug.showRecapCard -bool YES` (Debug builds only).
-        if UserDefaults.standard.bool(forKey: "nutrx.debug.showRecapCard") { inWindow = true }
+        ignoresWindow = UserDefaults.standard.bool(forKey: "nutrx.debug.showRecapCard")
         #endif
-        guard ProAccess.isStoreVisible, proAccess?.isPro == true, inWindow,
-              week.timeIntervalSince1970 != dismissedRecapWeek else {
-            weekRecap = nil
-            return
+        let week = RecapSchedule.todayCardWeek(
+            at: .now, isPro: ProAccess.isStoreVisible && proAccess?.isPro == true,
+            dismissedWeek: dismissedRecapWeek > 0 ? Date(timeIntervalSince1970: dismissedRecapWeek) : nil,
+            ignoresWindow: ignoresWindow)
+        weekRecap = week.flatMap {
+            RecapViewModel.recap(forWeek: $0, context: modelContext, streaksEnabled: preferences.streaksEnabled)
         }
-        let (log, nutrients) = HistoryViewModel.loadLog(context: modelContext, now: now)
-        let names = Dictionary(nutrients.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
-        let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: preferences.streaksEnabled)
-        weekRecap = recap.hasData ? recap : nil
     }
 
     var body: some View {

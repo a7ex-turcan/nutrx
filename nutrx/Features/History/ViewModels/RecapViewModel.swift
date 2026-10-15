@@ -40,6 +40,14 @@ final class RecapViewModel {
         if let selectedWeek, !weeks.contains(where: { $0.weekStart == selectedWeek }) { self.selectedWeek = nil }
     }
 
+    /// One week's recap, or nil when it has nothing in it (Today's card). Only that week's entries are read.
+    static func recap(forWeek week: Date, context: ModelContext, streaksEnabled: Bool, now: Date = .now) -> WeeklyRecap? {
+        let (log, nutrients) = HistoryViewModel.loadLog(context: context, now: now, from: week)
+        let names = Dictionary(nutrients.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: streaksEnabled)
+        return recap.hasData ? recap : nil
+    }
+
     /// The selected week's summary: the template straight away, the rewording when it's ready.
     func summary(for recap: WeeklyRecap) -> String {
         summaries[recap.weekStart] ?? RecapText(recap).summary
