@@ -6,6 +6,12 @@ All notable changes to nutrx are documented in this file.
 
 ## v2.1 — Unreleased
 
+### nutrx Pro
+An optional subscription ($1.99 a month, or $14.99 a year with a free week) or a one-time $29.99 purchase that adds features around tracking. Everything in nutrx stays free, and nothing you use today moves behind it. Purchases are checked on your iPhone; nothing about them is stored or synced.
+- **Supply & refills** — Tell nutrx how many servings are in the bottle and it counts down as you log. It shows how many days are left, warns on Today when you're running low ("About 6 days left"), and sends one refill reminder per bottle, with Refilled and Remind me tomorrow right in the notification. The medium widget shows what runs out next.
+- **Scan a label** — Point the camera at a bottle's Supplement Facts and the new-nutrient form fills itself in: name, unit, the amount per serving and the servings in the bottle, each marked "from label" until you change it. Anything it couldn't read is highlighted for you to fill in, and the goal is always yours to set. Labels are read on your iPhone, with Apple Intelligence where available; nothing is uploaded. You can also choose a photo.
+- **Weekly recap** — Every Sunday evening, a short summary of your week from your own logs: goals met, full days, your steadiest nutrient, what slipped, anything over its limit, the weekday you tend to miss and your streak. Look back over the last eight weeks from History, see "Your week" on Today on Sunday and Monday, or turn the notification off in Settings → Notifications. It describes your week and never gives advice.
+
 ### Features
 - **Stacks** — Log everything you take together in one tap. Make a "Morning" stack with Vitamin D, Omega-3 and Magnesium, then tap Log on Today. You can change the amounts for that time, undo it, and see which stacks you've already logged today. Manage them in Settings → Stacks. Say "Log my Morning stack with nutrx" to Siri, or use the "Log Stack" action in the Shortcuts app.
 - **Export your data** — Settings → Export data saves your log as a CSV file, one row per entry, for all time or the last 30 or 90 days. Open it in Numbers, Excel or Google Sheets. The file is made on your iPhone and shared wherever you choose.
@@ -13,7 +19,7 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
-## v2.0 — Unreleased
+## v2.0 — 2026-10-15
 
 ### Features
 - **Redesigned Today screen** — A day-score card shows how many goals you've met, your streak and your next reminder. Each nutrient gets a progress ring in its own colour and symbol, a clear status line ("2,000 IU to go", "80 mg left today", "Done") and bigger − / + buttons. Light and dark mode are both fully styled.
