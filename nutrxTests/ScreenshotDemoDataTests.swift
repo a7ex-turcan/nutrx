@@ -64,7 +64,9 @@ final class ScreenshotDemoDataTests: XCTestCase {
         let recap = WeeklyRecap.build(log: log, names: names, week: week, streaksEnabled: true)
         let text = RecapText(recap)
         XCTAssertTrue(recap.hasData)
-        XCTAssertEqual(recap.goalsCounted, 42, "six goals, seven days")
+        // Six goals on each counted day: seven, or six on a Sunday evening (Sunday counts once it's over).
+        let counted = (Calendar.current.dateComponents([.day], from: recap.weekStart, to: recap.lastDay).day ?? 0) + 1
+        XCTAssertEqual(recap.goalsCounted, 6 * counted)
         XCTAssertNotNil(recap.steadiest)
         XCTAssertNotNil(recap.streak)
         XCTAssertEqual(recap.weakestWeekday?.weekday, 1, "Vitamin D's Sundays, as on the heatmap")
