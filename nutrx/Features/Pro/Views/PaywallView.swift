@@ -147,7 +147,7 @@ struct PaywallView: View {
                 .frame(minHeight: 46)
                 .accessibilityElement(children: .combine)
             }
-            if reading != .model, let note = ProText.appleIntelligenceNote(ProFeature.listed, device: device) {
+            if reading.mentionsAppleIntelligence, let note = ProText.appleIntelligenceNote(ProFeature.listed, device: device) {
                 Text(note)
                     .font(.footnote)
                     .foregroundStyle(Theme.textSecondary)

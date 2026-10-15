@@ -107,7 +107,6 @@ final class LabelScanTests: XCTestCase {
 
     func testPrefillFillsTheFormButNeverTheGoal() {
         let draft = NutrientDraft()
-        draft.dailyTarget = "4000"
         LabelPrefill.apply(.init(name: "Vitamin D3", unit: "IU", amountPerServing: 1000, servingsPerContainer: 120,
                                  servingForm: "softgels"), to: draft)
         XCTAssertEqual(draft.name, "Vitamin D3")
@@ -115,6 +114,7 @@ final class LabelScanTests: XCTestCase {
         XCTAssertEqual(draft.step, "1000")
         XCTAssertEqual(draft.supplyServings, "120")
         XCTAssertEqual(draft.dailyTarget, "", "nutrx doesn't suggest a goal")
+        XCTAssertTrue(draft.wasScanned)
         XCTAssertEqual(draft.symbolName, "sun.max", "a known supplement's symbol")
         XCTAssertEqual(draft.scannedFields, [.name, .unit, .step, .supply])
         XCTAssertTrue(draft.unreadFields.isEmpty)
@@ -187,6 +187,27 @@ final class LabelScanTests: XCTestCase {
         XCTAssertEqual(draft.symbolName, "sun.max", "a known supplement still gets its symbol")
     }
 
+    func testScanAgainKeepsTheGoalTheUserSet() {
+        let draft = NutrientDraft()
+        draft.goalType = .range
+        draft.dailyTarget = "100"
+        draft.upperBound = "200"
+        LabelPrefill.apply(.init(name: "Magnesium", unit: "mg", amountPerServing: 200), to: draft)
+        XCTAssertEqual(draft.goalType, .range)
+        XCTAssertEqual(draft.dailyTarget, "100")
+        XCTAssertEqual(draft.upperBound, "200")
+    }
+
+    func testEditingEveryFieldKeepsTheReviewLayout() {
+        let draft = NutrientDraft()
+        LabelPrefill.apply(.init(name: "Vitamin C", unit: "mg", amountPerServing: 500), to: draft)
+        for field in NutrientDraft.ScannedField.allCases { draft.edited(field, isEmpty: false) }
+        XCTAssertTrue(draft.scannedFields.isEmpty && draft.unreadFields.isEmpty)
+        XCTAssertTrue(draft.wasScanned, "still the scanned card, not the plain form, mid-typing")
+        draft.reset()
+        XCTAssertFalse(draft.wasScanned)
+    }
+
     func testEditingAScannedFieldMakesItTheUsers() {
         let draft = NutrientDraft()
         LabelPrefill.apply(.init(name: "Vitamin C", unit: "mg", amountPerServing: 500), to: draft)
@@ -206,6 +227,8 @@ final class LabelScanTests: XCTestCase {
         XCTAssertEqual(ScanText.entryNote(.modelTurnedOff, device: "iPhone"),
                        "Turn on Apple Intelligence in Settings to read more from labels.")
         XCTAssertNil(ScanText.paywallNote(.model, device: "iPhone"))
+        XCTAssertNil(ScanText.entryNote(.modelPreparing, device: "iPhone"), "a capable iPhone isn't called basic")
+        XCTAssertNil(ScanText.paywallNote(.modelPreparing, device: "iPhone"))
         XCTAssertEqual(ScanText.paywallNote(.basic, device: "iPad"), "Basic text reading on this iPad")
     }
 

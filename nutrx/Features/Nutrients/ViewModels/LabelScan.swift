@@ -39,17 +39,23 @@ enum ScanText {
         case basic
         /// The parser alone, because Apple Intelligence is turned off.
         case modelTurnedOff
+        /// The parser for now: Apple Intelligence is on but its model is still getting ready. Nothing to say about it.
+        case modelPreparing
 
         static var current: Reading {
             if LabelExtractor.isModelAvailable { return .model }
+            if LabelExtractor.isModelPreparing { return .modelPreparing }
             return LabelExtractor.isModelTurnedOff ? .modelTurnedOff : .basic
         }
+
+        /// Whether the paywall says Apple Intelligence would make things richer.
+        var mentionsAppleIntelligence: Bool { self == .basic || self == .modelTurnedOff }
     }
 
     /// Under the entry card, or nil when nothing needs saying.
     static func entryNote(_ reading: Reading, device: String) -> String? {
         switch reading {
-        case .model: nil
+        case .model, .modelPreparing: nil
         case .basic: "This \(device) reads labels with basic text matching, so you may fill in a little more yourself."
         case .modelTurnedOff: "Turn on Apple Intelligence in Settings to read more from labels."
         }
@@ -57,7 +63,7 @@ enum ScanText {
 
     /// Under the paywall's Scan a label row.
     static func paywallNote(_ reading: Reading, device: String) -> String? {
-        reading == .model ? nil : "Basic text reading on this \(device)"
+        reading.mentionsAppleIntelligence ? "Basic text reading on this \(device)" : nil
     }
 
     static let pointAtFacts = "Point at the Supplement Facts"

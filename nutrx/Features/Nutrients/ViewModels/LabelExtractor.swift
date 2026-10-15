@@ -30,6 +30,12 @@ enum LabelExtractor {
         return false
     }
 
+    /// Apple Intelligence is on but the model isn't ready yet (still downloading): the parser reads for now.
+    static var isModelPreparing: Bool {
+        if case .unavailable(.modelNotReady) = SystemLanguageModel.default.availability { return true }
+        return false
+    }
+
     static func extract(from text: String, model: Model? = defaultModel) async -> Result {
         let parsed = LabelParser.parse(text)
         guard let model else { return Result(label: parsed, usedModel: false) }

@@ -29,7 +29,16 @@ final class NutrientDraft {
         case name, unit, step, supply
     }
 
-    var wasScanned: Bool { !scannedFields.isEmpty || !unreadFields.isEmpty }
+    /// Filled from a label: the form keeps its review layout until reset, even once the user has edited every field
+    /// (deriving it from the two sets would drop out of review mid-keystroke).
+    private(set) var wasScanned = false
+
+    /// Called by `LabelPrefill` once it has filled the draft.
+    func markScanned(read: Set<ScannedField>) {
+        scannedFields = read
+        unreadFields = Set(ScannedField.allCases).subtracting(read)
+        wasScanned = true
+    }
 
     /// The user typed in a scanned field: it's theirs now, so "from label" goes, and an unread one stops asking once
     /// it has something in it.
@@ -78,6 +87,7 @@ final class NutrientDraft {
         supplyServings = ""
         scannedFields = []
         unreadFields = []
+        wasScanned = false
         servingForm = nil
     }
 
