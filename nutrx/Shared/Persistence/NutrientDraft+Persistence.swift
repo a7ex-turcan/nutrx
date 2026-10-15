@@ -29,6 +29,12 @@ extension NutrientDraft {
 
         context.insert(nutrient)
 
+        // A bottle size from a scanned label starts supply tracking from today (nutrx Pro).
+        if let servings = supplyServings.parsedDouble, servings > 0 {
+            nutrient.supplyServings = servings.rounded()
+            nutrient.supplyRefilledAt = .now
+        }
+
         for time in pendingReminderTimes {
             context.insert(NutrientReminder(nutrient: nutrient, timeOfDay: time))
         }

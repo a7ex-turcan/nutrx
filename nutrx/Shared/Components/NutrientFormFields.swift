@@ -14,6 +14,22 @@ final class NutrientDraft {
     var upperBound: String = ""
     var tint: NutrientTint = .green
     var symbolName: String = NutrientDraft.defaultSymbol
+    /// Servings in the bottle, from a scanned label (nutrx Pro): set, it starts supply tracking when the nutrient is
+    /// added. New nutrients only.
+    var supplyServings: String = ""
+    /// Fields filled from a scanned label, which show "from label" until edited.
+    var scannedFields: Set<ScannedField> = []
+    /// Fields a scan couldn't read, which ask for them.
+    var unreadFields: Set<ScannedField> = []
+    /// What one serving is ("softgels"), from the label, for "120 softgels".
+    var servingForm: String?
+
+    /// The fields "Scan a label" fills.
+    enum ScannedField: Hashable, CaseIterable {
+        case name, unit, step, supply
+    }
+
+    var wasScanned: Bool { !scannedFields.isEmpty || !unreadFields.isEmpty }
 
     static let defaultSymbol = "pills"
 
@@ -52,6 +68,10 @@ final class NutrientDraft {
         upperBound = ""
         tint = .green
         symbolName = Self.defaultSymbol
+        supplyServings = ""
+        scannedFields = []
+        unreadFields = []
+        servingForm = nil
     }
 
     func populate(from nutrient: Nutrient) {
