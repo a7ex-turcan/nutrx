@@ -723,11 +723,12 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
 Mockups: `docs/pro/design/4-scan-label/`. The reading logic is built first; the scanner UI follows in a separate PR.
 - **`LabelTextRecognizer`** runs Vision `RecognizeTextRequest` (accurate, on the device) on an image. It joins pieces on the same row left to right (Vision can split "Vitamin D3 … 1,000 IU" in two), then orders rows top to bottom.
 - **`LabelParser`** is the rule-based reader, pure and tested against a corpus of real label texts in `LabelParserTests`:
-  - **Name:** a known supplement name, earliest in the line, the longer one on a tie ("Omega-3 Fish Oil" → Omega-3; "Vitamin D3" over "Vitamin D"). Failing that, the first short non-boilerplate line above "Supplement Facts". It's title-cased with codes kept (D3, B12, CoQ10).
+  - **Name:** above "Supplement Facts" first: a known supplement name, earliest in the line, the longer one on a tie ("Omega-3 Fish Oil" → Omega-3; "Vitamin D3" over "Vitamin D"), else the first short line that isn't boilerplate or a brand ("Nature's Best", "®"). Only then a known name inside the facts, so "Sleep Blend" listing melatonin keeps its title. It's title-cased with codes kept (D3, B12, CoQ10).
+  - **Numbers** (`numberPattern`, shared with the extractor's check) never start right after a letter or digit, so the 12 of "B12 500 mcg" isn't read as 12,500, and thousands group with a comma or a space, never across lines.
   - **Amount and unit:** from the line naming the product, else the first amount in the facts panel, skipping calories, fat, carbohydrate and sodium. IU wins over mcg on the same line. Units are normalised (µg/ug → mcg, iu → IU).
   - **Servings:** "Servings per container", else "120 softgels" divided by the serving size.
 - **`LabelExtractor`:** with Apple Intelligence (`SystemLanguageModel.default.availability`), `FoundationLabelModel` reads the text with guided generation into `@Generable GeneratedLabel`, prompted with the label text only.
-  - Its output is checked: numbers must appear on the label (`numbersOnLabel`), values must be in range, and the unit must be one of IU, mcg, mg or g.
+  - Its output is checked: numbers must appear on the label (`numbersOnLabel`), values must be in range, and the unit must be one of IU, mcg, mg or g, written on the label right after the accepted amount (mg for a label in mcg is a 1,000× slip).
   - Gaps are filled from the parser. Any model error falls back to the parser alone.
   - The model sits behind `LabelExtractor.Model` so tests can stub it (`LabelScanTests`).
   - The simulator can report the model available yet fail to load it (`ModelManagerError 1026`); the real-model test then skips.

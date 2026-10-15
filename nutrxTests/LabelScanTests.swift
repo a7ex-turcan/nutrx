@@ -65,7 +65,17 @@ final class LabelScanTests: XCTestCase {
     }
 
     func testNumbersOnTheLabel() {
-        XCTAssertEqual(LabelExtractor.numbersOnLabel("Vitamin D3 1,000 IU 125% · 2.5 mg"), [3, 1000, 125, 2.5])
+        // The 3 of "D3" is a code, not a number; "120" on the next line stays 120, never 3,120.
+        XCTAssertEqual(LabelExtractor.numbersOnLabel("Vitamin D3 1,000 IU 125% · 2.5 mg"), [1000, 125, 2.5])
+        XCTAssertEqual(LabelExtractor.numbersOnLabel("VITAMIN D3\n120 softgels\nD3 400 IU"), [120, 400])
+    }
+
+    func testAUnitThatIsntWrittenAfterTheAmountIsDropped() async {
+        // The label says 1,000 IU; the model answered mg.
+        let model = StubModel(label: .init(name: "Vitamin D3", unit: "mg", amountPerServing: 1000, servingsPerContainer: 120))
+        let result = await LabelExtractor.extract(from: vitaminD, model: model)
+        XCTAssertEqual(result.label.unit, "IU", "the parser's unit, from the label")
+        XCTAssertEqual(result.label.amountPerServing, 1000)
     }
 
     /// The real on-device model, when this machine has Apple Intelligence (skipped otherwise).

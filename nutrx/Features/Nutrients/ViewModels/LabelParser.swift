@@ -50,7 +50,15 @@ enum LabelParser {
                                       "warning", "keep out of reach", "store in", "manufactured", "distributed"]
 
     static func name(in lines: [String]) -> String? {
-        // A known supplement, in reading order: the product's name comes before the facts panel.
+        // Above the facts panel first, where the product's name is: a known supplement, else a title line. Only then
+        // a known name inside the facts, so an unknown blend listing "Melatonin 3 mg" isn't named after it.
+        let factsIndex = lines.firstIndex { $0.lowercased().contains("supplement facts") } ?? lines.count
+        let above = Array(lines.prefix(factsIndex))
+        return knownName(in: above) ?? titleLine(in: above) ?? knownName(in: Array(lines.dropFirst(factsIndex)))
+    }
+
+    /// The first known supplement name in reading order.
+    private static func knownName(in lines: [String]) -> String? {
         for line in lines {
             let lower = line.lowercased()
             // The name that comes first in the line ("Omega-3 Fish Oil" → Omega-3); the longer one on a tie
@@ -63,11 +71,19 @@ enum LabelParser {
                 return displayName(first.0, as: line)
             }
         }
-        // Otherwise the first short line above the facts that isn't boilerplate or a number.
-        let factsIndex = lines.firstIndex { $0.lowercased().contains("supplement facts") } ?? lines.count
-        for line in lines.prefix(factsIndex) {
-            let lower = line.lowercased()
+        return nil
+    }
+
+    /// What marks a brand line ("Nature's Best", "Acme Labs®") rather than the product's name.
+    private static let brandMarks = ["'s ", "’s ", "®", "™", " labs", " naturals", " nutrition", " inc", " co.",
+                                     " pharma", " organics"]
+
+    /// The first short line that isn't boilerplate, a number or a brand.
+    private static func titleLine(in lines: [String]) -> String? {
+        for line in lines {
+            let lower = line.lowercased() + " "
             guard (3...30).contains(line.count), !boilerplate.contains(where: lower.contains),
+                  !brandMarks.contains(where: lower.contains),
                   line.rangeOfCharacter(from: .letters) != nil, line.first?.isNumber == false else { continue }
             return titleCased(line)
         }
@@ -104,8 +120,13 @@ enum LabelParser {
 
     // MARK: - Amount per serving
 
-    /// "1,000", "1 000", "2.5", "25" followed by a unit.
-    private static let amountPattern = #"(\d{1,3}(?:[,\s]\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?)\s*(mcg|µg|ug|mg|g|iu)\b"#
+    /// A number on a label: "1,000", "1 000", "2.5", "25". It can't start right after a letter, digit, point or comma,
+    /// so the 3 of "D3" or the 12 of "B12" never joins the amount after it ("Vitamin B12 500 mcg" is 500, not
+    /// 12,500), and thousands are grouped with a comma or a plain space only, never across a line break.
+    static let numberPattern = #"(?<![A-Za-z\d.,])(?:\d{1,3}(?:[, ]\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?)"#
+
+    /// A number followed by a unit.
+    private static let amountPattern = "(" + numberPattern + #")\s*(mcg|µg|ug|mg|g|iu)\b"#
 
     static func amountAndUnit(in lines: [String], name: String?) -> (Double?, String?) {
         let factsStart = lines.firstIndex { $0.lowercased().contains("supplement facts") || $0.lowercased().contains("amount per serving") } ?? 0
@@ -143,7 +164,7 @@ enum LabelParser {
     /// "1,000" / "1 000" → 1000; "2,5" (a decimal comma) → 2.5; "2.5" → 2.5.
     static func number(_ text: String) -> Double? {
         let trimmed = text.trimmingCharacters(in: .whitespaces)
-        if trimmed.range(of: #"^\d{1,3}([,\s]\d{3})+(\.\d+)?$"#, options: .regularExpression) != nil {
+        if trimmed.range(of: #"^\d{1,3}([, ]\d{3})+(\.\d+)?$"#, options: .regularExpression) != nil {
             return Double(trimmed.replacingOccurrences(of: ",", with: "").replacingOccurrences(of: " ", with: ""))
         }
         return Double(trimmed.replacingOccurrences(of: ",", with: "."))

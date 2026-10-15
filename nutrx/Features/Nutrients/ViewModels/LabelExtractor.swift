@@ -51,12 +51,16 @@ enum LabelExtractor {
         if let name = label.name?.trimmingCharacters(in: .whitespacesAndNewlines), (2...40).contains(name.count) {
             result.name = LabelParser.titleCased(name)
         }
-        if let unit = label.unit.map(LabelParser.normalisedUnit), ["IU", "mcg", "mg", "g"].contains(unit) {
-            result.unit = unit
-        }
         let numbers = numbersOnLabel(text)
         if let amount = label.amountPerServing, amount > 0, amount < 1_000_000, numbers.contains(amount) {
             result.amountPerServing = amount
+        }
+        // The unit has to be written right after an amount on the label, after the model's amount when it kept one,
+        // so "mg" for a label that says mcg (a 1,000× slip) doesn't pass.
+        let written = text.components(separatedBy: .newlines).flatMap(LabelParser.amounts(in:))
+        if let unit = label.unit.map(LabelParser.normalisedUnit), ["IU", "mcg", "mg", "g"].contains(unit),
+           written.contains(where: { $0.1 == unit && (result.amountPerServing == nil || $0.0 == result.amountPerServing) }) {
+            result.unit = unit
         }
         if let servings = label.servingsPerContainer, (1...2000).contains(servings), numbers.contains(Double(servings)) {
             result.servingsPerContainer = servings
@@ -67,9 +71,8 @@ enum LabelExtractor {
 
     /// Every number written on the label ("1,000" counts as 1000), so the model's numbers can be checked.
     static func numbersOnLabel(_ text: String) -> Set<Double> {
-        guard let regex = try? NSRegularExpression(pattern: #"\d{1,3}(?:[,\s]\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?"#) else {
-            return []
-        }
+        // The parser's number: never glued to a code before it ("D3 400" is 400), never grouped across lines.
+        guard let regex = try? NSRegularExpression(pattern: LabelParser.numberPattern) else { return [] }
         let range = NSRange(text.startIndex..., in: text)
         return Set(regex.matches(in: text, range: range).compactMap { match in
             Range(match.range, in: text).flatMap { LabelParser.number(String(text[$0])) }

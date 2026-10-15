@@ -133,6 +133,48 @@ final class LabelParserTests: XCTestCase {
         XCTAssertTrue(LabelParser.parse("Store in a cool dry place.\nKeep out of reach of children.").isEmpty)
     }
 
+    func testCodesInTheNameNeverJoinTheAmount() {
+        assertLabel("""
+            Vitamin B12
+            Supplement Facts
+            Servings Per Container 90
+            Vitamin B12 500 mcg
+            """, name: "Vitamin B12", unit: "mcg", amount: 500, servings: 90)
+        assertLabel("""
+            VITAMIN D3
+            Supplement Facts
+            Servings per container: 60
+            Vitamin D3 400 IU
+            """, name: "Vitamin D3", unit: "IU", amount: 400, servings: 60)
+        assertLabel("""
+            CoQ10
+            Supplement Facts
+            Servings Per Container 30
+            CoQ10 100 mg
+            """, name: "CoQ10", unit: "mg", amount: 100, servings: 30)
+    }
+
+    func testAnIngredientInTheFactsDoesntNameABlend() {
+        assertLabel("""
+            Sleep Blend
+            Supplement Facts
+            Servings Per Container 30
+            Melatonin 3 mg
+            Proprietary blend 450 mg
+            """, name: "Sleep Blend", unit: "mg", amount: 3, servings: 30)
+    }
+
+    func testABrandLineAboveAnUnknownProductIsSkipped() {
+        assertLabel("""
+            Nature's Best
+            Calm Night
+            60 capsules
+            Supplement Facts
+            Serving Size 1 Capsule
+            Proprietary blend 450 mg
+            """, name: "Calm Night", unit: "mg", amount: 450, servings: 60)
+    }
+
     func testNumbersAndUnits() {
         XCTAssertEqual(LabelParser.number("1,000"), 1000)
         XCTAssertEqual(LabelParser.number("1 000"), 1000)
