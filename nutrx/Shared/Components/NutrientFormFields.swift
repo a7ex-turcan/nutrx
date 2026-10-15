@@ -29,7 +29,23 @@ final class NutrientDraft {
         case name, unit, step, supply
     }
 
-    var wasScanned: Bool { !scannedFields.isEmpty || !unreadFields.isEmpty }
+    /// Filled from a label: the form keeps its review layout until reset, even once the user has edited every field
+    /// (deriving it from the two sets would drop out of review mid-keystroke).
+    private(set) var wasScanned = false
+
+    /// Called by `LabelPrefill` once it has filled the draft.
+    func markScanned(read: Set<ScannedField>) {
+        scannedFields = read
+        unreadFields = Set(ScannedField.allCases).subtracting(read)
+        wasScanned = true
+    }
+
+    /// The user typed in a scanned field: it's theirs now, so "from label" goes, and an unread one stops asking once
+    /// it has something in it.
+    func edited(_ field: ScannedField, isEmpty: Bool) {
+        scannedFields.remove(field)
+        if !isEmpty { unreadFields.remove(field) }
+    }
 
     static let defaultSymbol = "pills"
 
@@ -71,6 +87,7 @@ final class NutrientDraft {
         supplyServings = ""
         scannedFields = []
         unreadFields = []
+        wasScanned = false
         servingForm = nil
     }
 
@@ -117,11 +134,15 @@ final class NutrientDraft {
 /// Done button at the root of its toolbar — declared inside the scroll view's content, a keyboard toolbar
 /// caused attribute-graph cycles when the keyboard first appeared.
 enum NutrientFormField: Hashable {
-    case name, unit, step, dailyTarget, upperBound, notes
+    case name, unit, step, dailyTarget, upperBound, notes, supplyServings
 }
 
 /// Reusable fields for creating or editing a nutrient (DESIGN.md §5.7): name + unit, "Look" (tint and
 /// symbol), "Daily goal" (goal type, target(s), step) and notes. Consumers provide the container.
+///
+/// After "Scan a label" (`draft.wasScanned`), name, unit, step and the bottle's servings are one card, each with a
+/// "from label" tag until edited, or in amber with a hint when the scan couldn't read it; the goal stays empty with
+/// a note that nutrx doesn't suggest one (docs/pro/design/4-scan-label: review).
 struct NutrientFormFields<BeforeNotes: View>: View {
     @Bindable var draft: NutrientDraft
     var focusedField: FocusState<NutrientFormField?>.Binding
@@ -133,7 +154,11 @@ struct NutrientFormFields<BeforeNotes: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            nameAndUnit
+            if draft.wasScanned {
+                scannedCard
+            } else {
+                nameAndUnit
+            }
 
             sectionHeader("Look")
             VStack(spacing: Theme.Spacing.cardPadding) {
@@ -202,23 +227,121 @@ struct NutrientFormFields<BeforeNotes: View>: View {
                         amountField($draft.upperBound, focus: .upperBound, label: "Maximum")
                     }
                 )
-                rowDivider
-                labelled("Each tap adds", id: .step) {
-                    amountField($draft.step, focus: .step, label: "Each tap adds")
-                }
-            } else {
-                let goalLabel = "\(GoalTypePicker.label(for: draft.goalType)), per day"
-                fieldPair(
-                    labelled(goalLabel, id: .dailyTarget) {
-                        amountField($draft.dailyTarget, focus: .dailyTarget, label: goalLabel)
-                    },
+                if !draft.wasScanned {
+                    rowDivider
                     labelled("Each tap adds", id: .step) {
                         amountField($draft.step, focus: .step, label: "Each tap adds")
                     }
-                )
+                }
+            } else {
+                let goalLabel = "\(GoalTypePicker.label(for: draft.goalType)), per day"
+                if draft.wasScanned {
+                    labelled(goalLabel, id: .dailyTarget) {
+                        amountField($draft.dailyTarget, focus: .dailyTarget, label: goalLabel)
+                    }
+                } else {
+                    fieldPair(
+                        labelled(goalLabel, id: .dailyTarget) {
+                            amountField($draft.dailyTarget, focus: .dailyTarget, label: goalLabel)
+                        },
+                        labelled("Each tap adds", id: .step) {
+                            amountField($draft.step, focus: .step, label: "Each tap adds")
+                        }
+                    )
+                }
+            }
+            if draft.wasScanned {
+                Text(ScanText.goalHint)
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Theme.Spacing.cardPadding)
+                    .padding(.bottom, 10)
+                    .padding(.top, -4)
             }
         }
         .background(Theme.surfaceCard, in: cardShape)
+    }
+
+    // MARK: - Scanned label
+
+    private var scannedCard: some View {
+        VStack(spacing: 0) {
+            scannedRow(.name, label: "Name", id: .name) {
+                TextField("e.g. Vitamin D", text: scannedText(\.name, .name))
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .focused(focusedField, equals: .name)
+                    .accessibilityLabel("Name")
+            }
+            rowDivider
+            scannedRow(.unit, label: "Unit", id: .unit) {
+                TextField("e.g. mg, IU", text: scannedText(\.unit, .unit))
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .focused(focusedField, equals: .unit)
+                    .accessibilityLabel("Unit")
+            }
+            rowDivider
+            scannedRow(.step, label: "Each tap adds (one serving)", id: .step) {
+                amountField(scannedText(\.step, .step), focus: .step, label: "Each tap adds")
+            }
+            rowDivider
+            scannedRow(.supply, label: "Supply · servings in the bottle", id: .supplyServings) {
+                amountField(scannedText(\.supplyServings, .supply), focus: .supplyServings,
+                            label: "Supply, servings in the bottle", suffix: draft.servingForm ?? "servings",
+                            placeholder: "e.g. 120", keyboard: .numberPad)
+            }
+        }
+        .background(Theme.surfaceCard, in: cardShape)
+        .clipShape(cardShape)
+    }
+
+    /// A text binding that marks the field as the user's once they type in it.
+    private func scannedText(_ keyPath: ReferenceWritableKeyPath<NutrientDraft, String>,
+                             _ field: NutrientDraft.ScannedField) -> Binding<String> {
+        Binding(
+            get: { draft[keyPath: keyPath] },
+            set: { value in
+                draft[keyPath: keyPath] = value
+                draft.edited(field, isEmpty: value.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        )
+    }
+
+    /// One row of the scanned card: caption with a "from label" tag (under the value at accessibility sizes), or an
+    /// amber background and a hint when the scan couldn't read it.
+    private func scannedRow(_ field: NutrientDraft.ScannedField, label: String, id: NutrientFormField,
+                            @ViewBuilder content: () -> some View) -> some View {
+        let fromLabel = draft.scannedFields.contains(field)
+        let unread = draft.unreadFields.contains(field)
+        let stacked = dynamicTypeSize.isAccessibilitySize
+        return VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(label)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.textSecondary)
+                    .accessibilityHidden(true)
+                Spacer(minLength: 8)
+                if fromLabel, !stacked { FromLabelTag() }
+            }
+            content()
+                .foregroundStyle(Theme.textPrimary)
+            if fromLabel, stacked {
+                FromLabelTag().padding(.top, 4)
+            }
+            if unread {
+                Text(LabelPrefill.unreadHint(field))
+                    .font(.caption)
+                    .foregroundStyle(Theme.textAmberInk)
+                    .padding(.top, 2)
+            }
+        }
+        .padding(.horizontal, Theme.Spacing.cardPadding)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(unread ? Theme.statusAmber.opacity(0.1) : .clear)
+        .id(id)
     }
 
     private var notesField: some View {
@@ -290,11 +413,14 @@ struct NutrientFormFields<BeforeNotes: View>: View {
     }
 
     /// Big rounded number with the unit after it ("5 g"). VoiceOver reads "Each tap adds, g, 5".
-    private func amountField(_ text: Binding<String>, focus: NutrientFormField, label: String) -> some View {
-        let unit = draft.unit.trimmingCharacters(in: .whitespaces)
+    private func amountField(_ text: Binding<String>, focus: NutrientFormField, label: String, suffix: String? = nil,
+                             placeholder: String = "0", keyboard: UIKeyboardType = .decimalPad) -> some View {
+        let unit = suffix ?? draft.unit.trimmingCharacters(in: .whitespaces)
         return HStack(alignment: .firstTextBaseline, spacing: 4) {
-            TextField("0", text: text)
-                .keyboardType(.decimalPad)
+            // The placeholder only while empty: a fixed-size field is as wide as its placeholder, which left a gap
+            // after a short value ("120      softgels").
+            TextField(text.wrappedValue.isEmpty ? placeholder : "", text: text)
+                .keyboardType(keyboard)
                 .focused(focusedField, equals: focus)
                 .fixedSize()
                 .accessibilityLabel(unit.isEmpty ? label : "\(label), \(unit)")
@@ -310,6 +436,20 @@ struct NutrientFormFields<BeforeNotes: View>: View {
     }
 
     private var rangeError: String? { draft.rangeError }
+}
+
+/// "from label" on a field a scan filled (11pt bold teal on the teal tile colour).
+private struct FromLabelTag: View {
+    var body: some View {
+        Label("from label", systemImage: "viewfinder")
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(Theme.textTealInk)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(NutrientTint.teal.tileBackground,
+                        in: RoundedRectangle(cornerRadius: Theme.Radius.tag, style: .continuous))
+            .accessibilityLabel("Filled from the label")
+    }
 }
 
 extension NutrientFormFields where BeforeNotes == EmptyView {

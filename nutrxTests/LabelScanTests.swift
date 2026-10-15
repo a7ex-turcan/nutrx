@@ -107,7 +107,6 @@ final class LabelScanTests: XCTestCase {
 
     func testPrefillFillsTheFormButNeverTheGoal() {
         let draft = NutrientDraft()
-        draft.dailyTarget = "4000"
         LabelPrefill.apply(.init(name: "Vitamin D3", unit: "IU", amountPerServing: 1000, servingsPerContainer: 120,
                                  servingForm: "softgels"), to: draft)
         XCTAssertEqual(draft.name, "Vitamin D3")
@@ -115,6 +114,7 @@ final class LabelScanTests: XCTestCase {
         XCTAssertEqual(draft.step, "1000")
         XCTAssertEqual(draft.supplyServings, "120")
         XCTAssertEqual(draft.dailyTarget, "", "nutrx doesn't suggest a goal")
+        XCTAssertTrue(draft.wasScanned)
         XCTAssertEqual(draft.symbolName, "sun.max", "a known supplement's symbol")
         XCTAssertEqual(draft.scannedFields, [.name, .unit, .step, .supply])
         XCTAssertTrue(draft.unreadFields.isEmpty)
@@ -170,5 +170,74 @@ final class LabelScanTests: XCTestCase {
         XCTAssertEqual(label.amountPerServing, 1000, text)
         XCTAssertEqual(label.unit, "IU", text)
         XCTAssertEqual(label.servingsPerContainer, 120, text)
+    }
+
+    // MARK: - Review
+
+    func testPrefillKeepsTheFormsLookForAnUnknownSupplement() {
+        let draft = NutrientDraft()
+        draft.tint = .indigo
+        draft.symbolName = "leaf"
+        draft.notes = "With breakfast"
+        LabelPrefill.apply(.init(name: "Calm Night", unit: "mg", amountPerServing: 450), to: draft)
+        XCTAssertEqual(draft.tint, .indigo)
+        XCTAssertEqual(draft.symbolName, "leaf")
+        XCTAssertEqual(draft.notes, "With breakfast")
+        LabelPrefill.apply(.init(name: "Vitamin D3"), to: draft)
+        XCTAssertEqual(draft.symbolName, "sun.max", "a known supplement still gets its symbol")
+    }
+
+    func testScanAgainKeepsTheGoalTheUserSet() {
+        let draft = NutrientDraft()
+        draft.goalType = .range
+        draft.dailyTarget = "100"
+        draft.upperBound = "200"
+        LabelPrefill.apply(.init(name: "Magnesium", unit: "mg", amountPerServing: 200), to: draft)
+        XCTAssertEqual(draft.goalType, .range)
+        XCTAssertEqual(draft.dailyTarget, "100")
+        XCTAssertEqual(draft.upperBound, "200")
+    }
+
+    func testEditingEveryFieldKeepsTheReviewLayout() {
+        let draft = NutrientDraft()
+        LabelPrefill.apply(.init(name: "Vitamin C", unit: "mg", amountPerServing: 500), to: draft)
+        for field in NutrientDraft.ScannedField.allCases { draft.edited(field, isEmpty: false) }
+        XCTAssertTrue(draft.scannedFields.isEmpty && draft.unreadFields.isEmpty)
+        XCTAssertTrue(draft.wasScanned, "still the scanned card, not the plain form, mid-typing")
+        draft.reset()
+        XCTAssertFalse(draft.wasScanned)
+    }
+
+    func testEditingAScannedFieldMakesItTheUsers() {
+        let draft = NutrientDraft()
+        LabelPrefill.apply(.init(name: "Vitamin C", unit: "mg", amountPerServing: 500), to: draft)
+        draft.edited(.unit, isEmpty: false)
+        XCTAssertEqual(draft.scannedFields, [.name, .step], "no more \"from label\" on the unit")
+        draft.edited(.supply, isEmpty: true)
+        XCTAssertEqual(draft.unreadFields, [.supply], "still asks while it's empty")
+        draft.edited(.supply, isEmpty: false)
+        XCTAssertTrue(draft.unreadFields.isEmpty)
+        XCTAssertTrue(draft.wasScanned, "the form stays in its review layout")
+    }
+
+    func testScanNotes() {
+        XCTAssertNil(ScanText.entryNote(.model, device: "iPhone"))
+        XCTAssertEqual(ScanText.entryNote(.basic, device: "iPhone"),
+                       "This iPhone reads labels with basic text matching, so you may fill in a little more yourself.")
+        XCTAssertEqual(ScanText.entryNote(.modelTurnedOff, device: "iPhone"),
+                       "Turn on Apple Intelligence in Settings to read more from labels.")
+        XCTAssertNil(ScanText.paywallNote(.model, device: "iPhone"))
+        XCTAssertNil(ScanText.entryNote(.modelPreparing, device: "iPhone"), "a capable iPhone isn't called basic")
+        XCTAssertNil(ScanText.paywallNote(.modelPreparing, device: "iPhone"))
+        XCTAssertEqual(ScanText.paywallNote(.basic, device: "iPad"), "Basic text reading on this iPad")
+    }
+
+    func testAPhotoWithoutALabelReadsAsNothing() async throws {
+        let image = try XCTUnwrap(UIGraphicsImageRenderer(size: CGSize(width: 200, height: 200)).image { context in
+            UIColor.gray.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 200, height: 200))
+        }.cgImage)
+        let label = await LabelScan.read(image, orientation: .up)
+        XCTAssertNil(label, "\"Couldn't read this label\"")
     }
 }

@@ -255,7 +255,8 @@ struct TodayView: View {
                 title: "New Nutrient",
                 buttonLabel: "Add",
                 selectedGroup: $selectedGroupForAdd,
-                showGroupPicker: true
+                showGroupPicker: true,
+                offersScan: true
             ) {
                 addNutrient()
             }

@@ -170,6 +170,15 @@ final class LabelParserTests: XCTestCase {
         XCTAssertEqual(LabelParser.amounts(in: "Vitamin D-3 400 IU").map(\.0), [400])
     }
 
+    func testABrandAloneAboveTheFactsLeavesTheNameToTheFacts() {
+        assertLabel("""
+            Acme Labs®
+            Supplement Facts
+            Servings Per Container 90
+            Vitamin D3 25 mcg
+            """, name: "Vitamin D3", unit: "mcg", amount: 25, servings: 90)
+    }
+
     func testABrandLikeLineOnItsOwnIsTheName() {
         assertLabel("""
             Women's Multi

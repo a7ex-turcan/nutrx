@@ -120,7 +120,11 @@ struct PaywallView: View {
     // MARK: - Features
 
     private var features: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        // Without Apple Intelligence the features still work, more simply: say so where it applies
+        // (docs/pro/design/2-paywall: no-apple-intelligence).
+        let reading = ScanText.Reading.current
+        let device = UIDevice.current.model
+        return VStack(alignment: .leading, spacing: 10) {
             ForEach(ProFeature.listed) { feature in
                 HStack(spacing: 14) {
                     NutrientIconTile(tint: feature.tint, symbolName: feature.symbolName, size: 34)
@@ -131,11 +135,23 @@ struct PaywallView: View {
                         Text(feature.subtitle)
                             .font(.footnote)
                             .foregroundStyle(Theme.textSecondary)
+                        if feature == .scan, let note = ScanText.paywallNote(reading, device: device) {
+                            Label(note, systemImage: "info.circle")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(Theme.textSecondary)
+                                .padding(.top, 3)
+                        }
                     }
                     Spacer(minLength: 0)
                 }
                 .frame(minHeight: 46)
                 .accessibilityElement(children: .combine)
+            }
+            if reading.mentionsAppleIntelligence, let note = ProText.appleIntelligenceNote(ProFeature.listed, device: device) {
+                Text(note)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.textSecondary)
+                    .padding(.top, 4)
             }
         }
     }

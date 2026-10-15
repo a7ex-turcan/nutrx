@@ -57,6 +57,15 @@ enum ProFeature: String, CaseIterable, Identifiable {
         }
     }
 
+    /// What Apple Intelligence improves, in the paywall's note for devices without it; nil for features it doesn't.
+    var appleIntelligenceName: String? {
+        switch self {
+        case .scan: "label scanning"
+        case .recap: "recaps"
+        case .supply, .health, .report: nil
+        }
+    }
+
     var symbolName: String {
         switch self {
         case .supply: "waterbottle"
@@ -77,9 +86,9 @@ enum ProFeature: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Built and in the app. The paywall never advertises a feature that isn't (phase 4 ships supply first).
+    /// Built and in the app. The paywall never advertises a feature that isn't (phase 4 ships supply, phase 5 scan).
     var isShipped: Bool {
-        self == .supply
+        self == .supply || self == .scan
     }
 
     /// What the paywall and the Pro screen list: the shipped features — or, in Debug builds before any has

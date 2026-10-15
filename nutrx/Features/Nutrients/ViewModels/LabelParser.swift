@@ -74,18 +74,24 @@ enum LabelParser {
         return nil
     }
 
-    /// What marks a brand line ("Nature's Best", "Acme Labs®") rather than the product's name.
-    private static let brandMarks = ["'s ", "’s ", "®", "™", " labs", " naturals", " nutrition", " inc", " co.",
-                                     " pharma", " organics"]
+    /// What marks a brand line ("Acme Labs®") rather than the product's name: such a line is never the name.
+    private static let brandMarks = ["®", "™", " labs", " naturals", " nutrition", " inc", " co.", " pharma", " organics"]
+    /// A weaker mark: "Nature's Best" is a brand, but "Women's Multi" is a product, so it's only passed over while
+    /// another line follows.
+    private static let possessiveMarks = ["'s ", "’s "]
 
-    /// The first short line that isn't boilerplate or a number, passing over brand-looking lines while another line
-    /// follows: "Nature's Best" above "Calm Night" gives Calm Night, but "Women's Multi" on its own is the name.
+    /// The first short line that isn't boilerplate, a number or a brand ("Acme Labs®" never is). A possessive line
+    /// is passed over while another follows: "Nature's Best" above "Calm Night" gives Calm Night, but "Women's Multi"
+    /// on its own is the name.
     private static func titleLine(in lines: [String]) -> String? {
         let candidates = lines.filter { line in
-            (3...30).contains(line.count) && !boilerplate.contains(where: line.lowercased().contains)
+            let lower = line.lowercased() + " "
+            return (3...30).contains(line.count) && !boilerplate.contains(where: lower.contains)
+                && !brandMarks.contains(where: lower.contains)
                 && line.rangeOfCharacter(from: .letters) != nil && line.first?.isNumber == false
         }
-        let named = candidates.first { !brandMarks.contains(where: ($0.lowercased() + " ").contains) } ?? candidates.first
+        let named = candidates.first { !possessiveMarks.contains(where: ($0.lowercased() + " ").contains) }
+            ?? candidates.first
         return named.map(titleCased)
     }
 

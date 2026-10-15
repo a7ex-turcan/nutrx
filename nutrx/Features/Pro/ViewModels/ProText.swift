@@ -49,6 +49,15 @@ enum ProText {
         return text.prefix(1).uppercased() + text.dropFirst()
     }
 
+    /// The paywall's line under the features on a device without Apple Intelligence, naming only the listed
+    /// features it improves ("Apple Intelligence makes label scanning and recaps richer. …"); nil when none is listed.
+    static func appleIntelligenceNote(_ features: [ProFeature], device: String) -> String? {
+        let names = features.compactMap(\.appleIntelligenceName)
+        guard let last = names.last else { return nil }
+        let list = names.count > 1 ? names.dropLast().joined(separator: ", ") + " and " + last : last
+        return "Apple Intelligence makes \(list) richer. Every Pro feature still works on this \(device)."
+    }
+
     static func planTitle(_ plan: ProAccess.Plan) -> String {
         switch plan {
         case .yearly: "Yearly"

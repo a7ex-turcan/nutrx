@@ -16,6 +16,8 @@ enum Theme {
     static let textSecondary = color(.textSecondary)
     static let textGreenInk = color(.textGreenInk)
     static let textAmberInk = color(.textAmberInk)
+    /// Teal text on `NutrientTint.teal.tileBackground` (the scan's "from label" tag and banner action).
+    static let textTealInk = color(.textTealInk)
     /// Dark ink for text on a strong nutrient-tint fill (same in light and dark).
     static let textOnTint = color(.textOnTint)
 
@@ -104,6 +106,7 @@ enum Theme {
         case textSecondary = "Text/Secondary"
         case textGreenInk = "Text/GreenInk"
         case textAmberInk = "Text/AmberInk"
+        case textTealInk = "Text/TealInk"
         case textOnTint = "Text/OnTint"
         case statusAmber = "Status/Amber"
         case surfaceGround = "Surface/Ground"

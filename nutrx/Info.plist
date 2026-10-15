@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>NSCameraUsageDescription</key>
-	<string>nutrx uses your camera to take a profile photo.</string>
+	<string>nutrx uses your camera to take a profile photo and to read supplement labels. Labels are read on your device; nothing is uploaded.</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>nutrx-labs.nutrx.reminders</string>
