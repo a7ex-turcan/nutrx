@@ -273,6 +273,8 @@ final class LabelScanTests: XCTestCase {
                        SupplementLabel(name: "Vitamin D3", unit: "IU", amountPerServing: 1000, servingsPerContainer: 120),
                        "the live name stays; the photo fills the rest")
         XCTAssertEqual(LabelScan.combined(nil, photo), photo)
+        // The live read had a unit but no amount: the photo's amount comes with its own unit.
+        XCTAssertEqual(LabelScan.combined(SupplementLabel(name: "Vitamin D3", unit: "mcg"), photo)?.unit, "IU")
         XCTAssertNil(LabelScan.combined(nil, nil))
     }
 }

@@ -13,9 +13,16 @@ enum LabelScan {
         label?.name != nil && label?.amountPerServing != nil
     }
 
-    /// The live read with the photo's fields filling its gaps; nil when neither read anything.
+    /// The live read with the photo's fields filling its gaps; nil when neither read anything. The unit and amount
+    /// stay a pair, from whichever read has the amount, so a unit from one row never meets an amount from another.
     static func combined(_ live: SupplementLabel?, _ photo: SupplementLabel?) -> SupplementLabel? {
-        let merged = LabelExtractor.merge(live ?? SupplementLabel(), photo ?? SupplementLabel())
+        let live = live ?? SupplementLabel(), photo = photo ?? SupplementLabel()
+        var merged = LabelExtractor.merge(live, photo)
+        let amountFrom = live.amountPerServing != nil ? live : photo
+        if amountFrom.amountPerServing != nil {
+            merged.amountPerServing = amountFrom.amountPerServing
+            merged.unit = amountFrom.unit
+        }
         return merged.isEmpty ? nil : merged
     }
 

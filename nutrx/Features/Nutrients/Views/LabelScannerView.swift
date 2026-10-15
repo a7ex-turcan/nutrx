@@ -5,9 +5,10 @@ import SwiftUI
 import VisionKit
 
 /// The full-screen label scanner (nutrx Pro, docs/pro/design/4-scan-label: scanner, reading, fail). Live text
-/// highlights from VisionKit's `DataScannerViewController`; the shutter reads that recognised text (and a photo when
-/// it misses the name or amount), all on the device. Where live scanning isn't possible (no camera, camera access off, the simulator) a photo from the
-/// library does the same job. A label that gives nothing usable opens "Couldn't read this label".
+/// highlights from VisionKit's `DataScannerViewController`; the shutter reads that recognised text (and a photo
+/// when it misses the name or amount), all on the device. Where live scanning isn't possible (no camera, camera
+/// access off, the simulator) a photo from the library does the same job. A label that gives nothing usable opens
+/// "Couldn't read this label".
 struct LabelScannerView: View {
     let onRead: (SupplementLabel) -> Void
 
