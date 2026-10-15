@@ -36,14 +36,18 @@ struct WeeklyRecap: Equatable {
 
     /// Monday, start of day.
     let weekStart: Date
-    /// The last day counted: Sunday, or today while the week is still running.
+    /// The last day counted: Sunday, or yesterday while the week is still running. A day counts only once it's over,
+    /// so on Sunday evening the recap covers Monday to Saturday and adds Sunday on Monday; an unfinished day never
+    /// reads as missed.
     let lastDay: Date
     /// Monday to Sunday: every goal met that day (the hero ring's lit segments). Days not counted are false.
     let fullDayFlags: [Bool]
     let goalsMet: Int
     let goalsCounted: Int
-    /// Days with anything logged.
+    /// Counted days with anything logged.
     let daysLogged: Int
+    /// Days this week with anything logged, today included ("You've logged 3 days so far").
+    let daysLoggedSoFar: Int
     /// Every nutrient's week, in display order.
     let nutrients: [NutrientWeek]
     let steadiest: NutrientWeek?
@@ -66,13 +70,14 @@ struct WeeklyRecap: Equatable {
     /// - Parameters:
     ///   - log: every day's results.
     ///   - names: nutrient names by id.
-    ///   - weekStart: any date in the week; the recap covers its Monday to Sunday.
+    ///   - date: any date in the week; the recap covers its Monday to Sunday.
     ///   - streaksEnabled: the user's Streaks setting; off leaves the streak out.
     static func build(log: HistoryLog, names: [UUID: String], week date: Date, streaksEnabled: Bool) -> WeeklyRecap {
         let calendar = log.calendar
         let weekStart = Self.weekStart(containing: date, calendar: calendar)
         let sunday = calendar.date(byAdding: .day, value: 6, to: weekStart)!
-        let lastDay = min(sunday, log.today)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: log.today)!
+        let lastDay = min(sunday, yesterday)
         let weekDays = (0..<7).map { calendar.date(byAdding: .day, value: $0, to: weekStart)! }
 
         var flags: [Bool] = []
@@ -85,6 +90,7 @@ struct WeeklyRecap: Equatable {
         var over: [UUID: [Date]] = [:]
         let byID = Dictionary(log.nutrients.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
 
+        let daysLoggedSoFar = weekDays.filter { $0 <= log.today && log.day($0).hasEntries }.count
         for date in weekDays {
             guard date <= lastDay else {
                 flags.append(false)
@@ -122,9 +128,10 @@ struct WeeklyRecap: Equatable {
 
         return WeeklyRecap(
             weekStart: weekStart, lastDay: lastDay, fullDayFlags: flags, goalsMet: goalsMet,
-            goalsCounted: goalsCounted, daysLogged: daysLogged, nutrients: weeks, steadiest: steadiest,
+            goalsCounted: goalsCounted, daysLogged: daysLogged, daysLoggedSoFar: daysLoggedSoFar, nutrients: weeks,
+            steadiest: steadiest,
             slipped: slipped, overLimit: overLimit,
-            weakestWeekday: weakestWeekday(log: log, through: lastDay),
+            weakestWeekday: lastDay >= weekStart ? weakestWeekday(log: log, through: lastDay) : nil,
             streak: streaksEnabled ? streakChange(log: log, weekStart: weekStart, sunday: sunday) : nil
         )
     }
@@ -176,6 +183,7 @@ struct WeeklyRecap: Equatable {
     }
 
     /// The streak through this week's Sunday (or yesterday, while the week is running) and through the Sunday before.
+    /// (Its own `yesterday` cut-off: the same as `lastDay`.)
     static func streakChange(log: HistoryLog, weekStart: Date, sunday: Date) -> StreakChange? {
         let calendar = log.calendar
         let yesterday = calendar.date(byAdding: .day, value: -1, to: log.today)!

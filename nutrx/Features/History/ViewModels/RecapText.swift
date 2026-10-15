@@ -34,7 +34,12 @@ struct RecapText {
         var sentences: [String] = []
         let everyDay = recap.nutrients.filter { $0.daysMet == $0.daysCounted }
         if recap.goalsCounted > 0, recap.goalsMet == recap.goalsCounted {
-            sentences.append("You met every goal on all \(days(countedDays)).")
+            // Every counted day with goals was a full day.
+            switch recap.fullDays {
+            case 1: sentences.append("You met every goal on the one day counted.")
+            case 2: sentences.append("You met every goal on both days.")
+            default: sentences.append("You met every goal on all \(recap.fullDays) days.")
+            }
         } else if everyDay.count > 3, let steadiest = recap.steadiest {
             sentences.append("You hit \(everyDay.count) goals every day, including \(steadiest.name).")
         } else if everyDay.count > 1 {
@@ -158,11 +163,6 @@ struct RecapText {
         return names.count == 1 ? last : names.dropLast().joined(separator: ", ") + " and " + last
     }
 
-    /// Days counted so far: up to Sunday, or today while the week is running.
-    var countedDays: Int {
-        (calendar.dateComponents([.day], from: recap.weekStart, to: recap.lastDay).day ?? 6) + 1
-    }
-
     /// "A", "A and B", "A, B and C".
     func list(_ names: [String]) -> String {
         guard let last = names.last else { return "" }
@@ -179,7 +179,7 @@ struct RecapText {
 
     /// Every number the recap's words may use, for checking a reworded summary.
     var factNumbers: Set<Int> {
-        var numbers: Set<Int> = [recap.goalsMet, recap.goalsCounted, recap.fullDays, recap.daysLogged, countedDays, 7]
+        var numbers: Set<Int> = [recap.goalsMet, recap.goalsCounted, recap.fullDays, recap.daysLogged, 7]
         numbers.insert(recap.nutrients.filter { $0.daysMet == $0.daysCounted }.count)
         for week in recap.nutrients {
             numbers.formUnion([week.daysMet, week.daysCounted, week.missedDays.count, week.overLimitDays.count])

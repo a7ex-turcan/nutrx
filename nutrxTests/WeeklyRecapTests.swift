@@ -89,12 +89,25 @@ final class WeeklyRecapTests: XCTestCase {
         XCTAssertFalse(recap.fullDayFlags[3])
     }
 
-    func testAWeekStillRunningCountsUpToToday() {
-        let recap = recap(totals(from: day(10, 5), through: day(10, 7)), today: day(10, 7, hour: 9))
-        XCTAssertEqual(recap.lastDay, day(10, 7))
-        XCTAssertEqual(recap.goalsCounted, 9)
-        XCTAssertEqual(recap.daysLogged, 3)
-        XCTAssertEqual(recap.fullDayFlags, [true, true, true, false, false, false, false])
+    func testAWeekStillRunningCountsCompletedDaysOnly() {
+        // Wednesday morning: Monday and Tuesday count; today isn't over, so it can't be missed yet.
+        let recap = recap(totals(from: day(10, 5), through: day(10, 7)), today: day(10, 7))
+        XCTAssertEqual(recap.lastDay, day(10, 6))
+        XCTAssertEqual(recap.goalsCounted, 6)
+        XCTAssertEqual(recap.daysLogged, 2)
+        XCTAssertEqual(recap.daysLoggedSoFar, 3, "today's logging shows in the first-week state")
+        XCTAssertEqual(recap.fullDayFlags, [true, true, false, false, false, false, false])
+    }
+
+    func testOnTheRecapsSundayTheUnfinishedDayIsLeftOut() {
+        // Sunday 18:00, with the evening Omega-3 not logged yet, and one earlier Sunday missed.
+        let all = totals(from: day(9, 13), through: day(10, 11),
+                         overrides: [day(9, 27): [omega: 0], day(10, 11): [omega: 0]])
+        let recap = recap(all, today: day(10, 11))
+        XCTAssertEqual(recap.lastDay, day(10, 10))
+        XCTAssertEqual(recap.goalsCounted, 18, "Monday to Saturday")
+        XCTAssertNil(recap.slipped, "Omega-3 hasn't slipped: Sunday isn't over")
+        XCTAssertNil(recap.weakestWeekday, "one missed Sunday isn't a pattern")
     }
 
     func testStreakChange() {
@@ -138,8 +151,15 @@ final class WeeklyRecapTests: XCTestCase {
         let text = RecapText(recap(all, today: day(10, 12)), calendar: calendar)
         XCTAssertEqual(text.summary, "You met every goal on all 7 days. Your streak is now 7 days.")
         let running = RecapText(recap(totals(from: day(10, 5), through: day(10, 7)), today: day(10, 7)), calendar: calendar)
-        XCTAssertEqual(running.summary, "You met every goal on all 3 days. Your streak is now 2 days.",
-                       "the streak runs through yesterday")
+        XCTAssertEqual(running.summary, "You met every goal on both days. Your streak is now 2 days.")
+        // The first nutrient added on Wednesday: five days with goals, not "all 7".
+        let late = totals(from: day(10, 7), through: day(10, 11))
+        let log = HistoryLog(nutrients: nutrients.map {
+            HistoryNutrient(id: $0.id, goalType: $0.goalType, target: $0.target, upperBound: $0.upperBound,
+                            createdAt: day(10, 7), isDeleted: false)
+        }, totals: late, today: day(10, 12), calendar: calendar)
+        let lateRecap = WeeklyRecap.build(log: log, names: names, week: day(10, 5), streaksEnabled: false)
+        XCTAssertEqual(RecapText(lateRecap, calendar: calendar).summary, "You met every goal on all 5 days.")
     }
 
     func testSeveralNutrientsEveryDay() {
@@ -226,6 +246,22 @@ final class WeeklyRecapTests: XCTestCase {
         XCTAssertEqual(failed, text.summary, "a model error keeps the template")
         let none = await RecapPhrasing.summary(for: text, model: nil, store: freshStore())
         XCTAssertEqual(none, text.summary)
+    }
+
+    func testSpelledOutNumbersAreChecked() {
+        let text = RecapText(recap(designWeek, today: day(10, 12)), calendar: calendar)
+        XCTAssertFalse(RecapPhrasing.isAcceptable("You hit Vitamin D seven of nine days.", for: text), "nine isn't a fact")
+        XCTAssertTrue(RecapPhrasing.isAcceptable("You hit Vitamin D seven of seven days.", for: text))
+    }
+
+    func testARejectedRewordingKeepsTheTemplateForTheWeek() async {
+        let text = RecapText(recap(designWeek, today: day(10, 12)), calendar: calendar)
+        let store = freshStore()
+        let rejected = await RecapPhrasing.summary(for: text, model: StubModel(text: "Try harder, Vitamin D."), store: store)
+        XCTAssertEqual(rejected, text.summary)
+        let later = await RecapPhrasing.summary(for: text, model: StubModel(text: "Vitamin D held all 7 days."),
+                                                store: store)
+        XCTAssertEqual(later, text.summary, "the words don't change between opens")
     }
 
     func testNumbersInNamesAreFacts() {
