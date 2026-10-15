@@ -25,6 +25,9 @@ final class NutrientDraft {
     var servingForm: String?
     /// Stacks to put a new nutrient in when it's added (existing ones, or new ones to create with it).
     var pendingStacks: [StackLogging.Choice] = []
+    /// A scanned label's ingredient rows ("Also on this label"), and the ones already added from it.
+    var labelIngredients: [LabelIngredient] = []
+    var addedFromLabel: [String] = []
 
     /// The fields "Scan a label" fills.
     enum ScannedField: Hashable, CaseIterable {
@@ -92,6 +95,8 @@ final class NutrientDraft {
         wasScanned = false
         servingForm = nil
         pendingStacks = []
+        labelIngredients = []
+        addedFromLabel = []
     }
 
     func populate(from nutrient: Nutrient) {
@@ -159,6 +164,7 @@ struct NutrientFormFields<BeforeNotes: View>: View {
         VStack(alignment: .leading, spacing: 8) {
             if draft.wasScanned {
                 scannedCard
+                alsoOnThisLabel
             } else {
                 nameAndUnit
             }
@@ -298,6 +304,43 @@ struct NutrientFormFields<BeforeNotes: View>: View {
         }
         .background(Theme.surfaceCard, in: cardShape)
         .clipShape(cardShape)
+    }
+
+    /// The label's other ingredients ("Vitamin B6 · 2.5 mg"): tapping one switches the form to it.
+    @ViewBuilder
+    private var alsoOnThisLabel: some View {
+        let others = LabelPrefill.otherIngredients(on: draft)
+        if !others.isEmpty {
+            sectionHeader("Also on this label")
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(others, id: \.self) { ingredient in
+                        Button {
+                            withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) {
+                                LabelPrefill.switchTo(ingredient, on: draft)
+                            }
+                        } label: {
+                            Text("\(ingredient.name) · \(Self.amountText(ingredient))")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Theme.textPrimary)
+                                .padding(.horizontal, 14)
+                                .frame(minHeight: Theme.minTouchTarget)
+                                .background(Theme.surfaceCard, in: Capsule())
+                                .overlay(Capsule().strokeBorder(Theme.lineHairline))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Fills the form with this ingredient instead")
+                    }
+                }
+                .padding(.horizontal, 1)
+            }
+            .scrollClipDisabled()
+        }
+    }
+
+    /// "2.5 mg", "1,000 IU".
+    static func amountText(_ ingredient: LabelIngredient) -> String {
+        "\(ingredient.amount.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)"
     }
 
     /// A text binding that marks the field as the user's once they type in it.

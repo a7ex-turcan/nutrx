@@ -10,8 +10,18 @@ struct SupplementLabel: Equatable {
     var servingsPerContainer: Int?
     /// "softgels", "capsules"… for showing "120 softgels"; not stored.
     var servingForm: String?
+    /// Every ingredient row on the facts panel with an amount ("Vitamin B6 2.5 mg", "Magnesium 200 mg"), for
+    /// "Also on this label". Nutrition rows (calories, fat, sodium…) aren't ingredients.
+    var ingredients: [LabelIngredient] = []
 
     var isEmpty: Bool { name == nil && unit == nil && amountPerServing == nil && servingsPerContainer == nil }
+}
+
+/// One ingredient row of a facts panel: "Magnesium 200 mg".
+struct LabelIngredient: Equatable, Hashable {
+    let name: String
+    let amount: Double
+    let unit: String
 }
 
 /// The rule-based reader: used on its own on devices without Apple Intelligence, and to fill whatever the on-device
@@ -22,6 +32,7 @@ enum LabelParser {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         var label = SupplementLabel()
+        label.ingredients = ingredients(in: factsLines(lines))
         label.name = name(in: lines)
         let (amount, unit) = amountAndUnit(in: lines, name: label.name)
         label.amountPerServing = amount
@@ -50,17 +61,101 @@ enum LabelParser {
                                       "warning", "keep out of reach", "store in", "manufactured", "distributed"]
 
     static func name(in lines: [String]) -> String? {
-        // Above the facts panel first, where the product's name is: a known supplement, else a title line. Only then
-        // a known name inside the facts, so an unknown blend listing "Melatonin 3 mg" isn't named after it.
-        let factsIndex = lines.firstIndex { $0.lowercased().contains("supplement facts") } ?? lines.count
-        let above = Array(lines.prefix(factsIndex))
-        return knownName(in: above) ?? titleLine(in: above) ?? knownName(in: Array(lines.dropFirst(factsIndex)))
+        // Above the facts panel first, where the product's name is: a known supplement, else a title line. A photo of
+        // just the facts panel has none, so then the main ingredient row names it (Magnesium 200 mg over Vitamin B6
+        // 2.5 mg), and only then a known name anywhere in the facts.
+        let factsIndex = factsHeaderIndex(lines) ?? lines.count
+        return nameAboveFacts(lines)
+            ?? mainIngredient(ingredients(in: factsLines(lines)))?.name
+            ?? knownName(in: Array(lines.dropFirst(factsIndex)))
+    }
+
+    /// Where the facts panel starts: "Supplement Facts" (text recognition can drop the space: "SupplementFacts"), or
+    /// failing that "Amount Per Serving".
+    static func factsHeaderIndex(_ lines: [String]) -> Int? {
+        func squeezed(_ line: String) -> String { line.lowercased().replacingOccurrences(of: " ", with: "") }
+        return lines.firstIndex { squeezed($0).contains("supplementfacts") }
+            ?? lines.firstIndex { squeezed($0).contains("amountperserving") }
+    }
+
+    /// The product's name from above the facts panel, if the label shows one there. Sentences ("Avoid taking with
+    /// other foods containing protein…") aren't names, so only short lines count.
+    static func nameAboveFacts(_ lines: [String]) -> String? {
+        let factsIndex = factsHeaderIndex(lines) ?? lines.count
+        let above = lines.prefix(factsIndex).filter { $0.count <= 32 }
+        return knownName(in: above) ?? titleLine(in: above)
+    }
+
+    // MARK: - Ingredient rows
+
+    /// Nutrition rows a facts panel can start with; not what the product is, unless they're all there is (a protein
+    /// powder).
+    private static let nutritionRows = ["calories", "total fat", "saturated fat", "trans fat", "cholesterol", "sodium",
+                                        "total carbohydrate", "carbohydrate", "dietary fiber", "total sugars",
+                                        "sugars", "added sugars", "protein"]
+
+    /// The facts panel's ingredient rows with an amount, in order, named the way the form would ("Total Omega-3s"
+    /// → Omega-3, "Hydrolyzed Bovine Collagen Peptides" → Collagen, "Benfotiamine" as printed).
+    static func ingredients(in factsLines: [String]) -> [LabelIngredient] {
+        rows(in: factsLines).filter { !$0.isNutrition }.map(\.ingredient)
+    }
+
+    /// The main ingredient when the product's name isn't printed above the facts: omega-3 over the fish oil it comes
+    /// from, else the largest amount by weight (Magnesium 200 mg over Vitamin B6 2.5 mg, Collagen 3 g over Vitamin C
+    /// 30 mg). Nutrition rows only when there's nothing else (Protein 25 g on a protein powder).
+    static func mainIngredient(_ ingredients: [LabelIngredient], nutrition: [LabelIngredient] = []) -> LabelIngredient? {
+        let pool = ingredients.isEmpty ? nutrition : ingredients
+        if let omega = pool.first(where: { $0.name == "Omega-3" }) { return omega }
+        let byWeight = pool.compactMap { item in milligrams(item).map { (item, $0) } }
+        if let heaviest = byWeight.enumerated().max(by: { a, b in
+            a.element.1 != b.element.1 ? a.element.1 < b.element.1 : a.offset > b.offset
+        }) {
+            return heaviest.element.0
+        }
+        return pool.first
+    }
+
+    private static func milligrams(_ item: LabelIngredient) -> Double? {
+        switch item.unit {
+        case "g": item.amount * 1000
+        case "mg": item.amount
+        case "mcg": item.amount / 1000
+        default: nil
+        }
+    }
+
+    private struct Row {
+        let ingredient: LabelIngredient
+        let isNutrition: Bool
+    }
+
+    /// Lines of the form "<name> <amount> <unit> …": the name is what comes before the first amount, without
+    /// brackets and marks; footnotes ("Less than 5 mg of cholesterol", "Daily Value…") aren't rows.
+    private static func rows(in lines: [String]) -> [Row] {
+        guard let regex = try? NSRegularExpression(pattern: amountPattern, options: [.caseInsensitive]) else { return [] }
+        return lines.compactMap { line in
+            guard let match = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
+                  let range = Range(match.range, in: line), let amount = preferredAmount(in: line) else { return nil }
+            var label = String(line[..<range.lowerBound])
+            label = label.replacingOccurrences(of: #"\([^)]*\)?"#, with: " ", options: .regularExpression)
+            label = label.components(separatedBy: CharacterSet.letters.union(.decimalDigits)
+                .union(CharacterSet(charactersIn: " -")).inverted).joined()
+                .trimmingCharacters(in: .whitespaces)
+            let lower = label.lowercased()
+            guard label.filter(\.isLetter).count >= 3,
+                  !["daily value", "percent", "less than", "serving", "calorie diet"].contains(where: lower.contains)
+            else { return nil }
+            let name = knownName(in: [label]) ?? titleCased(label)
+            return Row(ingredient: LabelIngredient(name: name, amount: amount.0, unit: amount.1),
+                       isNutrition: nutritionRows.contains { lower.hasPrefix($0) })
+        }
     }
 
     /// The first known supplement name in reading order.
     private static func knownName(in lines: [String]) -> String? {
         for line in lines {
-            let lower = line.lowercased()
+            // "Omega-3s" is omega-3 ("Total Omega-3s 1,280 mg").
+            let lower = line.lowercased().replacingOccurrences(of: "omega-3s", with: "omega-3 ")
             // The name that comes first in the line ("Omega-3 Fish Oil" → Omega-3); the longer one on a tie
             // ("Vitamin D3" over "Vitamin D").
             let hits = knownNames.compactMap { known -> (String, String.Index)? in
@@ -135,25 +230,48 @@ enum LabelParser {
     private static let amountPattern = "(" + numberPattern + #")\s*(mcg|µg|ug|mg|g|iu)\b"#
 
     static func amountAndUnit(in lines: [String], name: String?) -> (Double?, String?) {
-        let factsStart = lines.firstIndex { $0.lowercased().contains("supplement facts") || $0.lowercased().contains("amount per serving") } ?? 0
-        let candidates = lines.enumerated().filter { index, line in
+        let candidates = factsLines(lines)
+        // The line naming the product first, then the first amount in the facts.
+        if let named = namedAmount(in: candidates, name: name) { return (named.0, named.1) }
+        for line in candidates {
+            if let amount = preferredAmount(in: line) { return (amount.0, amount.1) }
+        }
+        return (nil, nil)
+    }
+
+    /// The amount on the facts line for the ingredient the product is named after, if there is one: a line with the
+    /// name ("Vitamin D3 … 1,000 IU"), else one starting with its main word ("Magnesium 200 mg" for Magnesium
+    /// Glycinate, whose "(as magnesium glycinate)" line has no amount). Not other ingredients ("Vitamin B6 2.5 mg"),
+    /// which come first on many labels.
+    static func namedAmount(in lines: [String], name: String?) -> (Double, String)? {
+        guard let name = name?.lowercased() else { return nil }
+        let words = name.components(separatedBy: " ").filter { !$0.isEmpty }
+        let keyword = words.prefix(2).joined(separator: " ")
+        // "Vitamin D3" can't fall back to "vitamin": that's every vitamin on the panel.
+        let head = words.first == "vitamin" ? keyword : (words.first ?? keyword)
+        let withName = lines.filter { $0.lowercased().contains(keyword) }
+        let startingWithHead = lines.filter { $0.lowercased().hasPrefix(head) }
+        for line in withName + startingWithHead {
+            if let amount = preferredAmount(in: line) { return amount }
+        }
+        return nil
+    }
+
+    /// The facts panel's lines with an amount worth reading: from "Supplement Facts" (or "Amount per serving") on,
+    /// without serving size, calories, fat, carbohydrate or sodium.
+    static func factsLines(_ lines: [String]) -> [String] {
+        let factsStart = factsHeaderIndex(lines) ?? 0
+        return lines.enumerated().filter { index, line in
             let lower = line.lowercased()
             return index >= factsStart && !lower.contains("serving size") && !lower.contains("calories")
                 && !lower.hasPrefix("total fat") && !lower.hasPrefix("total carbohydrate") && !lower.hasPrefix("sodium")
         }.map(\.element)
-        let keyword = name.map { $0.lowercased().components(separatedBy: " ").prefix(2).joined(separator: " ") }
+    }
 
-        // The line naming the product first ("Vitamin D3 … 1,000 IU"), then the first amount in the facts.
-        let ordered = candidates.filter { line in keyword.map { line.lowercased().contains($0) } ?? false }
-            + candidates
-        for line in ordered {
-            let matches = amounts(in: line)
-            guard !matches.isEmpty else { continue }
-            // "25 mcg (1,000 IU)": IU is what people log.
-            if let iu = matches.first(where: { $0.1 == "IU" }) { return (iu.0, iu.1) }
-            return (matches[0].0, matches[0].1)
-        }
-        return (nil, nil)
+    /// A line's amount, IU first ("25 mcg (1,000 IU)": IU is what people log).
+    private static func preferredAmount(in line: String) -> (Double, String)? {
+        let matches = amounts(in: line)
+        return matches.first { $0.1 == "IU" } ?? matches.first
     }
 
     static func amounts(in line: String) -> [(Double, String)] {

@@ -40,7 +40,21 @@ enum LabelExtractor {
         let parsed = LabelParser.parse(text)
         guard let model else { return Result(label: parsed, usedModel: false) }
         guard let read = try? await model.read(text) else { return Result(label: parsed, usedModel: false) }
-        return Result(label: merge(checked(read, against: text), parsed), usedModel: true)
+        var label = merge(checked(read, against: text), parsed)
+        let lines = text.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        // A photo of just the facts panel prints no product name: the parser's main-ingredient rule (omega-3 over
+        // fish oil, the largest amount) names it, not the model's guess.
+        if LabelParser.nameAboveFacts(lines) == nil, let main = parsed.name {
+            label.name = main
+        }
+        // A facts line for the ingredient the product is named after is clearer than the model's pick, which can be
+        // another ingredient listed first (Vitamin B6 on a Magnesium Glycinate label).
+        if let named = LabelParser.namedAmount(in: LabelParser.factsLines(lines), name: label.name) {
+            label.amountPerServing = named.0
+            label.unit = named.1
+        }
+        return Result(label: label, usedModel: true)
     }
 
     /// The model when it's available, else nil (the parser alone).
@@ -93,7 +107,8 @@ enum LabelExtractor {
                         unit: primary.unit ?? fallback.unit,
                         amountPerServing: primary.amountPerServing ?? fallback.amountPerServing,
                         servingsPerContainer: primary.servingsPerContainer ?? fallback.servingsPerContainer,
-                        servingForm: primary.servingForm ?? fallback.servingForm)
+                        servingForm: primary.servingForm ?? fallback.servingForm,
+                        ingredients: primary.ingredients.isEmpty ? fallback.ingredients : primary.ingredients)
     }
 }
 
@@ -102,11 +117,11 @@ enum LabelExtractor {
 /// What the model fills in. Optional fields: it leaves out what the label doesn't say rather than guessing.
 @Generable
 struct GeneratedLabel {
-    @Guide(description: "The supplement's name as printed, e.g. \"Vitamin D3\" or \"Magnesium Glycinate\". Not the brand.")
+    @Guide(description: "The supplement's name as printed above the facts panel, e.g. \"Vitamin D3\" or \"Magnesium Glycinate\". Not the brand. If only the facts panel is shown, its main ingredient: Omega-3 rather than the fish oil it comes from, otherwise the largest amount.")
     var name: String?
-    @Guide(description: "The unit of the main ingredient's amount per serving: IU, mcg, mg or g. Prefer IU when both IU and mcg are given.")
+    @Guide(description: "The unit of that ingredient's amount per serving: IU, mcg, mg or g. Prefer IU when both IU and mcg are given.")
     var unit: String?
-    @Guide(description: "The main ingredient's amount in one serving, as a number, e.g. 1000 for \"1,000 IU\".")
+    @Guide(description: "The amount in one serving of the ingredient the product is named after, as a number: 200 for \"Magnesium 200 mg\" on a Magnesium Glycinate label, not another ingredient such as Vitamin B6. 1000 for \"1,000 IU\".")
     var amountPerServing: Double?
     @Guide(description: "Servings per container, as a number, e.g. 120.")
     var servingsPerContainer: Int?
