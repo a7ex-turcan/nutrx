@@ -65,8 +65,10 @@ enum LabelParser {
         // just the facts panel has none, so then the main ingredient row names it (Magnesium 200 mg over Vitamin B6
         // 2.5 mg), and only then a known name anywhere in the facts.
         let factsIndex = factsHeaderIndex(lines) ?? lines.count
+        let facts = rows(in: factsLines(lines))
         return nameAboveFacts(lines)
-            ?? mainIngredient(ingredients(in: factsLines(lines)))?.name
+            ?? mainIngredient(facts.filter { !$0.isNutrition }.map(\.ingredient),
+                              nutrition: facts.filter(\.isNutrition).map(\.ingredient))?.name
             ?? knownName(in: Array(lines.dropFirst(factsIndex)))
     }
 
@@ -79,11 +81,18 @@ enum LabelParser {
     }
 
     /// The product's name from above the facts panel, if the label shows one there. Sentences ("Avoid taking with
-    /// other foods containing protein…") aren't names, so only short lines count.
+    /// other foods containing protein…", "…collagen absorption.") aren't names; a long front-panel line ("Extra
+    /// Strength Vitamin D3 1000 IU Softgels") still is.
     static func nameAboveFacts(_ lines: [String]) -> String? {
         let factsIndex = factsHeaderIndex(lines) ?? lines.count
-        let above = lines.prefix(factsIndex).filter { $0.count <= 32 }
+        let above = lines.prefix(factsIndex).filter { !isSentence($0) }
         return knownName(in: above) ?? titleLine(in: above)
+    }
+
+    private static func isSentence(_ line: String) -> Bool {
+        let lower = line.lowercased()
+        return line.count > 48 || [".", "!", "?", ",", ";", ":"].contains { line.hasSuffix($0) }
+            || ["suggested use", "directions", "warning"].contains(where: lower.hasPrefix)
     }
 
     // MARK: - Ingredient rows
@@ -249,8 +258,13 @@ enum LabelParser {
         let keyword = words.prefix(2).joined(separator: " ")
         // "Vitamin D3" can't fall back to "vitamin": that's every vitamin on the panel.
         let head = words.first == "vitamin" ? keyword : (words.first ?? keyword)
-        let withName = lines.filter { $0.lowercased().contains(keyword) }
-        let startingWithHead = lines.filter { $0.lowercased().hasPrefix(head) }
+        // Whole words: "vitamin b" (B Complex) isn't "Vitamin B6".
+        func has(_ phrase: String, in line: String, atStart: Bool) -> Bool {
+            let pattern = (atStart ? "^" : "\\b") + NSRegularExpression.escapedPattern(for: phrase) + "\\b"
+            return line.lowercased().range(of: pattern, options: .regularExpression) != nil
+        }
+        let withName = lines.filter { has(keyword, in: $0, atStart: false) }
+        let startingWithHead = lines.filter { has(head, in: $0, atStart: true) }
         for line in withName + startingWithHead {
             if let amount = preferredAmount(in: line) { return amount }
         }

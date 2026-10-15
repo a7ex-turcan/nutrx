@@ -327,6 +327,31 @@ final class LabelParserTests: XCTestCase {
             """, name: "Magnesium", unit: "mg", amount: 200, servings: nil)
     }
 
+    func testAProteinPowdersBackPanelIsProtein() {
+        assertLabel("""
+            Supplement Facts
+            Servings Per Container 30
+            Calories 120
+            Total Fat 2 g
+            Protein 25 g
+            Sodium 50 mg
+            """, name: "Protein", unit: "g", amount: 25, servings: 30)
+    }
+
+    func testALongFrontPanelLineStillNamesTheProduct() {
+        assertLabel("""
+            Extra Strength Vitamin D3 1000 IU Softgels
+            Supplement Facts
+            Servings Per Container 120
+            Vitamin K2 (as MK-7) 100 mcg
+            Vitamin D3 25 mcg (1,000 IU)
+            """, name: "Vitamin D3", unit: "IU", amount: 1000, servings: 120)
+    }
+
+    func testBComplexDoesntTakeVitaminB6sAmount() {
+        XCTAssertNil(LabelParser.namedAmount(in: ["Vitamin B6 2.5 mg"], name: "Vitamin B Complex"))
+    }
+
     func testAFactsPanelsIngredientsAreListedWithoutNutritionRows() {
         let label = LabelParser.parse("""
             Suggested Use: Take 3 tablets twice daily, on an empty stomach at least 1 hour before or 2 hours after meals. Best

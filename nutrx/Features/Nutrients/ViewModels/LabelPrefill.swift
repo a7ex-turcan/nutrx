@@ -36,6 +36,7 @@ enum LabelPrefill {
         }
         draft.servingForm = label.servingForm
         draft.labelIngredients = label.ingredients
+        draft.labelIngredientName = label.name
         draft.markScanned(read: read)
     }
 
@@ -43,7 +44,8 @@ enum LabelPrefill {
 
     /// The label's other ingredients, for "Also on this label": not the one the form has now, nor ones already added.
     static func otherIngredients(on draft: NutrientDraft) -> [LabelIngredient] {
-        let taken = Set((draft.addedFromLabel + [draft.name]).map { $0.trimmingCharacters(in: .whitespaces).lowercased() })
+        let current = draft.labelIngredientName ?? draft.name
+        let taken = Set((draft.addedFromLabel + [current]).map { $0.trimmingCharacters(in: .whitespaces).lowercased() })
         var seen = Set<String>()
         return draft.labelIngredients.filter { ingredient in
             let key = ingredient.name.lowercased()
@@ -55,6 +57,7 @@ enum LabelPrefill {
     /// the bottle's servings, the goal and everything else the user set stay.
     static func switchTo(_ ingredient: LabelIngredient, on draft: NutrientDraft) {
         draft.name = ingredient.name
+        draft.labelIngredientName = ingredient.name
         draft.unit = ingredient.unit
         draft.step = NutrientDraft.editableText(ingredient.amount)
         if let known = StartingPoint.all.first(where: { ingredient.name.localizedCaseInsensitiveContains($0.name) }) {
@@ -69,7 +72,7 @@ enum LabelPrefill {
     /// After adding one nutrient from a label, the form starts on the next ingredient: a new nutrient (no goal,
     /// reminders or notes yet) from the same bottle, in the same stacks.
     static func startNext(_ ingredient: LabelIngredient, on draft: NutrientDraft) {
-        let added = draft.addedFromLabel + [draft.name]
+        let added = draft.addedFromLabel + [draft.labelIngredientName ?? draft.name]
         let (ingredients, stacks) = (draft.labelIngredients, draft.pendingStacks)
         let (servings, form, tint, symbol) = (draft.supplyServings, draft.servingForm, draft.tint, draft.symbolName)
         // The bottle size keeps its state: read from the label, typed by the user, or still to fill in.

@@ -339,6 +339,15 @@ final class LabelScanTests: XCTestCase {
         XCTAssertEqual(LabelPrefill.otherIngredients(on: draft).map(\.name), ["Benfotiamine"], "Magnesium is added already")
     }
 
+    func testARenamedIngredientIsntOfferedAgain() {
+        let draft = NutrientDraft()
+        LabelPrefill.apply(magnesiumLabel, to: draft)
+        draft.name = "Magnesium Glycinate"
+        XCTAssertEqual(LabelPrefill.otherIngredients(on: draft).map(\.name), ["Vitamin B6", "Benfotiamine"])
+        LabelPrefill.startNext(LabelIngredient(name: "Vitamin B6", amount: 2.5, unit: "mg"), on: draft)
+        XCTAssertEqual(LabelPrefill.otherIngredients(on: draft).map(\.name), ["Benfotiamine"])
+    }
+
     func testATypedBottleSizeIsntMarkedFromLabelForTheNextIngredient() {
         let draft = NutrientDraft()
         var label = magnesiumLabel

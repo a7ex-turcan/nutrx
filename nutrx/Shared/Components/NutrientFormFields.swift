@@ -28,6 +28,8 @@ final class NutrientDraft {
     /// A scanned label's ingredient rows ("Also on this label"), and the ones already added from it.
     var labelIngredients: [LabelIngredient] = []
     var addedFromLabel: [String] = []
+    /// The label's ingredient the form was filled with, whatever the name is edited to.
+    var labelIngredientName: String?
 
     /// The fields "Scan a label" fills.
     enum ScannedField: Hashable, CaseIterable {
@@ -97,6 +99,7 @@ final class NutrientDraft {
         pendingStacks = []
         labelIngredients = []
         addedFromLabel = []
+        labelIngredientName = nil
     }
 
     func populate(from nutrient: Nutrient) {
