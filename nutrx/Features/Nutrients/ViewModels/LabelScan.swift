@@ -1,10 +1,21 @@
 import CoreGraphics
 import ImageIO
+import os
 import UIKit
 
 /// From a photo of a label to what the form fills in (nutrx Pro, docs/pro/PLAN.md phase 5): text recognition, then
 /// the on-device model or the parser. All on the device.
 enum LabelScan {
+    static let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "LabelScan")
+
+    /// What the live scanner's text says, or nil when it gives nothing usable.
+    static func read(text: String) async -> SupplementLabel? {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        let label = await LabelExtractor.extract(from: text).label
+        logger.info("Live text: \(text.count) characters, \(label.isEmpty ? "nothing read" : "read", privacy: .public)")
+        return label.isEmpty ? nil : label
+    }
+
     /// What was read, or nil when the photo gave nothing usable ("Couldn't read this label").
     static func read(_ image: CGImage, orientation: CGImagePropertyOrientation) async -> SupplementLabel? {
         guard let text = try? await LabelTextRecognizer.text(in: image, orientation: orientation),

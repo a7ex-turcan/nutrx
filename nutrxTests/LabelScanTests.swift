@@ -240,4 +240,27 @@ final class LabelScanTests: XCTestCase {
         let label = await LabelScan.read(image, orientation: .up)
         XCTAssertNil(label, "\"Couldn't read this label\"")
     }
+
+    // MARK: - Live scanner text
+
+    func testLiveScannerPiecesBecomeRowsTopToBottom() {
+        // VisionKit's bounds: view points, y grows downwards; "1,000 IU" sits on the same line as "Vitamin D3".
+        func piece(_ text: String, x: CGFloat, y: CGFloat, width: CGFloat = 120, height: CGFloat = 20) -> LabelTextRecognizer.Piece {
+            LabelTextRecognizer.piece(text, topLeft: CGPoint(x: x, y: y), topRight: CGPoint(x: x + width, y: y),
+                                      bottomLeft: CGPoint(x: x, y: y + height),
+                                      bottomRight: CGPoint(x: x + width, y: y + height))
+        }
+        let pieces = [piece("1,000 IU", x: 250, y: 301), piece("Supplement Facts", x: 40, y: 200, height: 28),
+                      piece("Vitamin D3", x: 40, y: 300), piece("Servings per container: 120", x: 40, y: 250)]
+        XCTAssertEqual(LabelTextRecognizer.rows(pieces),
+                       ["Supplement Facts", "Servings per container: 120", "Vitamin D3 1,000 IU"])
+    }
+
+    func testLiveTextIsReadLikeAPhotosText() async {
+        let label = await LabelScan.read(text: "VITAMIN D3\nSupplement Facts\nServings per container: 120\nVitamin D3 1,000 IU")
+        XCTAssertEqual(label?.amountPerServing, 1000)
+        XCTAssertEqual(label?.servingsPerContainer, 120)
+        let nothing = await LabelScan.read(text: "  ")
+        XCTAssertNil(nothing)
+    }
 }

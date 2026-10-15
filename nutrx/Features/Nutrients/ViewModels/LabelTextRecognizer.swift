@@ -27,6 +27,15 @@ enum LabelTextRecognizer {
         let height: CGFloat
     }
 
+    /// A live-scanner piece (VisionKit: view points, origin top left) in Vision's terms (origin bottom left, so a
+    /// higher piece has a larger `midY`). The scale doesn't matter: rows only compare pieces with each other.
+    static func piece(_ text: String, topLeft: CGPoint, topRight: CGPoint, bottomLeft: CGPoint,
+                      bottomRight: CGPoint) -> Piece {
+        let midY = (topLeft.y + topRight.y + bottomLeft.y + bottomRight.y) / 4
+        let height = abs((bottomLeft.y + bottomRight.y) / 2 - (topLeft.y + topRight.y) / 2)
+        return Piece(text: text, midY: -midY, minX: min(topLeft.x, bottomLeft.x), height: height)
+    }
+
     /// Pieces whose centres are within half a line of each other form a row; rows top to bottom, pieces left to right.
     static func rows(_ pieces: [Piece]) -> [String] {
         var rows: [[Piece]] = []

@@ -1,4 +1,5 @@
 import AVFoundation
+import os
 import PhotosUI
 import SwiftUI
 import VisionKit
@@ -38,6 +39,7 @@ struct LabelScannerView: View {
                     .accessibilityHidden(true)
             case .unsupported, .denied:
                 unavailablePanel
+                    .disabled(isReading)
             }
 
             if isReading {
@@ -231,8 +233,27 @@ struct LabelScannerView: View {
 
     // MARK: - Reading
 
+    /// The shutter reads the text the scanner is already recognising (the highlighted pieces); a photo only when
+    /// there's none or it gives nothing usable. Any failure ends on "Couldn't read this label", never in silence.
     private func capture() async {
-        guard !isReading, let photo = await scanner.capturePhoto() else { return }
+        guard !isReading else { return }
+        let text = scanner.liveText()
+        if !text.isEmpty {
+            scanner.pause()
+            isReading = true
+            AccessibilityNotification.Announcement(ScanText.reading).post()
+            if let label = await LabelScan.read(text: text) {
+                isReading = false
+                onRead(label)
+                dismiss()
+                return
+            }
+            isReading = false
+        }
+        guard let photo = await scanner.capturePhoto() else {
+            showFailure = true
+            return
+        }
         await read(photo)
     }
 
@@ -279,15 +300,52 @@ struct LabelScannerView: View {
 
 // MARK: - VisionKit
 
-/// The scanner's controls, held by the SwiftUI view: VisionKit's controller is created by the representable.
+/// The scanner's controls, held by the SwiftUI view: VisionKit's controller is created by the representable. As its
+/// delegate it keeps the items being recognised, which the shutter reads.
 @MainActor
-final class ScannerHandle {
+final class ScannerHandle: NSObject, DataScannerViewControllerDelegate {
     fileprivate weak var controller: DataScannerViewController?
+    private var items: [RecognizedItem] = []
 
     var hasTorch: Bool { AVCaptureDevice.default(for: .video)?.hasTorch ?? false }
 
+    /// The recognised text, row by row as printed (VisionKit's bounds are in view points, origin top left).
+    func liveText() -> String {
+        let pieces = items.compactMap { item -> LabelTextRecognizer.Piece? in
+            guard case .text(let text) = item else { return nil }
+            let b = text.bounds
+            return LabelTextRecognizer.piece(text.transcript, topLeft: b.topLeft, topRight: b.topRight,
+                                             bottomLeft: b.bottomLeft, bottomRight: b.bottomRight)
+        }
+        return LabelTextRecognizer.rows(pieces).joined(separator: "\n")
+    }
+
     func capturePhoto() async -> UIImage? {
-        try? await controller?.capturePhoto()
+        guard let controller else {
+            LabelScan.logger.error("Shutter: no scanner to take a photo with")
+            return nil
+        }
+        do {
+            return try await controller.capturePhoto()
+        } catch {
+            LabelScan.logger.error("Shutter: photo failed: \(String(describing: error), privacy: .public)")
+            return nil
+        }
+    }
+
+    func dataScanner(_ dataScanner: DataScannerViewController, didAdd addedItems: [RecognizedItem],
+                     allItems: [RecognizedItem]) {
+        items = allItems
+    }
+
+    func dataScanner(_ dataScanner: DataScannerViewController, didUpdate updatedItems: [RecognizedItem],
+                     allItems: [RecognizedItem]) {
+        items = allItems
+    }
+
+    func dataScanner(_ dataScanner: DataScannerViewController, didRemove removedItems: [RecognizedItem],
+                     allItems: [RecognizedItem]) {
+        items = allItems
     }
 
     func pause() { controller?.stopScanning() }
@@ -318,7 +376,12 @@ private struct DataScannerView: UIViewControllerRepresentable {
             isHighlightingEnabled: true
         )
         handle.controller = controller
-        try? controller.startScanning()
+        controller.delegate = handle
+        do {
+            try controller.startScanning()
+        } catch {
+            LabelScan.logger.error("Scanner didn't start: \(String(describing: error), privacy: .public)")
+        }
         return controller
     }
 
