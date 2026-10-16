@@ -49,6 +49,11 @@ enum HealthInsights {
             case gathering, ready
         }
 
+        /// The device's flags for a hidden card. No "health" in them: `HealthPrivacyTests` allows only the Health
+        /// switch among keys that mention it, and these are UI flags.
+        static let hiddenGatheringKey = "nutrx.hidesInsightsGatheringCard"
+        static let hiddenReadyKey = "nutrx.hidesInsightsReadyCard"
+
         /// The status to show: Pro, gathering or ready, and that card not hidden. Nil otherwise.
         static func visible(_ status: Status?, isPro: Bool, hidden: Set<Hidden>) -> Status? {
             guard isPro, let status else { return nil }

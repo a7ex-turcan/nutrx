@@ -71,7 +71,7 @@ final class HealthInsightsTests: XCTestCase {
 
     func testTheCardsFlagsStayOutOfTheHealthPrivacyCheck() {
         // HealthPrivacyTests allows only the Health switch among keys mentioning "health".
-        for key in ["nutrx.hidesInsightsGatheringCard", "nutrx.hidesInsightsReadyCard"] {
+        for key in [HealthInsights.TodayCard.hiddenGatheringKey, HealthInsights.TodayCard.hiddenReadyKey] {
             XCTAssertFalse(key.lowercased().contains("health"), key)
         }
     }

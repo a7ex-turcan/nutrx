@@ -23,9 +23,8 @@ struct TodayView: View {
     @State private var healthStatus: HealthInsights.Status?
     /// Bumped on every appearance, so the Health status is read again after connecting elsewhere (Settings, analytics).
     @State private var healthRefreshTick = 0
-    // Not "health" in the keys: HealthPrivacyTests allows only the Health switch to be stored, and these are UI flags.
-    @AppStorage("nutrx.hidesInsightsGatheringCard") private var hidesInsightsGatheringCard = false
-    @AppStorage("nutrx.hidesInsightsReadyCard") private var hidesInsightsReadyCard = false
+    @AppStorage(HealthInsights.TodayCard.hiddenGatheringKey) private var hidesInsightsGatheringCard = false
+    @AppStorage(HealthInsights.TodayCard.hiddenReadyKey) private var hidesInsightsReadyCard = false
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
