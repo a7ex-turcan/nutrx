@@ -187,6 +187,8 @@ nutrx/
 │   │       ├── LabelTextRecognizer.swift        # Vision text recognition, pieces joined into rows.
 │   │       ├── LabelScan.swift                  # Photo → label (recognise, extract; nil = couldn't read) + ScanText copy.
 │   │       ├── WeekdayPattern.swift             # Per-weekday hit rate over the last 28 days, weakest-day insight, heatmap fill levels (pure).
+│   │       ├── HealthTrends.swift               # Health trends (Pro): HealthDay + findings vs sleep, workouts, active energy (pure).
+│   │       ├── HealthText.swift                 # "With Apple Health" card copy: findings, bars, basis, states (pure).
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       └── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │
@@ -781,6 +783,19 @@ Mockups: `docs/pro/design/5-weekly-recap/`.
 - **Today:** `RecapTodayCard` ("Your week", a goals ring, "**31** of 42 goals · Vitamin D steadiest", ✕) right under the day-score card, for Pro users from the recap's Sunday 18:00 through Monday when the week has data: `RecapSchedule.todayCardWeek` (pure, tested) picks the week, `RecapViewModel.recap(forWeek:…)` reads only that week's entries (`HistoryViewModel.loadLog(from:)`). ✕ hides it for that week (`@AppStorage("nutrx.dismissedRecapWeek")`). Tapping opens the recap in a sheet with Done. In Debug builds `simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.showRecapCard -bool YES` shows it on any day.
 - **Notification** (`RecapSchedule`, scheduled by `NotificationService` with the other reminders): "Your week in nutrx" at the coming Sunday 18:00, for Pro users with Settings → Notifications → **Weekly recap** on (per device, `nutrx.weeklyRecapNotifications`, on by default; the switch shows on only while notifications are allowed, and turning it on asks for permission), once something was logged that week. The sync runs after every log, so it reads only the coming week's entries. The body has the numbers ("You hit 31 of 42 goals. Vitamin D was your steadiest.") only when set up on that Sunday; earlier it reads "See what you hit this week and what slipped." It takes one slot of the 60, and an unknown entitlement keeps a pending one (as for refills). Category `nutrx.recap`: tapping sets `NotificationRouter.showsRecap` (Today → History, which pushes the recap, rebuilt with a new `.id` so it opens on the newest week even over an older one; only while Pro, checking the entitlement first on a cold launch); **Turn off weekly recaps** turns the setting off and resyncs. Shown as a banner while the app is open. Test with `simctl push` and `"category":"nutrx.recap"`.
 - **Paywall:** Weekly recap is shipped (tagline "Supply, label scan and recaps"). Without Apple Intelligence its row adds "ⓘ Simpler wording on this iPhone" (`ProText.appleIntelligenceRowNote`), and the list's note names label scanning and recaps.
+
+### nutrx Pro: Trends with Apple Health (phase 7)
+
+Mockups: `docs/pro/design/6-health-trends/`. The engine and its words come first; reading HealthKit, the permission screen, Settings → Apple Health and the analytics card follow in a separate PR.
+- **`HealthDay`:** one day of Apple Health as read: minutes asleep the night after the day, whether there was a workout, active energy (kcal). Read live into memory, never stored in SwiftData or iCloud, never in widgets.
+- **`HealthTrends.state`** (pure, `HealthTrendsTests`) over the last 28 completed days:
+  - A **paired day** has the nutrient tracked (on or after `createdAt`), something logged in nutrx that day (so a day the app wasn't used isn't 0) and Health data.
+  - **States:** `noHealthData` (Health has nothing for the four weeks), `notEnoughData(pairedDays:)` under 14 paired days ("9 of 14 days"), `noPattern(checkedDays:)`, or `findings`.
+  - **Sleep:** sleep after days over the threshold vs other days. The threshold is three quarters of an "at most" limit (300 mg of 400, "nearing"), else the goal met (`AnalyticsGoal.isMet`, so a day above a range's maximum isn't "goal met"). It counts when the gap is at least 20 minutes.
+  - **Workouts:** intake on workout days vs rest days, counted when the gap is at least 15% of the average intake. Without a workout finding, **active energy**: days at or above the median vs below.
+  - Every group needs at least 4 days. Findings come sleep first, at most two.
+- **`HealthText`:** "On days Caffeine passes 300 mg, you seem to sleep about 40 minutes less on average.", "On days you work out, you log about 80 mg more Caffeine on average.", the bars' labels and values ("Over 300 mg" 6 h 35 / "Other days" 7 h 15), the basis ("Based on 9 days over 300 mg and 19 days under."), the states, the footer ("Patterns in your own data, not causes. Worked out on this iPhone.", naming the device) and the free teaser. "Seems to", "on average", day counts, and never a cause or advice. Amounts follow the user's locale.
+- **HealthKit doesn't tell an app whether read access was granted**, so Settings can't show "Allowed" per type as the mockup does; it shows whether data was found.
 
 ---
 
