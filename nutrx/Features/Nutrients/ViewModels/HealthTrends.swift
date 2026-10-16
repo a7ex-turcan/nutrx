@@ -23,7 +23,7 @@ enum HealthTrends {
         case noHealthData
         /// Enough days, no difference that stands out.
         case noPattern(checkedDays: Int)
-        /// One or two findings, the strongest first.
+        /// One or two findings: sleep first, then workouts (or active energy).
         case findings([Finding])
     }
 
@@ -125,7 +125,9 @@ enum HealthTrends {
         goal.goalType == .maximum ? goal.target * 0.75 : goal.target
     }
 
+    /// Over the threshold: past three quarters of an "at most" limit, or the goal met (`GoalProgress`, so a day above
+    /// a range's maximum isn't "goal met").
     private static func isOver(_ total: Double, threshold: Double, goal: AnalyticsGoal) -> Bool {
-        goal.goalType == .maximum ? total > threshold : total >= threshold
+        goal.goalType == .maximum ? total > threshold : goal.isMet(total)
     }
 }

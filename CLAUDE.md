@@ -791,10 +791,10 @@ Mockups: `docs/pro/design/6-health-trends/`. The engine and its words come first
 - **`HealthTrends.state`** (pure, `HealthTrendsTests`) over the last 28 completed days:
   - A **paired day** has the nutrient tracked (on or after `createdAt`), something logged in nutrx that day (so a day the app wasn't used isn't 0) and Health data.
   - **States:** `noHealthData` (Health has nothing for the four weeks), `notEnoughData(pairedDays:)` under 14 paired days ("9 of 14 days"), `noPattern(checkedDays:)`, or `findings`.
-  - **Sleep:** sleep after days over the threshold vs other days. The threshold is three quarters of an "at most" limit (300 mg of 400, "nearing"), else the goal (a range's minimum). It counts when the gap is at least 20 minutes.
+  - **Sleep:** sleep after days over the threshold vs other days. The threshold is three quarters of an "at most" limit (300 mg of 400, "nearing"), else the goal met (`AnalyticsGoal.isMet`, so a day above a range's maximum isn't "goal met"). It counts when the gap is at least 20 minutes.
   - **Workouts:** intake on workout days vs rest days, counted when the gap is at least 15% of the average intake. Without a workout finding, **active energy**: days at or above the median vs below.
   - Every group needs at least 4 days. Findings come sleep first, at most two.
-- **`HealthText`:** "On days Caffeine passes 300 mg, you seem to sleep about 40 minutes less on average.", "On days you work out, you log about 80 mg more Caffeine on average.", the bars' labels and values ("Over 300 mg" 6 h 35 / "Other days" 7 h 15), the basis ("Based on 9 days over 300 mg and 19 days under."), the states, the footer ("Patterns in your own data, not causes. Worked out on this iPhone.") and the free teaser. "Seems to", "on average", day counts, and never a cause or advice. Amounts follow the user's locale.
+- **`HealthText`:** "On days Caffeine passes 300 mg, you seem to sleep about 40 minutes less on average.", "On days you work out, you log about 80 mg more Caffeine on average.", the bars' labels and values ("Over 300 mg" 6 h 35 / "Other days" 7 h 15), the basis ("Based on 9 days over 300 mg and 19 days under."), the states, the footer ("Patterns in your own data, not causes. Worked out on this iPhone.", naming the device) and the free teaser. "Seems to", "on average", day counts, and never a cause or advice. Amounts follow the user's locale.
 - **HealthKit doesn't tell an app whether read access was granted**, so Settings can't show "Allowed" per type as the mockup does; it shows whether data was found.
 
 ---

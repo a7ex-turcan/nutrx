@@ -10,7 +10,9 @@ struct HealthText {
 
     static let title = "With Apple Health"
     static let period = "Last 28 days"
-    static let footer = "Patterns in your own data, not causes. Worked out on this iPhone."
+    static func footer(device: String) -> String {
+        "Patterns in your own data, not causes. Worked out on this \(device)."
+    }
     static let notEnoughData = "Trends appear after about two weeks of logging with Apple Health connected."
     static let noHealthData = "Apple Health has no sleep, workouts or active energy for the last four weeks."
 
@@ -23,7 +25,7 @@ struct HealthText {
         "\(min(pairedDays, HealthTrends.minimumPairedDays)) of \(HealthTrends.minimumPairedDays) days"
     }
 
-    func noPattern(checkedDays: Int) -> String {
+    var noPattern: String {
         "No clear pattern yet. Your \(nutrientName) looks about the same whatever your sleep and workouts."
     }
 

@@ -10,7 +10,7 @@ final class HealthTrendsTests: XCTestCase {
         return calendar
     }()
 
-    private let today = Date(timeIntervalSince1970: 1_791_590_400)  // 15 October 2026, UTC midnight
+    private let today = Date(timeIntervalSince1970: 1_791_590_400)  // 10 October 2026, UTC midnight
     private let caffeineLimit = AnalyticsGoal(goalType: .maximum, target: 400, upperBound: nil)
 
     /// The 28 completed days before today, newest first.
@@ -88,6 +88,26 @@ final class HealthTrendsTests: XCTestCase {
         XCTAssertEqual(words.basis(sleep), "Based on 10 days with the goal met and 18 days without.")
     }
 
+    func testARangesGoalMetExcludesDaysAboveItsMaximum() throws {
+        // Protein 120–160 g: days at 200 g are over the range, not "goal met", so they sit with the other days.
+        let protein = AnalyticsGoal(goalType: .range, target: 120, upperBound: 160)
+        let days = window.enumerated().map { index, day -> (Date, Double, HealthDay) in
+            switch index {
+            case 0..<8: return (day, 140, HealthDay(sleepMinutes: 460))
+            case 8..<14: return (day, 200, HealthDay(sleepMinutes: 400))
+            default: return (day, 80, HealthDay(sleepMinutes: 420))
+            }
+        }
+        guard case .findings(let findings) = state(days, goal: protein) else { return XCTFail("expected a finding") }
+        let sleep = try XCTUnwrap(findings.first { $0.kind == .sleep })
+        XCTAssertEqual(sleep.first.days, 8, "only days within the range")
+        XCTAssertEqual(sleep.second.days, 20)
+    }
+
+    func testTheFooterNamesTheDevice() {
+        XCTAssertEqual(HealthText.footer(device: "iPad"), "Patterns in your own data, not causes. Worked out on this iPad.")
+    }
+
     // MARK: - When nothing is said
 
     func testTooFewPairedDays() {
@@ -122,7 +142,7 @@ final class HealthTrendsTests: XCTestCase {
                 : (day, 305.0, HealthDay(sleepMinutes: 430))
         }
         XCTAssertEqual(state(days), .noPattern(checkedDays: 28))
-        XCTAssertEqual(text().noPattern(checkedDays: 28),
+        XCTAssertEqual(text().noPattern,
                        "No clear pattern yet. Your Caffeine looks about the same whatever your sleep and workouts.")
     }
 
