@@ -50,6 +50,7 @@ xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 1
 - **Capture** on the iPhone 6.9″ (1320×2868), iPad 13″ (2064×2752) and Apple Watch 46mm (416×496) simulators: `xcrun simctl status_bar <UDID> override --time "9:41" …`, en_US region (reboot after changing it, or the clock reads "09:41"), notifications allowed so Today shows its next-reminder line.
 - **Compose:** `swift Tools/AppStoreScreenshots/compose.swift Tools/AppStoreScreenshots/panels.json <raw dir> <out dir>`. `panels.json` sets each panel's capture, two-line headline and style (`forest`, or `light` for the dark-mode shot); the output is opaque PNG at the App Store size. `background-forest.jpg` was generated once with gpt-image-2. Watch screenshots go up as plain captures, flattened to JPEG (App Store Connect rejects an alpha channel).
 - **Header and search artwork:** `swift Tools/AppStoreScreenshots/compose-header.swift <iPhone capture> <Watch capture> <output.png> [--guides]` makes the universal 5244×2950 creative asset (headline left, Today in an iPhone + the Watch app right, inside the area both the 21:9 header and 3:2 search crops keep; `--guides` draws those crops for review). It redraws the Watch's status-bar clock as 9:41, which the Watch simulator can't override. Background: `background-forest-wide.jpg` (gpt-image-2, once). **Upload through the asset library API:** `post /v1/appAssetLibraryImages` (`category: CREATIVE_ASSETS`, `fileName`, `fileSize`, relationship `assetLibrary` = the app id) returns upload operations; PUT the parts, then `patch` it with `uploaded: true` (no checksum attribute here). Once it reaches `PREPARE_FOR_SUBMISSION`, `post /v1/appAssetLibraryPlacements` once per placement, with `placementType` `PRODUCT_PAGE_HEADER_ASSET` or `APP_STORE_SEARCH_RESULTS_ASSET`, relationships `appStoreVersionLocalization` + `image`. A universal image can back both. Check the result with the Preview on the Header and Search Results tab.
+- **The Pro panel** (`iphone-10-pro.png`, 2.1) is the paywall. Prices only load from the local StoreKit config, which applies to Xcode runs, not `simctl launch`: run from Xcode on the 6.9″ simulator with `-screenshotDemoData` added to the scheme's arguments for that run (then revert the scheme), open Settings → nutrx Pro → Learn more, and capture before buying anything. Use `status_bar … --batteryState discharging --batteryLevel 100` (charged shows a bolt). The 6.1″ slot (`APP_IPHONE_61`) takes the same panel resized to 1206×2622.
 - Screenshots show the real app only — never generated or mocked-up UI.
 
 ## Swift Configuration
@@ -64,7 +65,7 @@ Notable build settings in the Xcode project:
 
 nutrx is a privacy-first iOS app for tracking daily nutrient intake.
 It is intentionally simple, flexible, and fully offline — no accounts, no servers, no ads.
-nutrx Pro (in progress, `docs/pro/PLAN.md`) only adds new things around tracking;
+nutrx Pro (an optional subscription or lifetime purchase, `docs/pro/PLAN.md`) only adds new things around tracking;
 all core tracking features remain free forever.
 
 ---
@@ -685,8 +686,10 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 ## Monetisation
 
 - Free with no ads. **nutrx Pro** is an optional subscription (or lifetime purchase) that only *adds* things around tracking. Nothing that's free today becomes Pro.
-- **Being built:** phase 3 of the Pro plan (StoreKit foundation) is the first Pro work. The old "no paywall / StoreKit / AI before MVP 4" guardrail is retired. What stays is in the plan: StoreKit 2 verifies on the device, no receipts or entitlements leave it or go into SwiftData / iCloud, and AI runs on the device only.
-- **Pro plan:** `docs/pro/PLAN.md` (agreed 2026-10-14: nutrx Pro, $1.99 / $14.99 with a one-week trial / $29.99 lifetime; designer prompts in `docs/pro/DESIGN-PROMPTS.md`) — supply & refills, label scanning, weekly recap, Apple Health trends and a doctor report; on-device AI only; everything in 2.0 stays free, including stacks and Siri logging. Build it one phase per session.
+- **What Pro is:** $1.99 a month, $14.99 a year with a one-week free trial, or $29.99 once (`docs/pro/PLAN.md`, agreed 2026-10-14; designer prompts in `docs/pro/DESIGN-PROMPTS.md`). Five features, all built for 2.1: supply & refills, label scanning, weekly recap, Apple Health trends and the report for your doctor (their sections follow). Everything in 2.0 stays free, and so do stacks, Siri logging and export.
+- **Rules that stay:** StoreKit 2 verifies on the device; no receipt or entitlement leaves it or goes into SwiftData, iCloud or UserDefaults; AI runs on the device only (Foundation Models), with a non-AI path or a clear "needs Apple Intelligence" mark (label scanning and recaps have a non-AI path), and nothing is charged for what the device can't run; Health data is read live and never stored. A Pro entry point is a `ProGatedButton` (PRO chip + paywall), never a lock or a wall, and nothing free may become Pro: check this in every PR.
+- **Launch (phase 9):** the products go to App Review with the 2.1 version (#71). The store listing, review notes and website carry the Pro section and the "everything else stays free" line.
+- The old "no paywall / StoreKit / AI before MVP 4" guardrail is retired.
 
 ### nutrx Pro: StoreKit (phase 3)
 
@@ -694,7 +697,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - Subscription group **nutrx Pro** (`22477669`): `nutrx.pro.yearly` is level 1 at $14.99 with a one-week free trial; `nutrx.pro.monthly` is level 2 at $1.99. Each has a US price plus Apple's equalized price in the other 174 territories, set one territory at a time (`POST /v1/subscriptionPrices`; the trial is likewise one `subscriptionIntroductoryOffers` call per territory).
   - Non-consumable `nutrx.pro.lifetime` (`6822833390`) at $29.99: a price schedule with a US base, with the other territories equalized automatically.
   - All three are Family Sharing (this can't be turned off), available in every territory and in new ones, with en-US names and descriptions.
-  - They show "Missing Metadata" until each has an App Review screenshot of the paywall.
+  - Each has an App Review screenshot of the paywall and a review note saying where Pro is; all three are Ready to Submit, and first-time products go to review together with an app version (#71).
 - **`ProAccess`** (`Shared/Services/`, `@Observable`, created in `nutrxApp` and passed down as an environment object):
   - Reads `Transaction.currentEntitlements` at launch and follows `Transaction.updates` from launch, which brings renewals, refunds, Ask to Buy and purchases on other devices.
   - `isPro` / `entitlement` (plan, expiry, family-shared), `loadProducts()`, `purchase(_:)` (verified transactions only, finished straight away; returns `.purchased` / `.pending` / `.cancelled`), and `restore()` (`AppStore.sync()`).
