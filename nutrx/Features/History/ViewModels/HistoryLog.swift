@@ -118,6 +118,9 @@ struct HistoryLog {
         totals.keys.contains { $0 < today }
     }
 
+    /// Anything logged at all, today included: enough for Export data (All time includes today), not for History.
+    var hasEntries: Bool { !totals.isEmpty }
+
     /// The first day there's anything to show: the earliest entry or nutrient, whichever came first.
     var firstDay: Date? {
         let earliestEntry = totals.keys.min()

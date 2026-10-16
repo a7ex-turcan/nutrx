@@ -112,4 +112,16 @@ final class HistoryLogTests: XCTestCase {
         XCTAssertEqual(log([40: [vitaminD: 1]]).firstDay, day(40))
         XCTAssertEqual(log([2: [vitaminD: 1]]).firstDay, day(30))
     }
+
+    func testEntriesTodayAreEnoughToExportButNotForHistory() {
+        let today = Calendar.current.startOfDay(for: .now)
+        let id = UUID()
+        let nutrient = HistoryNutrient(id: id, goalType: .minimum, target: 1, upperBound: nil, createdAt: today,
+                                       isDeleted: false)
+        let onlyToday = HistoryLog(nutrients: [nutrient], totals: [today: [id: 1]], today: today, calendar: .current)
+        XCTAssertTrue(onlyToday.hasEntries, "Export data's All time includes today (#103)")
+        XCTAssertFalse(onlyToday.hasPastEntries)
+        let empty = HistoryLog(nutrients: [nutrient], totals: [:], today: today, calendar: .current)
+        XCTAssertFalse(empty.hasEntries)
+    }
 }

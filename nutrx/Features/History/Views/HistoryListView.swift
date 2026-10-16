@@ -12,6 +12,8 @@ struct HistoryListView: View {
     @State private var selectedDay: Date?
     @State private var showRecap = false
     @State private var showReport = false
+    @State private var showExport = false
+    @State private var showPaywall = false
     /// A new value rebuilds the recap screen, so a notification opens the newest week even over an older one.
     @State private var recapID = UUID()
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
@@ -40,18 +42,30 @@ struct HistoryListView: View {
         // Before the report button's toolbar, so the avatar keeps the far-right spot it has on every tab.
         .withProfileMenu()
         .toolbar {
-            // Report for your doctor (docs/pro/design/7-doctor-report: entry), beside the profile avatar.
-            if ProAccess.isStoreVisible, viewModel.hasPastEntries {
+            // Your data (#103): the report and Export data, beside the profile avatar. Export works from the first
+            // entry (All time includes today), so the menu shows even before History has a past day; the report
+            // needs one.
+            if viewModel.hasEntries {
                 ToolbarItem(placement: .topBarTrailing) {
-                    ProGatedButton(action: { showReport = true }) { showsBadge in
-                        Image(systemName: "doc.text")
-                            .overlay(alignment: .topTrailing) {
-                                if showsBadge {
-                                    ProBadge().fixedSize().offset(x: 14, y: -12)
-                                }
+                    Menu {
+                        if ProAccess.isStoreVisible, viewModel.hasPastEntries {
+                            Button {
+                                openReport()
+                            } label: {
+                                Label("Report for your doctor", systemImage: "doc.text")
+                                if proAccess?.isPro != true { Text("nutrx Pro") }
                             }
+                        }
+                        Button {
+                            showExport = true
+                        } label: {
+                            Label("Export data", systemImage: "tablecells")
+                            Text("Your log as a CSV file")
+                        }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
                     }
-                    .accessibilityLabel("Report for your doctor")
+                    .accessibilityLabel("Your data")
                 }
             }
         }
@@ -60,6 +74,12 @@ struct HistoryListView: View {
                 ReportView(showsCancel: true)
             }
         }
+        .sheet(isPresented: $showExport) {
+            NavigationStack {
+                ExportDataView(showsDone: true)
+            }
+        }
+        .proPaywall(isPresented: $showPaywall)
         .onAppear {
             viewModel.refresh(context: modelContext)
             openRecapIfAsked()
@@ -68,6 +88,15 @@ struct HistoryListView: View {
         .onChange(of: scenePhase) { _, phase in
             // Back from the background, possibly on a new day: move today's ring and pick up synced entries.
             if phase == .active { viewModel.refresh(context: modelContext) }
+        }
+    }
+
+    /// The report for a Pro user, the paywall otherwise (the menu can't use `ProGatedButton`). Right after launch a
+    /// Pro user isn't known yet, so it waits for the first check rather than show the paywall to someone who paid.
+    private func openReport() {
+        Task {
+            if let proAccess, !proAccess.hasCheckedEntitlements { await proAccess.refreshEntitlement() }
+            if proAccess?.isPro == true { showReport = true } else { showPaywall = true }
         }
     }
 
@@ -140,12 +169,82 @@ struct HistoryListView: View {
                     }
                     .cardStyle()
                 }
+
+                YourDataCard(onReport: { showReport = true }, onExport: { showExport = true })
+                    .padding(.top, Theme.Spacing.sectionTop - Theme.Spacing.cardGap)
             }
             .padding(.horizontal, Theme.Spacing.screenMargin)
             .padding(.bottom, Theme.Spacing.sectionTop)
         }
         .background(Theme.surfaceGround)
         .refreshable { viewModel.refresh(context: modelContext) }
+    }
+}
+
+/// "Your data" (#103): the report for your doctor (Pro: the PRO chip and the paywall for free users) and Export data,
+/// moved here from Settings.
+private struct YourDataCard: View {
+    let onReport: () -> Void
+    let onExport: () -> Void
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
+            Text("Your data")
+                .font(.headline.weight(.bold))
+                .foregroundStyle(Theme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) {
+                if ProAccess.isStoreVisible {
+                    ProGatedButton(action: onReport) { showsBadge in
+                        row(title: "Report for your doctor", subtitle: "A PDF of any period", tint: .blue,
+                            symbol: "doc.text", showsBadge: showsBadge)
+                    }
+                    .buttonStyle(.plain)
+                    Divider().overlay(Theme.lineHairline)
+                        .padding(.leading, Theme.Spacing.cardPadding + 4 + (dynamicTypeSize.isAccessibilitySize ? 0 : 54))
+                }
+                Button(action: onExport) {
+                    row(title: "Export data", subtitle: "Your log as a CSV file", tint: .green, symbol: "tablecells",
+                        showsBadge: false)
+                }
+                .buttonStyle(.plain)
+            }
+            .cardStyle()
+        }
+    }
+
+    private func row(title: String, subtitle: String, tint: NutrientTint, symbol: String,
+                     showsBadge: Bool) -> some View {
+        HStack(spacing: 14) {
+            if !dynamicTypeSize.isAccessibilitySize {
+                NutrientIconTile(tint: tint, symbolName: symbol, size: 40)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(Theme.textPrimary)
+                    if showsBadge { ProBadge() }
+                }
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary)
+                .accessibilityHidden(true)
+        }
+        // The same insets as the Recent days rows above, so the chevrons line up.
+        .padding(.horizontal, Theme.Spacing.cardPadding + 4)
+        .padding(.vertical, Theme.Spacing.cardPadding)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
