@@ -14,9 +14,11 @@ struct ProWelcomeView: View {
                 Circle().fill(Theme.forest)
                 SegmentedRingMark()
                     .frame(width: 84, height: 84)
-                Image(systemName: "checkmark")
-                    .font(.system(size: 26, weight: .heavy))
-                    .foregroundStyle(Theme.greenSoft)
+                // Drawn, not an SF Symbol: a checkmark image stayed in the accessibility tree as "Selected" even
+                // hidden (#77), and a shape is never an element.
+                CheckmarkShape()
+                    .stroke(Theme.greenSoft, style: StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round))
+                    .frame(width: 26, height: 20)
             }
             .frame(width: 112, height: 112)
             .accessibilityHidden(true)
@@ -49,6 +51,17 @@ struct ProWelcomeView: View {
         .padding(.bottom, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.surfaceGround)
+    }
+}
+
+/// The welcome badge's tick.
+private struct CheckmarkShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * 0.55))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.36, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        return path
     }
 }
 

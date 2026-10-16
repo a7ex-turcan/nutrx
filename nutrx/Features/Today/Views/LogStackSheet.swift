@@ -21,8 +21,24 @@ struct LogStackSheet: View {
     /// Set once logged: what was logged and the amount per entry, for the done state and Undo.
     @State private var logged: StackLogging.Logged?
     @State private var loggedAmounts: [PersistentIdentifier: Double] = [:]
+    /// Full height from the start when the rows don't fit at half height (`rowsAtHalfHeight`).
+    @State private var detent: PresentationDetent
+
+    init(stack: LogStack, totalFor: @escaping (Nutrient) -> Double,
+         onLog: @escaping ([PersistentIdentifier: Double]) -> StackLogging.Logged,
+         onUndo: @escaping (StackLogging.Logged) -> Void, onEditStack: @escaping () -> Void) {
+        self.stack = stack
+        self.totalFor = totalFor
+        self.onLog = onLog
+        self.onUndo = onUndo
+        self.onEditStack = onEditStack
+        _detent = State(initialValue: StackLogging.activeEntries(of: stack).count > Self.rowsAtHalfHeight ? .large : .medium)
+    }
 
     private var entries: [LogStackEntry] { StackLogging.activeEntries(of: stack) }
+
+    /// Rows that fit above the Log button at the medium detent.
+    static let rowsAtHalfHeight = 3
 
     private func amount(for entry: LogStackEntry) -> Double {
         amounts[entry.persistentModelID] ?? entry.amount
@@ -54,8 +70,11 @@ struct LogStackSheet: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(Theme.surfaceGround)
-        // At accessibility sizes half a screen holds only the header and one row, so it opens full height.
-        .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large])
+        // At accessibility sizes half a screen holds only the header and one row, so it opens full height. Half
+        // height fits three rows and the Log button; with more it opens full height, so the button isn't below the
+        // edge (it can still be dragged down).
+        .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large],
+                             selection: dynamicTypeSize.isAccessibilitySize ? .constant(.large) : $detent)
         .presentationDragIndicator(.visible)
     }
 
