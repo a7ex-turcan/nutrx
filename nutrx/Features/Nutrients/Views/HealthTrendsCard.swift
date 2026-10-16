@@ -168,6 +168,8 @@ struct HealthTrendsCard: View {
 
 // MARK: - Previews
 
+// Debug only: `ProAccess.previewPro()` doesn't exist in Release builds.
+#if DEBUG
 private struct HealthTrendsCardPreview: View {
     let state: HealthTrends.State
     var body: some View {
@@ -192,3 +194,4 @@ private let previewFindings = HealthTrends.State.findings([
 #Preview("Findings, dark") { HealthTrendsCardPreview(state: previewFindings).preferredColorScheme(.dark) }
 #Preview("Not enough data") { HealthTrendsCardPreview(state: .notEnoughData(pairedDays: 9)) }
 #Preview("No pattern") { HealthTrendsCardPreview(state: .noPattern(checkedDays: 28)) }
+#endif
