@@ -51,9 +51,14 @@
 | Quick-log stacks / templates | ✅ Built (v2.1) |
 | Siri & App Shortcuts | ✅ Built (v2.1) |
 
-### nutrx Pro — v2.1 ✅ Built
+### nutrx Pro — v2.1 🔄
 
-Optional subscription or lifetime purchase that only adds features; everything else stays free. Plan: `docs/pro/PLAN.md` (it replaces the old "MVP 4 — Pro Tier & AI" list; nutrx doesn't suggest amounts or targets, so "smart target suggestions" is out). AI runs on the device only.
+Optional subscription or lifetime purchase that only adds features; everything else stays free. Plan: `docs/pro/PLAN.md` It replaces the old "MVP 4 — Pro Tier & AI" list:
+- "Daily AI insights" became the weekly recap (and the weekday pattern in free analytics).
+- "Smart target suggestions" is out: nutrx doesn't suggest amounts or targets (PLAN.md principle 3).
+- "Natural language logging" is out: no chat box (principle 4). Siri and Shortcuts log by name instead, for free.
+
+AI runs on the device only.
 
 | Feature | Status |
 |---|---|
