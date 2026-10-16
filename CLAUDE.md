@@ -194,9 +194,12 @@ nutrx/
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       └── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │
-│   ├── History/                 # Tab 3 — read-only log of past days.
+│   ├── History/                 # Tab 4 — read-only log of past days.
 │   │   ├── Views/
-│   │   │   ├── HistoryListView.swift        # Large title; StreakCard, MonthCalendar card, "Recent days" (dots + score). Taps push HistoryDayView.
+│   │   │   ├── HistoryListView.swift        # Large title, report button (Pro); StreakCard, MonthCalendar card, "Recent days" (dots + score). Taps push HistoryDayView.
+│   │   │   ├── ReportView.swift             # Report for your doctor (Pro): thumbnail, period, nutrients, toggles, Create PDF → share sheet; preview.
+│   │   │   ├── ReportPageView.swift         # One printed page of the report (cover, summary, sections, notes) + ReportBarChart.
+│   │   │   ├── ReportPDF.swift              # The pages into one PDF through ImageRenderer; temp file for the share sheet.
 │   │   │   ├── StreakCard.swift             # Forest card: flame, "10 days · Current streak", divider, best streak.
 │   │   │   ├── MonthCalendar.swift          # Month grid (first weekday from the locale), all / some / none fills, today ring, chevrons, legend.
 │   │   │   ├── HistoryDayView.swift         # Weekday + date header, SegmentedDayRing summary, tint-bar rows with met badge, entries sheet.
@@ -212,6 +215,7 @@ nutrx/
 │   │       ├── DoctorReport.swift           # Report for your doctor (Pro): a period's facts from a HistoryLog (pure).
 │   │       ├── ReportText.swift             # The report's words: period, goals, percentages, footer, file name (pure).
 │   │       ├── ReportLayout.swift           # The report's pagination onto A4 / Letter pages (pure).
+│   │       ├── ReportViewModel.swift        # The create sheet's choices → the report and its pages; Health trend lines.
 │   │       ├── RecapViewModel.swift         # The last 8 weeks' recaps, the running week, summaries (template, then rewording).
 │   │       └── RecapSchedule.swift          # Sunday 18:00 recap notification (plan, body), Today card window, settings key.
 │   │
@@ -226,7 +230,7 @@ nutrx/
 │   │
 │   ├── Settings/
 │   │   ├── Views/
-│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Export data; Rate nutrx, About) with values, privacy footer.
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Apple Health, Export data, Report for your doctor; Rate nutrx, About) with values, privacy footer.
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
@@ -286,6 +290,7 @@ nutrx/
     │   ├── ProfileMenuButton.swift          # 44pt ProfileAvatar with the Edit Profile / Settings menu.
     │   ├── ProfileToolbarModifier.swift     # .withProfileMenu() modifier.
     │   ├── ProBadge.swift                   # PRO chip, ProWordmark, ProRingMotif, ProRingTile.
+    │   ├── ActivityView.swift               # UIActivityViewController wrapper with a completion (Export data, the doctor report).
     │   └── ProGate.swift                    # ProGatedButton: Pro entry points (badge + paywall for free users).
     ├── Persistence/
     │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback; createForExtension() for widgets / complications (no CloudKit).
@@ -453,9 +458,9 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
 
 Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-export/export*.png`.
 
-- **Settings → Export data** (grey tile, its own section; Apple Health and the doctor report join it with Pro) pushes `ExportDataView`. It has a document tile with the title, what the file holds, and a period card: All time, Last 30 days or Last 90 days. "Last 30 days" is today and the 29 days before it.
+- **Settings → Export data** (grey tile, in the section with Apple Health and Report for your doctor) pushes `ExportDataView`. It has a document tile with the title, what the file holds, and a period card: All time, Last 30 days or Last 90 days. "Last 30 days" is today and the 29 days before it.
   - The count line reads "**1,284** entries · 6 nutrients · since 2 March 2026", or "No entries in this period", which disables the button.
-  - **Export CSV** writes the file and opens the system share sheet. It's a `UIActivityViewController` wrapper, because `ShareLink` has no completion and the done state needs to know the file was sent.
+  - **Export CSV** writes the file and opens the system share sheet. It's `ActivityView` (`Shared/Components/`), a `UIActivityViewController` wrapper, because `ShareLink` has no completion and the done state needs to know the file was sent.
   - Once the file is sent, a green strip shows "Exported N entries" with the file name, and the button reads **Export again**. Changing the period clears it.
 - **The file** (`ExportService`, tested in `ExportServiceTests`):
   - One row per `IntakeRecord`, newest first, with the header `date,time,nutrient,amount,unit,note`.
@@ -704,7 +709,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - At accessibility sizes the button scrolls with the content.
   - The paywall never claims a store it can't reach, and never says nothing was charged.
   - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
-- **`ProFeature`**: the five Pro features with titles, symbols and tints. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all five until one ships, to check the design. Set `isShipped` as each phase lands.
+- **`ProFeature`**: the five Pro features with titles, symbols and tints. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all five until one ships, to check the design. All five are shipped since phase 8.
 - **Settings:** `ProSettingsCard` sits under the profile card, only when `isStoreVisible` is true.
   - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Supply and label scan" now, a plain list for two or three, and "… and more" only from four) with **Learn more**, which opens the paywall.
   - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.
@@ -815,10 +820,15 @@ Mockups: `docs/pro/design/6-health-trends/`.
 
 ### nutrx Pro: Report for your doctor (phase 8)
 
-Mockups: `docs/pro/design/7-doctor-report/`. The facts, words and pagination come first; rendering the PDF, the create sheet and the entry points (History toolbar, Settings) follow in a separate PR.
+Mockups: `docs/pro/design/7-doctor-report/`.
 - **`DoctorReport.build`** (pure, `DoctorReportTests`) from a `HistoryLog`: a period (`lastDays(30/90)` or custom), ending yesterday at the latest. It counts **only days with something logged** toward hit rates and averages; a day nothing was logged is unknown, not a missed goal. Per nutrient: goal, every day's total (nil when it doesn't count), counted / met days, days logged, average, and optional Health trend lines. Cover facts: days with entries ("88 of 90"), the overall hit rate (all goals over all logged days), and the longest run of logged days in the period with every *included* goal met (a nutrient left out doesn't break it). Days logged per nutrient come from `HistoryLog.loggedNutrients(on:)`, so a day whose entries net to 0 still counts. Notes are entries' notes in the period for the chosen nutrients, by date. The person's name is optional.
 - **`ReportText`:** "Intake report", the period ("16 July – 13 October 2026 · 90 days"), percentages ("—" with nothing counted), goals ("At least 4,000 IU", "At most 400 mg", "Between 120–160 g"), the disclaimer ("Self-reported intake, logged by the patient in nutrx…"), the chart caption, the footer ("Generated by nutrx on 14 Oct 2026", "page 2 of 4") and the file name (`nutrx-report-<start>-to-<end>.pdf`). Dates and numbers follow the locale.
-- **`ReportLayout`:** `ImageRenderer` draws one view per page, so pages are decided from fixed block heights: the cover with as many summary rows as fit (more go on summary pages), then sections (240pt, plus 30 per trend line) and the notes (a header that never ends a page; 28pt rows, 16pt more per wrapped line, up to three lines, estimated from the note's length), filling each page in order. **Paper:** US Letter in the US, Canada, Mexico, the Philippines and a few others; A4 elsewhere. Six nutrients and three notes on A4 come to the design's four pages.
+- **`ReportLayout`:** `ImageRenderer` draws one view per page, so pages are decided from fixed block heights: the cover with as many summary rows as fit (more go on summary pages), then sections (240pt, plus a 20pt "With Apple Health · last 28 days" header and 30 per trend line) and the notes (a header that never ends a page; 28pt rows, 16pt more per wrapped line, up to three lines, estimated from the note's length), filling each page in order. **Paper:** US Letter in the US, Canada, Mexico, the Philippines and a few others; A4 elsewhere. Six nutrients and three notes on A4 come to the design's four pages.
+- **`ReportText`** also has each section's goal line ("Goal: at least 4,000 IU"), its chart caption in the words of the goal ("Dashed line: limit." for at most, "Dashed lines: range."), and the chart's date labels (`axisLabels`: the first and last day, each month's first day between, unless too close to an end).
+- **Pages** (`ReportPageView`): drawn at paper size in points, black ink on white whatever the appearance, and not scaled by Dynamic Type (it's print). Every block takes exactly the height `ReportLayout` gave it. The cover has the brand mark (the report's only colour), the title, period, Name / Nutrients tracked / Days with entries, the hit-rate and streak boxes, the summary table and the disclaimer; content pages have a lighter header with the period. Sections: name and goal line, Hit rate / Average / Days logged boxes, `ReportBarChart` (dark bars met, light bars missed, no bar on a day that doesn't count, a sliver for a logged 0; dashed goal line, both bounds for a range; drawn as shapes so it stays vector) and the caption; Health trend lines under it when included. Notes: date, nutrient, text up to three lines.
+- **PDF** (`ReportPDF`): one `ImageRenderer` per page into one `CGContext` PDF (title "Intake report", creator "nutrx"), so the text is real and searchable (`ReportPDFTests` reads it back with PDFKit). The file goes in its own folder under `tmp/nutrx-report/`, removed when the share sheet closes, like Export data.
+- **Create sheet** (`ReportView`, `ReportViewModel`, `ReportViewModelTests`): a thumbnail of the real cover (hidden from VoiceOver), "4 pages · PDF", Preview (the pages scaled to the screen), PERIOD segmented 30 days / 90 days / Custom (From / To in their own card, from the first entry to yesterday; From never after To, each moving the other along) with the dates under it, then **Nutrients** ("All 6" / "4 of 6": a checklist of the nutrients tracked in the period; one with no entries in the period starts unchecked, since a page of "0 days logged" reads as a goal never met; at least one stays checked), Include my name (only when the profile has one), Include notes, Include Apple Health trends (only when Health is connected: each nutrient's `HealthTrends` findings over the last 28 days, read live). **Create PDF** opens the share sheet. It's off with "Nothing logged in this period" or "Choose at least one nutrient" under the period; a failed render shows "Couldn't make the PDF", never an empty file.
+- **Entry points:** History's toolbar has a document button before the avatar (`ProGatedButton`, with the PRO chip for free users; only once History has past days), which presents the sheet with Cancel. History applies `withProfileMenu()` itself, before that toolbar, so the avatar keeps its far-right place. Settings has a **Report for your doctor** row (blue tile) after Export data, which pushes the same screen (free: PRO chip, paywall). The report is shipped on the paywall (`ProFeature.isShipped` is true for all five).
 
 ---
 
@@ -828,7 +838,7 @@ Mockups: `docs/pro/design/7-doctor-report/`. The facts, words and pagination com
 
 **Pre-Pro Sprint:** done — goal types, data export (CSV), quick-log stacks, and Siri & App Shortcuts (see their sections above)
 
-**nutrx Pro** (`docs/pro/PLAN.md`): StoreKit, supply and label scanning are built; weekly recap, Health trends and the doctor report come next. On-device AI only, no third-party LLM. Streak freeze and a shareable streak card come later, outside the plan.
+**nutrx Pro** (`docs/pro/PLAN.md`): StoreKit and all five features (supply, label scanning, weekly recap, Health trends, the doctor report) are built; the launch (phase 9) is next. On-device AI only, no third-party LLM. Streak freeze and a shareable streak card come later, outside the plan.
 
 **Deferred:** Localisation, iPad-specific layout
 

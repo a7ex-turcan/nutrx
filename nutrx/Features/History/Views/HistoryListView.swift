@@ -11,6 +11,7 @@ struct HistoryListView: View {
     @State private var viewModel = HistoryViewModel()
     @State private var selectedDay: Date?
     @State private var showRecap = false
+    @State private var showReport = false
     /// A new value rebuilds the recap screen, so a notification opens the newest week even over an older one.
     @State private var recapID = UUID()
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
@@ -35,6 +36,29 @@ struct HistoryListView: View {
         }
         .navigationDestination(isPresented: $showRecap) {
             WeeklyRecapView().id(recapID)
+        }
+        // Before the report button's toolbar, so the avatar keeps the far-right spot it has on every tab.
+        .withProfileMenu()
+        .toolbar {
+            // Report for your doctor (docs/pro/design/7-doctor-report: entry), beside the profile avatar.
+            if ProAccess.isStoreVisible, viewModel.hasPastEntries {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProGatedButton(action: { showReport = true }) { showsBadge in
+                        Image(systemName: "doc.text")
+                            .overlay(alignment: .topTrailing) {
+                                if showsBadge {
+                                    ProBadge().fixedSize().offset(x: 14, y: -12)
+                                }
+                            }
+                    }
+                    .accessibilityLabel("Report for your doctor")
+                }
+            }
+        }
+        .sheet(isPresented: $showReport) {
+            NavigationStack {
+                ReportView(showsCancel: true)
+            }
         }
         .onAppear {
             viewModel.refresh(context: modelContext)
