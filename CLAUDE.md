@@ -102,12 +102,13 @@ All UI work follows **`docs/design/DESIGN.md`** — brand tokens, components, sc
 
 ## App Structure – Tab Navigation
 
-The app has three tabs (defined in `App/MainTabView.swift`):
+The app has four tabs (defined in `App/MainTabView.swift`):
 
 | Tab (SF Symbol) | Purpose |
 |---|---|
 | **Today** (`circle.circle`) | The main daily tracking screen |
 | **Nutrients** (`leaf`) | Create, edit, delete, and reorder custom nutrients. The screen's title is "My Nutrients"; the tab label is "Nutrients" (DESIGN.md `Main.dc.html`). |
+| **Stacks** (`square.stack.3d.up`) | Build, reorder and log stacks (several nutrients in one tap). Their own tab since 2.1, so they're visible from the first launch rather than under Settings. |
 | **History** (`calendar`) | Browse past daily intake logs |
 
 Profile, Settings, and About are **not** tabs — they're accessed via a profile icon (top-right of every screen's navigation bar). Tapping it opens a menu with two items: "Edit Profile" (opens a sheet) and "Settings" (opens a sheet). About lives inside Settings. (The old "Log Out" item was a no-op — nutrx has no accounts — and was removed in phase 8.) This is implemented via the `.withProfileMenu()` view modifier, which every tab applies.
@@ -116,7 +117,7 @@ Profile, Settings, and About are **not** tabs — they're accessed via a profile
 
 ## Project Directory Structure
 
-The Xcode project is named `nutrx`. All Swift source lives under `nutrx/`. The structure mirrors the three-tab feature split plus shared infrastructure.
+The Xcode project is named `nutrx`. All Swift source lives under `nutrx/`. The structure mirrors the four-tab feature split plus shared infrastructure.
 
 ```
 nutrx/
@@ -126,7 +127,7 @@ nutrx/
 │                                # OnboardingFlow and MainTabView.
 │
 ├── App/
-│   └── MainTabView.swift        # The TabView shell with three tabs. Each tab has a NavigationStack with .withProfileMenu().
+│   └── MainTabView.swift        # The TabView shell with four tabs. Each tab has a NavigationStack with .withProfileMenu().
 │
 ├── Models/                      # SwiftData model classes — pure data, zero UI, zero business logic.
 │   ├── UserProfile.swift
@@ -218,15 +219,18 @@ nutrx/
 │   │   └── Views/
 │   │       └── AboutView.swift              # Shown inside SettingsView: brand mark, version, three cards.
 │   │
+│   ├── Stacks/                  # Tab: stacks.
+│   │   └── Views/
+│   │       ├── StacksView.swift             # Stacks tab: list with Log, reorder, swipe to delete, create; empty state.
+│   │       └── StackDetailView.swift        # One stack: name, nutrients with amounts, add / remove / reorder, Siri tip, delete.
+│   │
 │   ├── Settings/
 │   │   ├── Views/
-│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups, Stacks; Export data; Rate nutrx, About) with values, privacy footer.
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Export data; Rate nutrx, About) with values, privacy footer.
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
 │   │   │   ├── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
-│   │   │   ├── StacksView.swift             # Settings → Stacks: list, reorder, swipe to delete, create; empty state.
-│   │   │   ├── StackDetailView.swift        # One stack: name, nutrients with amounts, add / remove / reorder, Siri tip, delete.
 │   │   │   ├── ExportDataView.swift         # Settings → Export data: period, entry count, Export CSV → share sheet, done strip.
 │   │   │   ├── AppleHealthSettingsView.swift # Settings → Apple Health (Pro): switch, what's read (data found?), privacy, Disconnect.
 │   │   │   └── ProSettingsCard.swift        # Settings' nutrx Pro card (free: Learn more → paywall; Pro: status → ProStatusView).
@@ -386,7 +390,7 @@ Built in phase 2 of the Pro plan (free). Everything lives in `Shared/Intents/` a
 - **The widget's + button** keeps its own `LogNutrientIntent` (`NutrxWidgets/`, widget extension only, raw id parameter), marked `isDiscoverable = false` so it never shows in Shortcuts.
 - **`LogStackShortcutIntent`** — "Log Stack": `stack: StackEntity` ("Log the Morning stack"). `perform()` uses `StackShortcutLogging.log` → `StackLogging.log` (the same records and `lastLoggedAt` as Log on Today), does the same follow-ups, and answers "Logged Morning: 2,000 IU Vitamin D, 1,000 mg Omega-3, and 400 mg Magnesium." A stack that's gone or has nothing to log throws a spoken error. Phrases: "Log my \(stack) stack with nutrx" (first — the Siri tip shows it), "… in nutrx", "Log the \(stack) stack in nutrx", "Log a stack in nutrx".
 - **`LogStack.id` and migration:** adding a property with a `UUID()` default to an existing store gives every existing row the *same* value (checked: stacks from a #54 build all got one id). `StackLogging.repairDuplicateIDs` gives duplicates new ids (keeping the oldest stack's). `nutrxApp` runs it at launch, because Siri can launch the app in the background, and whenever the app becomes active, because a synced device can bring duplicates. Any future UUID field on an existing model needs the same.
-- **`StackEntity` / `StackEntityQuery`** — stacks by name (`LogStack.id`, a UUID, is only an identifier), suggested in Today's order and only when they have something to log; an empty stack still resolves by id. Stack names change, so `StackShortcutLogging.stacksChanged()` refreshes the phrase parameters after a stack is created, renamed or deleted (Settings → Stacks, the detail screen), besides the refresh when the app becomes active.
+- **`StackEntity` / `StackEntityQuery`** — stacks by name (`LogStack.id`, a UUID, is only an identifier), suggested in Today's order and only when they have something to log; an empty stack still resolves by id. Stack names change, so `StackShortcutLogging.stacksChanged()` refreshes the phrase parameters after a stack is created, renamed or deleted (the Stacks tab, the detail screen), besides the refresh when the app becomes active.
 - **Siri phrases always name the app**, so the Siri tip says “Log my Morning stack **with nutrx**”, not the design's “Log my Morning stack”.
 - Tests: `NutrientShortcutTests`, `StackShortcutTests`. Not built yet: a Settings → Siri screen, and the Watch (the App Shortcuts are the iPhone app's).
 
@@ -429,16 +433,16 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
 - **Today:** `StacksRow` sits between the day-score card (and banners) and the first group, with only stacks that have something to log.
   - Several stacks scroll sideways as 176pt cards; a single stack is one full-width card.
   - Logged today: a green check and a ghost "Log again".
-  - Edit opens Settings → Stacks in a sheet.
+  - Edit switches to the Stacks tab (`NotificationRouter.showsStacks`).
 - **Log sheet:** `LogStackSheet` changes amounts for **this time only**; the entry amounts don't change. It logs through `TodayViewModel.logStack`, which does a + tap's follow-ups (reminders, widgets) and the success haptic when an entry meets a goal.
   - The done state shows "+1,000 IU" per row and "Logged 3 nutrients at 08:12", with Undo and Done.
   - "Edit stack" closes the sheet and then opens that stack's detail (chained through the sheet's `onDismiss`, never two sheets at once).
-- **Settings:** a Stacks row (teal tile) under Groups.
-  - `StacksView` lists stacks in Today's order, with reorder, swipe to delete (with a confirmation; logged entries stay) and + to create one (named in an alert, then opened).
+- **Stacks tab** (`Features/Stacks/`, between Nutrients and History; there's no Settings row any more):
+  - `StacksView` lists stacks in Today's order, with a **Log** button under each stack's nutrients (a check and "Log again" once logged today; it opens `LogStackSheet` through a `TodayViewModel`, so reminders, widgets and haptics are the same as on Today), reorder (Edit, leading), swipe to delete (with a confirmation; logged entries stay) and + to create one (named in an alert, then opened). Empty: "Log several at once" with Create a stack.
   - `StackDetailView` has the name, the entries with − / +, swipe to remove, drag to reorder, Add nutrient and Delete stack.
     - Delete stack dismisses first and deletes in `onDisappear`, so the view never renders a deleted model.
     - An emptied name falls back to "Stack" on focus loss and on disappear.
-- **Finding and filling stacks** (besides Settings → Stacks):
+- **Finding and filling stacks** (besides the Stacks tab):
   - **Today** shows `StackSuggestionCard` ("Log several at once", **Make a stack**, ✕) where the Stacks row would be, once there are three or more nutrients and no stack yet, until it's hidden (`@AppStorage("nutrx.hidesStackSuggestion")`; the rule is `StackLogging.suggestsStack`). Make a stack names it in an alert, then opens its detail to add nutrients.
   - **My Nutrients:** long-press → **Add to Stack…** opens `StackPickerSheet` (checklist of stacks + New Stack…); each tap adds the nutrient at one step or takes it out (`StackLogging.toggle`).
   - **New-nutrient form:** a **Stacks** row under Group (not in onboarding) with the same sheet. Choices are kept on the draft (`NutrientDraft.pendingStacks`: existing stacks by id, new ones by name) and applied by `insertNutrient` (`StackLogging.add(_:toStacks:)`), so a new stack is created only when the nutrient is added and Cancel leaves none behind. Scan a label keeps the choices.
@@ -970,7 +974,7 @@ A named set of nutrients with preset amounts, logged in one go (see Stacks).
 |---|---|---|
 | `id` | `UUID = UUID()` | Identifies the stack to Siri and Shortcuts (`StackEntity`) |
 | `name` | `String` | "Morning" |
-| `sortOrder` | `Int` | Order on Today and in Settings → Stacks |
+| `sortOrder` | `Int` | Order on Today and in the Stacks tab |
 | `createdAt` | `Date = Date()` | |
 | `lastLoggedAt` | `Date?` | Last time it was logged, from any device; drives "done today" |
 

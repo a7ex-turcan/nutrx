@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// Settings sheet (DESIGN.md §5.9): profile card, then rows with Settings-style icon tiles — iCloud Sync,
-/// Notifications, Streaks, Groups, Stacks; Export data; Rate nutrx, About — and the privacy footer.
+/// Notifications, Streaks, Groups; Export data; Rate nutrx, About — and the privacy footer.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -11,7 +11,6 @@ struct SettingsView: View {
     @Query private var allPreferences: [UserPreferences]
     @Query private var profiles: [UserProfile]
     @Query(filter: #Predicate<NutrientGroup> { !$0.isSystem }) private var userGroups: [NutrientGroup]
-    @Query private var stacks: [LogStack]
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @State private var showPaywall = false
     /// Read here so the Apple Health row follows the switch on its page.
@@ -83,12 +82,6 @@ struct SettingsView: View {
                 } label: {
                     row("Groups", symbol: "folder", color: Theme.SettingsTile.indigo,
                         value: SettingsSummary.groups(userGroupCount: userGroups.count))
-                }
-                NavigationLink {
-                    StacksView()
-                } label: {
-                    row("Stacks", symbol: "square.stack.3d.up", color: Theme.SettingsTile.teal,
-                        value: SettingsSummary.stacks(count: stacks.count))
                 }
             }
             .listRowBackground(Theme.surfaceCard)

@@ -15,6 +15,8 @@ final class NotificationRouter {
     var supplyNutrientID: UUID?
     /// A recap notification was tapped: History opens the weekly recap, then clears it.
     var showsRecap = false
+    /// Today's stacks row asked for the Stacks tab (Edit); the tab bar switches and clears it.
+    var showsStacks = false
 }
 
 /// The app's notification delegate: refill reminder actions (Refilled, Remind me tomorrow) and taps. Dose and

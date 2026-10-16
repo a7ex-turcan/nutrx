@@ -1,11 +1,14 @@
 import SwiftUI
 import SwiftData
 
-/// Settings → Stacks (docs/pro/design/1-stacks-export: stacks, stacks-empty): the user's stacks in Today's order
-/// with their nutrients, reorder, swipe to delete, + to create one (named first, then opened to add nutrients).
+/// The Stacks tab (docs/pro/design/1-stacks-export: stacks, stacks-empty): the user's stacks in Today's order with
+/// their nutrients and a Log button, reorder, swipe to delete, + to create one (named first, then opened to add
+/// nutrients). Logging here is the same as on Today (`TodayViewModel.logStack`: reminders, widgets, haptics).
 struct StacksView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
+    @State private var today = TodayViewModel()
+    @State private var stackToLog: LogStack?
 
     @State private var showNewStackAlert = false
     @State private var newStackName = ""
@@ -26,7 +29,8 @@ struct StacksView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             if !stacks.isEmpty {
-                ToolbarItem(placement: .topBarTrailing) {
+                // Leading, so + and the profile menu share the trailing side, as in My Nutrients.
+                ToolbarItem(placement: .topBarLeading) {
                     EditButton()
                 }
             }
@@ -49,6 +53,28 @@ struct StacksView: View {
         }
         .navigationDestination(item: $openedStack) { stack in
             StackDetailView(stack: stack)
+        }
+        .sheet(item: $stackToLog) { stack in
+            LogStackSheet(
+                stack: stack,
+                totalFor: { today.total(for: $0) },
+                onLog: { amounts in
+                    let result = today.logStack(stack, amounts: amounts, context: modelContext)
+                    Haptics.logged(reachingGoal: result.reachedGoal)
+                    ReviewService.checkAfterLogging(context: modelContext)
+                    // Today patches its totals in place; this makes it reload (as Siri logging does).
+                    NotificationCenter.default.post(name: .intakeLoggedByShortcut, object: nil)
+                    return result.logged
+                },
+                onUndo: { logged in
+                    today.undoStack(logged, of: stack, context: modelContext)
+                    NotificationCenter.default.post(name: .intakeLoggedByShortcut, object: nil)
+                },
+                onEditStack: {
+                    stackToLog = nil
+                    openedStack = stack
+                }
+            )
         }
         .alert("New Stack", isPresented: $showNewStackAlert) {
             TextField("Stack name", text: $newStackName)
@@ -81,6 +107,7 @@ struct StacksView: View {
                         stackRow(stack)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityAction(named: "Log \(stack.name)") { log(stack) }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             stackToDelete = stack
@@ -91,7 +118,7 @@ struct StacksView: View {
                 }
                 .onMove(perform: move)
             } footer: {
-                Text("Stacks appear on Today in this order. Swipe a stack to delete it.")
+                Text("Stacks appear on Today in this order. Swipe a stack to delete it; what you logged stays.")
             }
             .listRowBackground(Theme.surfaceCard)
         }
@@ -106,22 +133,21 @@ struct StacksView: View {
                 Text(stack.name)
                     .font(.headline)
                     .foregroundStyle(Theme.textPrimary)
-                let tiles = HStack(spacing: 6) {
-                    ForEach(nutrients.prefix(4), id: \.persistentModelID) { nutrient in
-                        NutrientIconTile(nutrient: nutrient, size: 24)
+                if !nutrients.isEmpty, !dynamicTypeSize.isAccessibilitySize {
+                    HStack(spacing: 6) {
+                        ForEach(nutrients.prefix(5), id: \.persistentModelID) { nutrient in
+                            NutrientIconTile(nutrient: nutrient, size: 24)
+                        }
                     }
                 }
-                let names = Text(StackLogging.summary(of: stack))
+                Text(StackLogging.summary(of: stack))
                     .font(.subheadline)
                     .foregroundStyle(Theme.textSecondary)
-                if dynamicTypeSize.isAccessibilitySize {
-                    tiles
-                    names
-                } else {
-                    HStack(spacing: 6) {
-                        tiles
-                        names.lineLimit(2)
-                    }
+                    .fixedSize(horizontal: false, vertical: true)
+                // Under the names, so they get the row's width.
+                if !nutrients.isEmpty {
+                    logButton(stack)
+                        .padding(.top, 2)
                 }
             }
             Spacer(minLength: 8)
@@ -132,9 +158,42 @@ struct StacksView: View {
         }
         .padding(.vertical, 6)
         .contentShape(Rectangle())
+        // The separator starts at the text, whatever's inside the row.
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(stack.name): \(StackLogging.summary(of: stack))")
         .accessibilityAddTraits(.isButton)
+    }
+
+    /// "Log" (or a check and "Log again" once logged today), the same action as the stack's card on Today.
+    private func logButton(_ stack: LogStack) -> some View {
+        let done = StackLogging.isLoggedToday(stack)
+        return Button { log(stack) } label: {
+            // The symbol hidden: VoiceOver reads a checkmark as "Selected".
+            HStack(spacing: 6) {
+                Image(systemName: done ? "checkmark" : "plus").accessibilityHidden(true)
+                Text(done ? "Log again" : "Log")
+            }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(done ? Theme.textPrimary : Theme.controlOnPrimary)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 36)
+                .background {
+                    if done {
+                        Capsule().strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
+                    } else {
+                        Capsule().fill(Theme.controlPrimary)
+                    }
+                }
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(done ? "Log \(stack.name) again" : "Log \(stack.name)")
+    }
+
+    private func log(_ stack: LogStack) {
+        today.refresh(context: modelContext)
+        stackToLog = stack
     }
 
     private var emptyState: some View {
@@ -146,10 +205,11 @@ struct StacksView: View {
                 .background(Theme.green.opacity(0.15),
                             in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
                 .accessibilityHidden(true)
-            Text("No stacks yet")
+            Text("Log several at once")
                 .font(.title2.bold())
                 .foregroundStyle(Theme.textPrimary)
-            Text("A stack logs several nutrients in one tap — everything you take with breakfast, for example.")
+                .multilineTextAlignment(.center)
+            Text("Make a stack of what you take together, like Morning with Vitamin D, Omega-3 and Magnesium. Then log it all with one tap, here or on Today.")
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
                 .multilineTextAlignment(.center)

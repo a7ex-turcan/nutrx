@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct MainTabView: View {
-    enum TabID: Hashable { case today, nutrients, history }
+    enum TabID: Hashable { case today, nutrients, stacks, history }
 
     @State private var selection: TabID = .today
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
@@ -25,6 +25,14 @@ struct MainTabView: View {
                 NutrientsListView()
             }
 
+            // Stacks have their own tab: something you build, like nutrients, and used daily from Today.
+            Tab("Stacks", systemImage: "square.stack.3d.up", value: TabID.stacks) {
+                NavigationStack {
+                    StacksView()
+                        .withProfileMenu()
+                }
+            }
+
             Tab("History", systemImage: "calendar", value: TabID.history) {
                 NavigationStack {
                     HistoryListView()
@@ -38,6 +46,13 @@ struct MainTabView: View {
         // A refill reminder opens that nutrient's analytics (My Nutrients pushes it).
         .onChange(of: router?.supplyNutrientID) { _, id in
             if id != nil { selection = .nutrients }
+        }
+        // Today's stacks row "Edit" opens the Stacks tab.
+        .onChange(of: router?.showsStacks) { _, shows in
+            if shows == true {
+                selection = .stacks
+                router?.showsStacks = false
+            }
         }
         // A recap notification opens the recap (History pushes it).
         .onChange(of: router?.showsRecap) { _, shows in

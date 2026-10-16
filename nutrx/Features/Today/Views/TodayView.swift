@@ -36,24 +36,12 @@ struct TodayView: View {
     @State private var selectedGroupForAdd: NutrientGroup?
     @AppStorage("wasSyncRestored") private var wasSyncRestored = false
     @State private var stackToLog: LogStack?
-    /// Stack management, opened from the row's Edit (the list) or the log sheet's "Edit stack" (that stack).
-    @State private var stackEditing: StackEditing?
+    /// A stack's detail, opened from Make a stack or the log sheet's "Edit stack" (the list is the Stacks tab).
+    @State private var stackEditing: LogStack?
     /// Set by the log sheet's "Edit stack"; opened once that sheet is gone.
     @State private var pendingStackEdit: LogStack?
 
-    enum StackEditing: Identifiable {
-        case list
-        case stack(LogStack)
-
-        var id: AnyHashable {
-            switch self {
-            case .list: "list"
-            case .stack(let stack): stack.persistentModelID
-            }
-        }
-    }
-
-    /// Stacks with something to log; an empty one only shows in Settings → Stacks.
+    /// Stacks with something to log; an empty one only shows in the Stacks tab.
     private var stacksToShow: [LogStack] {
         stacks.filter { !StackLogging.activeEntries(of: $0).isEmpty }
     }
@@ -157,7 +145,7 @@ struct TodayView: View {
                         StacksRow(
                             stacks: stacksToShow,
                             onLog: { stackToLog = $0 },
-                            onEdit: { stackEditing = .list }
+                            onEdit: { NotificationRouter.shared.showsStacks = true }
                         )
                         .listRowInsets(EdgeInsets(top: Theme.Spacing.sectionTop - Theme.Spacing.cardGap / 2,
                                                   leading: 0, bottom: Theme.Spacing.cardGap / 2, trailing: 0))
@@ -197,12 +185,12 @@ struct TodayView: View {
                 let name = newStackName.trimmingCharacters(in: .whitespaces)
                 guard !name.isEmpty else { return }
                 if let existing = StackLogging.stack(named: name, in: stacks) {
-                    stackEditing = .stack(existing)
+                    stackEditing = existing
                     return
                 }
                 let stack = StackLogging.createStack(named: name, context: modelContext)
                 StackShortcutLogging.stacksChanged()
-                stackEditing = .stack(stack)
+                stackEditing = stack
             }
             .disabled(newStackName.trimmingCharacters(in: .whitespaces).isEmpty)
             Button("Cancel", role: .cancel) {}
@@ -287,7 +275,7 @@ struct TodayView: View {
         .sheet(item: $stackToLog, onDismiss: {
             if let stack = pendingStackEdit {
                 pendingStackEdit = nil
-                stackEditing = .stack(stack)
+                stackEditing = stack
             }
         }) { stack in
             LogStackSheet(
@@ -313,16 +301,11 @@ struct TodayView: View {
         }
         .sheet(item: $stackEditing, onDismiss: {
             viewModel.refresh(context: modelContext)
-        }) { editing in
+        }) { stack in
             NavigationStack {
-                Group {
-                    switch editing {
-                    case .list: StacksView()
-                    case .stack(let stack): StackDetailView(stack: stack)
-                    }
-                }
+                StackDetailView(stack: stack)
                 .toolbar {
-                    // Leading close, so it never sits next to the list's own Edit / Done.
+                    // Leading close, so it never sits next to the detail's own Edit / Done.
                     ToolbarItem(placement: .cancellationAction) {
                         Button {
                             stackEditing = nil
@@ -562,13 +545,7 @@ struct TodayView: View {
     }
 
     private func checkForReview() {
-        let currentStreak = StreakService.compute(context: modelContext).current
-        let totalIntakeCount = (try? modelContext.fetchCount(FetchDescriptor<IntakeRecord>())) ?? 0
-        ReviewService.maybeRequestReview(
-            context: modelContext,
-            currentStreak: currentStreak,
-            totalIntakeCount: totalIntakeCount
-        )
+        ReviewService.checkAfterLogging(context: modelContext)
     }
 
     private func applyEdit(to nutrient: Nutrient) {

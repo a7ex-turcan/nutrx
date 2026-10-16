@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Picks the stacks a nutrient is in, with "New Stack…": from My Nutrients' long-press ("Add to Stack…", changes at
 /// once) and from the new-nutrient form (kept on the draft and applied when the nutrient is added). A nutrient joins a
-/// stack at one step; the amount is changed in the stack itself (Settings → Stacks).
+/// stack at one step; the amount is changed in the stack itself (the Stacks tab).
 struct StackPickerSheet: View {
     enum Mode {
         /// A saved nutrient: each tap adds it to or takes it out of that stack.
