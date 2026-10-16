@@ -2,6 +2,10 @@ import Foundation
 
 /// The words around supply (docs/pro/design/3-supply): Today's hint, the analytics card and the Supply sheet.
 enum SupplyText {
+    /// The analytics card before supply is set up (free teaser, Pro "Set up"): no "bottle", since Water or Caffeine
+    /// don't come in one.
+    static let teaser = "Know when you're running low."
+
     /// Today's hint after the goal status, or nil when nothing shows (plenty, no history).
     static func todayHint(_ status: SupplySchedule.Status) -> String? {
         switch status.level {

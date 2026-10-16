@@ -55,7 +55,7 @@ struct SupplyCard: View {
                             .foregroundStyle(Theme.textPrimary)
                         ProBadge()
                     }
-                    Text("Know when this bottle runs out.")
+                    Text(SupplyText.teaser)
                         .font(.subheadline)
                         .foregroundStyle(Theme.textSecondary)
                 }
@@ -78,7 +78,7 @@ struct SupplyCard: View {
                 Text("Supply")
                     .font(.headline)
                     .foregroundStyle(Theme.textPrimary)
-                Text("Know when this bottle runs out.")
+                Text(SupplyText.teaser)
                     .font(.subheadline)
                     .foregroundStyle(Theme.textSecondary)
             }

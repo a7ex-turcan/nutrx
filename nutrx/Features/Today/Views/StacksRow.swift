@@ -76,7 +76,7 @@ private struct StackCard: View {
             }
             // Cards in the row share the tallest one's height, with the button at the bottom.
             Spacer(minLength: 10)
-            StackLogButton(done: done, fullWidth: true, action: onLog)
+            StackLogButton(stackName: stack.name, done: done, fullWidth: true, action: onLog)
         }
         .padding(Theme.Spacing.cardPadding)
         .frame(width: 176, alignment: .leading)
@@ -118,7 +118,7 @@ private struct SingleStackCard: View {
                 }
             }
             Spacer(minLength: 8)
-            StackLogButton(done: done, fullWidth: false, action: onLog)
+            StackLogButton(stackName: stack.name, done: done, fullWidth: false, action: onLog)
         }
         .padding(Theme.Spacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -150,7 +150,7 @@ private struct LargeTextStackCard: View {
             Text(loggedAt.map { "\(StackLogging.summary(of: stack)) · logged \($0)" } ?? StackLogging.summary(of: stack))
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
-            StackLogButton(done: done, fullWidth: true, showsIcon: true, action: onLog)
+            StackLogButton(stackName: stack.name, done: done, fullWidth: true, showsIcon: true, action: onLog)
         }
         .padding(Theme.Spacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -183,6 +183,7 @@ private struct StackTiles: View {
 
 /// Primary "Log", or ghost "Log again" once the stack was logged today.
 private struct StackLogButton: View {
+    let stackName: String
     let done: Bool
     let fullWidth: Bool
     /// "+ Log" (the full-width card's pill and the large-text cards) or "Log" (the 176pt cards).
@@ -213,6 +214,8 @@ private struct StackLogButton: View {
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
+        // "Log Morning", as in the Stacks tab: on its own "Log" doesn't say which stack.
+        .accessibilityLabel(done ? "Log \(stackName) again" : "Log \(stackName)")
     }
 }
 

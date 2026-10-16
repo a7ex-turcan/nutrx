@@ -67,4 +67,10 @@ final class SupplyTextTests: XCTestCase {
         XCTAssertEqual(SupplyText.formSummary(servings: 1), "1 serving")
         XCTAssertEqual(SupplyText.formSummary(servings: 120, locale: enUS), "120 servings")
     }
+
+    func testTheTeaserFitsAnyNutrient() {
+        // Shown on Water and Caffeine too, which don't come in a bottle (#85).
+        XCTAssertEqual(SupplyText.teaser, "Know when you're running low.")
+        XCTAssertFalse(SupplyText.teaser.localizedCaseInsensitiveContains("bottle"))
+    }
 }

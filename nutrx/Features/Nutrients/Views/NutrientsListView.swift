@@ -276,7 +276,7 @@ struct NutrientsListView: View {
         }
         .foregroundStyle(Theme.textSecondary)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(name), \(count) nutrients")
+        .accessibilityLabel("\(name), \(count == 1 ? "1 nutrient" : "\(count) nutrients")")
     }
 
     /// Row (DESIGN.md §5.6): icon tile, name, goal-type tag + target, bell if it has reminders.
