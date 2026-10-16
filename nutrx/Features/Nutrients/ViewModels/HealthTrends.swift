@@ -12,6 +12,29 @@ struct HealthDay: Equatable {
     var hasData: Bool { sleepMinutes != nil || workedOut || activeEnergy != nil }
 }
 
+/// Minutes asleep per night from Health's sleep samples. Several sources (a Watch and a sleep app) can record the same
+/// night, so overlapping intervals are merged before they're added up; a night is credited to the day before the
+/// morning it ends (sleep ending before noon belongs to the previous day's night). Pure, tested in `HealthTrendsTests`.
+enum SleepNights {
+    static func minutes(_ intervals: [DateInterval], calendar: Calendar) -> [Date: Double] {
+        var byNight: [Date: [DateInterval]] = [:]
+        for interval in intervals {
+            byNight[calendar.startOfDay(for: interval.end.addingTimeInterval(-12 * 3600)), default: []].append(interval)
+        }
+        return byNight.mapValues { intervals in
+            var merged: [DateInterval] = []
+            for interval in intervals.sorted(by: { $0.start < $1.start }) {
+                if let last = merged.last, interval.start <= last.end {
+                    merged[merged.count - 1] = DateInterval(start: last.start, end: max(last.end, interval.end))
+                } else {
+                    merged.append(interval)
+                }
+            }
+            return merged.reduce(0) { $0 + $1.duration / 60 }
+        }
+    }
+}
+
 /// How a nutrient lines up with Apple Health over the last four weeks (nutrx Pro, docs/pro/PLAN.md phase 7). Pure:
 /// simple differences between groups of days, only with enough paired days and a difference big enough to matter.
 /// It describes patterns in the user's own data and never claims a cause or advises (`HealthText`).

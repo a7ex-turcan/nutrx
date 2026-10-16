@@ -14,6 +14,8 @@ struct SettingsView: View {
     @Query private var stacks: [LogStack]
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @State private var showPaywall = false
+    /// Read here so the Apple Health row follows the switch on its page.
+    @AppStorage(HealthReader.connectedKey) private var healthConnected = false
     @State private var notificationsAllowed = false
     @AppStorage(RecapSchedule.enabledKey) private var weeklyRecapEnabled = true
     @State private var showProStatus = false
@@ -97,6 +99,24 @@ struct SettingsView: View {
                     ExportDataView()
                 } label: {
                     row("Export data", symbol: "square.and.arrow.up", color: Theme.SettingsTile.grey, value: nil)
+                }
+                if ProAccess.isStoreVisible, HealthReader.isAvailable {
+                    if proAccess?.isPro == true {
+                        NavigationLink {
+                            AppleHealthSettingsView()
+                        } label: {
+                            row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral,
+                                value: healthConnected ? "On" : "Off")
+                        }
+                    } else {
+                        ProGatedButton(action: {}) { _ in
+                            HStack(spacing: 8) {
+                                row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral, value: nil)
+                                ProBadge()
+                            }
+                        }
+                        .foregroundStyle(Theme.textPrimary)
+                    }
                 }
             }
             .listRowBackground(Theme.surfaceCard)

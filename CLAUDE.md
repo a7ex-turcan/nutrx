@@ -172,6 +172,7 @@ nutrx/
 │   │   │   ├── NutrientRemindersSheet.swift     # Per-nutrient dose reminder management.
 │   │   │   ├── SupplySheet.swift                # Supply (Pro): servings, each serving, remind me, sentence, Refilled today.
 │   │   │   ├── SupplyCard.swift                 # Analytics Supply card: free teaser / Set up / days left, gauge, Refilled.
+│   │   │   ├── HealthTrendsCard.swift           # Analytics "With Apple Health" (Pro): findings with two bars, or the state.
 │   │   │   ├── ScanLabelEntry.swift             # Scan a label (Pro): entry card + reading note + divider; ScanReviewBanner.
 │   │   │   ├── LabelScannerView.swift           # Full-screen VisionKit scanner (or a photo), reading pill, ScanFailCard.
 │   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics, pushed on row tap: header, period picker, stats + chart card, heatmap, Reminders row, Edit.
@@ -224,6 +225,7 @@ nutrx/
 │   │   │   ├── StacksView.swift             # Settings → Stacks: list, reorder, swipe to delete, create; empty state.
 │   │   │   ├── StackDetailView.swift        # One stack: name, nutrients with amounts, add / remove / reorder, Siri tip, delete.
 │   │   │   ├── ExportDataView.swift         # Settings → Export data: period, entry count, Export CSV → share sheet, done strip.
+│   │   │   ├── AppleHealthSettingsView.swift # Settings → Apple Health (Pro): switch, what's read (data found?), privacy, Disconnect.
 │   │   │   └── ProSettingsCard.swift        # Settings' nutrx Pro card (free: Learn more → paywall; Pro: status → ProStatusView).
 │   │   └── ViewModels/
 │   │       └── SettingsSummary.swift        # Row values: "On", "Noon check-in", "No account", group count, profile title.
@@ -269,6 +271,7 @@ nutrx/
     │   ├── SymbolPicker.swift               # 16-symbol grid (DESIGN.md §3 set).
     │   ├── GoalTypePicker.swift             # At least / At most / Between cards.
     │   ├── MoveToGroupSheet.swift
+    │   ├── HealthIntroView.swift            # Before the Health permission sheet: what's read, read only; HealthTypesCard, HealthPrivacyNote.
     │   ├── StackPickerSheet.swift           # Stacks a nutrient is in + New Stack… (My Nutrients' Add to Stack…, the new-nutrient form).
     │   ├── CameraView.swift                 # UIImagePickerController wrapper for camera capture.
     │   ├── SyncLoadingView.swift            # Spinner during CloudKit sync wait.
@@ -786,7 +789,7 @@ Mockups: `docs/pro/design/5-weekly-recap/`.
 
 ### nutrx Pro: Trends with Apple Health (phase 7)
 
-Mockups: `docs/pro/design/6-health-trends/`. The engine and its words come first; reading HealthKit, the permission screen, Settings → Apple Health and the analytics card follow in a separate PR.
+Mockups: `docs/pro/design/6-health-trends/`.
 - **`HealthDay`:** one day of Apple Health as read: minutes asleep the night after the day, whether there was a workout, active energy (kcal). Read live into memory, never stored in SwiftData or iCloud, never in widgets.
 - **`HealthTrends.state`** (pure, `HealthTrendsTests`) over the last 28 completed days:
   - A **paired day** has the nutrient tracked (on or after `createdAt`), something logged in nutrx that day (so a day the app wasn't used isn't 0) and Health data.
@@ -795,7 +798,13 @@ Mockups: `docs/pro/design/6-health-trends/`. The engine and its words come first
   - **Workouts:** intake on workout days vs rest days, counted when the gap is at least 15% of the average intake. Without a workout finding, **active energy**: days at or above the median vs below.
   - Every group needs at least 4 days. Findings come sleep first, at most two.
 - **`HealthText`:** "On days Caffeine passes 300 mg, you seem to sleep about 40 minutes less on average.", "On days you work out, you log about 80 mg more Caffeine on average.", the bars' labels and values ("Over 300 mg" 6 h 35 / "Other days" 7 h 15), the basis ("Based on 9 days over 300 mg and 19 days under."), the states, the footer ("Patterns in your own data, not causes. Worked out on this iPhone.", naming the device) and the free teaser. "Seems to", "on average", day counts, and never a cause or advice. Amounts follow the user's locale.
-- **HealthKit doesn't tell an app whether read access was granted**, so Settings can't show "Allowed" per type as the mockup does; it shows whether data was found.
+- **HealthKit doesn't tell an app whether read access was granted**, so Settings can't show "Allowed" per type as the mockup does; it shows whether data was found ("Data found" / "No data yet").
+- **`HealthReader`** (`Shared/Services/`, app only): `connect()` shows the system sheet (`requestAuthorization(toShare: [], read:)`: sleep analysis, workouts, active energy) and sets the device's switch (`nutrx.healthConnected`, the only thing stored); `recentDays` reads per day through a `Source`. `HealthKitSource`: minutes asleep (core, deep, REM, unspecified; overlapping samples from several sources, such as a Watch and a sleep app, merged per night by the pure `SleepNights`) credited to the night before the morning they end, workout start days, daily active-energy sums. The HealthKit entitlement (`com.apple.developer.healthkit`, empty access list) is on the app only; `NSHealthShareUsageDescription` explains the read. In Debug builds `simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.healthDemo -bool YES` swaps in a demo source (the simulator's Health store is empty).
+- **Analytics card** (`HealthTrendsCard`, below the weekday heatmap; `NutrientAnalyticsViewModel.refreshHealth` on appear): free → the teaser with the PRO chip and "Learn about nutrx Pro"; Pro, not connected → Connect Apple Health (opens `HealthIntroView`); connected → the findings (sentence, two bars in the tint, basis, footer, "Last 28 days") or the state (14-segment progress, no pattern, no Health data). Shown only where HealthKit is available.
+- **`HealthIntroView`** (`Shared/Components/`, from the card and Settings): what's read, read only and stays on the device, Continue (the system sheet) / Not now.
+- **Settings → Apple Health** (`AppleHealthSettingsView`, a row with Export data; free shows the PRO chip): the switch, what's read with Data found / No data yet, where to change access in the Health app (profile picture › Privacy › Apps), the privacy note, Disconnect. The Settings row reads the switch through `@AppStorage`, so it follows the page.
+- **Privacy tests** (`HealthPrivacyTests`, guideline 5.1.3): no SwiftData model property is about sleep, workouts, energy or health, and the only Health-related UserDefaults key is the switch.
+- Health trends are shipped on the paywall (the Settings card's tagline becomes "Supply, label scan, recaps and more").
 
 ---
 
