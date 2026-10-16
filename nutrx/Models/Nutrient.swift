@@ -39,7 +39,7 @@ final class Nutrient {
     /// nutrient is off Today, its reminders stop, and History, streaks and analytics count it only up to here.
     var endDate: Date? = nil
     /// The days between a course's end and its restart, so they never count as missed (#99): "yyyyMMdd-yyyyMMdd"
-    /// pairs, comma-separated (a string, so it's one CloudKit field). Read via `courseGaps`.
+    /// pairs, comma-separated (a string, so it's one CloudKit field). Read via `courseGaps(calendar:)`.
     var courseGapsRaw: String = ""
 
     var goalType: GoalType {
@@ -153,14 +153,17 @@ extension Nutrient {
         !isDeleted && !hasEnded(by: date, calendar: calendar)
     }
 
-    var courseGaps: [ClosedRange<Date>] { NutrientCourse.decode(courseGapsRaw) }
+    /// Read in the same calendar the caller matches days in.
+    func courseGaps(calendar: Calendar = .current) -> [ClosedRange<Date>] {
+        NutrientCourse.decode(courseGapsRaw, calendar: calendar)
+    }
 
     /// Sets a new last day (nil = ongoing). If the course had ended, the days since then are kept as a gap, so
     /// restarting never turns them into misses after the fact. The one writer of `endDate` for a saved nutrient.
     func setCourse(endDate newEndDate: Date?, now: Date = .now, calendar: Calendar = .current) {
         guard newEndDate != endDate else { return }
         if let gap = NutrientCourse.gap(after: endDate, restartingOn: now, calendar: calendar) {
-            let gaps = NutrientCourse.decode(courseGapsRaw, calendar: calendar) + [gap]
+            let gaps = courseGaps(calendar: calendar) + [gap]
             courseGapsRaw = NutrientCourse.encode(gaps, calendar: calendar)
         }
         endDate = newEndDate
