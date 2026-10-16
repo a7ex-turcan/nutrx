@@ -1,14 +1,66 @@
 import SwiftUI
 
 /// Before the system's Health permission sheet (docs/pro/design/6-health-trends: intro): what nutrx reads, that it's
-/// read only and stays on the device. Continue asks HealthKit; Not now closes it.
+/// read only and stays on the device. Continue asks HealthKit; Not now closes it. Once connected it says what happens
+/// next and where insights will appear (#102), then Done closes it.
 struct HealthIntroView: View {
     let onConnected: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var connecting = false
+    @State private var connected = false
 
     var body: some View {
+        if connected {
+            confirmation
+        } else {
+            intro
+        }
+    }
+
+    private var confirmation: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            // Drawn, not an SF Symbol, so VoiceOver doesn't read it as "Selected".
+            CheckmarkShape()
+                .stroke(Theme.forest, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                .frame(width: 20, height: 15)
+                .frame(width: 48, height: 48)
+                .background(Theme.green, in: Circle())
+                .accessibilityHidden(true)
+                .padding(.top, 32)
+            Text(HealthText.connectedTitle)
+                .font(.largeTitle.bold())
+                .foregroundStyle(Theme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+            Text(HealthText.connectedBody)
+                .font(.body)
+                .foregroundStyle(Theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(HealthText.whereLine)
+                .font(.body)
+                .foregroundStyle(Theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button {
+                dismiss()
+            } label: {
+                Text("Done")
+                    .font(.headline)
+                    .foregroundStyle(Theme.controlOnPrimary)
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .background(Theme.controlPrimary, in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.bottom, 8)
+        }
+        .padding(.horizontal, Theme.Spacing.screenMargin + 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Theme.surfaceGround)
+        .presentationDragIndicator(.visible)
+    }
+
+    private var intro: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Image(systemName: "heart.text.square")
@@ -37,10 +89,14 @@ struct HealthIntroView: View {
                 Button {
                     connecting = true
                     Task {
-                        let connected = await HealthReader.connect()
+                        let didConnect = await HealthReader.connect()
                         connecting = false
-                        if connected { onConnected() }
-                        dismiss()
+                        if didConnect {
+                            onConnected()
+                            withAnimation { connected = true }
+                        } else {
+                            dismiss()
+                        }
                     }
                 } label: {
                     Group {

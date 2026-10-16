@@ -9,6 +9,8 @@ struct WeeklyRecapView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Query private var allPreferences: [UserPreferences]
     @State private var viewModel = RecapViewModel()
+    /// Apple Health insights (#102): one line at the end while they're gathering, or a pointer once one is ready.
+    @State private var healthStatus: HealthInsights.Status?
 
     private var streaksEnabled: Bool { allPreferences.first?.streaksEnabled != false }
 
@@ -22,6 +24,9 @@ struct WeeklyRecapView: View {
                 } else if let running = viewModel.runningWeek {
                     firstWeekHero(running)
                     explainer
+                }
+                if let status = healthStatus, let line = HealthText.recapLine(status) {
+                    healthLine(line)
                 }
             }
             .padding(.horizontal, Theme.Spacing.screenMargin)
@@ -40,6 +45,8 @@ struct WeeklyRecapView: View {
             }
         }
         .onAppear { viewModel.refresh(context: modelContext, streaksEnabled: streaksEnabled) }
+        // The recap is Pro already; the line needs Health connected (`load` is nil otherwise).
+        .task { healthStatus = await HealthInsights.load(context: modelContext) }
         .task(id: viewModel.selected?.weekStart) {
             if let recap = viewModel.selected { await viewModel.loadSummary(for: recap) }
         }
@@ -158,6 +165,21 @@ struct WeeklyRecapView: View {
         case .streak:
             NutrientIconTile(tint: .coral, symbolName: "flame", size: 32)
         }
+    }
+
+    private func healthLine(_ line: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "heart.fill")
+                .font(.subheadline)
+                .foregroundStyle(NutrientTint.coral.tileGlyph)
+                .accessibilityHidden(true)
+            Text(line)
+                .font(.subheadline)
+                .foregroundStyle(Theme.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 8)
+        .padding(.horizontal, 4)
     }
 
     // MARK: - Earlier weeks

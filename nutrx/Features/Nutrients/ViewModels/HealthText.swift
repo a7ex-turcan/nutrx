@@ -31,6 +31,53 @@ struct HealthText {
 
     static func checked(days: Int) -> String { "Checked \(days) days · updates daily" }
 
+    // MARK: - Where insights appear (#102)
+
+    static let connectedTitle = "Apple Health is connected"
+    static let connectedBody = "Keep logging as usual. In about two weeks, each nutrient's analytics will show how it lines up with your sleep and workouts."
+    static let whereLine = "You'll find them in My Nutrients › a nutrient › With Apple Health."
+
+    /// Today's card title, or nil when the status doesn't call for the card.
+    static func todayTitle(_ status: HealthInsights.Status) -> String? {
+        switch status {
+        case .gathering: "Insights from Apple Health are on the way"
+        case .ready: "Your first Apple Health insight is ready"
+        case .noHealthData, .noPattern: nil
+        }
+    }
+
+    /// "Keep logging: Vitamin D has 9 of 14 days with your logs and Health data." / "See how Vitamin D lines up with
+    /// your sleep and workouts."
+    static func todayBody(_ status: HealthInsights.Status) -> String? {
+        switch status {
+        case .gathering(_, let name, let days):
+            "Keep logging: \(name) has \(progress(pairedDays: days)) with your logs and Health data."
+        case .ready(_, let name):
+            "See how \(name) lines up with your sleep and workouts."
+        case .noHealthData, .noPattern: nil
+        }
+    }
+
+    /// Settings → Apple Health, under "Where you'll see it".
+    static func settingsStatus(_ status: HealthInsights.Status) -> String {
+        switch status {
+        case .gathering(_, let name, let days):
+            "So far: \(progress(pairedDays: days)) for \(name). Insights start at \(HealthTrends.minimumPairedDays)."
+        case .ready(_, let name): "Ready: see \(name)'s analytics."
+        case .noPattern: "Checked: no clear pattern yet. It updates daily."
+        case .noHealthData: noHealthData
+        }
+    }
+
+    /// One line at the end of the weekly recap, or nil.
+    static func recapLine(_ status: HealthInsights.Status) -> String? {
+        switch status {
+        case .gathering: "Apple Health insights start after about two weeks of logging."
+        case .ready(_, let name): "See how \(name) lines up with your sleep and workouts in its analytics."
+        case .noHealthData, .noPattern: nil
+        }
+    }
+
     // MARK: - Findings
 
     /// "On days caffeine passes 300 mg, you seem to sleep about 40 minutes less on average."

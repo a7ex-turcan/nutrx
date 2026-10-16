@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Settings → Apple Health (nutrx Pro, docs/pro/design/6-health-trends: settings): trends on or off, what's read and
 /// whether nutrx finds any of it, where to change access, the privacy note, and Disconnect. HealthKit never tells an
@@ -7,6 +8,9 @@ struct AppleHealthSettingsView: View {
     @State private var isConnected = HealthReader.isConnected
     @State private var showIntro = false
     @State private var found: (sleep: Bool, workouts: Bool, energy: Bool)?
+    /// Where the insights stand (#102), for "Where you'll see it".
+    @State private var insights: HealthInsights.Status?
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         ScrollView {
@@ -36,6 +40,28 @@ struct AppleHealthSettingsView: View {
                         .padding(.horizontal, 4)
                 }
 
+                if isConnected {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Where you'll see it")
+                            .font(.headline)
+                            .foregroundStyle(Theme.textPrimary)
+                            .accessibilityAddTraits(.isHeader)
+                        Text(HealthText.whereLine)
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if let insights {
+                            Text(HealthText.settingsStatus(insights))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(Theme.textPrimary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .padding(Theme.Spacing.cardPadding)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.surfaceCard, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+                }
+
                 HealthPrivacyNote(text: "Read only. Health data stays on this \(UIDevice.current.model) — it's never saved to iCloud or synced to your other devices.")
 
                 if isConnected {
@@ -60,6 +86,7 @@ struct AppleHealthSettingsView: View {
         }
         .task(id: isConnected) {
             found = isConnected ? await HealthReader.typesWithData() : nil
+            insights = isConnected ? await HealthInsights.load(context: modelContext) : nil
         }
     }
 
