@@ -93,8 +93,6 @@ enum ProText {
         return rounded.formatted(format)
     }
 
-    /// Settings' card: "Yearly · renews 14 Oct 2027", "Yearly · free until 21 Oct", "Monthly · ends 3 Nov 2026",
-    /// "Lifetime".
     /// Today's plan chip (#101): "PRO" on Pro, "Free" otherwise.
     static func planChipTitle(isPro: Bool) -> String { isPro ? "PRO" : "Free" }
 
@@ -102,7 +100,9 @@ enum ProText {
         isPro ? "nutrx Pro, active" : "Free plan. See what nutrx Pro adds"
     }
 
-        static func shortStatus(_ entitlement: ProAccess.Entitlement, locale: Locale = .current) -> String {
+    /// Settings' card: "Yearly · renews 14 Oct 2027", "Yearly · free until 21 Oct", "Monthly · ends 3 Nov 2026",
+    /// "Lifetime".
+    static func shortStatus(_ entitlement: ProAccess.Entitlement, locale: Locale = .current) -> String {
         status(entitlement, dateStyle: Date.FormatStyle(date: .abbreviated, time: .omitted).locale(locale))
     }
 
