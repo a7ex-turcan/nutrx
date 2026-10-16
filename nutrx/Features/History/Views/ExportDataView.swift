@@ -2,11 +2,15 @@ import SwiftUI
 import SwiftData
 import UIKit
 
-/// Settings → Export data (docs/pro/design/1-stacks-export: export, export-done): a document tile and title, what
-/// the file holds, the period (All time / Last 30 days / Last 90 days) with its entry count, and Export CSV, which
-/// makes the file on the device and opens the share sheet. Once shared, a green strip names the file and the button
-/// reads Export again.
+/// Export data (docs/pro/design/1-stacks-export: export, export-done), from History's "Your data" card and toolbar
+/// menu: a document tile and title, what the file holds, the period (All time / Last 30 days / Last 90 days) with its
+/// entry count, and Export CSV, which makes the file on the device and opens the share sheet. Once shared, a green
+/// strip names the file and the button reads Export again.
 struct ExportDataView: View {
+    /// Presented in a sheet (History), so it gets a Done button.
+    var showsDone = false
+
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
@@ -77,6 +81,13 @@ struct ExportDataView: View {
         .background(Theme.surfaceGround)
         // The header carries the title; the bar only shows it once the header has scrolled away.
         .navigationTitle(headerScrolledAway ? "Export data" : "")
+        .toolbar {
+            if showsDone {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: period, initial: true) {
             entries = ExportService.entries(for: period, context: modelContext)
@@ -110,7 +121,7 @@ struct ExportDataView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 16) {
-                Image(systemName: "doc.text")
+                Image(systemName: "tablecells")
                     .font(.system(size: 24, weight: .semibold))
                     .foregroundStyle(colorScheme == .dark ? Theme.green : Theme.forest)
                     .frame(width: 52, height: 52)

@@ -197,7 +197,8 @@ nutrx/
 │   │
 │   ├── History/                 # Tab 4 — read-only log of past days.
 │   │   ├── Views/
-│   │   │   ├── HistoryListView.swift        # Large title, report button (Pro); StreakCard, MonthCalendar card, "Recent days" (dots + score). Taps push HistoryDayView.
+│   │   │   ├── HistoryListView.swift        # Large title, "Your data" menu; StreakCard, MonthCalendar card, "Recent days" (dots + score), "Your data" card. Taps push HistoryDayView.
+│   │   │   ├── ExportDataView.swift         # Export data (from History): period, entry count, Export CSV → share sheet, done strip.
 │   │   │   ├── ReportView.swift             # Report for your doctor (Pro): thumbnail, period, nutrients, toggles, Create PDF → share sheet; preview.
 │   │   │   ├── ReportPageView.swift         # One printed page of the report (cover, summary, sections, notes) + ReportBarChart.
 │   │   │   ├── ReportPDF.swift              # The pages into one PDF through ImageRenderer; temp file for the share sheet.
@@ -231,12 +232,11 @@ nutrx/
 │   │
 │   ├── Settings/
 │   │   ├── Views/
-│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Apple Health, Export data, Report for your doctor; Rate nutrx, About) with values, privacy footer.
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Apple Health; Rate nutrx, About) with values, privacy footer.
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
 │   │   │   ├── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
-│   │   │   ├── ExportDataView.swift         # Settings → Export data: period, entry count, Export CSV → share sheet, done strip.
 │   │   │   ├── AppleHealthSettingsView.swift # Settings → Apple Health (Pro): switch, what's read (data found?), privacy, Disconnect.
 │   │   │   └── ProSettingsCard.swift        # Settings' nutrx Pro card (free: Learn more → paywall; Pro: status → ProStatusView).
 │   │   └── ViewModels/
@@ -460,7 +460,7 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
 
 Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-export/export*.png`.
 
-- **Settings → Export data** (grey tile, in the section with Apple Health and Report for your doctor) pushes `ExportDataView`. It has a document tile with the title, what the file holds, and a period card: All time, Last 30 days or Last 90 days. "Last 30 days" is today and the 29 days before it.
+- **Where:** History's **Your data** card (the last card: Report for your doctor, Export data) and its toolbar menu (share icon, "Your data") open `ExportDataView` in a sheet with **Done** (`showsDone`). It moved out of Settings in #103: it isn't a setting. It has a document tile with the title, what the file holds, and a period card: All time, Last 30 days or Last 90 days. "Last 30 days" is today and the 29 days before it.
   - The count line reads "**1,284** entries · 6 nutrients · since 2 March 2026", or "No entries in this period", which disables the button.
   - **Export CSV** writes the file and opens the system share sheet. It's `ActivityView` (`Shared/Components/`), a `UIActivityViewController` wrapper, because `ShareLink` has no completion and the done state needs to know the file was sent.
   - Once the file is sent, a green strip shows "Exported N entries" with the file name, and the button reads **Export again**. Changing the period clears it.
@@ -818,7 +818,7 @@ Mockups: `docs/pro/design/6-health-trends/`.
 - **`HealthReader`** (`Shared/Services/`, app only): `connect()` shows the system sheet (`requestAuthorization(toShare: [], read:)`: sleep analysis, workouts, active energy) and sets the device's switch (`nutrx.healthConnected`, the only thing stored); `recentDays` reads per day through a `Source`. `HealthKitSource`: minutes asleep (core, deep, REM, unspecified; overlapping samples from several sources, such as a Watch and a sleep app, merged per night by the pure `SleepNights`) credited to the night before the morning they end, workout start days, daily active-energy sums. The HealthKit entitlement (`com.apple.developer.healthkit`, empty access list) is on the app only; `NSHealthShareUsageDescription` explains the read. App Store validation also requires `NSHealthUpdateUsageDescription` with the HealthKit entitlement even though nutrx never writes ("nutrx only reads from Apple Health and never writes to it."); 2.1 (58)'s first upload was refused without it. In Debug builds `simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.healthDemo -bool YES` swaps in a demo source (the simulator's Health store is empty).
 - **Analytics card** (`HealthTrendsCard`, below the weekday heatmap; `NutrientAnalyticsViewModel.refreshHealth` on appear): free → the teaser with the PRO chip and "Learn about nutrx Pro"; Pro, not connected → Connect Apple Health (opens `HealthIntroView`); connected → the findings (sentence, two bars in the tint, basis, footer, "Last 28 days") or the state (14-segment progress, no pattern, no Health data). Shown only where HealthKit is available.
 - **`HealthIntroView`** (`Shared/Components/`, from the card and Settings): what's read, read only and stays on the device, Continue (the system sheet) / Not now.
-- **Settings → Apple Health** (`AppleHealthSettingsView`, a row with Export data; free shows the PRO chip): the switch, what's read with Data found / No data yet, where to change access in the Health app (profile picture › Privacy › Apps), the privacy note, Disconnect. The Settings row reads the switch through `@AppStorage`, so it follows the page.
+- **Settings → Apple Health** (`AppleHealthSettingsView`, its own section; free shows the PRO chip): the switch, what's read with Data found / No data yet, where to change access in the Health app (profile picture › Privacy › Apps), the privacy note, Disconnect. The Settings row reads the switch through `@AppStorage`, so it follows the page.
 - **Privacy tests** (`HealthPrivacyTests`, guideline 5.1.3): no SwiftData model property is about sleep, workouts, energy or health, and the only Health-related UserDefaults key is the switch.
 - Health trends are shipped on the paywall (the Settings card's tagline becomes "Supply, label scan, recaps and more").
 
@@ -832,7 +832,7 @@ Mockups: `docs/pro/design/7-doctor-report/`.
 - **Pages** (`ReportPageView`): drawn at paper size in points, black ink on white whatever the appearance, and not scaled by Dynamic Type (it's print). Every block takes exactly the height `ReportLayout` gave it. The cover has the brand mark (the report's only colour), the title, period, Name / Nutrients tracked / Days with entries, the hit-rate and streak boxes, the summary table and the disclaimer; content pages have a lighter header with the period. Sections: name and goal line, Hit rate / Average / Days logged boxes, `ReportBarChart` (dark bars met, light bars missed, no bar on a day that doesn't count, a sliver for a logged 0; dashed goal line, both bounds for a range; drawn as shapes so it stays vector) and the caption; Health trend lines under it when included. Notes: date, nutrient, text up to three lines.
 - **PDF** (`ReportPDF`): one `ImageRenderer` per page into one `CGContext` PDF (title "Intake report", creator "nutrx"), so the text is real and searchable (`ReportPDFTests` reads it back with PDFKit). The file goes in its own folder under `tmp/nutrx-report/`, removed when the share sheet closes, like Export data.
 - **Create sheet** (`ReportView`, `ReportViewModel`, `ReportViewModelTests`): a thumbnail of the real cover (hidden from VoiceOver), "4 pages · PDF", Preview (the pages scaled to the screen), PERIOD segmented 30 days / 90 days / Custom (From / To in their own card, from the first entry to yesterday; From never after To, each moving the other along) with the dates under it, then **Nutrients** ("All 6" / "4 of 6": a checklist of the nutrients tracked in the period; one with no entries in the period starts unchecked, since a page of "0 days logged" reads as a goal never met; at least one stays checked), Include my name (only when the profile has one), Include notes, Include Apple Health trends (only when Health is connected: each nutrient's `HealthTrends` findings over the last 28 days, read live). **Create PDF** opens the share sheet. It's off with "Nothing logged in this period" or "Choose at least one nutrient" under the period; a failed render shows "Couldn't make the PDF", never an empty file.
-- **Entry points:** History's toolbar has a document button before the avatar (`ProGatedButton`, with the PRO chip for free users; only once History has past days), which presents the sheet with Cancel. History applies `withProfileMenu()` itself, before that toolbar, so the avatar keeps its far-right place. Settings has a **Report for your doctor** row (blue tile) after Export data, which pushes the same screen (free: PRO chip, paywall). The report is shipped on the paywall (`ProFeature.isShipped` is true for all five).
+- **Entry points** (History, since #103): the **Your data** card at the end of History (Report for your doctor: blue tile, PRO chip and paywall for free users through `ProGatedButton`; Export data: green tile) and the toolbar's **Your data** menu (share icon before the avatar, once History has past days: Report for your doctor, with a "nutrx Pro" subtitle for free users, and Export data). A Pro user gets the sheet with Cancel; the menu waits for the first entitlement check before choosing the paywall. History applies `withProfileMenu()` itself, before that toolbar, so the avatar keeps its far-right place. Neither is in Settings any more. The report is shipped on the paywall (`ProFeature.isShipped` is true for all five).
 
 ---
 

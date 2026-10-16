@@ -4,6 +4,14 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## Unreleased
+
+### Improvements
+- **Your data in History** — Export data and Report for your doctor moved from Settings to a "Your data" card at the end of History, and to the share button at the top of History.
+- **Stacks tab** — The + button sits before your profile picture, as on the other tabs.
+
+---
+
 ## v2.1 — 2026-10-16
 
 ### nutrx Pro

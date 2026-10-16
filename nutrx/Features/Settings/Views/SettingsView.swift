@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// Settings sheet (DESIGN.md §5.9): profile card, then rows with Settings-style icon tiles — iCloud Sync,
-/// Notifications, Streaks, Groups; Export data; Rate nutrx, About — and the privacy footer.
+/// Notifications, Streaks, Groups; Apple Health (Pro); Rate nutrx, About — and the privacy footer.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -86,9 +86,9 @@ struct SettingsView: View {
             }
             .listRowBackground(Theme.surfaceCard)
 
-            // Your data (docs/pro/design/7-doctor-report: entry): Apple Health and the doctor report (Pro), Export data.
-            Section {
-                if ProAccess.isStoreVisible, HealthReader.isAvailable {
+            // Apple Health (Pro). Export data and the doctor report live in History's "Your data" (#103).
+            if ProAccess.isStoreVisible, HealthReader.isAvailable {
+                Section {
                     if proAccess?.isPro == true {
                         NavigationLink {
                             AppleHealthSettingsView()
@@ -106,31 +106,8 @@ struct SettingsView: View {
                         .foregroundStyle(Theme.textPrimary)
                     }
                 }
-                NavigationLink {
-                    ExportDataView()
-                } label: {
-                    row("Export data", symbol: "square.and.arrow.up", color: Theme.SettingsTile.grey, value: nil)
-                }
-                if ProAccess.isStoreVisible {
-                    if proAccess?.isPro == true {
-                        NavigationLink {
-                            ReportView()
-                        } label: {
-                            row("Report for your doctor", symbol: "doc.fill", color: Theme.SettingsTile.blue, value: nil)
-                        }
-                    } else {
-                        ProGatedButton(action: {}) { _ in
-                            HStack(spacing: 8) {
-                                row("Report for your doctor", symbol: "doc.fill", color: Theme.SettingsTile.blue,
-                                    value: nil)
-                                ProBadge()
-                            }
-                        }
-                        .foregroundStyle(Theme.textPrimary)
-                    }
-                }
+                .listRowBackground(Theme.surfaceCard)
             }
-            .listRowBackground(Theme.surfaceCard)
 
             Section {
                 Button {
