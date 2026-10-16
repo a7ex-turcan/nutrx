@@ -23,6 +23,10 @@ struct NutrientsListView: View {
     @State private var selection: Set<PersistentIdentifier> = []
     @State private var showMoveSelection = false
     @State private var confirmDeleteSelection = false
+    /// The selection as it was when the sheet or alert opened: ending the selection as they close would otherwise
+    /// flash "Move 0 Nutrients" (and a check on every group) or "Delete 0 nutrients" on the way out.
+    @State private var actingOn: [Nutrient] = []
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var newGroupName = ""
     @Query private var allPreferences: [UserPreferences]
 
@@ -148,16 +152,16 @@ struct NutrientsListView: View {
                 MoveToGroupSheet(nutrient: nutrient)
             }
             .sheet(isPresented: $showMoveSelection) {
-                MoveToGroupSheet(nutrients: selectedNutrients) {
+                MoveToGroupSheet(nutrients: actingOn) {
                     endSelecting()
                 }
             }
-            .alert(selectedNutrients.count == 1 ? "Delete 1 nutrient?" : "Delete \(selectedNutrients.count) nutrients?",
+            .alert(actingOn.count == 1 ? "Delete 1 nutrient?" : "Delete \(actingOn.count) nutrients?",
                    isPresented: $confirmDeleteSelection) {
                 Button("Delete", role: .destructive) { deleteSelection() }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text(selectedNutrients.count == 1
+                Text(actingOn.count == 1
                      ? "It'll be removed from your daily tracking. Your logged history stays."
                      : "They'll be removed from your daily tracking. Your logged history stays.")
             }
@@ -330,8 +334,12 @@ struct NutrientsListView: View {
                     .foregroundStyle(Theme.textSecondary)
                     .monospacedDigit()
             }
-            HStack(spacing: 10) {
+            // Side by side, or stacked at accessibility sizes so "Move to Group" isn't cut short.
+            let actions = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: 10)) : AnyLayout(HStackLayout(spacing: 10))
+            actions {
                 Button {
+                    actingOn = selectedNutrients
                     showMoveSelection = true
                 } label: {
                     Label("Move to Group", systemImage: "folder")
@@ -343,6 +351,7 @@ struct NutrientsListView: View {
                 }
                 .accessibilityLabel(count == 1 ? "Move 1 nutrient to a group" : "Move \(count) nutrients to a group")
                 Button(role: .destructive) {
+                    actingOn = selectedNutrients
                     confirmDeleteSelection = true
                 } label: {
                     Label("Delete", systemImage: "trash")
@@ -371,7 +380,7 @@ struct NutrientsListView: View {
 
     /// Soft-deletes the selection like a single delete, saving and rescheduling reminders once.
     private func deleteSelection() {
-        for nutrient in selectedNutrients {
+        for nutrient in actingOn {
             nutrient.isDeleted = true
         }
         try? modelContext.save()
