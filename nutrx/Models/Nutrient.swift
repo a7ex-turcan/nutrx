@@ -38,8 +38,8 @@ final class Nutrient {
     /// The last day of a set course (nutrx Pro, #99), at the start of that day; nil = ongoing. From the next day the
     /// nutrient is off Today, its reminders stop, and History, streaks and analytics count it only up to here.
     var endDate: Date? = nil
-    /// The days between a course's end and its restart, so they never count as missed (#99): "start-end" pairs of
-    /// start-of-day timestamps, comma-separated (a string, so it's one CloudKit field). Read via `courseGaps`.
+    /// The days between a course's end and its restart, so they never count as missed (#99): "yyyyMMdd-yyyyMMdd"
+    /// pairs, comma-separated (a string, so it's one CloudKit field). Read via `courseGaps`.
     var courseGapsRaw: String = ""
 
     var goalType: GoalType {
@@ -118,16 +118,26 @@ enum NutrientCourse {
         return first...last
     }
 
-    static func encode(_ gaps: [ClosedRange<Date>]) -> String {
-        gaps.map { "\(Int($0.lowerBound.timeIntervalSince1970))-\(Int($0.upperBound.timeIntervalSince1970))" }
-            .joined(separator: ",")
+    /// Gaps are calendar days, stored as "yyyyMMdd-yyyyMMdd" pairs and rebuilt in the reading calendar, so a time
+    /// zone change never shifts a paused day back into a miss.
+    static func encode(_ gaps: [ClosedRange<Date>], calendar: Calendar = .current) -> String {
+        func day(_ date: Date) -> String {
+            let parts = calendar.dateComponents([.year, .month, .day], from: date)
+            return String(format: "%04d%02d%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+        }
+        return gaps.map { "\(day($0.lowerBound))-\(day($0.upperBound))" }.joined(separator: ",")
     }
 
-    static func decode(_ raw: String) -> [ClosedRange<Date>] {
-        raw.split(separator: ",").compactMap { pair in
-            let parts = pair.split(separator: "-").compactMap { TimeInterval($0) }
-            guard parts.count == 2, parts[0] <= parts[1] else { return nil }
-            return Date(timeIntervalSince1970: parts[0])...Date(timeIntervalSince1970: parts[1])
+    static func decode(_ raw: String, calendar: Calendar = .current) -> [ClosedRange<Date>] {
+        func date(_ text: Substring) -> Date? {
+            guard text.count == 8, let value = Int(text) else { return nil }
+            let parts = DateComponents(year: value / 10000, month: value / 100 % 100, day: value % 100)
+            return calendar.date(from: parts).map { calendar.startOfDay(for: $0) }
+        }
+        return raw.split(separator: ",").compactMap { pair in
+            let days = pair.split(separator: "-").compactMap(date)
+            guard days.count == 2, days[0] <= days[1] else { return nil }
+            return days[0]...days[1]
         }
     }
 }
@@ -150,7 +160,8 @@ extension Nutrient {
     func setCourse(endDate newEndDate: Date?, now: Date = .now, calendar: Calendar = .current) {
         guard newEndDate != endDate else { return }
         if let gap = NutrientCourse.gap(after: endDate, restartingOn: now, calendar: calendar) {
-            courseGapsRaw = NutrientCourse.encode(courseGaps + [gap])
+            let gaps = NutrientCourse.decode(courseGapsRaw, calendar: calendar) + [gap]
+            courseGapsRaw = NutrientCourse.encode(gaps, calendar: calendar)
         }
         endDate = newEndDate
     }

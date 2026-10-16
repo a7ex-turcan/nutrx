@@ -839,7 +839,7 @@ Mockups: `docs/pro/design/6-health-trends/`.
 ### nutrx Pro: Courses (#99)
 
 A nutrient taken for a set time ("for 5 days", "until 24 Oct").
-- **Model:** `Nutrient.endDate: Date?`, the start of the last day; nil = ongoing. `Nutrient.courseGapsRaw: String` keeps the days between a course's end and its restart (`courseGaps`, encoded "start-end" timestamps), so a restarted course doesn't count its paused days as misses. Both are CloudKit-safe, but their fields (`CD_endDate`, `CD_courseGapsRaw`) have to be in the production schema before a release ships them (imported to development with `cktool`; production is a Console deploy, #110).
+- **Model:** `Nutrient.endDate: Date?`, the start of the last day; nil = ongoing. `Nutrient.courseGapsRaw: String` keeps the days between a course's end and its restart (`courseGaps`, stored as calendar days, "yyyyMMdd-yyyyMMdd", so a time zone change doesn't move them), so a restarted course doesn't count its paused days as misses. Both are CloudKit-safe, but their fields (`CD_endDate`, `CD_courseGapsRaw`) have to be in the production schema before a release ships them (imported to development with `cktool`; production is a Console deploy, #110).
 - **`Nutrient.setCourse(endDate:)`** is the one writer of a saved nutrient's end date (`NutrientDraft.apply`, Restart): changing the end of a course that has already ended records the gap from the day after its last day to the day before today.
 - **The one rule:** `NutrientCourse` (in `Nutrient.swift`, so the widgets and the Watch have it too): `lastDay(days:from:)`, `dayCount`, `hasEnded(_:by:)` (the day after the last day), `includes(_:gaps:day:)` (not after the last day, not in a gap), `gap(after:restartingOn:)`, `encode` / `decode`. `Nutrient.isRunning(on:)` = not deleted and not ended. Tested in `NutrientCourseTests`.
 - **Gone after the last day from:** Today (`TodayViewModel`), the widgets (`Provider`), the Watch list and complications, dose and refill reminders (`ReminderSchedule.Plan.lastDay`; `NotificationService` skips ended nutrients), stacks (`StackLogging.activeEntries`), Siri (`NutrientEntityQuery.activeNutrients`) and Health insights.
@@ -936,7 +936,7 @@ User-defined nutrient to track.
 | `supplyRefilledAt` | `Date? = nil` | Supply: when the bottle was last refilled |
 | `refillReminderDays` | `Int = 7` | Supply: remind when this many days are left |
 | `endDate` | `Date? = nil` | Courses (Pro, #99): the last day of a set course (start of day); nil = ongoing. Written through `setCourse(endDate:)` |
-| `courseGapsRaw` | `String = ""` | Courses: days between an end and a restart, "start-end" timestamps, comma-separated; read via `courseGaps` |
+| `courseGapsRaw` | `String = ""` | Courses: days between an end and a restart, "yyyyMMdd-yyyyMMdd" pairs, comma-separated; read via `courseGaps` |
 
 **Relationships:** → many `IntakeRecord`? (cascade), → many `Exclusion`? (cascade), → many `NutrientReminder`? (cascade), → one `NutrientGroup?` (nullify)
 

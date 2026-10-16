@@ -75,11 +75,30 @@ final class NutrientCourseTests: XCTestCase {
         nutrient.endDate = day(10, 16)
         nutrient.setCourse(endDate: nil, now: day(10, 20, hour: 9), calendar: calendar)
         XCTAssertNil(nutrient.endDate)
-        XCTAssertEqual(nutrient.courseGaps, [day(10, 17)...day(10, 19)])
+        XCTAssertEqual(nutrient.courseGapsRaw, "20261017-20261019")
         // Restarting the day after it ended leaves no gap; a running course isn't a restart.
         XCTAssertNil(NutrientCourse.gap(after: day(10, 16), restartingOn: day(10, 17), calendar: calendar))
         XCTAssertNil(NutrientCourse.gap(after: day(10, 30), restartingOn: day(10, 20), calendar: calendar))
-        XCTAssertEqual(NutrientCourse.decode(NutrientCourse.encode([day(10, 1)...day(10, 3)])), [day(10, 1)...day(10, 3)])
+        let gaps = [day(10, 1)...day(10, 3), day(10, 9)...day(10, 9)]
+        XCTAssertEqual(NutrientCourse.decode(NutrientCourse.encode(gaps, calendar: calendar), calendar: calendar), gaps)
+    }
+
+    func testAGapStaysTheSameDaysAfterATimeZoneChange() {
+        for (from, to) in [("Europe/Istanbul", "UTC"), ("UTC", "Asia/Tokyo"), ("America/Los_Angeles", "Europe/London")] {
+            var saved = Calendar(identifier: .gregorian)
+            saved.timeZone = TimeZone(identifier: from)!
+            var read = Calendar(identifier: .gregorian)
+            read.timeZone = TimeZone(identifier: to)!
+            func at(_ calendar: Calendar, _ day: Int) -> Date {
+                calendar.date(from: DateComponents(year: 2026, month: 10, day: day, hour: 12))!
+            }
+            let gap = NutrientCourse.gap(after: at(saved, 14), restartingOn: at(saved, 17), calendar: saved)!
+            let gaps = NutrientCourse.decode(NutrientCourse.encode([gap], calendar: saved), calendar: read)
+            XCTAssertTrue(NutrientCourse.includes(nil, gaps: gaps, day: at(read, 14), calendar: read), "\(from) → \(to)")
+            XCTAssertFalse(NutrientCourse.includes(nil, gaps: gaps, day: at(read, 15), calendar: read), "\(from) → \(to)")
+            XCTAssertFalse(NutrientCourse.includes(nil, gaps: gaps, day: at(read, 16), calendar: read), "\(from) → \(to)")
+            XCTAssertTrue(NutrientCourse.includes(nil, gaps: gaps, day: at(read, 17), calendar: read), "\(from) → \(to)")
+        }
     }
 
     func testHistorySkipsTheGapBetweenACourseAndItsRestart() {
