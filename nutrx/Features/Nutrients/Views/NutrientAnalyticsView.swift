@@ -37,49 +37,62 @@ private struct NutrientAnalyticsContent: View {
     @State private var headerScrolledAway = false
 
     @State private var showHealthIntro = false
+    @Environment(NotificationRouter.self) private var router: NotificationRouter?
+
+    private static let healthCardID = "health-trends"
 
     /// Analytics cards use a roomier inset than list cards (design source: 18pt).
     private let cardPadding: CGFloat = 18
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.cardGap + 2) {
-                header
-                    .padding(.bottom, 6)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Spacing.cardGap + 2) {
+                    header
+                        .padding(.bottom, 6)
 
-                Picker("Period", selection: $viewModel.selectedPeriod) {
-                    ForEach(AnalyticsPeriod.allCases) { period in
-                        Text(period.title).tag(period)
+                    Picker("Period", selection: $viewModel.selectedPeriod) {
+                        ForEach(AnalyticsPeriod.allCases) { period in
+                            Text(period.title).tag(period)
+                        }
                     }
-                }
-                .pickerStyle(.segmented)
-                .padding(.bottom, 4)
+                    .pickerStyle(.segmented)
+                    .padding(.bottom, 4)
 
-                if let summary = viewModel.summary {
-                    VStack(alignment: .leading, spacing: 22) {
-                        StatTriplet(stats: viewModel.stats)
-                        DailyIntakeChart(days: summary.days, goal: viewModel.goal, tint: nutrient.tint,
-                                         nutrientName: nutrient.name, unit: nutrient.unit)
-                    }
-                    .padding(cardPadding)
-                    .cardStyle()
-                }
-
-                SupplyCard(nutrient: nutrient)
-
-                if let pattern = viewModel.weekdayPattern {
-                    WeekdayHeatmap(pattern: pattern, tint: nutrient.tint)
+                    if let summary = viewModel.summary {
+                        VStack(alignment: .leading, spacing: 22) {
+                            StatTriplet(stats: viewModel.stats)
+                            DailyIntakeChart(days: summary.days, goal: viewModel.goal, tint: nutrient.tint,
+                                             nutrientName: nutrient.name, unit: nutrient.unit)
+                        }
                         .padding(cardPadding)
                         .cardStyle()
+                    }
+
+                    SupplyCard(nutrient: nutrient)
+
+                    if let pattern = viewModel.weekdayPattern {
+                        WeekdayHeatmap(pattern: pattern, tint: nutrient.tint)
+                            .padding(cardPadding)
+                            .cardStyle()
+                    }
+
+                    HealthTrendsCard(nutrient: nutrient, state: viewModel.healthState,
+                                     isConnected: viewModel.isHealthConnected) { showHealthIntro = true }
+                        .id(Self.healthCardID)
+
+                    remindersRow
                 }
-
-                HealthTrendsCard(nutrient: nutrient, state: viewModel.healthState,
-                                 isConnected: viewModel.isHealthConnected) { showHealthIntro = true }
-
-                remindersRow
+                .padding(.horizontal, Theme.Spacing.screenMargin)
+                .padding(.bottom, Theme.Spacing.sectionTop)
             }
-            .padding(.horizontal, Theme.Spacing.screenMargin)
-            .padding(.bottom, Theme.Spacing.sectionTop)
+            // Opened from Today's Apple Health card (#102): scroll to where the insights are.
+            .task(id: router?.healthNutrientID) {
+                guard router?.healthNutrientID == nutrient.id else { return }
+                try? await Task.sleep(for: .milliseconds(400))
+                withAnimation { proxy.scrollTo(Self.healthCardID, anchor: .center) }
+                router?.healthNutrientID = nil
+            }
         }
         .sheet(isPresented: $showHealthIntro) {
             HealthIntroView { Task { await viewModel.refreshHealth() } }

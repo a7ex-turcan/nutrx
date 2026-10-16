@@ -47,6 +47,10 @@ struct MainTabView: View {
         .onChange(of: router?.supplyNutrientID) { _, id in
             if id != nil { selection = .nutrients }
         }
+        // Today's Apple Health card opens a nutrient's analytics at its Health card.
+        .onChange(of: router?.healthNutrientID) { _, id in
+            if id != nil { selection = .nutrients }
+        }
         // Today's stacks row "Edit" opens the Stacks tab.
         .onChange(of: router?.showsStacks) { _, shows in
             if shows == true {

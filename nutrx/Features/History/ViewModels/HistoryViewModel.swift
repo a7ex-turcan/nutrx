@@ -114,7 +114,7 @@ final class HistoryViewModel {
     }
 
     /// All nutrients, deleted ones included, in Today's order: group, then position within the group.
-    private static func orderedNutrients(context: ModelContext) -> [Nutrient] {
+    static func orderedNutrients(context: ModelContext) -> [Nutrient] {
         let nutrients = (try? context.fetch(FetchDescriptor<Nutrient>())) ?? []
         let groups = (try? context.fetch(FetchDescriptor<NutrientGroup>())) ?? []
         // Nutrients without a group belong to General.

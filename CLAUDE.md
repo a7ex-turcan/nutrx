@@ -160,6 +160,7 @@ nutrx/
 │   │   │   ├── LogStackSheet.swift          # Log a stack: per-entry amounts for this time, then the done state with Undo.
 │   │   │   ├── RecapTodayCard.swift         # "Your week" (Pro): Sunday 18:00 through Monday, ✕ hides it for that week.
 │   │   │   ├── StackSuggestionCard.swift    # "Log several at once" / Make a stack, before any stack exists (3+ nutrients).
+│   │   │   ├── HealthInsightsTodayCard.swift # Apple Health insights on the way / ready, See where, ✕ (Pro, #102).
 │   │   │   └── NotificationBannerView.swift
 │   │   └── ViewModels/
 │   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords.
@@ -191,7 +192,8 @@ nutrx/
 │   │       ├── LabelScan.swift                  # Photo → label (recognise, extract; nil = couldn't read) + ScanText copy.
 │   │       ├── WeekdayPattern.swift             # Per-weekday hit rate over the last 28 days, weakest-day insight, heatmap fill levels (pure).
 │   │       ├── HealthTrends.swift               # Health trends (Pro): HealthDay + findings vs sleep, workouts, active energy (pure).
-│   │       ├── HealthText.swift                 # "With Apple Health" card copy: findings, bars, basis, states (pure).
+│   │       ├── HealthText.swift                 # "With Apple Health" card copy: findings, bars, basis, states, where insights appear (pure).
+│   │       ├── HealthInsights.swift             # Where Health insights stand across nutrients (gathering / ready / …) for the hints (#102).
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       └── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │
@@ -270,6 +272,7 @@ nutrx/
     │   ├── Date+Calendar.swift
     │   └── Double+Formatting.swift
     ├── Components/
+    │   ├── CheckmarkShape.swift             # A tick drawn as a shape for decorative badges (never an accessibility element, #77).
     │   ├── ProgressRing.swift               # Redesign ring: tint arc + track, centre symbol, check badge when met.
     │   ├── SegmentedDayRing.swift           # Day score ring, one segment per nutrient ("3/6 goals met").
     │   ├── NutrientIconTile.swift           # Rounded tile with a nutrient's symbol on its tint.
@@ -824,6 +827,11 @@ Mockups: `docs/pro/design/6-health-trends/`.
 - **`HealthIntroView`** (`Shared/Components/`, from the card and Settings): what's read, read only and stays on the device, Continue (the system sheet) / Not now.
 - **Settings → Apple Health** (`AppleHealthSettingsView`, its own section; free shows the PRO chip): the switch, what's read with Data found / No data yet, where to change access in the Health app (profile picture › Privacy › Apps), the privacy note, Disconnect. The Settings row reads the switch through `@AppStorage`, so it follows the page.
 - **Privacy tests** (`HealthPrivacyTests`, guideline 5.1.3): no SwiftData model property is about sleep, workouts, energy or health, and the only Health-related UserDefaults key is the switch.
+- **Where insights appear (#102):** findings only show in a nutrient's analytics after about 14 paired days, so four places say so. `HealthInsights.status` (pure, `HealthInsightsTests`) picks one status over all nutrients: a finding anywhere is `ready` (the first nutrient with one), else `gathering` with the nutrient closest to 14 paired days, else `noPattern` / `noHealthData`. `HealthInsights.load` reads it live, never stored.
+  - **Connect confirmation:** after the permission sheet, `HealthIntroView` shows "Apple Health is connected", what happens next and where (`HealthText.connectedBody`, `whereLine`), then Done.
+  - **Today:** `HealthInsightsTodayCard` (Pro, connected) under the recap card while gathering ("Keep logging: Vitamin D has 9 of 14 days…") and once ready ("Your first Apple Health insight is ready"). **See where** sets `NotificationRouter.healthNutrientID`: the tab bar switches to Nutrients, which pushes that nutrient's analytics, which scrolls to its Health card. ✕ hides the gathering card (`nutrx.hidesInsightsGatheringCard`); the ready card goes once opened or hidden (`nutrx.hidesInsightsReadyCard`): the rule is `HealthInsights.TodayCard`, pure and tested. The keys leave out "health" on purpose: `HealthPrivacyTests` allows only the Health switch among keys that mention it. Read again on every appearance and activation.
+  - **Settings → Apple Health:** a "Where you'll see it" card with the progress (`HealthText.settingsStatus`).
+  - **Weekly recap:** a line at the end while gathering or once ready (`HealthText.recapLine`); none otherwise.
 - Health trends are shipped on the paywall (the Settings card's tagline becomes "Supply, label scan, recaps and more").
 
 ### nutrx Pro: Report for your doctor (phase 8)

@@ -8,6 +8,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Improvements
 - **Select several nutrients** — In My Nutrients, tap Select, pick the nutrients you want, then move them to a group or delete them in one go. Your logged history stays.
+- **Where Apple Health insights appear** — After you connect Apple Health, nutrx says what happens next. Today shows how close your first insight is ("9 of 14 days") with a way to see where it'll appear, and Settings → Apple Health and the weekly recap say the same.
 - **Your data in History** — Export data and Report for your doctor moved from Settings to a "Your data" card at the end of History, and to the share button at the top of History.
 - **Your plan at a glance** — Today shows a small "Free" or "PRO" chip at the top left. On the free plan it opens what nutrx Pro adds; on Pro it shows your plan and what's on, with a way to manage it.
 - **Stacks tab** — The + button sits before your profile picture, as on the other tabs.

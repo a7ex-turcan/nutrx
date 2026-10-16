@@ -54,17 +54,6 @@ struct ProWelcomeView: View {
     }
 }
 
-/// The welcome badge's tick.
-private struct CheckmarkShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * 0.55))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.36, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        return path
-    }
-}
-
 /// Six rounded green dashes in a ring, as in the welcome badge.
 private struct SegmentedRingMark: View {
     var body: some View {

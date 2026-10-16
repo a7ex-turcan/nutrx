@@ -1,14 +1,78 @@
 import SwiftUI
 
 /// Before the system's Health permission sheet (docs/pro/design/6-health-trends: intro): what nutrx reads, that it's
-/// read only and stays on the device. Continue asks HealthKit; Not now closes it.
+/// read only and stays on the device. Continue asks HealthKit; Not now closes it. Once connected it says what happens
+/// next and where insights will appear (#102), then Done closes it.
 struct HealthIntroView: View {
     let onConnected: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var connecting = false
+    @State private var connected: Bool
+
+    /// - Parameter showsConfirmation: start on the confirmation (previews).
+    init(showsConfirmation: Bool = false, onConnected: @escaping () -> Void) {
+        self.onConnected = onConnected
+        _connected = State(initialValue: showsConfirmation)
+    }
 
     var body: some View {
+        if connected {
+            confirmation
+        } else {
+            intro
+        }
+    }
+
+    private var confirmation: some View {
+        // Scrolls, with Done pinned, so the large title and both paragraphs fit at accessibility sizes.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                // Drawn, not an SF Symbol, so VoiceOver doesn't read it as "Selected".
+                CheckmarkShape()
+                    .stroke(Theme.forest, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                    .frame(width: 20, height: 15)
+                    .frame(width: 48, height: 48)
+                    .background(Theme.green, in: Circle())
+                    .accessibilityHidden(true)
+                    .padding(.top, 32)
+                Text(HealthText.connectedTitle)
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(Theme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                Text(HealthText.connectedBody)
+                    .font(.body)
+                    .foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(HealthText.whereLine)
+                    .font(.body)
+                    .foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, Theme.Spacing.screenMargin + 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .safeAreaInset(edge: .bottom) {
+            Button {
+                dismiss()
+            } label: {
+                Text("Done")
+                    .font(.headline)
+                    .foregroundStyle(Theme.controlOnPrimary)
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .background(Theme.controlPrimary, in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, Theme.Spacing.screenMargin + 4)
+            .padding(.vertical, 8)
+            .background(Theme.surfaceGround)
+        }
+        .background(Theme.surfaceGround)
+        .presentationDragIndicator(.visible)
+    }
+
+    private var intro: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Image(systemName: "heart.text.square")
@@ -37,10 +101,14 @@ struct HealthIntroView: View {
                 Button {
                     connecting = true
                     Task {
-                        let connected = await HealthReader.connect()
+                        let didConnect = await HealthReader.connect()
                         connecting = false
-                        if connected { onConnected() }
-                        dismiss()
+                        if didConnect {
+                            onConnected()
+                            withAnimation { connected = true }
+                        } else {
+                            dismiss()
+                        }
                     }
                 } label: {
                     Group {
@@ -131,3 +199,7 @@ struct HealthPrivacyNote: View {
 
 #Preview("Intro") { HealthIntroView {} }
 #Preview("Intro, dark") { HealthIntroView {}.preferredColorScheme(.dark) }
+#Preview("Connected") { HealthIntroView(showsConfirmation: true) {} }
+#Preview("Connected, largest text") {
+    HealthIntroView(showsConfirmation: true) {}.environment(\.dynamicTypeSize, .accessibility5)
+}

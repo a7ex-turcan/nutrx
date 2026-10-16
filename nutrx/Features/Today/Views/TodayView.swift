@@ -19,6 +19,13 @@ struct TodayView: View {
     @State private var showNewStack = false
     @State private var newStackName = ""
     @AppStorage("nutrx.dismissedRecapWeek") private var dismissedRecapWeek: Double = 0
+    /// Apple Health insights (#102): the status, and whether its Today card was hidden while gathering / once ready.
+    @State private var healthStatus: HealthInsights.Status?
+    /// Bumped on every appearance, so the Health status is read again after connecting elsewhere (Settings, analytics).
+    @State private var healthRefreshTick = 0
+    @AppStorage(HealthInsights.TodayCard.hiddenGatheringKey) private var hidesInsightsGatheringCard = false
+    @AppStorage(HealthInsights.TodayCard.hiddenReadyKey) private var hidesInsightsReadyCard = false
+    @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
@@ -60,6 +67,40 @@ struct TodayView: View {
         return new
     }
 
+    /// The Health card's status, when it should show (`HealthInsights.TodayCard.visible`).
+    private var visibleHealthStatus: HealthInsights.Status? {
+        var hidden: Set<HealthInsights.TodayCard.Hidden> = []
+        if hidesInsightsGatheringCard { hidden.insert(.gathering) }
+        if hidesInsightsReadyCard { hidden.insert(.ready) }
+        return HealthInsights.TodayCard.visible(healthStatus, isPro: ProAccess.isStoreVisible && proAccess?.isPro == true,
+                                                hidden: hidden)
+    }
+
+    private func refreshHealthStatus() async {
+        guard ProAccess.isStoreVisible, proAccess?.isPro == true else {
+            healthStatus = nil
+            return
+        }
+        healthStatus = await HealthInsights.load(context: modelContext)
+    }
+
+    private func seeHealthInsights(_ status: HealthInsights.Status) {
+        remember(HealthInsights.TodayCard.hiddenBySeeing(status))
+        router?.healthNutrientID = HealthInsights.TodayCard.nutrientID(status)
+    }
+
+    private func hideHealthCard(_ status: HealthInsights.Status) {
+        remember(HealthInsights.TodayCard.hiddenByDismissing(status))
+    }
+
+    private func remember(_ hidden: HealthInsights.TodayCard.Hidden?) {
+        switch hidden {
+        case .gathering: hidesInsightsGatheringCard = true
+        case .ready: hidesInsightsReadyCard = true
+        case nil: break
+        }
+    }
+
     /// The "Your week" card's recap (`RecapSchedule.todayCardWeek`, `RecapViewModel.recap(forWeek:…)`).
     private func refreshWeekRecap() {
         var ignoresWindow = false
@@ -99,6 +140,19 @@ struct TodayView: View {
                             dismissedRecapWeek = weekRecap.weekStart.timeIntervalSince1970
                             withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
                                 self.weekRecap = nil
+                            }
+                        })
+                        .listRowInsets(cardRowInsets)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                    }
+
+                    if let healthCard = visibleHealthStatus {
+                        HealthInsightsTodayCard(status: healthCard, onSeeWhere: {
+                            seeHealthInsights(healthCard)
+                        }, onDismiss: {
+                            withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                                hideHealthCard(healthCard)
                             }
                         })
                         .listRowInsets(cardRowInsets)
@@ -188,6 +242,10 @@ struct TodayView: View {
             refreshSyncBannerVisibility()
             refreshStreak()
             refreshWeekRecap()
+            healthRefreshTick += 1
+        }
+        .task(id: "\(scenePhase == .active)-\(proAccess?.isPro == true)-\(healthRefreshTick)") {
+            await refreshHealthStatus()
         }
         .onChange(of: proAccess?.isPro) { refreshWeekRecap() }
         // "Make a stack": name it, then open it to add nutrients.

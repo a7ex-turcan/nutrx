@@ -111,6 +111,12 @@ struct NutrientsListView: View {
                 .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
                 Button("Cancel", role: .cancel) {}
             }
+            .onChange(of: router?.healthNutrientID, initial: true) { _, id in
+                // Today's Apple Health card: that nutrient's analytics, which scrolls to its Health card.
+                if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
+                    path = [nutrient.persistentModelID]
+                }
+            }
             .onChange(of: router?.supplyNutrientID, initial: true) { _, id in
                 // A refill reminder: show that nutrient's analytics (its Supply card focuses itself).
                 if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
