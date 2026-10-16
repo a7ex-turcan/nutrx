@@ -28,8 +28,8 @@ struct MainTabView: View {
             // Stacks have their own tab: something you build, like nutrients, and used daily from Today.
             Tab("Stacks", systemImage: "square.stack.3d.up", value: TabID.stacks) {
                 NavigationStack {
+                    // The profile menu is added inside, so + sits before the avatar.
                     StacksView()
-                        .withProfileMenu()
                 }
             }
 
