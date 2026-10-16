@@ -64,7 +64,7 @@ Notable build settings in the Xcode project:
 
 nutrx is a privacy-first iOS app for tracking daily nutrient intake.
 It is intentionally simple, flexible, and fully offline — no accounts, no servers, no ads.
-nutrx Pro (in progress, `docs/pro/PLAN.md`) only adds new things around tracking;
+nutrx Pro (an optional subscription or lifetime purchase, `docs/pro/PLAN.md`) only adds new things around tracking;
 all core tracking features remain free forever.
 
 ---
@@ -685,8 +685,10 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 ## Monetisation
 
 - Free with no ads. **nutrx Pro** is an optional subscription (or lifetime purchase) that only *adds* things around tracking. Nothing that's free today becomes Pro.
-- **Being built:** phase 3 of the Pro plan (StoreKit foundation) is the first Pro work. The old "no paywall / StoreKit / AI before MVP 4" guardrail is retired. What stays is in the plan: StoreKit 2 verifies on the device, no receipts or entitlements leave it or go into SwiftData / iCloud, and AI runs on the device only.
-- **Pro plan:** `docs/pro/PLAN.md` (agreed 2026-10-14: nutrx Pro, $1.99 / $14.99 with a one-week trial / $29.99 lifetime; designer prompts in `docs/pro/DESIGN-PROMPTS.md`) — supply & refills, label scanning, weekly recap, Apple Health trends and a doctor report; on-device AI only; everything in 2.0 stays free, including stacks and Siri logging. Build it one phase per session.
+- **What Pro is:** $1.99 a month, $14.99 a year with a one-week free trial, or $29.99 once (`docs/pro/PLAN.md`, agreed 2026-10-14; designer prompts in `docs/pro/DESIGN-PROMPTS.md`). Five features, all built for 2.1: supply & refills, label scanning, weekly recap, Apple Health trends and the report for your doctor (their sections follow). Everything in 2.0 stays free, and so do stacks, Siri logging and export.
+- **Rules that stay:** StoreKit 2 verifies on the device; no receipt or entitlement leaves it or goes into SwiftData, iCloud or UserDefaults; AI runs on the device only (Foundation Models), always with a non-AI path; Health data is read live and never stored. A Pro entry point is a `ProGatedButton` (PRO chip + paywall), never a lock or a wall, and nothing free may become Pro: check this in every PR.
+- **Launch (phase 9):** the products go to App Review with the 2.1 version (#71). The store listing, review notes and website carry the Pro section and the "everything else stays free" line.
+- The old "no paywall / StoreKit / AI before MVP 4" guardrail is retired.
 
 ### nutrx Pro: StoreKit (phase 3)
 
@@ -694,7 +696,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - Subscription group **nutrx Pro** (`22477669`): `nutrx.pro.yearly` is level 1 at $14.99 with a one-week free trial; `nutrx.pro.monthly` is level 2 at $1.99. Each has a US price plus Apple's equalized price in the other 174 territories, set one territory at a time (`POST /v1/subscriptionPrices`; the trial is likewise one `subscriptionIntroductoryOffers` call per territory).
   - Non-consumable `nutrx.pro.lifetime` (`6822833390`) at $29.99: a price schedule with a US base, with the other territories equalized automatically.
   - All three are Family Sharing (this can't be turned off), available in every territory and in new ones, with en-US names and descriptions.
-  - They show "Missing Metadata" until each has an App Review screenshot of the paywall.
+  - Each has an App Review screenshot of the paywall and a review note saying where Pro is; all three are Ready to Submit, and first-time products go to review together with an app version (#71).
 - **`ProAccess`** (`Shared/Services/`, `@Observable`, created in `nutrxApp` and passed down as an environment object):
   - Reads `Transaction.currentEntitlements` at launch and follows `Transaction.updates` from launch, which brings renewals, refunds, Ask to Buy and purchases on other devices.
   - `isPro` / `entitlement` (plan, expiry, family-shared), `loadProducts()`, `purchase(_:)` (verified transactions only, finished straight away; returns `.purchased` / `.pending` / `.cancelled`), and `restore()` (`AppStore.sync()`).

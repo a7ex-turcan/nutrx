@@ -41,7 +41,7 @@
 | Analytics & charts (per-nutrient) | ✅ Shipped (v1.8) |
 | Apple Health integration (HealthKit write) | 📋 Planned |
 
-### Pre-Pro Sprint — Polish & Retention 📋
+### Pre-Pro Sprint — Polish & Retention ✅
 
 | Feature | Status |
 |---|---|
@@ -51,16 +51,21 @@
 | Quick-log stacks / templates | ✅ Built (v2.1) |
 | Siri & App Shortcuts | ✅ Built (v2.1) |
 
-### MVP 4 — Pro Tier & AI 📋
+### nutrx Pro — v2.1 ✅ Built
+
+Optional subscription or lifetime purchase that only adds features; everything else stays free. Plan: `docs/pro/PLAN.md` (it replaces the old "MVP 4 — Pro Tier & AI" list; nutrx doesn't suggest amounts or targets, so "smart target suggestions" is out). AI runs on the device only.
 
 | Feature | Status |
 |---|---|
-| Pro subscription (StoreKit 2) | 📋 Planned |
-| Daily AI insights | 📋 Planned |
-| Smart target suggestions | 📋 Planned |
-| Natural language logging | 📋 Planned |
-| Streak freeze / grace period | 📋 Planned |
-| Shareable streak card | 📋 Planned |
+| Pro subscription (StoreKit 2): $1.99 / month, $14.99 / year with a free week, $29.99 lifetime | ✅ Built (v2.1) |
+| Supply & refills | ✅ Built (v2.1) |
+| Scan a label (on-device) | ✅ Built (v2.1) |
+| Weekly recap (on-device wording) | ✅ Built (v2.1) |
+| Trends with Apple Health (read only) | ✅ Built (v2.1) |
+| Report for your doctor (PDF) | ✅ Built (v2.1) |
+| Launch: App Store listing, review, website | 🔄 In progress |
+| Streak freeze / grace period | 📋 Later, outside the plan |
+| Shareable streak card | 📋 Later, outside the plan |
 
 ---
 
