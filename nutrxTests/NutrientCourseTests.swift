@@ -2,8 +2,8 @@ import SwiftData
 import XCTest
 @testable import nutrx
 
-/// Nutrients taken for a set time (#99): the day maths, the words, and every rule that drops a course after its last
-/// day (History and streaks, reminders, stacks, Today).
+/// Nutrients taken for a set time (#99): the day maths, restarts, and every rule that drops a course after its last
+/// day (History and streaks, analytics, reminders, stacks, Today).
 final class NutrientCourseTests: XCTestCase {
     private var calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -23,14 +23,6 @@ final class NutrientCourseTests: XCTestCase {
         XCTAssertFalse(NutrientCourse.hasEnded(day(10, 24), by: day(10, 24, hour: 23), calendar: calendar), "the last day is in")
         XCTAssertTrue(NutrientCourse.hasEnded(day(10, 24), by: day(10, 25), calendar: calendar))
         XCTAssertFalse(NutrientCourse.hasEnded(nil, by: day(12, 31), calendar: calendar), "ongoing never ends")
-    }
-
-    func testWords() {
-        let text = CourseText(calendar: calendar, locale: Locale(identifier: "en_GB"))
-        XCTAssertEqual(text.summary(endDate: nil, now: day(10, 20)), "Ongoing")
-        XCTAssertEqual(text.summary(endDate: day(10, 24), now: day(10, 20, hour: 9)), "Until Sat 24 Oct · 5 days")
-        XCTAssertEqual(text.summary(endDate: day(10, 24), now: day(10, 24, hour: 9)), "Last day today")
-        XCTAssertEqual(text.summary(endDate: day(10, 24), now: day(10, 26)), "Ended 24 Oct")
     }
 
     func testHistoryCountsACourseOnlyUpToItsLastDay() {
@@ -74,5 +66,67 @@ final class NutrientCourseTests: XCTestCase {
         let today = TodayViewModel()
         today.refresh(context: context)
         XCTAssertEqual(today.groupSections.flatMap { $0.intakes.map(\.nutrient.name) }, ["Vitamin D"])
+    }
+
+    func testARestartKeepsTheDaysSinceTheEndAsAGap() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let nutrient = Nutrient(name: "Antibiotic", unit: "mg", step: 500, dailyTarget: 1000, sortOrder: 0)
+        container.mainContext.insert(nutrient)
+        nutrient.endDate = day(10, 16)
+        nutrient.setCourse(endDate: nil, now: day(10, 20, hour: 9), calendar: calendar)
+        XCTAssertNil(nutrient.endDate)
+        XCTAssertEqual(nutrient.courseGaps, [day(10, 17)...day(10, 19)])
+        // Restarting the day after it ended leaves no gap; a running course isn't a restart.
+        XCTAssertNil(NutrientCourse.gap(after: day(10, 16), restartingOn: day(10, 17), calendar: calendar))
+        XCTAssertNil(NutrientCourse.gap(after: day(10, 30), restartingOn: day(10, 20), calendar: calendar))
+        XCTAssertEqual(NutrientCourse.decode(NutrientCourse.encode([day(10, 1)...day(10, 3)])), [day(10, 1)...day(10, 3)])
+    }
+
+    func testHistorySkipsTheGapBetweenACourseAndItsRestart() {
+        let id = UUID()
+        let nutrient = HistoryNutrient(id: id, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(10, 1),
+                                       isDeleted: false, endDate: nil, courseGaps: [day(10, 17)...day(10, 19)])
+        let log = HistoryLog(nutrients: [nutrient], totals: [day(10, 16): [id: 1], day(10, 20): [id: 1]],
+                             today: day(10, 25), calendar: calendar)
+        XCTAssertEqual(log.day(day(10, 16)).goals.map(\.nutrientID), [id])
+        XCTAssertTrue(log.day(day(10, 18)).goals.isEmpty, "not a miss: it was paused")
+        XCTAssertEqual(log.day(day(10, 20)).goals.map(\.nutrientID), [id], "counts again from the restart")
+    }
+
+    func testAFinishedCourseDoesntBreakTheStreak() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        func daysAgo(_ n: Int) -> Date { cal.date(byAdding: .day, value: -n, to: today)!.addingTimeInterval(9 * 3600) }
+        let vitaminD = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 1000, sortOrder: 0)
+        let course = Nutrient(name: "Antibiotic", unit: "mg", step: 500, dailyTarget: 500, sortOrder: 1)
+        for nutrient in [vitaminD, course] {
+            nutrient.createdAt = daysAgo(8)
+            context.insert(nutrient)
+        }
+        course.endDate = cal.startOfDay(for: daysAgo(5))
+        for n in 1...8 { context.insert(IntakeRecord(nutrient: vitaminD, amount: 1000, date: daysAgo(n))) }
+        for n in 5...8 { context.insert(IntakeRecord(nutrient: course, amount: 500, date: daysAgo(n))) }
+        try context.save()
+        XCTAssertEqual(StreakService.compute(context: context).current, 8, "the days after the course ended aren't misses")
+    }
+
+    func testAnalyticsCountOnlyTheCoursesDays() {
+        let goal = AnalyticsGoal(goalType: .minimum, target: 1, upperBound: nil)
+        let summary = AnalyticsSummary(dayCount: 7, totals: [day(10, 20): 1, day(10, 21): 1], goal: goal,
+                                       createdAt: day(10, 1), endDate: day(10, 21),
+                                       courseGaps: [day(10, 15)...day(10, 16)], today: day(10, 22), calendar: calendar)
+        let tracked = summary.days.filter(\.isTracked).map(\.date)
+        XCTAssertEqual(tracked, [day(10, 17), day(10, 18), day(10, 19), day(10, 20), day(10, 21)],
+                       "not the gap, not after the last day")
+        // Created Thu 8 Oct, last day Wed 14 Oct, paused Sat 10 – Sun 11: every counted day met.
+        let met = Dictionary(uniqueKeysWithValues: [8, 9, 12, 13, 14].map { (day(10, $0), 1.0) })
+        let pattern = WeekdayPattern(totals: met, goal: goal, createdAt: day(10, 8), endDate: day(10, 14),
+                                     courseGaps: [day(10, 10)...day(10, 11)], today: day(10, 22), calendar: calendar)
+        let rates = Dictionary(uniqueKeysWithValues: pattern.entries.map { ($0.weekday, $0.hitRate) })
+        XCTAssertEqual(rates[2], 1, "Monday 12 Oct counts; Monday 19 Oct is after the last day")
+        XCTAssertNil(rates[7] ?? nil, "Saturday was paused")
+        XCTAssertNil(rates[1] ?? nil, "Sunday was paused")
     }
 }

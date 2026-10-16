@@ -60,7 +60,7 @@ enum StreakService {
             // Active nutrients on this day: non-deleted, created on or before this day, course not over (#99)
             let activeNutrients = nutrients.filter { nutrient in
                 calendar.startOfDay(for: nutrient.createdAt) <= day
-                    && NutrientCourse.includes(nutrient.endDate, day: day, calendar: calendar)
+                    && NutrientCourse.includes(nutrient.endDate, gaps: nutrient.courseGaps, day: day, calendar: calendar)
             }
 
             guard !activeNutrients.isEmpty else { return false }

@@ -64,7 +64,8 @@ extension NutrientDraft {
         nutrient.notes = trimmedNotes
         nutrient.tint = tint
         nutrient.symbolName = symbolName
-        nutrient.endDate = endDate
+        // Through setCourse, so a new duration on an ended course keeps the days since it ended as a gap.
+        nutrient.setCourse(endDate: endDate)
         // Pending reminders carry the name and notes, and stop after a course's last day; re-adding them picks up
         // the edit.
         if !(nutrient.reminders ?? []).isEmpty, let context = nutrient.modelContext {

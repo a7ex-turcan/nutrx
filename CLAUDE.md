@@ -839,12 +839,13 @@ Mockups: `docs/pro/design/6-health-trends/`.
 ### nutrx Pro: Courses (#99)
 
 A nutrient taken for a set time ("for 5 days", "until 24 Oct").
-- **Model:** `Nutrient.endDate: Date?`, the start of the last day; nil = ongoing. It's optional, so it's CloudKit-safe, but the field (`CD_endDate`) has to be in the production schema before a release ships it (imported to development with `cktool`; production is a Console deploy).
-- **The one rule:** `NutrientCourse` (in `Nutrient.swift`, so the widgets and the Watch have it too): `lastDay(days:from:)`, `dayCount`, `hasEnded(_:by:)` (the day after the last day), `includes(_:day:)`. `Nutrient.isRunning(on:)` = not deleted and not ended. Tested in `NutrientCourseTests`.
+- **Model:** `Nutrient.endDate: Date?`, the start of the last day; nil = ongoing. `Nutrient.courseGapsRaw: String` keeps the days between a course's end and its restart (`courseGaps`, encoded "start-end" timestamps), so a restarted course doesn't count its paused days as misses. Both are CloudKit-safe, but their fields (`CD_endDate`, `CD_courseGapsRaw`) have to be in the production schema before a release ships them (imported to development with `cktool`; production is a Console deploy, #110).
+- **`Nutrient.setCourse(endDate:)`** is the one writer of a saved nutrient's end date (`NutrientDraft.apply`, Restart): changing the end of a course that has already ended records the gap from the day after its last day to the day before today.
+- **The one rule:** `NutrientCourse` (in `Nutrient.swift`, so the widgets and the Watch have it too): `lastDay(days:from:)`, `dayCount`, `hasEnded(_:by:)` (the day after the last day), `includes(_:gaps:day:)` (not after the last day, not in a gap), `gap(after:restartingOn:)`, `encode` / `decode`. `Nutrient.isRunning(on:)` = not deleted and not ended. Tested in `NutrientCourseTests`.
 - **Gone after the last day from:** Today (`TodayViewModel`), the widgets (`Provider`), the Watch list and complications, dose and refill reminders (`ReminderSchedule.Plan.lastDay`; `NotificationService` skips ended nutrients), stacks (`StackLogging.activeEntries`), Siri (`NutrientEntityQuery.activeNutrients`) and Health insights.
-- **Counted only up to the last day:** History and streaks (`HistoryNutrient.endDate` in `HistoryLog`, `StreakService`), analytics (`AnalyticsSummary` / `WeekdayPattern` `endDate:`), and so the recap and the report. A finished course never breaks a streak.
+- **Counted only up to the last day, and not in a gap:** History and streaks (`HistoryNutrient.endDate` / `courseGaps` in `HistoryLog`, `StreakService`), analytics (`AnalyticsSummary` / `WeekdayPattern` `endDate:` / `courseGaps:`), and so the recap and the report. A finished or restarted course never breaks a streak. Wording in `CourseTextTests`.
 - **Form:** a **Duration** row after Reminders (`ProGatedButton`; free users see the PRO chip) opens `DurationSheet`: Ongoing, For days (a stepper, counting today) or Until a date (today on). It writes `NutrientDraft.endDate`; `insertNutrient` / `apply` save it and reschedule reminders. The row reads `CourseText.summary`.
-- **My Nutrients:** ended courses leave their group for a collapsed **Finished** section at the end (newest first, "FINISHED 2"), with "Ended 24 Oct" in place of the goal. Long-press: **Restart** (back to ongoing and onto Today, reminders back), Edit Nutrient, Delete. Analytics still open.
+- **My Nutrients:** ended courses leave their group for a collapsed **Finished** section at the end (newest first, "FINISHED 2"), with "Ended 24 Oct" in place of the goal. No bell (their reminders have stopped). Long-press: **Restart** (back to ongoing and onto Today, reminders back), Edit Nutrient, Delete. Analytics still open. Select mode hides the section, and Select All picks only running nutrients.
 - **If Pro lapses:** existing end dates keep working (nothing reappears on Today); setting one needs Pro.
 - Not built: a "Last day" line on Today's card.
 
@@ -934,7 +935,8 @@ User-defined nutrient to track.
 | `supplyServings` | `Double? = nil` | Supply: servings when last refilled; nil = supply not set |
 | `supplyRefilledAt` | `Date? = nil` | Supply: when the bottle was last refilled |
 | `refillReminderDays` | `Int = 7` | Supply: remind when this many days are left |
-| `endDate` | `Date? = nil` | Courses (Pro, #99): the last day of a set course (start of day); nil = ongoing |
+| `endDate` | `Date? = nil` | Courses (Pro, #99): the last day of a set course (start of day); nil = ongoing. Written through `setCourse(endDate:)` |
+| `courseGapsRaw` | `String = ""` | Courses: days between an end and a restart, "start-end" timestamps, comma-separated; read via `courseGaps` |
 
 **Relationships:** → many `IntakeRecord`? (cascade), → many `Exclusion`? (cascade), → many `NutrientReminder`? (cascade), → one `NutrientGroup?` (nullify)
 

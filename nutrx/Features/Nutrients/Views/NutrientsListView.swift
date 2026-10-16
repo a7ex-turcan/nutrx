@@ -302,7 +302,8 @@ struct NutrientsListView: View {
                 }
             }
 
-            if !finishedNutrients.isEmpty {
+            // Not while selecting: Move and Delete act on the groups' nutrients.
+            if !isSelecting, !finishedNutrients.isEmpty {
                 finishedSection
             }
 
@@ -337,11 +338,12 @@ struct NutrientsListView: View {
 
     private var selectionBar: some View {
         let count = selection.count
-        let allSelected = count == nutrients.count
+        let selectable = nutrients.filter { !$0.hasEnded() }
+        let allSelected = count == selectable.count
         return VStack(spacing: 10) {
             HStack {
                 Button(allSelected ? "Deselect All" : "Select All") {
-                    selection = allSelected ? [] : Set(nutrients.map(\.persistentModelID))
+                    selection = allSelected ? [] : Set(selectable.map(\.persistentModelID))
                 }
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.controlPrimary)
@@ -424,7 +426,8 @@ struct NutrientsListView: View {
     /// Row (DESIGN.md §5.6): icon tile, name, goal-type tag + target, bell if it has reminders.
     private func nutrientRow(_ nutrient: Nutrient) -> some View {
         let goal = GoalProgress(nutrient: nutrient, current: 0)
-        let hasReminders = !(nutrient.reminders ?? []).isEmpty
+        // A finished course's reminders have stopped.
+        let hasReminders = !(nutrient.reminders ?? []).isEmpty && !nutrient.hasEnded()
 
         return HStack(spacing: 12) {
             NutrientIconTile(nutrient: nutrient)
@@ -531,9 +534,9 @@ struct NutrientsListView: View {
         }
     }
 
-    /// Back to ongoing and onto Today; its reminders come back.
+    /// Back to ongoing and onto Today; its reminders come back. The days since it ended stay a gap (`setCourse`).
     private func restart(_ nutrient: Nutrient) {
-        nutrient.endDate = nil
+        nutrient.setCourse(endDate: nil)
         try? modelContext.save()
         NotificationService.refreshAllNutrientReminders(context: modelContext)
     }

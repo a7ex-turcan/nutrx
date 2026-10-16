@@ -44,13 +44,15 @@ final class NutrientAnalyticsViewModel {
         let totals = dayTotals(daysBack: lookback, now: now, calendar: calendar)
 
         let summary = AnalyticsSummary(dayCount: selectedPeriod.days, totals: totals, goal: goal,
-                                       createdAt: nutrient.createdAt, endDate: nutrient.endDate, today: now,
+                                       createdAt: nutrient.createdAt, endDate: nutrient.endDate,
+                                       courseGaps: nutrient.courseGaps, today: now,
                                        calendar: calendar)
         self.summary = summary
         stats = AnalyticsStat.triplet(for: summary, period: selectedPeriod, unit: nutrient.unit,
                                       goalType: nutrient.goalType, calendar: calendar)
         weekdayPattern = WeekdayPattern(totals: totals, goal: goal, createdAt: nutrient.createdAt,
-                                        endDate: nutrient.endDate, today: now, calendar: calendar)
+                                        endDate: nutrient.endDate, courseGaps: nutrient.courseGaps, today: now,
+                                        calendar: calendar)
     }
 
     /// Reads Apple Health (live, never stored) and pairs it with the last four weeks of this nutrient.
