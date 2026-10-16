@@ -57,7 +57,7 @@ xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 1
 Notable build settings in the Xcode project:
 - `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` — All types default to `@MainActor`
 - `SWIFT_APPROACHABLE_CONCURRENCY = YES` — Strict concurrency checking enabled
-- SwiftUI previews enabled (`ENABLE_PREVIEWS = YES`). Preview code that uses DEBUG-only helpers (`ProAccess.previewPro()`, `previewContainer` fixtures) goes inside `#if DEBUG`: `#Preview` bodies are compiled in Release too, and a missing DEBUG symbol there can crash the compiler instead of naming the error (2.1 (58)'s first archive). Debug builds and tests don't catch it, so archive (or `xcodebuild build -configuration Release`) before an upload.
+- SwiftUI previews enabled (`ENABLE_PREVIEWS = YES`). Preview code that uses DEBUG-only helpers (`ProAccess.previewPro()`, `ScreenshotDemoData`; `previewContainer` is fine, it exists in Release) goes inside `#if DEBUG`: `#Preview` bodies are compiled in Release too, and a missing DEBUG symbol there can crash the compiler instead of naming the error (2.1 (58)'s first archive). Debug builds and tests don't catch it, so archive (or `xcodebuild build -configuration Release`) before an upload.
 - Xcode project uses `PBXFileSystemSynchronizedRootGroup` — new files added to the `nutrx/` directory are auto-discovered by Xcode (no manual pbxproj edits needed)
 
 ## What is this app?
