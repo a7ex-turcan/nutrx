@@ -37,7 +37,7 @@ struct LogStackSheet: View {
 
     private var entries: [LogStackEntry] { StackLogging.activeEntries(of: stack) }
 
-    /// Rows that fit above the Log button at the medium detent.
+    /// Rows shown at the medium detent before the sheet opens full height instead.
     static let rowsAtHalfHeight = 3
 
     private func amount(for entry: LogStackEntry) -> Double {
@@ -58,10 +58,9 @@ struct LogStackSheet: View {
                 }
                 .cardStyle()
 
-                if let logged {
-                    doneFooter(logged)
-                } else {
-                    logFooter
+                // At accessibility sizes the sheet is full height and the footer scrolls with the rows.
+                if dynamicTypeSize.isAccessibilitySize {
+                    footer
                 }
             }
             .padding(.horizontal, Theme.Spacing.screenMargin)
@@ -69,13 +68,34 @@ struct LogStackSheet: View {
             .padding(.bottom, 24)
         }
         .scrollBounceBehavior(.basedOnSize)
+        // Rows scrolled up at half height were drawn above the sheet's top edge.
+        .clipped()
+        // Pinned, so Log (or Undo / Done) is on screen at half height whatever the phone and text size; the rows
+        // scroll above it.
+        .safeAreaInset(edge: .bottom) {
+            if !dynamicTypeSize.isAccessibilitySize {
+                footer
+                    .padding(.horizontal, Theme.Spacing.screenMargin)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
+                    .background(Theme.surfaceGround)
+            }
+        }
         .background(Theme.surfaceGround)
-        // At accessibility sizes half a screen holds only the header and one row, so it opens full height. Half
-        // height fits three rows and the Log button; with more it opens full height, so the button isn't below the
-        // edge (it can still be dragged down).
+        // At accessibility sizes half a screen holds only the header and one row, so it opens full height. With
+        // more than three rows it opens full height too, so they're all in view (it can still be dragged down).
         .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large],
                              selection: dynamicTypeSize.isAccessibilitySize ? .constant(.large) : $detent)
         .presentationDragIndicator(.visible)
+    }
+
+    @ViewBuilder
+    private var footer: some View {
+        if let logged {
+            doneFooter(logged)
+        } else {
+            logFooter
+        }
     }
 
     // MARK: - Header
