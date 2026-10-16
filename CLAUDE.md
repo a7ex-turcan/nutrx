@@ -300,6 +300,7 @@ nutrx/
     │   │                                    # Singleton deduplication. Logs via os.log.
     │   ├── NutrientDraft+Persistence.swift  # insertNutrient / apply(to:) — the only writers of a draft to a Nutrient.
     │   ├── NutrientGroup+Create.swift       # NutrientGroup.create(named:among:in:) — new user group before General.
+    │   ├── NutrientGroup+Move.swift         # NutrientGroup.append(_:) — one or several nutrients to the end of a group, in order.
     │   ├── PreviewSampleData.swift
     │   └── ScreenshotDemoData.swift         # DEBUG: -screenshotDemoData replaces the store with the App Store demo set.
     ├── Intents/                         # App only. Siri & Shortcuts (see "Siri & App Shortcuts").
@@ -420,7 +421,7 @@ Personal info is no longer asked for: finishing (Start tracking, Something else,
 
 Users create and manage their own nutrients. No preset list — fully user-defined. Each nutrient has: **name**, **unit**, **step** (increment per +/− tap), **daily target**, a **tint** and **SF Symbol**, and optional **notes**. Nutrients can be reordered via drag-and-drop. Order in My Nutrients = order on Today screen.
 
-**My Nutrients** (DESIGN.md §5.6): large title, toolbar + (filled forest circle) and profile. Groups are inset cards with uppercase headers and a count (headers hidden when only General exists; every nutrient is listed — collapsing is a Today thing). Row: icon tile, name, goal-type tag ("AT LEAST" / "AT MOST" / "BETWEEN") + target, bell if it has reminders, chevron → analytics. Swipe right = edit, swipe left = delete, long press = Edit / Move to Group / Delete, drag to reorder. A dashed **New group** button ends the list.
+**My Nutrients** (DESIGN.md §5.6): large title, toolbar + (filled forest circle) and profile. Groups are inset cards with uppercase headers and a count (headers hidden when only General exists; every nutrient is listed — collapsing is a Today thing). Row: icon tile, name, goal-type tag ("AT LEAST" / "AT MOST" / "BETWEEN") + target, bell if it has reminders, chevron → analytics. Swipe right = edit, swipe left = delete, long press = Edit / Move to Group / Delete, drag to reorder. **Select** (leading, #98) puts the list in edit mode with multi-selection (`List(selection:)`, given no binding outside selecting so a tap still opens analytics): the banner and New group hide, and a bottom bar has Select All / Deselect All, "3 selected", **Move to Group** (`MoveToGroupSheet(nutrients:)`, appended to the group in the list's order by `NutrientGroup.append`, the one writer of a group move) and **Delete** (one confirmation, soft delete, one save and one reminder sync). A dashed **New group** button ends the list.
 
 Each nutrient supports zero or more **dose reminders** — times of day that fire local notifications. Logging a nutrient silences the rest of **today's** reminders for it (today's total above 0); later days are untouched. Reminders can be configured both during nutrient creation (inline in the form) and via the "Reminders" section in the Edit Nutrient form. Notification permission is requested on first reminder add if not yet granted.
 
