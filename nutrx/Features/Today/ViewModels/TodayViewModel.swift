@@ -104,12 +104,13 @@ final class TodayViewModel {
         let startOfDay = Calendar.current.startOfDay(for: .now)
         let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
 
-        // Fetch non-deleted nutrients
+        // Fetch non-deleted nutrients, without those whose course has ended (#99).
         let nutrientDescriptor = FetchDescriptor<Nutrient>(
             predicate: #Predicate { !$0.isDeleted },
             sortBy: [SortDescriptor(\Nutrient.sortOrder)]
         )
-        guard let nutrients = try? context.fetch(nutrientDescriptor) else { return }
+        guard let fetched = try? context.fetch(nutrientDescriptor) else { return }
+        let nutrients = fetched.filter { $0.isRunning(on: startOfDay) }
 
         // Fetch all groups
         let groupDescriptor = FetchDescriptor<NutrientGroup>(

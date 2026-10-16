@@ -55,11 +55,17 @@ enum StreakService {
             exclusionSet.insert("\(day.timeIntervalSince1970)-\(nutrient.persistentModelID)")
         }
 
+        // Decoded once, not per day.
+        let courseGaps = Dictionary(nutrients.map { ($0.persistentModelID, $0.courseGaps(calendar: calendar)) },
+                                    uniquingKeysWith: { first, _ in first })
+
         // Helper: check if a day is a streak day
         func isDayStreakDay(_ day: Date) -> Bool {
-            // Active nutrients on this day: non-deleted, created on or before this day
+            // Active nutrients on this day: non-deleted, created on or before this day, course not over (#99)
             let activeNutrients = nutrients.filter { nutrient in
                 calendar.startOfDay(for: nutrient.createdAt) <= day
+                    && NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[nutrient.persistentModelID] ?? [],
+                                               day: day, calendar: calendar)
             }
 
             guard !activeNutrients.isEmpty else { return false }

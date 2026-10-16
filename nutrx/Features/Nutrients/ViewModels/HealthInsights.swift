@@ -91,7 +91,7 @@ enum HealthInsights {
     /// when Health isn't connected (or available) or there's nothing tracked.
     static func load(context: ModelContext, now: Date = .now, calendar: Calendar = .current) async -> Status? {
         guard HealthReader.isAvailable, HealthReader.isConnected else { return nil }
-        let nutrients = HistoryViewModel.orderedNutrients(context: context).filter { !$0.isDeleted }
+        let nutrients = HistoryViewModel.orderedNutrients(context: context).filter { $0.isRunning(on: now) }
         guard !nutrients.isEmpty else { return nil }
         let startOfToday = calendar.startOfDay(for: now)
         let start = calendar.date(byAdding: .day, value: -(HealthTrends.windowDays + 1), to: startOfToday)!

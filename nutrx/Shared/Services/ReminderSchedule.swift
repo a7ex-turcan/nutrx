@@ -20,6 +20,8 @@ enum ReminderSchedule {
         let times: [Time]
         /// Today's total is above zero: no more reminders for it today.
         let loggedToday: Bool
+        /// The last day of a set course (#99): nothing after it.
+        var lastDay: Date? = nil
     }
 
     /// One pending notification: its identifier and when it fires.
@@ -51,6 +53,7 @@ enum ReminderSchedule {
             (0..<days).flatMap { offset -> [Occurrence] in
                 guard let day = calendar.date(byAdding: .day, value: offset, to: today) else { return [] }
                 if offset == 0 && plan.loggedToday { return [] }
+                if !NutrientCourse.includes(plan.lastDay, day: day, calendar: calendar) { return [] }
                 return plan.times.compactMap { time in
                     guard let fireDate = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0,
                                                        of: day),

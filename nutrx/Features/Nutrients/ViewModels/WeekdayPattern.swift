@@ -23,8 +23,8 @@ struct WeekdayPattern: Equatable {
     /// Days of each rated weekday needed before we mention a weakest one.
     static let insightMinimumDays = 2
 
-    init(totals: [Date: Double], goal: AnalyticsGoal, createdAt: Date, today: Date,
-         calendar: Calendar = .current) {
+    init(totals: [Date: Double], goal: AnalyticsGoal, createdAt: Date, endDate: Date? = nil,
+         courseGaps: [ClosedRange<Date>] = [], today: Date, calendar: Calendar = .current) {
         let startOfToday = calendar.startOfDay(for: today)
         let firstTracked = calendar.startOfDay(for: createdAt)
 
@@ -32,7 +32,8 @@ struct WeekdayPattern: Equatable {
         var counted: [Int: Int] = [:]
         for offset in 1...Self.windowDays {
             guard let date = calendar.date(byAdding: .day, value: -offset, to: startOfToday),
-                  date >= firstTracked else { continue }
+                  date >= firstTracked, NutrientCourse.includes(endDate, gaps: courseGaps, day: date, calendar: calendar)
+            else { continue }
             let weekday = calendar.component(.weekday, from: date)
             counted[weekday, default: 0] += 1
             if goal.isMet(max(0, totals[date] ?? 0)) { met[weekday, default: 0] += 1 }

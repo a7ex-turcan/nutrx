@@ -122,7 +122,8 @@ enum NotificationService {
         let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isDeleted })
         guard let nutrients = try? context.fetch(descriptor) else { return nil }
         let totals = todayTotals(context: context, now: now)
-        let withReminders = nutrients.filter { !($0.reminders ?? []).isEmpty }
+        // A course that has ended (#99) has nothing left to remind about.
+        let withReminders = nutrients.filter { !($0.reminders ?? []).isEmpty && !$0.hasEnded(by: now) }
 
         let plans = withReminders.map { nutrient in
             ReminderSchedule.Plan(
@@ -130,7 +131,8 @@ enum NotificationService {
                 times: (nutrient.reminders ?? []).map {
                     ReminderSchedule.Time(hour: $0.timeComponents.hour, minute: $0.timeComponents.minute)
                 },
-                loggedToday: (totals[nutrient.persistentModelID] ?? 0) > 0
+                loggedToday: (totals[nutrient.persistentModelID] ?? 0) > 0,
+                lastDay: nutrient.endDate
             )
         }
         let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }) { first, _ in first }
@@ -245,7 +247,7 @@ enum NotificationService {
     private static func refillReminderPlan(nutrients: [Nutrient], now: Date) -> RefillPlan {
         let previousStates = refillStates
         var plan = RefillPlan()
-        for nutrient in nutrients {
+        for nutrient in nutrients where !nutrient.hasEnded(by: now) {
             guard let status = nutrient.supplyStatus(now: now) else { continue }
             let key = nutrient.id.uuidString
             let previous = previousStates[key]

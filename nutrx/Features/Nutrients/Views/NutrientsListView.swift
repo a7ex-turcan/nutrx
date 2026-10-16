@@ -38,9 +38,16 @@ struct NutrientsListView: View {
         allGroups.contains(where: { !$0.isSystem })
     }
 
+    /// Nutrients whose course has ended (#99), newest first: the Finished section, off Today.
+    private var finishedNutrients: [Nutrient] {
+        nutrients.filter { $0.hasEnded() }.sorted { ($0.endDate ?? .distantPast) > ($1.endDate ?? .distantPast) }
+    }
+
+    @State private var showsFinished = false
+
     private var groupedSections: [(group: NutrientGroup, nutrients: [Nutrient])] {
         var sectionMap: [PersistentIdentifier: [Nutrient]] = [:]
-        for nutrient in nutrients {
+        for nutrient in nutrients where !nutrient.hasEnded() {
             let groupID = (nutrient.group ?? generalGroup)?.persistentModelID ?? generalGroup?.persistentModelID
             guard let gid = groupID else { continue }
             sectionMap[gid, default: []].append(nutrient)
@@ -295,6 +302,11 @@ struct NutrientsListView: View {
                 }
             }
 
+            // Not while selecting: Move and Delete act on the groups' nutrients.
+            if !isSelecting, !finishedNutrients.isEmpty {
+                finishedSection
+            }
+
             if !isSelecting {
                 newGroupButton
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
@@ -326,11 +338,12 @@ struct NutrientsListView: View {
 
     private var selectionBar: some View {
         let count = selection.count
-        let allSelected = count == nutrients.count
+        let selectable = nutrients.filter { !$0.hasEnded() }
+        let allSelected = count == selectable.count
         return VStack(spacing: 10) {
             HStack {
                 Button(allSelected ? "Deselect All" : "Select All") {
-                    selection = allSelected ? [] : Set(nutrients.map(\.persistentModelID))
+                    selection = allSelected ? [] : Set(selectable.map(\.persistentModelID))
                 }
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.controlPrimary)
@@ -413,7 +426,8 @@ struct NutrientsListView: View {
     /// Row (DESIGN.md §5.6): icon tile, name, goal-type tag + target, bell if it has reminders.
     private func nutrientRow(_ nutrient: Nutrient) -> some View {
         let goal = GoalProgress(nutrient: nutrient, current: 0)
-        let hasReminders = !(nutrient.reminders ?? []).isEmpty
+        // A finished course's reminders have stopped.
+        let hasReminders = !(nutrient.reminders ?? []).isEmpty && !nutrient.hasEnded()
 
         return HStack(spacing: 12) {
             NutrientIconTile(nutrient: nutrient)
@@ -432,10 +446,16 @@ struct NutrientsListView: View {
                         .padding(.vertical, 3)
                         .background(Theme.surfaceChip, in: RoundedRectangle(cornerRadius: Theme.Radius.tag, style: .continuous))
 
-                    Text(goal.goalAmountText)
-                        .font(.subheadline)
-                        .monospacedDigit()
-                        .foregroundStyle(Theme.textSecondary)
+                    if let endDate = nutrient.endDate, nutrient.hasEnded() {
+                        Text(CourseText().ended(endDate))
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.textSecondary)
+                    } else {
+                        Text(goal.goalAmountText)
+                            .font(.subheadline)
+                            .monospacedDigit()
+                            .foregroundStyle(Theme.textSecondary)
+                    }
 
                     if hasReminders {
                         Image(systemName: "bell.fill")
@@ -446,6 +466,79 @@ struct NutrientsListView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Finished (#99)
+
+    /// Courses that have ended, collapsed at the end: still here for analytics, and Restart puts one back on Today.
+    private var finishedSection: some View {
+        Section {
+            if showsFinished {
+                ForEach(finishedNutrients, id: \.persistentModelID) { nutrient in
+                    NavigationLink(value: nutrient.persistentModelID) {
+                        nutrientRow(nutrient)
+                    }
+                    .listRowBackground(Theme.surfaceCard)
+                    .listRowSeparatorTint(Theme.lineHairline)
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            nutrientToDelete = nutrient
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .contextMenu {
+                        Button {
+                            restart(nutrient)
+                        } label: {
+                            Label("Restart", systemImage: "arrow.clockwise")
+                        }
+                        Button {
+                            editDraft.populate(from: nutrient)
+                            nutrientToEdit = nutrient
+                        } label: {
+                            Label("Edit Nutrient", systemImage: "pencil")
+                        }
+                        Button(role: .destructive) {
+                            nutrientToDelete = nutrient
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+        } header: {
+            Button {
+                withAnimation(.unlessReduceMotion(reduceMotion, .default)) { showsFinished.toggle() }
+            } label: {
+                HStack {
+                    Text("Finished")
+                        .font(.footnote.weight(.bold))
+                        .textCase(.uppercase)
+                        .tracking(0.6)
+                    Image(systemName: "chevron.down")
+                        .font(.caption2.weight(.bold))
+                        .rotationEffect(.degrees(showsFinished ? 0 : -90))
+                        .accessibilityHidden(true)
+                    Spacer()
+                    Text("\(finishedNutrients.count)")
+                        .font(.system(.footnote, design: .rounded, weight: .semibold))
+                        .monospacedDigit()
+                }
+                .foregroundStyle(Theme.textSecondary)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Finished, \(finishedNutrients.count == 1 ? "1 nutrient" : "\(finishedNutrients.count) nutrients")")
+            .accessibilityValue(showsFinished ? "Expanded" : "Collapsed")
+        }
+    }
+
+    /// Back to ongoing and onto Today; its reminders come back. The days since it ended stay a gap (`setCourse`).
+    private func restart(_ nutrient: Nutrient) {
+        nutrient.setCourse(endDate: nil)
+        try? modelContext.save()
+        NotificationService.refreshAllNutrientReminders(context: modelContext)
     }
 
     private var newGroupButton: some View {

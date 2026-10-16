@@ -26,6 +26,7 @@ struct NutrientFormView: View {
 
     @State private var showRemindersSheet = false
     @State private var showSupply = false
+    @State private var showDuration = false
     @State private var showPendingReminders = false
     @State private var showGroupChooser = false
     @State private var showNewGroupAlert = false
@@ -239,6 +240,17 @@ struct NutrientFormView: View {
                 settingsRow("Reminders", value: remindersSummary)
             }
             .buttonStyle(.plain)
+
+            // Duration (nutrx Pro, #99): ongoing, or a set number of days / until a date.
+            if ProAccess.isStoreVisible {
+                Rectangle().fill(Theme.lineHairline).frame(height: 1)
+                ProGatedButton(action: { showDuration = true }) { showsBadge in
+                    settingsRow("Duration", value: showsBadge ? "" : CourseText().summary(endDate: draft.endDate, now: .now),
+                                badge: showsBadge)
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showDuration) { DurationSheet(draft: draft) }
+            }
 
             // Supply (nutrx Pro): a saved nutrient only, since it reads the nutrient's own log.
             if let nutrient, ProAccess.isStoreVisible {

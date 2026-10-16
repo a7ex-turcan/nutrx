@@ -45,8 +45,11 @@ struct AnalyticsSummary: Equatable {
     }
 
     /// - Parameter totals: day totals keyed by start of day; missing days count as 0.
-    init(dayCount: Int, totals: [Date: Double], goal: AnalyticsGoal, createdAt: Date, today: Date,
-         calendar: Calendar = .current) {
+    /// - Parameters:
+    ///   - endDate: the last day of a set course (#99); days after it aren't tracked.
+    ///   - courseGaps: days between a course's end and its restart; not tracked either.
+    init(dayCount: Int, totals: [Date: Double], goal: AnalyticsGoal, createdAt: Date, endDate: Date? = nil,
+         courseGaps: [ClosedRange<Date>] = [], today: Date, calendar: Calendar = .current) {
         let startOfToday = calendar.startOfDay(for: today)
         let firstTracked = calendar.startOfDay(for: createdAt)
 
@@ -54,7 +57,9 @@ struct AnalyticsSummary: Equatable {
             guard let date = calendar.date(byAdding: .day, value: -offset, to: startOfToday) else { return nil }
             let total = max(0, totals[date] ?? 0)
             return AnalyticsDay(date: date, total: total, isToday: offset == 0,
-                                isTracked: date >= firstTracked, countsAsMet: goal.isMet(total))
+                                isTracked: date >= firstTracked
+                                    && NutrientCourse.includes(endDate, gaps: courseGaps, day: date, calendar: calendar),
+                                countsAsMet: goal.isMet(total))
         }
 
         let counted = days.filter { $0.isTracked && !$0.isToday }

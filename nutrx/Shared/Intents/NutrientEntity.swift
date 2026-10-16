@@ -55,11 +55,11 @@ struct NutrientEntityQuery: EntityStringQuery {
         Self.activeNutrients(in: modelContainer.mainContext).map(NutrientEntity.init)
     }
 
-    /// Nutrients that aren't deleted, in Today's order: by group, then within the group.
+    /// Nutrients on Today (not deleted, course not ended), in Today's order: by group, then within the group.
     @MainActor
     static func activeNutrients(in context: ModelContext) -> [Nutrient] {
         let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isDeleted })
-        return ordered((try? context.fetch(descriptor)) ?? [])
+        return ordered(((try? context.fetch(descriptor)) ?? []).filter { $0.isRunning() })
     }
 
     /// Today's order. A nutrient without a group belongs to General, which comes last.

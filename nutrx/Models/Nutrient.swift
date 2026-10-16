@@ -35,6 +35,13 @@ final class Nutrient {
     /// Remind when this many days are left.
     var refillReminderDays: Int = 7
 
+    /// The last day of a set course (nutrx Pro, #99), at the start of that day; nil = ongoing. From the next day the
+    /// nutrient is off Today, its reminders stop, and History, streaks and analytics count it only up to here.
+    var endDate: Date? = nil
+    /// The days between a course's end and its restart, so they never count as missed (#99): "yyyyMMdd-yyyyMMdd"
+    /// pairs, comma-separated (a string, so it's one CloudKit field). Read via `courseGaps(calendar:)`.
+    var courseGapsRaw: String = ""
+
     var goalType: GoalType {
         get { GoalType(rawValue: goalTypeRaw) ?? .minimum }
         set { goalTypeRaw = newValue.rawValue }
@@ -67,5 +74,98 @@ final class Nutrient {
         self.isDeleted = isDeleted
         self.goalTypeRaw = goalType.rawValue
         self.upperBound = upperBound
+    }
+}
+
+// MARK: - Courses (#99)
+
+/// A course's days, shared by the app, the widgets and the Watch (this file is in every target).
+enum NutrientCourse {
+    /// The last day of a course of `days` days that starts on `start` ("for 5 days" from Monday ends Friday).
+    static func lastDay(days: Int, from start: Date, calendar: Calendar = .current) -> Date {
+        calendar.date(byAdding: .day, value: max(1, days) - 1, to: calendar.startOfDay(for: start))!
+    }
+
+    /// The days from `start` to `lastDay`, both included (at least 1).
+    static func dayCount(from start: Date, to lastDay: Date, calendar: Calendar = .current) -> Int {
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: start),
+                                           to: calendar.startOfDay(for: lastDay)).day ?? 0
+        return max(1, days + 1)
+    }
+
+    /// Past the last day (the day after it, or later).
+    static func hasEnded(_ endDate: Date?, by date: Date, calendar: Calendar = .current) -> Bool {
+        guard let endDate else { return false }
+        return calendar.startOfDay(for: date) > calendar.startOfDay(for: endDate)
+    }
+
+    /// Counted on a day: on or before the last day (any day for an ongoing nutrient), and not in a gap between a
+    /// course's end and its restart.
+    static func includes(_ endDate: Date?, gaps: [ClosedRange<Date>] = [], day: Date,
+                         calendar: Calendar = .current) -> Bool {
+        let start = calendar.startOfDay(for: day)
+        return !hasEnded(endDate, by: day, calendar: calendar) && !gaps.contains { $0.contains(start) }
+    }
+
+    /// The days a restart on `restartDay` skips: from the day after `endDate` to the day before the restart. Nil when
+    /// there are none (restarted the day after it ended) or it hadn't ended.
+    static func gap(after endDate: Date?, restartingOn restartDay: Date,
+                    calendar: Calendar = .current) -> ClosedRange<Date>? {
+        guard let endDate, hasEnded(endDate, by: restartDay, calendar: calendar),
+              let first = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate)),
+              let last = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: restartDay)),
+              first <= last else { return nil }
+        return first...last
+    }
+
+    /// Gaps are calendar days, stored as "yyyyMMdd-yyyyMMdd" pairs and rebuilt in the reading calendar, so a time
+    /// zone change never shifts a paused day back into a miss.
+    static func encode(_ gaps: [ClosedRange<Date>], calendar: Calendar = .current) -> String {
+        func day(_ date: Date) -> String {
+            let parts = calendar.dateComponents([.year, .month, .day], from: date)
+            return String(format: "%04d%02d%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+        }
+        return gaps.map { "\(day($0.lowerBound))-\(day($0.upperBound))" }.joined(separator: ",")
+    }
+
+    static func decode(_ raw: String, calendar: Calendar = .current) -> [ClosedRange<Date>] {
+        func date(_ text: Substring) -> Date? {
+            guard text.count == 8, let value = Int(text) else { return nil }
+            let parts = DateComponents(year: value / 10000, month: value / 100 % 100, day: value % 100)
+            return calendar.date(from: parts).map { calendar.startOfDay(for: $0) }
+        }
+        return raw.split(separator: ",").compactMap { pair in
+            let days = pair.split(separator: "-").compactMap(date)
+            guard days.count == 2, days[0] <= days[1] else { return nil }
+            return days[0]...days[1]
+        }
+    }
+}
+
+extension Nutrient {
+    /// Past the last day of its course.
+    func hasEnded(by date: Date = .now, calendar: Calendar = .current) -> Bool {
+        NutrientCourse.hasEnded(endDate, by: date, calendar: calendar)
+    }
+
+    /// On Today (and the widgets, the Watch, reminders, stacks and Siri) on this day: not deleted and not ended.
+    func isRunning(on date: Date = .now, calendar: Calendar = .current) -> Bool {
+        !isDeleted && !hasEnded(by: date, calendar: calendar)
+    }
+
+    /// Read in the same calendar the caller matches days in.
+    func courseGaps(calendar: Calendar = .current) -> [ClosedRange<Date>] {
+        NutrientCourse.decode(courseGapsRaw, calendar: calendar)
+    }
+
+    /// Sets a new last day (nil = ongoing). If the course had ended, the days since then are kept as a gap, so
+    /// restarting never turns them into misses after the fact. The one writer of `endDate` for a saved nutrient.
+    func setCourse(endDate newEndDate: Date?, now: Date = .now, calendar: Calendar = .current) {
+        guard newEndDate != endDate else { return }
+        if let gap = NutrientCourse.gap(after: endDate, restartingOn: now, calendar: calendar) {
+            let gaps = courseGaps(calendar: calendar) + [gap]
+            courseGapsRaw = NutrientCourse.encode(gaps, calendar: calendar)
+        }
+        endDate = newEndDate
     }
 }

@@ -11,11 +11,11 @@ enum StackLogging {
         let date: Date
     }
 
-    /// The entries a stack logs, in order: those whose nutrient still exists (deleted nutrients keep their entries
-    /// for history, but a stack skips them).
-    static func activeEntries(of stack: LogStack) -> [LogStackEntry] {
+    /// The entries a stack logs, in order: those whose nutrient is on Today (deleted nutrients keep their entries for
+    /// history, and so do those whose course has ended, #99, but a stack skips them).
+    static func activeEntries(of stack: LogStack, now: Date = .now) -> [LogStackEntry] {
         (stack.entries ?? [])
-            .filter { $0.nutrient.map { !$0.isDeleted } ?? false }
+            .filter { $0.nutrient?.isRunning(on: now) ?? false }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 

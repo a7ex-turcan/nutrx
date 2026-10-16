@@ -25,6 +25,8 @@ final class NutrientDraft {
     var servingForm: String?
     /// Stacks to put a new nutrient in when it's added (existing ones, or new ones to create with it).
     var pendingStacks: [StackLogging.Choice] = []
+    /// The last day of a set course (nutrx Pro, #99); nil = ongoing.
+    var endDate: Date?
     /// A scanned label's ingredient rows ("Also on this label"), and the ones already added from it.
     var labelIngredients: [LabelIngredient] = []
     var addedFromLabel: [String] = []
@@ -97,6 +99,7 @@ final class NutrientDraft {
         wasScanned = false
         servingForm = nil
         pendingStacks = []
+        endDate = nil
         labelIngredients = []
         addedFromLabel = []
         labelIngredientName = nil
@@ -112,6 +115,7 @@ final class NutrientDraft {
         upperBound = nutrient.upperBound.map { Self.editableText($0) } ?? ""
         tint = nutrient.tint
         symbolName = nutrient.symbolName
+        endDate = nutrient.endDate
     }
 
     /// Adds a reminder time for a not-yet-saved nutrient, keeping the list sorted by time of day.
