@@ -35,10 +35,10 @@ struct MainTabView: View {
 
             Tab("History", systemImage: "calendar", value: TabID.history) {
                 NavigationStack {
+                    // The profile menu is added inside, so the report button sits before the avatar.
                     HistoryListView()
                         .navigationTitle("History")
                         .navigationBarTitleDisplayMode(.large)
-                        .withProfileMenu()
                 }
             }
 

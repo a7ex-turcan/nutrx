@@ -86,13 +86,8 @@ struct SettingsView: View {
             }
             .listRowBackground(Theme.surfaceCard)
 
-            // Your data (docs/pro/design/2-paywall: settings): Apple Health and the doctor report join it with Pro.
+            // Your data (docs/pro/design/7-doctor-report: entry): Apple Health and the doctor report (Pro), Export data.
             Section {
-                NavigationLink {
-                    ExportDataView()
-                } label: {
-                    row("Export data", symbol: "square.and.arrow.up", color: Theme.SettingsTile.grey, value: nil)
-                }
                 if ProAccess.isStoreVisible, HealthReader.isAvailable {
                     if proAccess?.isPro == true {
                         NavigationLink {
@@ -105,6 +100,29 @@ struct SettingsView: View {
                         ProGatedButton(action: {}) { _ in
                             HStack(spacing: 8) {
                                 row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral, value: nil)
+                                ProBadge()
+                            }
+                        }
+                        .foregroundStyle(Theme.textPrimary)
+                    }
+                }
+                NavigationLink {
+                    ExportDataView()
+                } label: {
+                    row("Export data", symbol: "square.and.arrow.up", color: Theme.SettingsTile.grey, value: nil)
+                }
+                if ProAccess.isStoreVisible {
+                    if proAccess?.isPro == true {
+                        NavigationLink {
+                            ReportView()
+                        } label: {
+                            row("Report for your doctor", symbol: "doc.fill", color: Theme.SettingsTile.blue, value: nil)
+                        }
+                    } else {
+                        ProGatedButton(action: {}) { _ in
+                            HStack(spacing: 8) {
+                                row("Report for your doctor", symbol: "doc.fill", color: Theme.SettingsTile.blue,
+                                    value: nil)
                                 ProBadge()
                             }
                         }
