@@ -47,11 +47,12 @@ struct DoctorReport: Equatable {
     let daysWithEntries: Int
     /// Goals met over goals counted, every nutrient, every logged day.
     let overallHitRate: Double?
-    /// The longest run of days in the period with every goal met (the streak rule).
+    /// The longest run of logged days in the period with every included goal met.
     let longestStreak: Int
+    /// Every day of the period, oldest first (empty when the period is).
+    let days: [Date]
 
     var dayCount: Int { days.count }
-    var days: [Date] { sections.first?.days.map(\.date) ?? [] }
 
     // MARK: - Building
 
@@ -90,9 +91,7 @@ struct DoctorReport: Equatable {
             var counted = 0, met = 0, daysLogged = 0, sum = 0.0
             for result in results {
                 let goal = result.goals.first { $0.nutrientID == id }
-                if result.otherLogged.contains(where: { $0.nutrientID == id }) || (goal != nil && result.hasEntries && goal!.total > 0) {
-                    daysLogged += 1
-                }
+                if log.loggedNutrients(on: result.date).contains(id) { daysLogged += 1 }
                 guard let goal, result.hasEntries else {
                     days.append(Day(date: result.date, total: nil, isMet: false))
                     continue
@@ -110,16 +109,19 @@ struct DoctorReport: Equatable {
 
         let counted = sections.reduce(0) { $0 + $1.countedDays }
         let met = sections.reduce(0) { $0 + $1.metDays }
+        // A full day for this report: logged, and every included goal that counts that day met (a nutrient left out of
+        // the report doesn't break its streak).
+        let includedSet = Set(included)
         var longest = 0, run = 0
         for result in results {
-            if result.hasEntries, !result.goals.isEmpty, result.completion == .allMet {
+            let goals = result.goals.filter { includedSet.contains($0.nutrientID) }
+            if result.hasEntries, !goals.isEmpty, goals.allSatisfy(\.isMet) {
                 run += 1
                 longest = max(longest, run)
             } else {
                 run = 0
             }
         }
-        let includedSet = Set(included)
         let reportNotes = notes
             .filter { includedSet.contains($0.nutrientID) && $0.date >= first && calendar.startOfDay(for: $0.date) <= last }
             .sorted { $0.date < $1.date }
@@ -129,7 +131,7 @@ struct DoctorReport: Equatable {
         return DoctorReport(start: first, end: last, name: trimmedName?.isEmpty == false ? trimmedName : nil,
                             sections: sections, notes: reportNotes, daysWithEntries: logged.count,
                             overallHitRate: counted > 0 ? Double(met) / Double(counted) : nil,
-                            longestStreak: longest)
+                            longestStreak: longest, days: dates)
     }
 
     /// The last `days` completed days: "Last 30 days" ends yesterday.

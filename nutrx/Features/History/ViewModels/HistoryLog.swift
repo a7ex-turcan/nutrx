@@ -108,6 +108,11 @@ struct HistoryLog {
             .map(day)
     }
 
+    /// The nutrients with an entry on a day, even ones whose entries net to 0 (a log, then a decrement).
+    func loggedNutrients(on date: Date) -> Set<UUID> {
+        Set(totals[calendar.startOfDay(for: date)]?.keys.map { $0 } ?? [])
+    }
+
     /// Whether any completed day has something logged.
     var hasPastEntries: Bool {
         totals.keys.contains { $0 < today }

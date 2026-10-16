@@ -74,6 +74,9 @@ final class DoctorReportTests: XCTestCase {
         let onlyD = report(notes: notes, nutrientIDs: [vitaminD])
         XCTAssertEqual(onlyD.sections.map(\.name), ["Vitamin D"])
         XCTAssertEqual(onlyD.notes.map(\.nutrientName), ["Vitamin D"])
+        let onlyCaffeine = report(nutrientIDs: [caffeine])
+        XCTAssertEqual(onlyCaffeine.longestStreak, 5, "Vitamin D's misses on the 3rd–5th don't break a caffeine-only report")
+        XCTAssertEqual(onlyCaffeine.overallHitRate, 1)
     }
 
     // MARK: - Words
@@ -111,7 +114,7 @@ final class DoctorReportTests: XCTestCase {
     private func fixture(sections: Int, notes: Int, trends: Int = 0) -> DoctorReport {
         DoctorReport(start: day(10, 1), end: day(10, 10), name: nil, sections: manySections(sections, trends: trends),
                      notes: (0..<notes).map { DoctorReport.Note(date: day(10, 1), nutrientName: "N", text: "Note \($0)") },
-                     daysWithEntries: 0, overallHitRate: nil, longestStreak: 0)
+                     daysWithEntries: 0, overallHitRate: nil, longestStreak: 0, days: [])
     }
 
     func testTheDesignsFourPages() {
@@ -157,7 +160,7 @@ final class DoctorReportTests: XCTestCase {
                             case .notesHeader: used += ReportLayout.notesHeaderHeight
                             case .notes(let range):
                                 noteOrder += Array(range)
-                                used += CGFloat(range.count) * ReportLayout.noteRowHeight
+                                used += range.reduce(0) { $0 + ReportLayout.noteHeight(report.notes[$1], paper: paper) }
                             }
                         }
                         XCTAssertLessThanOrEqual(used, ReportLayout.contentHeight(paper), "\(paper) \(sections)/\(notes): a page overflows")
@@ -177,6 +180,43 @@ final class DoctorReportTests: XCTestCase {
                 XCTFail("a notes header with no rows under it")
             }
         }
+    }
+
+    func testLongNotesTakeMoreRoomAndStillFit() {
+        let long = String(repeating: "Took it with breakfast instead of dinner. ", count: 6)
+        var report = fixture(sections: 2, notes: 0)
+        report = DoctorReport(start: report.start, end: report.end, name: nil, sections: report.sections,
+                              notes: (0..<25).map { DoctorReport.Note(date: day(10, 1), nutrientName: "N", text: $0 % 2 == 0 ? long : "Short") },
+                              daysWithEntries: 0, overallHitRate: nil, longestStreak: 0, days: [])
+        XCTAssertEqual(ReportLayout.noteHeight(report.notes[0], paper: .a4),
+                       ReportLayout.noteRowHeight + 2 * ReportLayout.noteLineHeight, "capped at three lines")
+        XCTAssertEqual(ReportLayout.noteHeight(report.notes[1], paper: .a4), ReportLayout.noteRowHeight)
+        let layout = ReportLayout(report: report, paper: .a4)
+        for page in layout.pages {
+            guard case .content(let blocks) = page else { continue }
+            let used = blocks.reduce(CGFloat(0)) { total, block in
+                switch block {
+                case .section(let i): total + ReportLayout.blockHeight(report.sections[i])
+                case .notesHeader: total + ReportLayout.notesHeaderHeight
+                case .notes(let r): total + r.reduce(0) { $0 + ReportLayout.noteHeight(report.notes[$1], paper: .a4) }
+                }
+            }
+            XCTAssertLessThanOrEqual(used, ReportLayout.contentHeight(.a4))
+        }
+    }
+
+    func testAnEmptyPeriodReadsAsNoDays() {
+        let log = HistoryLog(nutrients: nutrients, totals: [:], today: day(10, 15), calendar: calendar)
+        let report = DoctorReport.build(log: log, names: names, units: units, start: day(10, 20), end: day(10, 25))
+        XCTAssertEqual(report.dayCount, 0)
+        XCTAssertNil(report.overallHitRate)
+    }
+
+    func testANetZeroDayStillCountsAsLogged() {
+        let log = HistoryLog(nutrients: nutrients, totals: [day(10, 2): [vitaminD: 0]], today: day(10, 15), calendar: calendar)
+        let report = DoctorReport.build(log: log, names: names, units: units, start: day(10, 1), end: day(10, 3),
+                                        nutrientIDs: [vitaminD])
+        XCTAssertEqual(report.sections.first?.daysLogged, 1, "logged, then taken back off")
     }
 
     func testPaperFollowsTheRegion() {
