@@ -42,12 +42,10 @@ struct TodayView: View {
     @State private var pendingStackEdit: LogStack?
 
     enum StackEditing: Identifiable {
-        case list
         case stack(LogStack)
 
         var id: AnyHashable {
             switch self {
-            case .list: "list"
             case .stack(let stack): stack.persistentModelID
             }
         }
@@ -157,7 +155,7 @@ struct TodayView: View {
                         StacksRow(
                             stacks: stacksToShow,
                             onLog: { stackToLog = $0 },
-                            onEdit: { stackEditing = .list }
+                            onEdit: { NotificationRouter.shared.showsStacks = true }
                         )
                         .listRowInsets(EdgeInsets(top: Theme.Spacing.sectionTop - Theme.Spacing.cardGap / 2,
                                                   leading: 0, bottom: Theme.Spacing.cardGap / 2, trailing: 0))
@@ -317,7 +315,6 @@ struct TodayView: View {
             NavigationStack {
                 Group {
                     switch editing {
-                    case .list: StacksView()
                     case .stack(let stack): StackDetailView(stack: stack)
                     }
                 }

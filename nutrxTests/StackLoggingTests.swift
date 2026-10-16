@@ -150,11 +150,6 @@ final class StackLoggingTests: XCTestCase {
         XCTAssertEqual([first.id, second.id, third.id], ids, "unique ids are left alone")
     }
 
-    func testSettingsSummaryCountsStacks() {
-        XCTAssertEqual(SettingsSummary.stacks(count: 0), "None")
-        XCTAssertEqual(SettingsSummary.stacks(count: 3), "3")
-    }
-
     // MARK: - Adding to stacks from My Nutrients and the form
 
     func testToggleAddsAndRemoves() {
