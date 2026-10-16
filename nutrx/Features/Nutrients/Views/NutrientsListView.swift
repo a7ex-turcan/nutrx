@@ -18,6 +18,15 @@ struct NutrientsListView: View {
     @State private var nutrientToMove: Nutrient?
     @State private var nutrientToStack: Nutrient?
     @State private var showNewGroupAlert = false
+    /// Selecting several (#98): the edit mode, the selection, and the sheets for the selection.
+    @State private var editMode: EditMode = .inactive
+    @State private var selection: Set<PersistentIdentifier> = []
+    @State private var showMoveSelection = false
+    @State private var confirmDeleteSelection = false
+    /// The selection as it was when the sheet or alert opened: ending the selection as they close would otherwise
+    /// flash "Move 0 Nutrients" (and a check on every group) or "Delete 0 nutrients" on the way out.
+    @State private var actingOn: [Nutrient] = []
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var newGroupName = ""
     @Query private var allPreferences: [UserPreferences]
 
@@ -71,6 +80,16 @@ struct NutrientsListView: View {
             .navigationBarTitleDisplayMode(.large)
             .withProfileMenu()
             .toolbar {
+                if !nutrients.isEmpty {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(isSelecting ? "Done" : "Select") {
+                            withAnimation(.unlessReduceMotion(reduceMotion, .default)) {
+                                if isSelecting { endSelecting() } else { editMode = .active }
+                            }
+                        }
+                        .fontWeight(isSelecting ? .semibold : .regular)
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: startAdding) {
                         Image(systemName: "plus")
@@ -132,6 +151,20 @@ struct NutrientsListView: View {
             .sheet(item: $nutrientToMove) { nutrient in
                 MoveToGroupSheet(nutrient: nutrient)
             }
+            .sheet(isPresented: $showMoveSelection) {
+                MoveToGroupSheet(nutrients: actingOn) {
+                    endSelecting()
+                }
+            }
+            .alert(actingOn.count == 1 ? "Delete 1 nutrient?" : "Delete \(actingOn.count) nutrients?",
+                   isPresented: $confirmDeleteSelection) {
+                Button("Delete", role: .destructive) { deleteSelection() }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(actingOn.count == 1
+                     ? "It'll be removed from your daily tracking. Your logged history stays."
+                     : "They'll be removed from your daily tracking. Your logged history stays.")
+            }
             .sheet(item: $nutrientToStack) { nutrient in
                 StackPickerSheet(mode: .nutrient(nutrient))
             }
@@ -185,8 +218,10 @@ struct NutrientsListView: View {
     // MARK: - List
 
     private var nutrientList: some View {
-        List {
-            if let prefs = allPreferences.first, !prefs.hasSeenAnalyticsBanner {
+        // No selection binding outside selecting: even an empty one made a tap select the row instead of opening its
+        // analytics (the rows' link values are the same type).
+        List(selection: isSelecting ? $selection : nil) {
+            if !isSelecting, let prefs = allPreferences.first, !prefs.hasSeenAnalyticsBanner {
                 analyticsBanner
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                     .listRowSeparator(.hidden)
@@ -254,13 +289,103 @@ struct NutrientsListView: View {
                 }
             }
 
-            newGroupButton
-                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
-                .listRowBackground(Color.clear)
+            if !isSelecting {
+                newGroupButton
+                    .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color.clear)
+            }
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .listRowSpacing(0)
+        .environment(\.editMode, $editMode)
+        // The selection circles in the app's colour rather than grey; only while selecting, or the swipe Delete
+        // (destructive, untinted) turned green.
+        .tint(isSelecting ? Theme.controlPrimary : nil)
+        .safeAreaInset(edge: .bottom) {
+            if isSelecting {
+                selectionBar
+            }
+        }
+    }
+
+    // MARK: - Selecting several (#98)
+
+    private var isSelecting: Bool { editMode.isEditing }
+
+    /// The selection in the list's order, so a move keeps it.
+    private var selectedNutrients: [Nutrient] {
+        groupedSections.flatMap(\.nutrients).filter { selection.contains($0.persistentModelID) }
+    }
+
+    private var selectionBar: some View {
+        let count = selection.count
+        let allSelected = count == nutrients.count
+        return VStack(spacing: 10) {
+            HStack {
+                Button(allSelected ? "Deselect All" : "Select All") {
+                    selection = allSelected ? [] : Set(nutrients.map(\.persistentModelID))
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.controlPrimary)
+                Spacer()
+                Text(count == 1 ? "1 selected" : "\(count) selected")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .monospacedDigit()
+            }
+            // Side by side, or stacked at accessibility sizes so "Move to Group" isn't cut short.
+            let actions = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(spacing: 10)) : AnyLayout(HStackLayout(spacing: 10))
+            actions {
+                Button {
+                    actingOn = selectedNutrients
+                    showMoveSelection = true
+                } label: {
+                    Label("Move to Group", systemImage: "folder")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .foregroundStyle(Theme.controlOnPrimary)
+                        .background(Theme.controlPrimary,
+                                    in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+                }
+                .accessibilityLabel(count == 1 ? "Move 1 nutrient to a group" : "Move \(count) nutrients to a group")
+                Button(role: .destructive) {
+                    actingOn = selectedNutrients
+                    confirmDeleteSelection = true
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity, minHeight: 50)
+                        .foregroundStyle(.red)
+                        .background(Color.red.opacity(0.12),
+                                    in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+                }
+                .accessibilityLabel(count == 1 ? "Delete 1 nutrient" : "Delete \(count) nutrients")
+            }
+            .buttonStyle(.plain)
+            .disabled(count == 0)
+            .opacity(count == 0 ? 0.4 : 1)
+        }
+        .padding(.horizontal, Theme.Spacing.screenMargin)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background(Theme.surfaceGround)
+    }
+
+    private func endSelecting() {
+        selection = []
+        editMode = .inactive
+    }
+
+    /// Soft-deletes the selection like a single delete, saving and rescheduling reminders once.
+    private func deleteSelection() {
+        for nutrient in actingOn {
+            nutrient.isDeleted = true
+        }
+        try? modelContext.save()
+        NotificationService.refreshAllNutrientReminders(context: modelContext)
+        withAnimation(.unlessReduceMotion(reduceMotion, .default)) { endSelecting() }
     }
 
     private func sectionHeader(_ name: String, count: Int) -> some View {

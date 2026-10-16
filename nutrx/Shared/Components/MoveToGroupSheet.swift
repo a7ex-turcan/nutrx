@@ -1,11 +1,23 @@
 import SwiftUI
 import SwiftData
 
+/// Picks a group (or a new one) for one nutrient, or several selected in My Nutrients (#98).
 struct MoveToGroupSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \NutrientGroup.sortOrder) private var allGroups: [NutrientGroup]
-    let nutrient: Nutrient
+    let nutrients: [Nutrient]
+    /// After the move, before the sheet closes (My Nutrients ends its selection).
+    var onMoved: () -> Void = {}
+
+    init(nutrient: Nutrient) {
+        self.nutrients = [nutrient]
+    }
+
+    init(nutrients: [Nutrient], onMoved: @escaping () -> Void = {}) {
+        self.nutrients = nutrients
+        self.onMoved = onMoved
+    }
 
     @State private var showNewGroupPrompt = false
     @State private var newGroupName = ""
@@ -14,6 +26,11 @@ struct MoveToGroupSheet: View {
         NavigationStack {
             List {
                 ForEach(allGroups, id: \.persistentModelID) { group in
+                    // Checked when every nutrient being moved is already in it.
+                    let isCurrent = nutrients.allSatisfy { nutrient in
+                        nutrient.group?.persistentModelID == group.persistentModelID ||
+                            (nutrient.group == nil && group.isSystem)
+                    }
                     Button {
                         moveNutrient(to: group)
                     } label: {
@@ -23,13 +40,14 @@ struct MoveToGroupSheet: View {
 
                             Spacer()
 
-                            if nutrient.group?.persistentModelID == group.persistentModelID ||
-                               (nutrient.group == nil && group.isSystem) {
+                            if isCurrent {
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Theme.controlPrimary)
+                                    .accessibilityHidden(true)  // .isSelected says it; VoiceOver reads ✓ as "Selected"
                             }
                         }
                     }
+                    .accessibilityAddTraits(isCurrent ? .isSelected : [])
                 }
 
                 Button {
@@ -40,7 +58,7 @@ struct MoveToGroupSheet: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("Move to Group")
+            .navigationTitle(nutrients.count == 1 ? "Move to Group" : "Move \(nutrients.count) Nutrients")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -61,9 +79,9 @@ struct MoveToGroupSheet: View {
     }
 
     private func moveNutrient(to group: NutrientGroup) {
-        let maxOrder = (group.nutrients ?? []).map(\.groupSortOrder).max() ?? -1
-        nutrient.group = group
-        nutrient.groupSortOrder = maxOrder + 1
+        group.append(nutrients)
+        try? modelContext.save()
+        onMoved()
         dismiss()
     }
 
@@ -78,8 +96,9 @@ struct MoveToGroupSheet: View {
         let group = NutrientGroup(name: trimmed, sortOrder: newOrder)
         modelContext.insert(group)
 
-        nutrient.group = group
-        nutrient.groupSortOrder = 0
+        group.append(nutrients)
+        try? modelContext.save()
+        onMoved()
         dismiss()
     }
 }
