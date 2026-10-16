@@ -117,7 +117,7 @@ Profile, Settings, and About are **not** tabs — they're accessed via a profile
 
 ## Project Directory Structure
 
-The Xcode project is named `nutrx`. All Swift source lives under `nutrx/`. The structure mirrors the three-tab feature split plus shared infrastructure.
+The Xcode project is named `nutrx`. All Swift source lives under `nutrx/`. The structure mirrors the four-tab feature split plus shared infrastructure.
 
 ```
 nutrx/
@@ -127,7 +127,7 @@ nutrx/
 │                                # OnboardingFlow and MainTabView.
 │
 ├── App/
-│   └── MainTabView.swift        # The TabView shell with three tabs. Each tab has a NavigationStack with .withProfileMenu().
+│   └── MainTabView.swift        # The TabView shell with four tabs. Each tab has a NavigationStack with .withProfileMenu().
 │
 ├── Models/                      # SwiftData model classes — pure data, zero UI, zero business logic.
 │   ├── UserProfile.swift
@@ -223,7 +223,7 @@ nutrx/
 │   │
 │   ├── Settings/
 │   │   ├── Views/
-│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups, Stacks; Export data; Rate nutrx, About) with values, privacy footer.
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Export data; Rate nutrx, About) with values, privacy footer.
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.

@@ -13,6 +13,15 @@ enum ReviewService {
     static let writeReviewURL = URL(string: "https://apps.apple.com/app/id\(appStoreID)?action=write-review")!
 
     /// Call after every intake action. Evaluates guard conditions and fires the review prompt if they pass.
+    /// After a log (a + tap, the log sheet, a stack from Today or the Stacks tab): the streak and the entry count, then
+    /// maybe the prompt.
+    @MainActor
+    static func checkAfterLogging(context: ModelContext) {
+        let currentStreak = StreakService.compute(context: context).current
+        let totalIntakeCount = (try? context.fetchCount(FetchDescriptor<IntakeRecord>())) ?? 0
+        maybeRequestReview(context: context, currentStreak: currentStreak, totalIntakeCount: totalIntakeCount)
+    }
+
     static func maybeRequestReview(
         context: ModelContext,
         currentStreak: Int,

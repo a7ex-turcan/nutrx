@@ -6,7 +6,6 @@ import SwiftData
 /// nutrients). Logging here is the same as on Today (`TodayViewModel.logStack`: reminders, widgets, haptics).
 struct StacksView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
     @State private var today = TodayViewModel()
     @State private var stackToLog: LogStack?
@@ -62,6 +61,7 @@ struct StacksView: View {
                 onLog: { amounts in
                     let result = today.logStack(stack, amounts: amounts, context: modelContext)
                     Haptics.logged(reachingGoal: result.reachedGoal)
+                    ReviewService.checkAfterLogging(context: modelContext)
                     // Today patches its totals in place; this makes it reload (as Siri logging does).
                     NotificationCenter.default.post(name: .intakeLoggedByShortcut, object: nil)
                     return result.logged
