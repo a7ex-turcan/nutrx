@@ -50,7 +50,9 @@ final class WatchTodayViewModel {
             predicate: #Predicate { !$0.isDeleted },
             sortBy: [SortDescriptor(\Nutrient.sortOrder)]
         )
-        guard let nutrients = try? context.fetch(nutrientDescriptor) else { return }
+        guard let fetched = try? context.fetch(nutrientDescriptor) else { return }
+        // As on Today: a nutrient whose course has ended (#99) is gone from the Watch.
+        let nutrients = fetched.filter { $0.isRunning(on: startOfDay) }
         hasNutrients = !nutrients.isEmpty
 
         // Fetch groups

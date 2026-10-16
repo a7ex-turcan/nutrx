@@ -174,6 +174,7 @@ nutrx/
 │   │   │   ├── PendingRemindersSheet.swift      # Reminder times for a nutrient that isn't saved yet (kept on the draft).
 │   │   │   ├── NutrientRemindersSheet.swift     # Per-nutrient dose reminder management.
 │   │   │   ├── SupplySheet.swift                # Supply (Pro): servings, each serving, remind me, sentence, Refilled today.
+│   │   │   ├── DurationSheet.swift              # Duration (Pro, #99): Ongoing / For days / Until a date → the draft's last day.
 │   │   │   ├── SupplyCard.swift                 # Analytics Supply card: free teaser / Set up / days left, gauge, Refilled.
 │   │   │   ├── HealthTrendsCard.swift           # Analytics "With Apple Health" (Pro): findings with two bars, or the state.
 │   │   │   ├── ScanLabelEntry.swift             # Scan a label (Pro): entry card + reading note + divider; ScanReviewBanner.
@@ -195,7 +196,8 @@ nutrx/
 │   │       ├── HealthText.swift                 # "With Apple Health" card copy: findings, bars, basis, states, where insights appear (pure).
 │   │       ├── HealthInsights.swift             # Where Health insights stand across nutrients (gathering / ready / …) for the hints (#102).
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
-│   │       └── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
+│   │       ├── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
+│   │       └── CourseText.swift                 # Courses (Pro, #99): "Until Fri 24 Oct · 5 days", "Last day today", "Ended 24 Oct".
 │   │
 │   ├── History/                 # Tab 4 — read-only log of past days.
 │   │   ├── Views/
@@ -834,6 +836,18 @@ Mockups: `docs/pro/design/6-health-trends/`.
   - **Weekly recap:** a line at the end while gathering or once ready (`HealthText.recapLine`); none otherwise.
 - Health trends are shipped on the paywall (the Settings card's tagline becomes "Supply, label scan, recaps and more").
 
+### nutrx Pro: Courses (#99)
+
+A nutrient taken for a set time ("for 5 days", "until 24 Oct").
+- **Model:** `Nutrient.endDate: Date?`, the start of the last day; nil = ongoing. It's optional, so it's CloudKit-safe, but the field (`CD_endDate`) has to be in the production schema before a release ships it (imported to development with `cktool`; production is a Console deploy).
+- **The one rule:** `NutrientCourse` (in `Nutrient.swift`, so the widgets and the Watch have it too): `lastDay(days:from:)`, `dayCount`, `hasEnded(_:by:)` (the day after the last day), `includes(_:day:)`. `Nutrient.isRunning(on:)` = not deleted and not ended. Tested in `NutrientCourseTests`.
+- **Gone after the last day from:** Today (`TodayViewModel`), the widgets (`Provider`), the Watch list and complications, dose and refill reminders (`ReminderSchedule.Plan.lastDay`; `NotificationService` skips ended nutrients), stacks (`StackLogging.activeEntries`), Siri (`NutrientEntityQuery.activeNutrients`) and Health insights.
+- **Counted only up to the last day:** History and streaks (`HistoryNutrient.endDate` in `HistoryLog`, `StreakService`), analytics (`AnalyticsSummary` / `WeekdayPattern` `endDate:`), and so the recap and the report. A finished course never breaks a streak.
+- **Form:** a **Duration** row after Reminders (`ProGatedButton`; free users see the PRO chip) opens `DurationSheet`: Ongoing, For days (a stepper, counting today) or Until a date (today on). It writes `NutrientDraft.endDate`; `insertNutrient` / `apply` save it and reschedule reminders. The row reads `CourseText.summary`.
+- **My Nutrients:** ended courses leave their group for a collapsed **Finished** section at the end (newest first, "FINISHED 2"), with "Ended 24 Oct" in place of the goal. Long-press: **Restart** (back to ongoing and onto Today, reminders back), Edit Nutrient, Delete. Analytics still open.
+- **If Pro lapses:** existing end dates keep working (nothing reappears on Today); setting one needs Pro.
+- Not built: a "Last day" line on Today's card.
+
 ### nutrx Pro: Report for your doctor (phase 8)
 
 Mockups: `docs/pro/design/7-doctor-report/`.
@@ -920,6 +934,7 @@ User-defined nutrient to track.
 | `supplyServings` | `Double? = nil` | Supply: servings when last refilled; nil = supply not set |
 | `supplyRefilledAt` | `Date? = nil` | Supply: when the bottle was last refilled |
 | `refillReminderDays` | `Int = 7` | Supply: remind when this many days are left |
+| `endDate` | `Date? = nil` | Courses (Pro, #99): the last day of a set course (start of day); nil = ongoing |
 
 **Relationships:** → many `IntakeRecord`? (cascade), → many `Exclusion`? (cascade), → many `NutrientReminder`? (cascade), → one `NutrientGroup?` (nullify)
 

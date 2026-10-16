@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### nutrx Pro
+- **Nutrients for a set time** — Taking something for 5 days, or until a date? Set a duration when you add or edit a nutrient. After the last day it leaves Today and its reminders stop, and it waits in a Finished section in My Nutrients, where Restart brings it back. History and streaks count it only for the days it was meant to be taken.
+
 ### Improvements
 - **Select several nutrients** — In My Nutrients, tap Select, pick the nutrients you want, then move them to a group or delete them in one go. Your logged history stays.
 - **Where Apple Health insights appear** — After you connect Apple Health, nutrx says what happens next. Today shows how close your first insight is ("9 of 14 days") with a way to see where it'll appear, and Settings → Apple Health and the weekly recap say the same.

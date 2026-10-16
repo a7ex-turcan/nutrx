@@ -20,6 +20,8 @@ struct HistoryNutrient: Identifiable, Equatable {
     let upperBound: Double?
     let createdAt: Date
     let isDeleted: Bool
+    /// The last day of a set course (#99); it doesn't count after it.
+    var endDate: Date? = nil
 }
 
 /// One past (or the current) day in History.
@@ -90,6 +92,7 @@ struct HistoryLog {
 
         let counted = nutrients.filter { nutrient in
             !nutrient.isDeleted && calendar.startOfDay(for: nutrient.createdAt) <= start
+                && NutrientCourse.includes(nutrient.endDate, day: start, calendar: calendar)
                 && !excludedIDs.contains(nutrient.id)
         }
         let countedIDs = Set(counted.map(\.id))

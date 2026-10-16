@@ -35,6 +35,10 @@ final class Nutrient {
     /// Remind when this many days are left.
     var refillReminderDays: Int = 7
 
+    /// The last day of a set course (nutrx Pro, #99), at the start of that day; nil = ongoing. From the next day the
+    /// nutrient is off Today, its reminders stop, and History, streaks and analytics count it only up to here.
+    var endDate: Date? = nil
+
     var goalType: GoalType {
         get { GoalType(rawValue: goalTypeRaw) ?? .minimum }
         set { goalTypeRaw = newValue.rawValue }
@@ -67,5 +71,45 @@ final class Nutrient {
         self.isDeleted = isDeleted
         self.goalTypeRaw = goalType.rawValue
         self.upperBound = upperBound
+    }
+}
+
+// MARK: - Courses (#99)
+
+/// A course's days, shared by the app, the widgets and the Watch (this file is in every target).
+enum NutrientCourse {
+    /// The last day of a course of `days` days that starts on `start` ("for 5 days" from Monday ends Friday).
+    static func lastDay(days: Int, from start: Date, calendar: Calendar = .current) -> Date {
+        calendar.date(byAdding: .day, value: max(1, days) - 1, to: calendar.startOfDay(for: start))!
+    }
+
+    /// The days from `start` to `lastDay`, both included (at least 1).
+    static func dayCount(from start: Date, to lastDay: Date, calendar: Calendar = .current) -> Int {
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: start),
+                                           to: calendar.startOfDay(for: lastDay)).day ?? 0
+        return max(1, days + 1)
+    }
+
+    /// Past the last day (the day after it, or later).
+    static func hasEnded(_ endDate: Date?, by date: Date, calendar: Calendar = .current) -> Bool {
+        guard let endDate else { return false }
+        return calendar.startOfDay(for: date) > calendar.startOfDay(for: endDate)
+    }
+
+    /// Counted on a day: on or before the last day (any day for an ongoing nutrient).
+    static func includes(_ endDate: Date?, day: Date, calendar: Calendar = .current) -> Bool {
+        !hasEnded(endDate, by: day, calendar: calendar)
+    }
+}
+
+extension Nutrient {
+    /// Past the last day of its course.
+    func hasEnded(by date: Date = .now, calendar: Calendar = .current) -> Bool {
+        NutrientCourse.hasEnded(endDate, by: date, calendar: calendar)
+    }
+
+    /// On Today (and the widgets, the Watch, reminders, stacks and Siri) on this day: not deleted and not ended.
+    func isRunning(on date: Date = .now, calendar: Calendar = .current) -> Bool {
+        !isDeleted && !hasEnded(by: date, calendar: calendar)
     }
 }

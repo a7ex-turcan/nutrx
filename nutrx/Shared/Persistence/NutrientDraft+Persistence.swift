@@ -21,6 +21,7 @@ extension NutrientDraft {
         nutrient.notes = trimmedNotes
         nutrient.tint = tint
         nutrient.symbolName = symbolName
+        nutrient.endDate = endDate
 
         if let group {
             nutrient.group = group
@@ -63,7 +64,9 @@ extension NutrientDraft {
         nutrient.notes = trimmedNotes
         nutrient.tint = tint
         nutrient.symbolName = symbolName
-        // Pending reminders carry the name and notes; re-adding them picks up the edit.
+        nutrient.endDate = endDate
+        // Pending reminders carry the name and notes, and stop after a course's last day; re-adding them picks up
+        // the edit.
         if !(nutrient.reminders ?? []).isEmpty, let context = nutrient.modelContext {
             NotificationService.refreshAllNutrientReminders(context: context)
         }
