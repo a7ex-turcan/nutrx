@@ -154,6 +154,28 @@ final class HealthTrendsTests: XCTestCase {
         XCTAssertEqual(state(days), .noPattern(checkedDays: 28))
     }
 
+    // MARK: - Sleep nights
+
+    func testOverlappingSleepFromTwoSourcesIsCountedOnce() {
+        // A Watch and a sleep app both record 23:00–07:00, the app with a gap at 03:00–03:30.
+        let night = calendar.date(byAdding: .hour, value: 23, to: calendar.date(byAdding: .day, value: -2, to: today)!)!
+        func interval(_ from: Double, _ to: Double) -> DateInterval {
+            DateInterval(start: night.addingTimeInterval(from * 3600), end: night.addingTimeInterval(to * 3600))
+        }
+        let minutes = SleepNights.minutes([interval(0, 8), interval(0, 4), interval(4.5, 8)], calendar: calendar)
+        XCTAssertEqual(minutes[calendar.startOfDay(for: night)], 480, "8 hours, not 15.5")
+    }
+
+    func testSleepIsCreditedToTheNightBeforeTheMorning() {
+        let evening = calendar.date(byAdding: .hour, value: 22, to: calendar.date(byAdding: .day, value: -3, to: today)!)!
+        let afterMidnight = evening.addingTimeInterval(3 * 3600)  // 01:00 the next day
+        let minutes = SleepNights.minutes([DateInterval(start: evening, end: evening.addingTimeInterval(2 * 3600)),
+                                           DateInterval(start: afterMidnight, end: afterMidnight.addingTimeInterval(5 * 3600))],
+                                          calendar: calendar)
+        XCTAssertEqual(minutes.count, 1, "both parts are the same night")
+        XCTAssertEqual(minutes[calendar.startOfDay(for: evening)], 420)
+    }
+
     // MARK: - Words
 
     func testNumbers() {

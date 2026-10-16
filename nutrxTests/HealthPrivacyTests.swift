@@ -6,8 +6,8 @@ import SwiftData
 /// iCloud syncs, has anywhere to keep it.
 final class HealthPrivacyTests: XCTestCase {
     func testNoModelHoldsHealthValues() {
-        let schema = Schema([UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self, NutrientReminder.self,
-                             NutrientGroup.self, UserPreferences.self, LogStack.self, LogStackEntry.self])
+        // The app's own schema, so a model added later is covered too.
+        let schema = ModelContainerFactory.schema
         let healthWords = ["sleep", "workout", "energy", "health", "kcal", "heart", "steps"]
         for entity in schema.entities {
             for property in entity.properties {

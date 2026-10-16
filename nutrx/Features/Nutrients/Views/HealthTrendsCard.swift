@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// "With Apple Health" in a nutrient's analytics (nutrx Pro, docs/pro/design/6-health-trends): one or two findings
@@ -164,3 +165,30 @@ struct HealthTrendsCard: View {
         }
     }
 }
+
+// MARK: - Previews
+
+private struct HealthTrendsCardPreview: View {
+    let state: HealthTrends.State
+    var body: some View {
+        let nutrient = Nutrient(name: "Caffeine", unit: "mg", step: 100, dailyTarget: 400, sortOrder: 0,
+                                goalType: .maximum)
+        ScrollView {
+            HealthTrendsCard(nutrient: nutrient, state: state, isConnected: true, onConnect: {})
+                .padding()
+        }
+        .background(Theme.surfaceGround)
+        .environment(ProAccess.previewPro())
+        .modelContainer(previewContainer)
+    }
+}
+
+private let previewFindings = HealthTrends.State.findings([
+    .init(kind: .sleep, first: .init(average: 395, days: 9), second: .init(average: 435, days: 19), threshold: 300),
+    .init(kind: .workouts, first: .init(average: 290, days: 12), second: .init(average: 210, days: 16), threshold: nil),
+])
+
+#Preview("Findings") { HealthTrendsCardPreview(state: previewFindings) }
+#Preview("Findings, dark") { HealthTrendsCardPreview(state: previewFindings).preferredColorScheme(.dark) }
+#Preview("Not enough data") { HealthTrendsCardPreview(state: .notEnoughData(pairedDays: 9)) }
+#Preview("No pattern") { HealthTrendsCardPreview(state: .noPattern(checkedDays: 28)) }

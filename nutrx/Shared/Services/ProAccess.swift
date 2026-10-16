@@ -28,6 +28,16 @@ final class ProAccess {
 
     var isPro: Bool { entitlement != nil }
 
+    #if DEBUG
+    /// For previews of Pro screens: a lifetime Pro user, already checked.
+    static func previewPro() -> ProAccess {
+        let access = ProAccess()
+        access.entitlement = Entitlement(plan: .lifetime, expirationDate: nil, isFamilyShared: false)
+        access.hasCheckedEntitlements = true
+        return access
+    }
+    #endif
+
     @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
     init() {

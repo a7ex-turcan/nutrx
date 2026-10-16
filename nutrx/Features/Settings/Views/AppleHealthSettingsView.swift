@@ -30,7 +30,7 @@ struct AppleHealthSettingsView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     HealthTypesCard(title: "What nutrx reads", values: values)
-                    Text("Change access in the Health app under Sharing › Apps › nutrx.")
+                    Text("Change access in the Health app: tap your picture, then Privacy › Apps › nutrx.")
                         .font(.footnote)
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.horizontal, 4)

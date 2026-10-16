@@ -14,6 +14,8 @@ struct SettingsView: View {
     @Query private var stacks: [LogStack]
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @State private var showPaywall = false
+    /// Read here so the Apple Health row follows the switch on its page.
+    @AppStorage(HealthReader.connectedKey) private var healthConnected = false
     @State private var notificationsAllowed = false
     @AppStorage(RecapSchedule.enabledKey) private var weeklyRecapEnabled = true
     @State private var showProStatus = false
@@ -104,7 +106,7 @@ struct SettingsView: View {
                             AppleHealthSettingsView()
                         } label: {
                             row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral,
-                                value: HealthReader.isConnected ? "On" : "Off")
+                                value: healthConnected ? "On" : "Off")
                         }
                     } else {
                         ProGatedButton(action: {}) { _ in

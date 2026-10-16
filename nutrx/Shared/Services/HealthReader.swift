@@ -89,8 +89,8 @@ private struct HealthKitSource: HealthReader.Source {
         return result
     }
 
-    /// Minutes asleep per night, credited to the day before the morning it ends (sleep ending before noon belongs to
-    /// the previous day's night).
+    /// Minutes asleep per night (`SleepNights`: overlapping samples from several sources merged, credited to the day
+    /// before the morning they end).
     private func sleepMinutes(from start: Date, to end: Date, calendar: Calendar) async -> [Date: Double] {
         let asleep: Set<Int> = [HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
                                 HKCategoryValueSleepAnalysis.asleepCore.rawValue,
@@ -100,12 +100,9 @@ private struct HealthKitSource: HealthReader.Source {
         let descriptor = HKSampleQueryDescriptor(predicates: [.categorySample(type: HKCategoryType(.sleepAnalysis), predicate: predicate)],
                                                  sortDescriptors: [])
         guard let samples = try? await descriptor.result(for: store) else { return [:] }
-        var minutes: [Date: Double] = [:]
-        for sample in samples where asleep.contains(sample.value) {
-            let night = calendar.startOfDay(for: sample.endDate.addingTimeInterval(-12 * 3600))
-            minutes[night, default: 0] += sample.endDate.timeIntervalSince(sample.startDate) / 60
-        }
-        return minutes
+        let intervals = samples.filter { asleep.contains($0.value) && $0.endDate > $0.startDate }
+            .map { DateInterval(start: $0.startDate, end: $0.endDate) }
+        return SleepNights.minutes(intervals, calendar: calendar)
     }
 
     private func workoutDays(from start: Date, to end: Date, calendar: Calendar) async -> Set<Date> {

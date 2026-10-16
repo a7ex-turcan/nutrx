@@ -36,8 +36,9 @@ private struct NutrientAnalyticsContent: View {
     @State private var showReminders = false
     @State private var headerScrolledAway = false
 
-    /// Analytics cards use a roomier inset than list cards (design source: 18pt).
     @State private var showHealthIntro = false
+
+    /// Analytics cards use a roomier inset than list cards (design source: 18pt).
     private let cardPadding: CGFloat = 18
 
     var body: some View {

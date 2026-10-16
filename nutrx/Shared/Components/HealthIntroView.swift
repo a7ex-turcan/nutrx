@@ -128,3 +128,6 @@ struct HealthPrivacyNote: View {
         .background(Theme.greenSoft.opacity(0.35), in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
     }
 }
+
+#Preview("Intro") { HealthIntroView {} }
+#Preview("Intro, dark") { HealthIntroView {}.preferredColorScheme(.dark) }
