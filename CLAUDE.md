@@ -246,7 +246,8 @@ nutrx/
 │   │   ├── Views/
 │   │   │   ├── PaywallView.swift            # The paywall sheet; .proPaywall(isPresented:).
 │   │   │   ├── ProWelcomeView.swift         # "Welcome to nutrx Pro" after buying or restoring.
-│   │   │   └── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
+│   │   │   ├── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
+│   │   │   └── PlanChip.swift               # Today's Free / PRO chip and the "Enjoy nutrx Pro" sheet (#101).
 │   │   └── ViewModels/
 │   │       ├── ProFeature.swift             # The five Pro features; `listed` = shipped ones only.
 │   │       └── ProText.swift                # Paywall / status copy (pure).
@@ -480,6 +481,7 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
 
 The central feature (DESIGN.md §5.1). Large "Today" title with the date as the navigation subtitle, 44pt profile avatar top-right, `Surface/Ground` background.
 
+- **Plan chip** (`PlanChip`, #101) on the leading side of the bar, only while `ProAccess.isStoreVisible` and after the first entitlement check (no "Free" flash for someone who paid): a grey "Free" capsule opens the paywall; a forest "PRO" capsule (green with dark text in dark mode) opens "Enjoy nutrx Pro" (the plan line, the listed features, Manage nutrx Pro → `ProStatusView`). It takes its own width (`fixedSize`; the bar otherwise gives it an icon's 44pt square). TodayView leaves it out at accessibility sizes, where the title and date reach into the bar's row; the check is in TodayView because the bar caps its items' text size. Words in `ProText.planChipTitle` / `planChipAccessibilityLabel`.
 - **Day-score card** (`DayScoreCard`) on top: segmented ring ("3/6 goals met"), headline ("Halfway there — 3 to go"; "N to go" never counts a goal over its limit, and with only over-limit goals left it reads "1 over limit": `DayScore.toGo` / `overLimit`), flame streak chip when streaks are on and ≥ 1, and the next reminder still scheduled later today (only when notifications are allowed; refreshed every minute). A nutrient logged today (today's total above 0, from any source) has no more reminders today, and the card follows the same rule as the scheduler (see Notifications). Notification / sync banners render below it on the card style, with a coral bell / blue iCloud icon tile.
 - **Groups** with a `GroupHeader` (name, met-count chip, collapse chevron) — hidden when only the system group exists.
 - **Nutrient cards** (`NutrientCard`): ring in the nutrient's tint with its symbol (amber near/over a limit, check badge when met), name, "**2,000** / 4,000 IU" ("max 400 mg" for at-most), status line ("2,000 IU to go", "Done", "80 mg left today"). − / + log one step with a light haptic (success when that + meets the goal); − is disabled when a step would take the total below 0. At accessibility text sizes the buttons move to their own row.
