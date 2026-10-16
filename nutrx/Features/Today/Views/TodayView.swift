@@ -9,6 +9,7 @@ struct TodayView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(ProAccess.self) private var proAccess: ProAccess?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// Set by a card's "Refilled?"; confirmed before the count restarts.
     @State private var nutrientToRefill: Nutrient?
     /// Last week's recap, for the "Your week" card (nutrx Pro): Sunday 18:00 through Monday.
@@ -169,6 +170,17 @@ struct TodayView: View {
             }
         }
         .background(Theme.surfaceGround)
+        .toolbar {
+            // Free / PRO (#101), on the leading side; the profile avatar keeps the trailing one. Left out at
+            // accessibility sizes, where the title and date reach up into the bar's row; decided here because the
+            // bar caps its items' text size, so the chip itself never sees an accessibility size.
+            if !dynamicTypeSize.isAccessibilitySize {
+                ToolbarItem(placement: .topBarLeading) {
+                    PlanChip()
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+        }
         .onAppear {
             viewModel.refresh(context: modelContext)
             refreshBannerVisibility()

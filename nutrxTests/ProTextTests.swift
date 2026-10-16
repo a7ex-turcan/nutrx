@@ -101,4 +101,11 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.welcome(ProFeature.allCases),
                        "Supply, label scanning, weekly recaps, Apple Health trends and doctor reports are on. Nothing you already use has changed.")
     }
+
+    func testPlanChip() {
+        XCTAssertEqual(ProText.planChipTitle(isPro: true), "PRO")
+        XCTAssertEqual(ProText.planChipTitle(isPro: false), "Free")
+        XCTAssertEqual(ProText.planChipAccessibilityLabel(isPro: true), "nutrx Pro, active")
+        XCTAssertEqual(ProText.planChipAccessibilityLabel(isPro: false), "Free plan. See what nutrx Pro adds")
+    }
 }

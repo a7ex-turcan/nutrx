@@ -8,6 +8,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Improvements
 - **Your data in History** — Export data and Report for your doctor moved from Settings to a "Your data" card at the end of History, and to the share button at the top of History.
+- **Your plan at a glance** — Today shows a small "Free" or "PRO" chip at the top left. On the free plan it opens what nutrx Pro adds; on Pro it shows your plan and what's on, with a way to manage it.
 - **Stacks tab** — The + button sits before your profile picture, as on the other tabs.
 
 ---
