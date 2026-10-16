@@ -42,11 +42,13 @@ struct HistoryListView: View {
         // Before the report button's toolbar, so the avatar keeps the far-right spot it has on every tab.
         .withProfileMenu()
         .toolbar {
-            // Your data (#103): the report and Export data, beside the profile avatar.
-            if viewModel.hasPastEntries {
+            // Your data (#103): the report and Export data, beside the profile avatar. Export works from the first
+            // entry (All time includes today), so the menu shows even before History has a past day; the report
+            // needs one.
+            if viewModel.hasEntries {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        if ProAccess.isStoreVisible {
+                        if ProAccess.isStoreVisible, viewModel.hasPastEntries {
                             Button {
                                 openReport()
                             } label: {

@@ -18,6 +18,7 @@ final class HistoryViewModel {
     private var nutrientsByID: [UUID: Nutrient] = [:]
 
     var hasPastEntries: Bool { log?.hasPastEntries ?? false }
+    var hasEntries: Bool { log?.hasEntries ?? false }
 
     func refresh(context: ModelContext, now: Date = .now) {
         let (log, nutrients) = Self.loadLog(context: context, now: now)
