@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>nutrx only reads from Apple Health and never writes to it.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>nutrx reads your sleep, workouts and active energy to show how they line up with what you log. Read only, on this device; never saved or synced.</string>
 	<key>NSCameraUsageDescription</key>
