@@ -4,7 +4,7 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
-## v2.1 — Unreleased
+## v2.1 — 2026-10-16
 
 ### nutrx Pro
 An optional subscription ($1.99 a month, or $14.99 a year with a free week) or a one-time $29.99 purchase that adds features around tracking. Everything in nutrx stays free, and nothing you use today moves behind it. Purchases are checked on your iPhone; nothing about them is stored or synced.

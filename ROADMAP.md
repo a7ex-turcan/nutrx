@@ -47,11 +47,11 @@
 |---|---|
 | Nutrient goal types (minimum / maximum / range) | ✅ Shipped (v1.9) |
 | Apple Watch companion app | ✅ Shipped (v1.10) |
-| Data export (CSV) | ✅ Built (v2.1) |
-| Quick-log stacks / templates | ✅ Built (v2.1) |
-| Siri & App Shortcuts | ✅ Built (v2.1) |
+| Data export (CSV) | ✅ Shipped (v2.1) |
+| Quick-log stacks / templates | ✅ Shipped (v2.1) |
+| Siri & App Shortcuts | ✅ Shipped (v2.1) |
 
-### nutrx Pro — v2.1 🔄
+### nutrx Pro — v2.1 ✅
 
 Optional subscription or lifetime purchase that only adds features; everything else stays free. Plan: `docs/pro/PLAN.md`. It replaces the old "MVP 4 — Pro Tier & AI" list:
 - "Daily AI insights" became the weekly recap (and the weekday pattern in free analytics).
@@ -62,13 +62,13 @@ AI runs on the device only.
 
 | Feature | Status |
 |---|---|
-| Pro subscription (StoreKit 2): $1.99 / month, $14.99 / year with a free week, $29.99 lifetime | ✅ Built (v2.1) |
-| Supply & refills | ✅ Built (v2.1) |
-| Scan a label (on-device) | ✅ Built (v2.1) |
-| Weekly recap (on-device wording) | ✅ Built (v2.1) |
-| Trends with Apple Health (read only) | ✅ Built (v2.1) |
-| Report for your doctor (PDF) | ✅ Built (v2.1) |
-| Launch: App Store listing, review, website | 🔄 In progress |
+| Pro subscription (StoreKit 2): $1.99 / month, $14.99 / year with a free week, $29.99 lifetime | ✅ Shipped (v2.1) |
+| Supply & refills | ✅ Shipped (v2.1) |
+| Scan a label (on-device) | ✅ Shipped (v2.1) |
+| Weekly recap (on-device wording) | ✅ Shipped (v2.1) |
+| Trends with Apple Health (read only) | ✅ Shipped (v2.1) |
+| Report for your doctor (PDF) | ✅ Shipped (v2.1) |
+| Launch: App Store listing, review, website | ✅ Shipped (v2.1, 16 Oct 2026) |
 | Streak freeze / grace period | 📋 Later, outside the plan |
 | Shareable streak card | 📋 Later, outside the plan |
 
