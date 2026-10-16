@@ -4,12 +4,14 @@ import SwiftUI
 /// so text and bars stay vector (searchable, sharp when printed). Made on the device; the file lives only as long as
 /// the share sheet that sends it.
 enum ReportPDF {
-    static func data(report: DoctorReport, layout: ReportLayout, generatedOn: Date = .now) -> Data {
+    struct RenderError: Error {}
+
+    static func data(report: DoctorReport, layout: ReportLayout, generatedOn: Date = .now) throws -> Data {
         let data = NSMutableData()
         var mediaBox = CGRect(origin: .zero, size: layout.paper.size)
         let info = [kCGPDFContextTitle: ReportText.title, kCGPDFContextCreator: "nutrx"] as CFDictionary
         guard let consumer = CGDataConsumer(data: data),
-              let pdf = CGContext(consumer: consumer, mediaBox: &mediaBox, info) else { return Data() }
+              let pdf = CGContext(consumer: consumer, mediaBox: &mediaBox, info) else { throw RenderError() }
         for index in layout.pages.indices {
             let renderer = ImageRenderer(content: ReportPageView(report: report, layout: layout, index: index,
                                                                  generatedOn: generatedOn))
@@ -36,6 +38,7 @@ enum ReportPDF {
         let folder = reportsFolder.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appendingPathComponent(ReportText(report: report).fileName)
+        // A failed render throws (the sheet's "Couldn't make the PDF"), never shares an empty file.
         try data(report: report, layout: layout, generatedOn: generatedOn).write(to: url, options: .atomic)
         return url
     }

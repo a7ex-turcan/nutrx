@@ -54,7 +54,7 @@ struct ReportView: View {
                     DatePicker("From", selection: $viewModel.customStart,
                                in: viewModel.earliestDay...viewModel.customEnd, displayedComponents: .date)
                     DatePicker("To", selection: $viewModel.customEnd,
-                               in: viewModel.earliestDay...viewModel.latestDay, displayedComponents: .date)
+                               in: viewModel.customStart...viewModel.latestDay, displayedComponents: .date)
                 } footer: {
                     if !viewModel.canCreate { periodFooter }
                 }
@@ -137,7 +137,7 @@ struct ReportView: View {
     @ViewBuilder
     private var periodFooter: some View {
         if let report = viewModel.report {
-            Text(viewModel.canCreate ? ReportText(report: report).dates : "Nothing logged in this period")
+            Text(viewModel.blockedReason ?? ReportText(report: report).dates)
         }
     }
 

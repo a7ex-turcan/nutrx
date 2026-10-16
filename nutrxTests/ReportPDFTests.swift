@@ -49,7 +49,7 @@ final class ReportPDFTests: XCTestCase {
         let report = report()
         let layout = ReportLayout(report: report, paper: .a4)
         XCTAssertEqual(layout.pages.count, 4)
-        let data = ReportPDF.data(report: report, layout: layout, generatedOn: day(10, 14))
+        let data = try ReportPDF.data(report: report, layout: layout, generatedOn: day(10, 14))
         let document = try XCTUnwrap(PDFDocument(data: data))
         XCTAssertEqual(document.pageCount, 4)
         let firstPage = try XCTUnwrap(document.page(at: 0))
@@ -70,7 +70,7 @@ final class ReportPDFTests: XCTestCase {
     func testLetterPaper() throws {
         let report = report()
         let layout = ReportLayout(report: report, paper: .letter)
-        let document = try XCTUnwrap(PDFDocument(data: ReportPDF.data(report: report, layout: layout)))
+        let document = try XCTUnwrap(PDFDocument(data: try ReportPDF.data(report: report, layout: layout)))
         XCTAssertEqual(document.pageCount, layout.pages.count)
         XCTAssertEqual(document.page(at: 0)?.bounds(for: .mediaBox).size, CGSize(width: 612, height: 792))
     }

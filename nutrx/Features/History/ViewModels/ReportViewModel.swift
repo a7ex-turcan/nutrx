@@ -26,8 +26,24 @@ final class ReportViewModel {
     }
 
     var period: Period = .days90 { didSet { rebuild() } }
-    var customStart: Date = .now { didSet { rebuild() } }
-    var customEnd: Date = .now { didSet { rebuild() } }
+    /// The custom period, kept between the first logged day and yesterday, with From never after To (moving one past
+    /// the other moves the other along).
+    var customStart: Date = .now {
+        didSet {
+            let clamped = clamp(customStart)
+            if clamped != customStart { customStart = clamped; return }
+            if customEnd < customStart { customEnd = customStart; return }
+            rebuild()
+        }
+    }
+    var customEnd: Date = .now {
+        didSet {
+            let clamped = clamp(customEnd)
+            if clamped != customEnd { customEnd = clamped; return }
+            if customStart > customEnd { customStart = customEnd; return }
+            rebuild()
+        }
+    }
     /// Nutrients taken out, and never-logged ones put in, by the user; anything else follows `Candidate.hasEntries`,
     /// so a nutrient that starts counting in a new period gets its default.
     private var excludedIDs: Set<UUID> = [] { didSet { rebuild() } }
@@ -75,6 +91,13 @@ final class ReportViewModel {
 
     var canCreate: Bool { (report?.daysWithEntries ?? 0) > 0 && !(report?.sections.isEmpty ?? true) }
 
+    /// Why Create PDF is off: nothing logged, or every nutrient tracked in the period unchecked (choices carry over
+    /// between periods); nil when it's on.
+    var blockedReason: String? {
+        guard let report, !canCreate else { return nil }
+        return report.daysWithEntries == 0 ? "Nothing logged in this period" : "Choose at least one nutrient"
+    }
+
     func load(context: ModelContext, now: Date = .now) {
         self.now = now
         let calendar = Calendar.current
@@ -93,10 +116,11 @@ final class ReportViewModel {
         personName = name.isEmpty ? nil : name
 
         latestDay = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: now))!
-        earliestDay = min(log.firstDay ?? latestDay, latestDay)
+        // The first entry, not `log.firstDay` (which also counts the day a nutrient was added).
+        earliestDay = min(records.map(\.date).min().map(calendar.startOfDay) ?? latestDay, latestDay)
         let last90 = DoctorReport.lastDays(90, today: now, calendar: calendar)
-        customStart = max(last90.start, earliestDay)
         customEnd = latestDay
+        customStart = max(last90.start, earliestDay)
         rebuild()
     }
 
@@ -129,13 +153,18 @@ final class ReportViewModel {
         rebuild()
     }
 
+    private func clamp(_ date: Date) -> Date {
+        let day = Calendar.current.startOfDay(for: date)
+        return min(max(day, earliestDay), latestDay)
+    }
+
     private func rebuild() {
         guard let log else { return }
         let calendar = log.calendar
         let range: (start: Date, end: Date) = switch period {
         case .days30: DoctorReport.lastDays(30, today: now, calendar: calendar)
         case .days90: DoctorReport.lastDays(90, today: now, calendar: calendar)
-        case .custom: (min(customStart, customEnd), customEnd)
+        case .custom: (customStart, customEnd)
         }
         // Every nutrient that counts in the period, then the ones left in.
         let all = DoctorReport.build(log: log, names: names, units: units, start: range.start, end: range.end)

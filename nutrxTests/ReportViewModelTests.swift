@@ -46,4 +46,43 @@ final class ReportViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.report?.dayCount, 30)
         XCTAssertTrue(viewModel.canCreate)
     }
+
+    func testTheCustomPeriodStaysBetweenTheFirstLogAndYesterday() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let vitaminD = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 4000, sortOrder: 0)
+        vitaminD.createdAt = daysAgo(60)
+        context.insert(vitaminD)
+        for day in 1...20 { context.insert(IntakeRecord(nutrient: vitaminD, amount: 4000, date: daysAgo(day))) }
+        try context.save()
+        let calendar = Calendar.current
+        let firstLog = calendar.startOfDay(for: daysAgo(20))
+        let yesterday = calendar.startOfDay(for: daysAgo(1))
+
+        let viewModel = ReportViewModel()
+        viewModel.load(context: context)
+        viewModel.period = .custom
+        XCTAssertEqual(viewModel.earliestDay, firstLog)
+        XCTAssertEqual(viewModel.latestDay, yesterday)
+        XCTAssertEqual(viewModel.customStart, firstLog, "90 days back is before the first log")
+        XCTAssertEqual(viewModel.report?.dayCount, 20)
+
+        viewModel.customStart = daysAgo(100)
+        XCTAssertEqual(viewModel.customStart, firstLog, "clamped to the first log")
+        viewModel.customEnd = .now
+        XCTAssertEqual(viewModel.customEnd, yesterday, "today isn't over")
+
+        viewModel.customStart = daysAgo(5)
+        viewModel.customEnd = daysAgo(10)
+        XCTAssertEqual(viewModel.customStart, calendar.startOfDay(for: daysAgo(10)), "From follows To back")
+        XCTAssertEqual(viewModel.report?.dayCount, 1)
+        viewModel.customStart = daysAgo(3)
+        XCTAssertEqual(viewModel.customEnd, calendar.startOfDay(for: daysAgo(3)), "To follows From forward")
+
+        // Every logged nutrient unchecked: the reason says so, not "Nothing logged".
+        viewModel.period = .days30
+        try viewModel.toggle(XCTUnwrap(viewModel.candidates.first))
+        XCTAssertFalse(viewModel.canCreate)
+        XCTAssertEqual(viewModel.blockedReason, "Choose at least one nutrient")
+    }
 }
