@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// Logging a stack and the small rules around it, shared by Today's log sheet and Settings → Stacks (and Siri
+/// Logging a stack and the small rules around it, shared by Today's log sheet and the Stacks tab (and Siri
 /// later): which entries count, whether the stack was logged today, adding a nutrient, undo.
 enum StackLogging {
     /// What one log of a stack did, so the sheet can show it and undo it.

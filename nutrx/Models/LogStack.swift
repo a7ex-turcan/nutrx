@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 /// A named set of nutrients with preset amounts, logged in one go from Today ("Morning: Vitamin D 2,000 IU,
-/// Omega-3 1,000 mg, Magnesium 400 mg"). Ordered by `sortOrder` on Today and in Settings → Stacks.
+/// Omega-3 1,000 mg, Magnesium 400 mg"). Ordered by `sortOrder` on Today and in the Stacks tab.
 @Model
 final class LogStack {
     /// Stable id for Siri and the Shortcuts app (`StackEntity`); stacks are picked by name, never shown this.

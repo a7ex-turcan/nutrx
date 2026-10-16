@@ -46,7 +46,7 @@ enum StackShortcutLogging {
         var localizedStringResource: LocalizedStringResource {
             switch self {
             case .stackNotFound: "That stack isn't in nutrx anymore."
-            case .nothingToLog: "That stack has no nutrients yet. Add some in Settings → Stacks."
+            case .nothingToLog: "That stack has no nutrients yet. Add some in the Stacks tab."
             }
         }
     }
