@@ -305,7 +305,7 @@ See CHANGELOG v1.10 for user-facing details. Full implementation spec: `WATCH_AP
 
 ### 3. Data Export (CSV) ✅
 
-**Status:** Built for v2.1 (see CLAUDE.md → Data Export)
+**Status:** Shipped in v2.1 (16 Oct 2026) (see CLAUDE.md → Data Export)
 
 Export the full `IntakeRecord` history as a CSV file, shareable via the iOS share sheet. This is a trust and retention feature — users who know they can get their data out are more willing to commit to the app long-term. Especially important for the privacy-conscious audience nutrx targets.
 
@@ -328,7 +328,7 @@ Export the full `IntakeRecord` history as a CSV file, shareable via the iOS shar
 
 ### 4. Quick-Log Stacks / Templates ✅
 
-**Status:** Built for v2.1 (see CLAUDE.md → Stacks)
+**Status:** Shipped in v2.1 (16 Oct 2026) (see CLAUDE.md → Stacks)
 
 A stack is a named, ordered collection of nutrients with pre-set amounts. Tapping "Log stack" creates one `IntakeRecord` per nutrient in the stack, in a single action. Targets users who take the same set of supplements every morning — the most common churn point is daily logging becoming tedious.
 
@@ -365,7 +365,7 @@ Both new models follow the same CloudKit rules as existing models: optional rela
 
 ### 5. Siri & App Shortcuts ✅
 
-**Status:** Built for v2.1 (see CLAUDE.md → Siri & App Shortcuts)
+**Status:** Shipped in v2.1 (16 Oct 2026) (see CLAUDE.md → Siri & App Shortcuts)
 
 Expose `LogNutrientIntent` (already exists for widgets) to Siri and the Shortcuts app. Users can say "Hey Siri, log my magnesium in nutrx" or build automations. Low implementation lift relative to discoverability payoff — the `AppIntent` infrastructure is already in place.
 

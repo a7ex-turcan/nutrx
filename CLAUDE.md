@@ -697,7 +697,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - Subscription group **nutrx Pro** (`22477669`): `nutrx.pro.yearly` is level 1 at $14.99 with a one-week free trial; `nutrx.pro.monthly` is level 2 at $1.99. Each has a US price plus Apple's equalized price in the other 174 territories, set one territory at a time (`POST /v1/subscriptionPrices`; the trial is likewise one `subscriptionIntroductoryOffers` call per territory).
   - Non-consumable `nutrx.pro.lifetime` (`6822833390`) at $29.99: a price schedule with a US base, with the other territories equalized automatically.
   - All three are Family Sharing (this can't be turned off), available in every territory and in new ones, with en-US names and descriptions.
-  - Each has an App Review screenshot of the paywall and a review note saying where Pro is; all three are Ready to Submit, and first-time products go to review together with an app version (#71).
+  - Each has an App Review screenshot of the paywall and a review note saying where Pro is; all three were approved with 2.1 on 2026-10-16 (first-time products go to review together with an app version).
 - **`ProAccess`** (`Shared/Services/`, `@Observable`, created in `nutrxApp` and passed down as an environment object):
   - Reads `Transaction.currentEntitlements` at launch and follows `Transaction.updates` from launch, which brings renewals, refunds, Ask to Buy and purchases on other devices.
   - `isPro` / `entitlement` (plan, expiry, family-shared), `loadProducts()`, `purchase(_:)` (verified transactions only, finished straight away; returns `.purchased` / `.pending` / `.cancelled`), and `restore()` (`AppStore.sync()`).
@@ -841,7 +841,7 @@ Mockups: `docs/pro/design/7-doctor-report/`.
 
 **Pre-Pro Sprint:** done — goal types, data export (CSV), quick-log stacks, and Siri & App Shortcuts (see their sections above)
 
-**nutrx Pro** (`docs/pro/PLAN.md`): StoreKit and all five features (supply, label scanning, weekly recap, Health trends, the doctor report) shipped in 2.1 (2026-10-16). On-device AI only, no third-party LLM. Streak freeze and a shareable streak card come later, outside the plan.
+**Later, outside the Pro plan:** streak freeze and a shareable streak card (on-device AI only, no third-party LLM).
 
 **Deferred:** Localisation, iPad-specific layout
 
