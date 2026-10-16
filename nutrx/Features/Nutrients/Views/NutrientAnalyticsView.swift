@@ -37,6 +37,7 @@ private struct NutrientAnalyticsContent: View {
     @State private var headerScrolledAway = false
 
     /// Analytics cards use a roomier inset than list cards (design source: 18pt).
+    @State private var showHealthIntro = false
     private let cardPadding: CGFloat = 18
 
     var body: some View {
@@ -71,11 +72,18 @@ private struct NutrientAnalyticsContent: View {
                         .cardStyle()
                 }
 
+                HealthTrendsCard(nutrient: nutrient, state: viewModel.healthState,
+                                 isConnected: viewModel.isHealthConnected) { showHealthIntro = true }
+
                 remindersRow
             }
             .padding(.horizontal, Theme.Spacing.screenMargin)
             .padding(.bottom, Theme.Spacing.sectionTop)
         }
+        .sheet(isPresented: $showHealthIntro) {
+            HealthIntroView { Task { await viewModel.refreshHealth() } }
+        }
+        .task { await viewModel.refreshHealth() }
         .onScrollGeometryChange(for: Bool.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top > 56
         } action: { _, scrolledAway in

@@ -81,8 +81,8 @@ final class ProTextTests: XCTestCase {
     }
 
     func testShippedFeatures() {
-        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), [.supply, .scan, .recap])
-        XCTAssertEqual(ProText.tagline(ProFeature.allCases.filter(\.isShipped)), "Supply, label scan and recaps")
+        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), [.supply, .scan, .recap, .health])
+        XCTAssertEqual(ProText.tagline(ProFeature.allCases.filter(\.isShipped)), "Supply, label scan, recaps and more")
     }
 
     func testAppleIntelligenceRowNotes() {

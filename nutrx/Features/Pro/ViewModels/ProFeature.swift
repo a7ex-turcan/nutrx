@@ -86,9 +86,10 @@ enum ProFeature: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–6: supply, scan, recap).
+    /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–7: supply, scan, recap,
+    /// Health trends).
     var isShipped: Bool {
-        self == .supply || self == .scan || self == .recap
+        self != .report
     }
 
     /// What the paywall and the Pro screen list: the shipped features — or, in Debug builds before any has

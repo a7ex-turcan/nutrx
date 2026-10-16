@@ -98,6 +98,24 @@ struct SettingsView: View {
                 } label: {
                     row("Export data", symbol: "square.and.arrow.up", color: Theme.SettingsTile.grey, value: nil)
                 }
+                if ProAccess.isStoreVisible, HealthReader.isAvailable {
+                    if proAccess?.isPro == true {
+                        NavigationLink {
+                            AppleHealthSettingsView()
+                        } label: {
+                            row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral,
+                                value: HealthReader.isConnected ? "On" : "Off")
+                        }
+                    } else {
+                        ProGatedButton(action: {}) { _ in
+                            HStack(spacing: 8) {
+                                row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral, value: nil)
+                                ProBadge()
+                            }
+                        }
+                        .foregroundStyle(Theme.textPrimary)
+                    }
+                }
             }
             .listRowBackground(Theme.surfaceCard)
 
