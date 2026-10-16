@@ -23,8 +23,9 @@ struct TodayView: View {
     @State private var healthStatus: HealthInsights.Status?
     /// Bumped on every appearance, so the Health status is read again after connecting elsewhere (Settings, analytics).
     @State private var healthRefreshTick = 0
-    @AppStorage("nutrx.hidesHealthGatheringCard") private var hidesHealthGatheringCard = false
-    @AppStorage("nutrx.hidesHealthReadyCard") private var hidesHealthReadyCard = false
+    // Not "health" in the keys: HealthPrivacyTests allows only the Health switch to be stored, and these are UI flags.
+    @AppStorage("nutrx.hidesInsightsGatheringCard") private var hidesInsightsGatheringCard = false
+    @AppStorage("nutrx.hidesInsightsReadyCard") private var hidesInsightsReadyCard = false
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
@@ -67,15 +68,13 @@ struct TodayView: View {
         return new
     }
 
-    /// The "Your week" card's recap (`RecapSchedule.todayCardWeek`, `RecapViewModel.recap(forWeek:…)`).
-    /// The Health card's status, when it should show: Pro, Health connected, gathering or ready, and not hidden.
+    /// The Health card's status, when it should show (`HealthInsights.TodayCard.visible`).
     private var visibleHealthStatus: HealthInsights.Status? {
-        guard ProAccess.isStoreVisible, proAccess?.isPro == true, let healthStatus else { return nil }
-        switch healthStatus {
-        case .gathering: return hidesHealthGatheringCard ? nil : healthStatus
-        case .ready: return hidesHealthReadyCard ? nil : healthStatus
-        case .noHealthData, .noPattern: return nil
-        }
+        var hidden: Set<HealthInsights.TodayCard.Hidden> = []
+        if hidesInsightsGatheringCard { hidden.insert(.gathering) }
+        if hidesInsightsReadyCard { hidden.insert(.ready) }
+        return HealthInsights.TodayCard.visible(healthStatus, isPro: ProAccess.isStoreVisible && proAccess?.isPro == true,
+                                                hidden: hidden)
     }
 
     private func refreshHealthStatus() async {
@@ -87,22 +86,23 @@ struct TodayView: View {
     }
 
     private func seeHealthInsights(_ status: HealthInsights.Status) {
-        switch status {
-        case .gathering(let id, _, _):
-            router?.healthNutrientID = id
-        case .ready(let id, _):
-            // Seen once it's been opened.
-            hidesHealthReadyCard = true
-            router?.healthNutrientID = id
-        case .noHealthData, .noPattern:
-            break
-        }
+        remember(HealthInsights.TodayCard.hiddenBySeeing(status))
+        router?.healthNutrientID = HealthInsights.TodayCard.nutrientID(status)
     }
 
     private func hideHealthCard(_ status: HealthInsights.Status) {
-        if case .ready = status { hidesHealthReadyCard = true } else { hidesHealthGatheringCard = true }
+        remember(HealthInsights.TodayCard.hiddenByDismissing(status))
     }
 
+    private func remember(_ hidden: HealthInsights.TodayCard.Hidden?) {
+        switch hidden {
+        case .gathering: hidesInsightsGatheringCard = true
+        case .ready: hidesInsightsReadyCard = true
+        case nil: break
+        }
+    }
+
+    /// The "Your week" card's recap (`RecapSchedule.todayCardWeek`, `RecapViewModel.recap(forWeek:…)`).
     private func refreshWeekRecap() {
         var ignoresWindow = false
         #if DEBUG

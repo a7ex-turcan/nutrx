@@ -42,6 +42,46 @@ enum HealthInsights {
         return .noPattern
     }
 
+    /// Today's card (#102): which status shows, and what ✕ and See where remember. Pure, so the view stays thin.
+    enum TodayCard {
+        /// What a hidden card is remembered as: the gathering card, or the first-insight card.
+        enum Hidden: Equatable {
+            case gathering, ready
+        }
+
+        /// The status to show: Pro, gathering or ready, and that card not hidden. Nil otherwise.
+        static func visible(_ status: Status?, isPro: Bool, hidden: Set<Hidden>) -> Status? {
+            guard isPro, let status else { return nil }
+            switch status {
+            case .gathering: return hidden.contains(.gathering) ? nil : status
+            case .ready: return hidden.contains(.ready) ? nil : status
+            case .noHealthData, .noPattern: return nil
+            }
+        }
+
+        /// ✕ hides the card for its state.
+        static func hiddenByDismissing(_ status: Status) -> Hidden? {
+            switch status {
+            case .gathering: .gathering
+            case .ready: .ready
+            case .noHealthData, .noPattern: nil
+            }
+        }
+
+        /// See where: the first-insight card has done its job once opened; the gathering one stays until ✕.
+        static func hiddenBySeeing(_ status: Status) -> Hidden? {
+            if case .ready = status { .ready } else { nil }
+        }
+
+        /// The nutrient whose analytics See where opens.
+        static func nutrientID(_ status: Status) -> UUID? {
+            switch status {
+            case .gathering(let id, _, _), .ready(let id, _): id
+            case .noHealthData, .noPattern: nil
+            }
+        }
+    }
+
     /// Every active nutrient's `HealthTrends.state` over the last four weeks, from the store and Apple Health. Nil
     /// when Health isn't connected (or available) or there's nothing tracked.
     static func load(context: ModelContext, now: Date = .now, calendar: Calendar = .current) async -> Status? {

@@ -52,6 +52,20 @@ struct HealthInsightsTodayCard: View {
     }
 }
 
+#Preview("Ready") {
+    HealthInsightsTodayCard(status: .ready(nutrientID: UUID(), nutrientName: "Water"), onSeeWhere: {}, onDismiss: {})
+        .padding()
+        .background(Theme.surfaceGround)
+}
+
+#Preview("Gathering, largest text") {
+    HealthInsightsTodayCard(status: .gathering(nutrientID: UUID(), nutrientName: "Vitamin D", pairedDays: 9),
+                            onSeeWhere: {}, onDismiss: {})
+        .padding()
+        .background(Theme.surfaceGround)
+        .environment(\.dynamicTypeSize, .accessibility3)
+}
+
 #Preview("Gathering") {
     HealthInsightsTodayCard(status: .gathering(nutrientID: UUID(), nutrientName: "Vitamin D", pairedDays: 9),
                             onSeeWhere: {}, onDismiss: {})

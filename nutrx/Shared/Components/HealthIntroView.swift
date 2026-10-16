@@ -8,7 +8,13 @@ struct HealthIntroView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var connecting = false
-    @State private var connected = false
+    @State private var connected: Bool
+
+    /// - Parameter showsConfirmation: start on the confirmation (previews).
+    init(showsConfirmation: Bool = false, onConnected: @escaping () -> Void) {
+        self.onConnected = onConnected
+        _connected = State(initialValue: showsConfirmation)
+    }
 
     var body: some View {
         if connected {
@@ -19,29 +25,35 @@ struct HealthIntroView: View {
     }
 
     private var confirmation: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            // Drawn, not an SF Symbol, so VoiceOver doesn't read it as "Selected".
-            CheckmarkShape()
-                .stroke(Theme.forest, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
-                .frame(width: 20, height: 15)
-                .frame(width: 48, height: 48)
-                .background(Theme.green, in: Circle())
-                .accessibilityHidden(true)
-                .padding(.top, 32)
-            Text(HealthText.connectedTitle)
-                .font(.largeTitle.bold())
-                .foregroundStyle(Theme.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-            Text(HealthText.connectedBody)
-                .font(.body)
-                .foregroundStyle(Theme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(HealthText.whereLine)
-                .font(.body)
-                .foregroundStyle(Theme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
+        // Scrolls, with Done pinned, so the large title and both paragraphs fit at accessibility sizes.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                // Drawn, not an SF Symbol, so VoiceOver doesn't read it as "Selected".
+                CheckmarkShape()
+                    .stroke(Theme.forest, style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round))
+                    .frame(width: 20, height: 15)
+                    .frame(width: 48, height: 48)
+                    .background(Theme.green, in: Circle())
+                    .accessibilityHidden(true)
+                    .padding(.top, 32)
+                Text(HealthText.connectedTitle)
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(Theme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isHeader)
+                Text(HealthText.connectedBody)
+                    .font(.body)
+                    .foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(HealthText.whereLine)
+                    .font(.body)
+                    .foregroundStyle(Theme.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, Theme.Spacing.screenMargin + 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .safeAreaInset(edge: .bottom) {
             Button {
                 dismiss()
             } label: {
@@ -52,10 +64,10 @@ struct HealthIntroView: View {
                     .background(Theme.controlPrimary, in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
             }
             .buttonStyle(.plain)
-            .padding(.bottom, 8)
+            .padding(.horizontal, Theme.Spacing.screenMargin + 4)
+            .padding(.vertical, 8)
+            .background(Theme.surfaceGround)
         }
-        .padding(.horizontal, Theme.Spacing.screenMargin + 4)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Theme.surfaceGround)
         .presentationDragIndicator(.visible)
     }
@@ -187,3 +199,7 @@ struct HealthPrivacyNote: View {
 
 #Preview("Intro") { HealthIntroView {} }
 #Preview("Intro, dark") { HealthIntroView {}.preferredColorScheme(.dark) }
+#Preview("Connected") { HealthIntroView(showsConfirmation: true) {} }
+#Preview("Connected, largest text") {
+    HealthIntroView(showsConfirmation: true) {}.environment(\.dynamicTypeSize, .accessibility5)
+}

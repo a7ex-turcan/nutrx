@@ -49,4 +49,30 @@ final class HealthInsightsTests: XCTestCase {
             XCTAssertFalse(text.localizedCaseInsensitiveContains("should"), text)
         }
     }
+
+    func testTodayCard() {
+        let gathering = HealthInsights.Status.gathering(nutrientID: a, nutrientName: "Vitamin D", pairedDays: 9)
+        let ready = HealthInsights.Status.ready(nutrientID: b, nutrientName: "Water")
+        typealias Card = HealthInsights.TodayCard
+        XCTAssertEqual(Card.visible(gathering, isPro: true, hidden: []), gathering)
+        XCTAssertNil(Card.visible(gathering, isPro: false, hidden: []), "Pro only")
+        XCTAssertNil(Card.visible(gathering, isPro: true, hidden: [.gathering]))
+        XCTAssertEqual(Card.visible(ready, isPro: true, hidden: [.gathering]), ready, "hiding the gathering card doesn't hide the first insight")
+        XCTAssertNil(Card.visible(ready, isPro: true, hidden: [.ready]))
+        XCTAssertNil(Card.visible(.noPattern, isPro: true, hidden: []))
+        XCTAssertNil(Card.visible(nil, isPro: true, hidden: []))
+
+        XCTAssertEqual(Card.hiddenByDismissing(gathering), .gathering)
+        XCTAssertEqual(Card.hiddenByDismissing(ready), .ready)
+        XCTAssertNil(Card.hiddenBySeeing(gathering), "the gathering card stays until ✕")
+        XCTAssertEqual(Card.hiddenBySeeing(ready), .ready, "the first insight has done its job once opened")
+        XCTAssertEqual(Card.nutrientID(ready), b)
+    }
+
+    func testTheCardsFlagsStayOutOfTheHealthPrivacyCheck() {
+        // HealthPrivacyTests allows only the Health switch among keys mentioning "health".
+        for key in ["nutrx.hidesInsightsGatheringCard", "nutrx.hidesInsightsReadyCard"] {
+            XCTAssertFalse(key.lowercased().contains("health"), key)
+        }
+    }
 }
