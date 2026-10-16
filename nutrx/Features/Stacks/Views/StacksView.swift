@@ -27,6 +27,8 @@ struct StacksView: View {
         .background(Theme.surfaceGround)
         .navigationTitle("Stacks")
         .navigationBarTitleDisplayMode(.large)
+        // Before this view's toolbar, so + comes before the avatar and the avatar keeps its far-right spot (#100).
+        .withProfileMenu()
         .toolbar {
             if !stacks.isEmpty {
                 // Leading, so + and the profile menu share the trailing side, as in My Nutrients.
@@ -50,6 +52,8 @@ struct StacksView: View {
                 }
                 .accessibilityLabel("New stack")
             }
+            // No glass ring around the filled circle, as on My Nutrients.
+            .sharedBackgroundVisibility(.hidden)
         }
         .navigationDestination(item: $openedStack) { stack in
             StackDetailView(stack: stack)
