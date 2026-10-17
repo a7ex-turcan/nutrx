@@ -93,10 +93,12 @@ struct AboutView: View {
         HStack(alignment: .top, spacing: 8) {
             Text("•")
                 .foregroundStyle(Theme.textSecondary)
+                .accessibilityHidden(true)
             Text(text)
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
         }
+        .accessibilityElement(children: .combine)
     }
 
     private var appVersion: String {

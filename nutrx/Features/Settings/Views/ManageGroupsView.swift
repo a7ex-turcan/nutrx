@@ -48,7 +48,7 @@ struct ManageGroupsView: View {
                             Button(role: .destructive) {
                                 groupToDelete = group
                             } label: {
-                                Image(systemName: "trash")
+                                Label("Delete", systemImage: "trash")
                             }
                         }
                     }
@@ -95,7 +95,10 @@ struct ManageGroupsView: View {
                     showNewGroupAlert = true
                 } label: {
                     Image(systemName: "plus")
+                        .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel("New group")
             }
         }
         .alert("New Group", isPresented: $showNewGroupAlert) {
