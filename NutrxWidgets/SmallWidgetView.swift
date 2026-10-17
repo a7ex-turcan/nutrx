@@ -59,7 +59,7 @@ struct SmallWidgetView: View {
                         }
                         .minimumScaleFactor(0.7)
                         .lineLimit(1)
-                        Text("goals met")
+                        Text("\(GoalProgress.goals(entry.totalCount)) met")
                             .font(.caption)
                             .foregroundStyle(Theme.onForestSecondary)
                             .lineLimit(2)  // wraps on the narrowest phones' small widget instead of truncating
@@ -67,7 +67,7 @@ struct SmallWidgetView: View {
                     }
                 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(entry.metCount) of \(entry.totalCount) goals met")
+                .accessibilityLabel("\(entry.metCount) of \(entry.totalCount) \(GoalProgress.goals(entry.totalCount)) met")
             }
 
             Spacer(minLength: 6)

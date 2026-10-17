@@ -23,7 +23,7 @@ struct RecapText {
     }
 
     /// "31 of 42 goals met".
-    var headline: String { "\(recap.goalsMet) of \(recap.goalsCounted) goals met" }
+    var headline: String { "\(recap.goalsMet) of \(recap.goalsCounted) \(GoalProgress.goals(recap.goalsCounted)) met" }
 
     /// The ring's centre: "5/7" over "full days".
     var ringValue: String { "\(recap.fullDays)/7" }
@@ -110,13 +110,13 @@ struct RecapText {
     /// Today's card: "31 of 42 goals · Vitamin D steadiest" (the first number bold). Each part keeps together
     /// (no-break spaces), so a narrow line breaks at the dot, never inside "Vitamin D".
     var todayLine: String {
-        let goals = Self.together("**\(recap.goalsMet)** of \(recap.goalsCounted) goals")
+        let goals = Self.together("**\(recap.goalsMet)** of \(recap.goalsCounted) \(GoalProgress.goals(recap.goalsCounted))")
         return recap.steadiest.map { "\(goals) · \(Self.together("\($0.name) steadiest"))" } ?? goals
     }
 
     /// History's row: "Latest: 5 – 11 October · 31 of 42 goals", breaking only between the parts.
     var historyLine: String {
-        "Latest: \(Self.together(range)) · \(Self.together("\(recap.goalsMet) of \(recap.goalsCounted) goals"))"
+        "Latest: \(Self.together(range)) · \(Self.together("\(recap.goalsMet) of \(recap.goalsCounted) \(GoalProgress.goals(recap.goalsCounted))"))"
     }
 
     /// No-break spaces, and word joiners around a dash (a line may otherwise break after "5 –"), so the phrase
@@ -130,7 +130,7 @@ struct RecapText {
 
     /// "You hit 31 of 42 goals. Vitamin D was your steadiest."
     var notificationBody: String {
-        let goals = "You hit \(recap.goalsMet) of \(recap.goalsCounted) goals."
+        let goals = "You hit \(recap.goalsMet) of \(recap.goalsCounted) \(GoalProgress.goals(recap.goalsCounted))."
         return recap.steadiest.map { "\(goals) \($0.name) was your steadiest." } ?? goals
     }
 

@@ -15,7 +15,7 @@ struct ComplicationEntry: TimelineEntry {
     var hasGoals: Bool { totalCount > 0 }
     var fraction: Double { totalCount > 0 ? Double(metCount) / Double(totalCount) : 0 }
     var score: String { WidgetSummary.score(met: metCount, total: totalCount) }
-    var accessibilityLabel: String { hasGoals ? "\(metCount) of \(totalCount) goals met" : "nutrx" }
+    var accessibilityLabel: String { hasGoals ? "\(metCount) of \(totalCount) \(GoalProgress.goals(totalCount)) met" : "nutrx" }
 
     static let placeholder = ComplicationEntry(date: .now, metCount: 3, totalCount: 6,
                                                currentStreak: 10, streaksEnabled: true)

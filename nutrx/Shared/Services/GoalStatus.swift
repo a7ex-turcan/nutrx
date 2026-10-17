@@ -220,3 +220,8 @@ struct GoalProgress: Equatable {
         value.formattedAmount(locale: locale)
     }
 }
+
+extension GoalProgress {
+    /// "goal" or "goals" for a number of goals: "0 of 1 goal met", "3/6 goals met".
+    static func goals(_ count: Int) -> String { count == 1 ? "goal" : "goals" }
+}

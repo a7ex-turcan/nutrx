@@ -20,6 +20,8 @@ final class WidgetSummaryTests: XCTestCase {
                        "3/6 goals · 10-day streak")
         XCTAssertEqual(WidgetSummary.inline(met: 3, total: 6, streakDays: 0, streaksEnabled: true), "3/6 goals")
         XCTAssertEqual(WidgetSummary.inline(met: 3, total: 6, streakDays: 10, streaksEnabled: false), "3/6 goals")
+        XCTAssertEqual(WidgetSummary.inline(met: 0, total: 1, streakDays: 0, streaksEnabled: true), "0/1 goal")
+        XCTAssertEqual(WidgetSummary.watchInline(met: 1, total: 1, streakDays: 2, streaksEnabled: true), "1/1 goal · 2 days")
         XCTAssertEqual(WidgetSummary.inline(met: 0, total: 0, streakDays: 10, streaksEnabled: true),
                        "Add a nutrient in nutrx")
     }
