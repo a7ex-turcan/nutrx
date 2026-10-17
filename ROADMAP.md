@@ -87,6 +87,8 @@ On TestFlight (build 63, 17 Oct 2026); App Store steps in #123.
 | Stacks tab button order | ✅ Built (#100) |
 | Deleted nutrients stay deleted (iCloud) | ✅ Fixed (#114) |
 | iCloud Sync switch works, per device | ✅ Fixed (#113) |
+| "0 of 1 goal met" wording | ✅ Fixed (#115) |
+| VoiceOver in Settings (Groups +, About) | ✅ Fixed (#120) |
 | App Store release | 📋 #123 |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
