@@ -1,3 +1,5 @@
+> **Historical.** A snapshot of the roadmap from before the Watch app shipped (v1.10). Its 📋 statuses are out of date: the Watch app, export, stacks, Siri and nutrx Pro have all shipped. The current Watch app is described in `CLAUDE.md` (Apple Watch App), the plan in `ROADMAP.md`, and what's left in GitHub issues.
+
 # Nutrx — Product Roadmap
 
 > **Core promise (all versions):** Private by design. All tracking features free forever. No ads. No accounts. No servers.
