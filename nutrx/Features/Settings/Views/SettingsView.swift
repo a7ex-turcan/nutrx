@@ -55,7 +55,8 @@ struct SettingsView: View {
                 } label: {
                     row("iCloud Sync", symbol: "icloud", color: Theme.SettingsTile.blue,
                         value: SettingsSummary.iCloud(hasAccount: hasICloudAccount, enabled: iCloudSyncEnabled,
-                                                      active: ICloudSync.isActive))
+                                                      active: ICloudSync.isActive,
+                                                      couldNotConnect: ICloudSync.couldNotConnect))
                 }
                 NavigationLink {
                     NotificationsSettingsView()

@@ -3,8 +3,9 @@ import Foundation
 /// The trailing values on the Settings rows (DESIGN.md §5.9): "On", "Noon check-in", "2".
 enum SettingsSummary {
     /// The Settings row: this device's choice, and whether it still has to apply (it applies when nutrx next opens).
-    static func iCloud(hasAccount: Bool, enabled: Bool, active: Bool) -> String {
+    static func iCloud(hasAccount: Bool, enabled: Bool, active: Bool, couldNotConnect: Bool = false) -> String {
         guard hasAccount else { return "No account" }
+        if enabled && couldNotConnect { return "Couldn't connect" }
         switch (active, enabled) {
         case (true, true): return "On"
         case (false, false): return "Off"

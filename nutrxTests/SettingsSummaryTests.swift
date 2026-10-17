@@ -10,6 +10,8 @@ final class SettingsSummaryTests: XCTestCase {
         XCTAssertEqual(SettingsSummary.iCloud(hasAccount: true, enabled: false, active: true), "Turning off")
         XCTAssertEqual(SettingsSummary.iCloud(hasAccount: true, enabled: true, active: false), "Turning on")
         XCTAssertEqual(SettingsSummary.iCloud(hasAccount: false, enabled: true, active: true), "No account")
+        XCTAssertEqual(SettingsSummary.iCloud(hasAccount: true, enabled: true, active: false, couldNotConnect: true),
+                       "Couldn't connect")
 
         // This launch vs this device's choice (applies when nutrx next opens).
         XCTAssertEqual(SettingsSummary.iCloudStatus(hasAccount: true, enabled: true, active: true), "Syncing")
