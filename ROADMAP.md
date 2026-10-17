@@ -39,7 +39,8 @@
 | In-app review prompt | ✅ Shipped (v1.6) |
 | Expandable nutrient cards (Today intake breakdown) | ✅ Shipped (v1.7) |
 | Analytics & charts (per-nutrient) | ✅ Shipped (v1.8) |
-| Apple Health integration (HealthKit write) | 📋 Planned |
+| Apple Health: read (Pro trends) | ✅ Shipped (v2.1) |
+| Apple Health: write logged nutrients (HealthKit write) | 📋 Planned (#124) |
 
 ### Pre-Pro Sprint — Polish & Retention ✅
 
@@ -69,8 +70,26 @@ AI runs on the device only.
 | Trends with Apple Health (read only) | ✅ Shipped (v2.1) |
 | Report for your doctor (PDF) | ✅ Shipped (v2.1) |
 | Launch: App Store listing, review, website | ✅ Shipped (v2.1, 16 Oct 2026) |
-| Streak freeze / grace period | 📋 Later, outside the plan |
-| Shareable streak card | 📋 Later, outside the plan |
+| Streak freeze / grace period | 📋 Later, outside the plan (#125) |
+| Shareable streak card | 📋 Later, outside the plan (#126) |
+
+### v2.2 — Quality of life 🚧
+
+On TestFlight (build 63, 17 Oct 2026); App Store steps in #123.
+
+| Feature | Status |
+|---|---|
+| Nutrients for a set time / courses (Pro) | ✅ Built (#99) |
+| Select several nutrients to move or delete | ✅ Built (#98) |
+| Free / PRO chip on Today | ✅ Built (#101) |
+| Your data (export, doctor report) in History | ✅ Built (#103) |
+| Where Apple Health insights appear | ✅ Built (#102) |
+| Stacks tab button order | ✅ Built (#100) |
+| Deleted nutrients stay deleted (iCloud) | ✅ Fixed (#114) |
+| iCloud Sync switch works, per device | ✅ Fixed (#113) |
+| App Store release | 📋 #123 |
+
+Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
 ---
 
@@ -263,7 +282,7 @@ No new SwiftData models. No new services. No network requests.
 
 ### Apple Health Integration 📋
 
-**Status:** Planned
+**Status:** Reading shipped in v2.1 as Pro's Health trends (sleep, workouts, active energy; read only). Writing is still planned: #124.
 
 Optionally write logged nutrients to HealthKit (e.g. dietary Vitamin C, Magnesium, Calcium). Only nutrients that map to a known HealthKit quantity type can be written — user-defined nutrients without a HealthKit equivalent are not eligible. A mapping layer (automatic name-matching or user-configured) will be needed.
 
@@ -271,7 +290,7 @@ Read from Health (Health → nutrx ongoing sync) is out of scope for MVP3. Consi
 
 ---
 
-## Pre-Pro Sprint — Polish & Retention 📋
+## Pre-Pro Sprint — Polish & Retention ✅
 
 **Goal:** Close any gaps that would cause churn or reduce Pro conversion before the paywall exists. Features here are chosen because they either carry a model-migration risk (better done before millions of iCloud records exist) or directly improve daily retention. Nothing here is gated behind Pro — this sprint strengthens the free tier so users are engaged and trusting when Pro launches.
 
@@ -392,7 +411,7 @@ The primary user goal is multi-nutrient morning routine shortcuts: one shortcut 
 
 ---
 
-## MVP 4 — Pro Tier & AI 📋
+## MVP 4 — Pro Tier & AI (replaced, shipped as nutrx Pro in v2.1) ✅
 
 > **Replaced by [`docs/pro/PLAN.md`](docs/pro/PLAN.md)** (agreed 2026-10-14): on-device AI only, no third-party LLM, no smart target suggestions (nutrx doesn't recommend amounts), stacks and Siri stay free, new prices. The text below is the original plan.
 

@@ -405,7 +405,7 @@ Built in phase 2 of the Pro plan (free). Everything lives in `Shared/Intents/` a
 - **`LogStack.id` and migration:** adding a property with a `UUID()` default to an existing store gives every existing row the *same* value (checked: stacks from a #54 build all got one id). `StackLogging.repairDuplicateIDs` gives duplicates new ids (keeping the oldest stack's). `nutrxApp` runs it at launch, because Siri can launch the app in the background, and whenever the app becomes active, because a synced device can bring duplicates. Any future UUID field on an existing model needs the same.
 - **`StackEntity` / `StackEntityQuery`** — stacks by name (`LogStack.id`, a UUID, is only an identifier), suggested in Today's order and only when they have something to log; an empty stack still resolves by id. Stack names change, so `StackShortcutLogging.stacksChanged()` refreshes the phrase parameters after a stack is created, renamed or deleted (the Stacks tab, the detail screen), besides the refresh when the app becomes active.
 - **Siri phrases always name the app**, so the Siri tip says “Log my Morning stack **with nutrx**”, not the design's “Log my Morning stack”.
-- Tests: `NutrientShortcutTests`, `StackShortcutTests`. Not built yet: a Settings → Siri screen, and the Watch (the App Shortcuts are the iPhone app's).
+- Tests: `NutrientShortcutTests`, `StackShortcutTests`. Not built yet: a Settings → Siri screen (#127), and the Watch (the App Shortcuts are the iPhone app's, #57).
 
 ---
 
@@ -689,7 +689,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 - **Settings → iCloud Sync (#113):** the switch is **per device** (`ICloudSync`, UserDefaults `nutrx.iCloudSyncEnabled`, in `ModelContainerFactory.swift` so the Watch has it), and `create()` opens the store with `cloudKitDatabase: .none` when it's off. The store opens once per launch, so a change applies the next time nutrx opens; until then the status reads "Stops / Starts when you reopen nutrx", the Settings row "Turning off / on", and the footer says to reopen (`SettingsSummary.iCloud` / `iCloudStatus` / `iCloudFooter`). `ICloudSync.isActive` is what this launch does: Today's sync banners and the launch's 3-second wait for iCloud data only happen while it's true and the device has an iCloud account (the CloudKit store opens without one too). If the CloudKit store fails to open with sync on, the local fallback sets `couldNotConnect` and the status reads "Couldn't connect". **Delete iCloud Data** is only offered while sync is off by choice and this launch doesn't sync (deleting the zone under a running sync is unpredictable); its confirmation asks to turn sync off on the other devices first. Delete, then turning sync back on, hasn't been tried on a signed-in device yet (#119). The old `UserPreferences.iCloudSyncEnabled` synced itself to every device and nothing read it, so nutrx always synced; the first launch with the new switch keeps what that flag showed on this iPhone or iPad when there's an existing store (`adoptLegacyChoice`). A fresh install starts on, so an "off" synced from another device can't turn a new device off. The Watch has no switch and always syncs.
 - **Banners:** one-time sync-restored and sync-enabled banners on Today screen (priority below notification banner).
 - **CloudKit model rules:** all relationships optional arrays (`[T]?`), no `@Attribute(.unique)`, all scalars need property-level defaults.
-- **New models need their CloudKit schema deployed before release:** run a Debug build signed in to iCloud so the new record types (e.g. `LogStack`, `LogStackEntry`) are created in the development environment, then deploy the schema to production in the CloudKit Console. Without it, App Store builds can't sync the new types.
+- **New models *and new fields* need their CloudKit schema deployed before any TestFlight build:** TestFlight builds use the **production** CloudKit environment, like the App Store, so a new field that isn't in production can make CloudKit reject that record type's saves on testers' devices. Development: `xcrun cktool export-schema … --environment development`, add the field (`CD_<name>`, e.g. `CD_isRemoved INT64 QUERYABLE SORTABLE`), `validate-schema`, `import-schema`, then export again to check (team `6396A6L9J3`, container `iCloud.nutrx-labs.nutrx`). Production: only through the CloudKit Console (Deploy Schema Changes…), which the user does; check it afterwards with `export-schema --environment production`. Adding fields doesn't affect older app versions, and production can never remove or rename one. 2.2 added `CD_endDate`, `CD_courseGapsRaw` and `CD_isRemoved` this way.
 
 ---
 
@@ -847,7 +847,7 @@ A nutrient taken for a set time ("for 5 days", "until 24 Oct").
 - **Form:** a **Duration** row after Reminders (`ProGatedButton`; free users see the PRO chip) opens `DurationSheet`: Ongoing, For days (a stepper, counting today) or Until a date (today on). It writes `NutrientDraft.endDate`; `insertNutrient` / `apply` save it and reschedule reminders. The row reads `CourseText.summary`.
 - **My Nutrients:** ended courses leave their group for a collapsed **Finished** section at the end (newest first, "FINISHED 2"), with "Ended 24 Oct" in place of the goal. No bell (their reminders have stopped). Long-press: **Restart** (back to ongoing and onto Today, reminders back), Edit Nutrient, Delete. Analytics still open. Select mode hides the section, and Select All picks only running nutrients.
 - **If Pro lapses:** existing end dates keep working (nothing reappears on Today); setting one needs Pro.
-- Not built: a "Last day" line on Today's card.
+- Not built: a "Last day" line on Today's card (#128).
 
 ### nutrx Pro: Report for your doctor (phase 8)
 
@@ -865,13 +865,17 @@ Mockups: `docs/pro/design/7-doctor-report/`.
 
 ## Out of Scope — Not Yet Built
 
-**MVP 3 (remaining):** Apple Health integration (HealthKit write)
+Every item here has an issue, so GitHub issues are the one list of what's left (labels: `bug`, `enhancement`, `needs-you`).
+
+**MVP 3 (remaining):** writing to Apple Health (HealthKit write, #124); reading it shipped as Pro's Health trends
 
 **Pre-Pro Sprint:** done — goal types, data export (CSV), quick-log stacks, and Siri & App Shortcuts (see their sections above)
 
-**Later, outside the Pro plan:** streak freeze and a shareable streak card (on-device AI only, no third-party LLM).
+**Later, outside the Pro plan:** streak freeze (#125) and a shareable streak card (#126) (on-device AI only, no third-party LLM).
 
-**Deferred:** Localisation, iPad-specific layout
+**Deferred:** Localisation (#129), iPad-specific layout (#130)
+
+**Next release:** 2.2 is on TestFlight (build 63); the App Store steps are in #123.
 
 ---
 

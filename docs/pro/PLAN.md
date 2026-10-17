@@ -1,6 +1,6 @@
 # nutrx Pro — implementation plan
 
-Status: **agreed** (2026-10-14); decisions in §2. Replaces the "MVP 4 — Pro Tier & AI" section of `ROADMAP.md`.
+Status: **shipped** with 2.1 on 2026-10-16 (agreed 2026-10-14; decisions in §2). What's left outside the plan is tracked as GitHub issues (#125, #126). Replaces the "MVP 4 — Pro Tier & AI" section of `ROADMAP.md`.
 
 Build **one phase per session**, each through its own PR, the same way the v2 redesign followed `docs/design/DESIGN.md` §7.
 

@@ -15,10 +15,12 @@ All notable changes to nutrx are documented in this file.
 - **Your data in History** — Export data and Report for your doctor moved from Settings to a "Your data" card at the end of History, and to the share button at the top of History.
 - **Your plan at a glance** — Today shows a small "Free" or "PRO" chip at the top left. On the free plan it opens what nutrx Pro adds; on Pro it shows your plan and what's on, with a way to manage it.
 - **Stacks tab** — The + button sits before your profile picture, as on the other tabs.
+- **VoiceOver in Settings** — Groups' + button is easier to tap and reads "New group", its swipe action reads "Delete", and About reads each line once instead of stopping on the bullets.
 
 ### Fixes
 - **iCloud Sync switch works** — Turning iCloud Sync off in Settings now stops syncing on that device; before, nutrx kept syncing. The switch is per device and applies the next time you open nutrx.
 - **Deleted nutrients stay deleted** — With iCloud on, a nutrient you deleted could come back after reopening the app, or on another device. Deleted nutrients now stay deleted.
+- **"1 goal", not "1 goals"** — With a single nutrient, Today, widgets, the Watch and the weekly recap now read "0 of 1 goal met".
 
 ---
 
