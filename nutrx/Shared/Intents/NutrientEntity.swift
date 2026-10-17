@@ -58,7 +58,7 @@ struct NutrientEntityQuery: EntityStringQuery {
     /// Nutrients on Today (not deleted, course not ended), in Today's order: by group, then within the group.
     @MainActor
     static func activeNutrients(in context: ModelContext) -> [Nutrient] {
-        let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isDeleted })
+        let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isRemoved })
         return ordered(((try? context.fetch(descriptor)) ?? []).filter { $0.isRunning() })
     }
 

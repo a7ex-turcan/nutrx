@@ -66,7 +66,7 @@ final class OnboardingViewModel {
 
     private func addNutrient(from draft: NutrientDraft, context: ModelContext) {
         let general = (try? context.fetch(FetchDescriptor<NutrientGroup>(predicate: #Predicate { $0.isSystem })))?.first
-        let existing = (try? context.fetchCount(FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isDeleted }))) ?? 0
+        let existing = (try? context.fetchCount(FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isRemoved }))) ?? 0
         _ = draft.insertNutrient(into: context, group: general, sortOrder: existing)
     }
 }

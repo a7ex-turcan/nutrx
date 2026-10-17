@@ -21,7 +21,7 @@ final class NutrientShortcutTests: XCTestCase {
     @discardableResult
     private func nutrient(_ name: String, unit: String = "mg", step: Double = 100, target: Double = 400,
                           group: NutrientGroup? = nil, order: Int = 0, deleted: Bool = false) -> Nutrient {
-        let item = Nutrient(name: name, unit: unit, step: step, dailyTarget: target, sortOrder: order, isDeleted: deleted)
+        let item = Nutrient(name: name, unit: unit, step: step, dailyTarget: target, sortOrder: order, isRemoved: deleted)
         item.group = group
         item.groupSortOrder = order
         context.insert(item)

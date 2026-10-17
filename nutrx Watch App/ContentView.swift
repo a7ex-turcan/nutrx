@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct WatchContentView: View {
-    @Query(filter: #Predicate<Nutrient> { !$0.isDeleted }) private var nutrients: [Nutrient]
+    @Query(filter: #Predicate<Nutrient> { !$0.isRemoved }) private var nutrients: [Nutrient]
 
     var body: some View {
         if nutrients.isEmpty {

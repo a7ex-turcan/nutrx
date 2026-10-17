@@ -54,7 +54,7 @@ final class HistoryViewModel {
         let log = HistoryLog(
             nutrients: nutrients.map {
                 HistoryNutrient(id: $0.id, goalType: $0.goalType, target: $0.dailyTarget, upperBound: $0.upperBound,
-                                createdAt: $0.createdAt, isDeleted: $0.isDeleted, endDate: $0.endDate,
+                                createdAt: $0.createdAt, isRemoved: $0.isRemoved, endDate: $0.endDate,
                                 courseGaps: $0.courseGaps(calendar: calendar))
             },
             totals: totals, exclusions: excluded, today: now, calendar: calendar

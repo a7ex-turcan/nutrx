@@ -19,7 +19,7 @@ struct HistoryNutrient: Identifiable, Equatable {
     let target: Double
     let upperBound: Double?
     let createdAt: Date
-    let isDeleted: Bool
+    let isRemoved: Bool
     /// The last day of a set course (#99); it doesn't count after it.
     var endDate: Date? = nil
     /// Days between a course's end and its restart; they don't count either.
@@ -93,7 +93,7 @@ struct HistoryLog {
         }
 
         let counted = nutrients.filter { nutrient in
-            !nutrient.isDeleted && calendar.startOfDay(for: nutrient.createdAt) <= start
+            !nutrient.isRemoved && calendar.startOfDay(for: nutrient.createdAt) <= start
                 && NutrientCourse.includes(nutrient.endDate, gaps: nutrient.courseGaps, day: start,
                                            calendar: calendar)
                 && !excludedIDs.contains(nutrient.id)

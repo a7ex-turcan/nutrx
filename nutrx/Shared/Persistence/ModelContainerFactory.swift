@@ -70,6 +70,7 @@ enum ModelContainerFactory {
 
             seedGeneralGroupIfNeeded(context: container.mainContext)
             deduplicateSingletons(context: container.mainContext)
+            copyLegacyRemovals(context: container.mainContext)
             return container
         } catch {
             // The full error (domain, code, underlying error), not localizedDescription: for SwiftData / Core Data
@@ -84,6 +85,7 @@ enum ModelContainerFactory {
                 let container = try ModelContainer(for: schema, configurations: [localConfig])
                 seedGeneralGroupIfNeeded(context: container.mainContext)
                 deduplicateSingletons(context: container.mainContext)
+                copyLegacyRemovals(context: container.mainContext)
                 return container
             } catch {
                 fatalError("Failed to create ModelContainer: \(error)")
@@ -212,7 +214,7 @@ enum ModelContainerFactory {
             let new = Nutrient(
                 name: old.name, unit: old.unit, step: old.step,
                 dailyTarget: old.dailyTarget, sortOrder: old.sortOrder,
-                isDeleted: old.isDeleted
+                isRemoved: old.isRemoved || old.isDeleted
             )
             new.id = old.id // preserve UUID for widget intents
             new.notes = old.notes
@@ -288,6 +290,31 @@ enum ModelContainerFactory {
             let dst = URL(filePath: destination.path() + ext)
             guard fm.fileExists(atPath: src.path()) else { continue }
             try? fm.copyItem(at: src, to: dst)
+        }
+    }
+
+    // MARK: - Removed nutrients
+
+    static let legacyRemovalsCopiedKey = "nutrx.copiedLegacyRemovals"
+
+    /// Nutrients removed under the old `Nutrient.isDeleted` flag become `isRemoved`, once per device (a predicate fetch
+    /// reads the stored value correctly). Only once, so a stale old flag can't remove a nutrient later; it only ever
+    /// removes, never brings one back.
+    @MainActor
+    static func copyLegacyRemovals(context: ModelContext, defaults: UserDefaults = .standard) {
+        guard !defaults.bool(forKey: legacyRemovalsCopiedKey) else { return }
+        let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { $0.isDeleted && !$0.isRemoved })
+        let legacy = (try? context.fetch(descriptor)) ?? []
+        for nutrient in legacy {
+            nutrient.isRemoved = true
+        }
+        do {
+            if !legacy.isEmpty { try context.save() }
+            defaults.set(true, forKey: legacyRemovalsCopiedKey)
+            logger.info("Copied \(legacy.count, privacy: .public) removed nutrients to isRemoved")
+        } catch {
+            // Not marked done, so the next launch tries again.
+            logger.error("Copying removed nutrients failed: \(String(describing: error), privacy: .public)")
         }
     }
 

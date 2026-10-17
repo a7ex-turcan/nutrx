@@ -17,7 +17,7 @@ final class StackLoggingTests: XCTestCase {
     }
 
     private func nutrient(_ name: String, step: Double = 100, deleted: Bool = false) -> Nutrient {
-        let item = Nutrient(name: name, unit: "mg", step: step, dailyTarget: 400, sortOrder: 0, isDeleted: deleted)
+        let item = Nutrient(name: name, unit: "mg", step: step, dailyTarget: 400, sortOrder: 0, isRemoved: deleted)
         context.insert(item)
         return item
     }
@@ -51,7 +51,7 @@ final class StackLoggingTests: XCTestCase {
 
     func testDeletedNutrientsAreSkipped() {
         let (stack, _, omega3, _) = morning()
-        omega3.isDeleted = true
+        omega3.isRemoved = true
         XCTAssertEqual(StackLogging.activeEntries(of: stack).compactMap { $0.nutrient?.name }, ["Vitamin D", "Magnesium"])
         XCTAssertEqual(StackLogging.summary(of: stack), "Vitamin D, Magnesium")
 

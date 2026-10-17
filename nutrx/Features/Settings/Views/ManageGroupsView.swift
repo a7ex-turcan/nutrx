@@ -17,7 +17,7 @@ struct ManageGroupsView: View {
 
     /// Nutrients in a group, not counting deleted ones (they keep their group for history).
     private func activeCount(_ group: NutrientGroup) -> Int {
-        (group.nutrients ?? []).filter { !$0.isDeleted }.count
+        (group.nutrients ?? []).filter { !$0.isRemoved }.count
     }
 
     private var systemGroup: NutrientGroup? {

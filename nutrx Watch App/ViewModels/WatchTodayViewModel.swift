@@ -47,7 +47,7 @@ final class WatchTodayViewModel {
 
         // Fetch non-deleted nutrients
         let nutrientDescriptor = FetchDescriptor<Nutrient>(
-            predicate: #Predicate { !$0.isDeleted },
+            predicate: #Predicate { !$0.isRemoved },
             sortBy: [SortDescriptor(\Nutrient.sortOrder)]
         )
         guard let fetched = try? context.fetch(nutrientDescriptor) else { return }

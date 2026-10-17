@@ -20,9 +20,9 @@ final class WeeklyRecapTests: XCTestCase {
 
     private var nutrients: [HistoryNutrient] {
         [
-            HistoryNutrient(id: vitaminD, goalType: .minimum, target: 4000, upperBound: nil, createdAt: day(9, 1), isDeleted: false),
-            HistoryNutrient(id: omega, goalType: .minimum, target: 1000, upperBound: nil, createdAt: day(9, 1), isDeleted: false),
-            HistoryNutrient(id: caffeine, goalType: .maximum, target: 400, upperBound: nil, createdAt: day(9, 1), isDeleted: false),
+            HistoryNutrient(id: vitaminD, goalType: .minimum, target: 4000, upperBound: nil, createdAt: day(9, 1), isRemoved: false),
+            HistoryNutrient(id: omega, goalType: .minimum, target: 1000, upperBound: nil, createdAt: day(9, 1), isRemoved: false),
+            HistoryNutrient(id: caffeine, goalType: .maximum, target: 400, upperBound: nil, createdAt: day(9, 1), isRemoved: false),
         ]
     }
 
@@ -156,7 +156,7 @@ final class WeeklyRecapTests: XCTestCase {
         let late = totals(from: day(10, 7), through: day(10, 11))
         let log = HistoryLog(nutrients: nutrients.map {
             HistoryNutrient(id: $0.id, goalType: $0.goalType, target: $0.target, upperBound: $0.upperBound,
-                            createdAt: day(10, 7), isDeleted: false)
+                            createdAt: day(10, 7), isRemoved: false)
         }, totals: late, today: day(10, 12), calendar: calendar)
         let lateRecap = WeeklyRecap.build(log: log, names: names, week: day(10, 5), streaksEnabled: false)
         XCTAssertEqual(RecapText(lateRecap, calendar: calendar).summary, "You met every goal on all 5 days.")

@@ -49,10 +49,10 @@ final class StackShortcutTests: XCTestCase {
 
     func testSkipsDeletedNutrientsAndUnitlessAmountsReadCleanly() throws {
         let (stack, _, omega3) = morning()
+        // Removed before a save (`add` saves): the flag still reads true afterwards (#56).
+        omega3.isRemoved = true
         let water = nutrient("Water", unit: "", step: 1)
         StackLogging.add(water, to: stack, context: context)
-        // Soft-deleted after the last save: read right after a save, `Nutrient.isDeleted` can be stale (#56).
-        omega3.isDeleted = true
 
         let said = try StackShortcutLogging.log(stackID: stack.id, context: context, locale: enUS)
 

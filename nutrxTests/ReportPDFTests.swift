@@ -25,7 +25,7 @@ final class ReportPDFTests: XCTestCase {
         let ids = goals.map { _ in UUID() }
         let nutrients = zip(ids, goals).map { id, goal in
             HistoryNutrient(id: id, goalType: goal.2, target: goal.3, upperBound: goal.4, createdAt: day(1, 1),
-                            isDeleted: false)
+                            isRemoved: false)
         }
         var totals: [Date: [UUID: Double]] = [:]
         var date = day(7, 16)

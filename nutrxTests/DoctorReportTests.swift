@@ -18,8 +18,8 @@ final class DoctorReportTests: XCTestCase {
     }
 
     private var nutrients: [HistoryNutrient] {
-        [HistoryNutrient(id: vitaminD, goalType: .minimum, target: 4000, upperBound: nil, createdAt: day(9, 1), isDeleted: false),
-         HistoryNutrient(id: caffeine, goalType: .maximum, target: 400, upperBound: nil, createdAt: day(9, 1), isDeleted: false)]
+        [HistoryNutrient(id: vitaminD, goalType: .minimum, target: 4000, upperBound: nil, createdAt: day(9, 1), isRemoved: false),
+         HistoryNutrient(id: caffeine, goalType: .maximum, target: 400, upperBound: nil, createdAt: day(9, 1), isRemoved: false)]
     }
 
     private var names: [UUID: String] { [vitaminD: "Vitamin D", caffeine: "Caffeine"] }

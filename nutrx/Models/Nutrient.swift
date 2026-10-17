@@ -15,6 +15,12 @@ final class Nutrient {
     var step: Double = 1
     var dailyTarget: Double = 0
     var sortOrder: Int = 0
+    /// Soft delete: off Today and My Nutrients, kept for history.
+    var isRemoved: Bool = false
+    /// The old soft-delete flag. Never set it or read it outside `ModelContainerFactory.copyLegacyRemovals`, which
+    /// copies it into `isRemoved` once per device. Its name is also `NSManagedObject`'s own `isDeleted`, so Core Data
+    /// read the stored value by name as false: iCloud sync brought removed nutrients back, and the flag could read
+    /// false right after a save (#56). It stays because a CloudKit store can't rename a property.
     var isDeleted: Bool = false
     var notes: String? = nil
     var group: NutrientGroup? = nil
@@ -65,13 +71,13 @@ final class Nutrient {
     @Relationship(deleteRule: .cascade, inverse: \LogStackEntry.nutrient)
     var stackEntries: [LogStackEntry]? = []
 
-    init(name: String, unit: String, step: Double, dailyTarget: Double, sortOrder: Int, isDeleted: Bool = false, goalType: GoalType = .minimum, upperBound: Double? = nil) {
+    init(name: String, unit: String, step: Double, dailyTarget: Double, sortOrder: Int, isRemoved: Bool = false, goalType: GoalType = .minimum, upperBound: Double? = nil) {
         self.name = name
         self.unit = unit
         self.step = step
         self.dailyTarget = dailyTarget
         self.sortOrder = sortOrder
-        self.isDeleted = isDeleted
+        self.isRemoved = isRemoved
         self.goalTypeRaw = goalType.rawValue
         self.upperBound = upperBound
     }
@@ -150,7 +156,7 @@ extension Nutrient {
 
     /// On Today (and the widgets, the Watch, reminders, stacks and Siri) on this day: not deleted and not ended.
     func isRunning(on date: Date = .now, calendar: Calendar = .current) -> Bool {
-        !isDeleted && !hasEnded(by: date, calendar: calendar)
+        !isRemoved && !hasEnded(by: date, calendar: calendar)
     }
 
     /// Read in the same calendar the caller matches days in.
