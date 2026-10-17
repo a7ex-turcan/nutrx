@@ -104,7 +104,7 @@ struct MediumWidgetView: View {
                 .font(.headline)
                 .foregroundStyle(Theme.textPrimary)
             Spacer()
-            Text("\(WidgetSummary.score(met: entry.metCount, total: entry.totalCount)) goals")
+            Text("\(WidgetSummary.score(met: entry.metCount, total: entry.totalCount)) \(GoalProgress.goals(entry.totalCount))")
                 .font(.subheadline.weight(.semibold)).fontDesign(.rounded)
                 .foregroundStyle(Theme.textSecondary)
         }

@@ -36,7 +36,7 @@ struct GroupHeader: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(name), \(met) of \(total) goals met")
+        .accessibilityLabel("\(name), \(met) of \(total) \(GoalProgress.goals(total)) met")
         .accessibilityValue(isCollapsed ? "Collapsed" : "Expanded")
         .accessibilityHint("Shows or hides this group")
         .accessibilityAddTraits([.isHeader, .isButton])  // children: .ignore can drop the button's own trait

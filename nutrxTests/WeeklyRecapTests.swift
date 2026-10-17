@@ -53,6 +53,21 @@ final class WeeklyRecapTests: XCTestCase {
 
     // MARK: - Facts
 
+    func testAWeekWithOneGoalSaysGoal() {
+        let zinc = UUID()
+        let log = HistoryLog(nutrients: [HistoryNutrient(id: zinc, goalType: .minimum, target: 10, upperBound: nil,
+                                                         createdAt: day(10, 11), isRemoved: false)],
+                             totals: [day(10, 11): [zinc: 10]], today: day(10, 12), calendar: calendar)
+        let recap = WeeklyRecap.build(log: log, names: [zinc: "Zinc"], week: day(10, 5), streaksEnabled: false)
+        XCTAssertEqual(recap.goalsCounted, 1, "added on the Sunday")
+
+        let text = RecapText(recap, calendar: calendar)
+        XCTAssertEqual(text.headline, "1 of 1 goal met")
+        XCTAssertTrue(text.todayLine.hasPrefix(RecapText.together("**1** of 1 goal")))
+        XCTAssertTrue(text.historyLine.hasSuffix(RecapText.together("1 of 1 goal")))
+        XCTAssertTrue(text.notificationBody.hasPrefix("You hit 1 of 1 goal."))
+    }
+
     func testTheDesignsWeek() {
         let recap = recap(designWeek, today: day(10, 12))
         XCTAssertEqual(recap.weekStart, day(10, 5))

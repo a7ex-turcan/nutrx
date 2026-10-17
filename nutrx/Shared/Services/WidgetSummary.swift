@@ -16,7 +16,7 @@ enum WidgetSummary {
     /// The inline Lock Screen line: "3/6 goals · 10-day streak", "3/6 goals", or a prompt with no nutrients.
     static func inline(met: Int, total: Int, streakDays: Int, streaksEnabled: Bool) -> String {
         guard total > 0 else { return "Add a nutrient in nutrx" }
-        let goals = "\(score(met: met, total: total)) goals"
+        let goals = "\(score(met: met, total: total)) \(GoalProgress.goals(total))"
         guard let streak = streak(days: streakDays, enabled: streaksEnabled) else { return goals }
         return "\(goals) · \(streak)"
     }
@@ -24,7 +24,7 @@ enum WidgetSummary {
     /// The Watch's inline complication: "3/6 goals · 10 days" (shorter than the Lock Screen's "10-day streak").
     static func watchInline(met: Int, total: Int, streakDays: Int, streaksEnabled: Bool) -> String {
         guard total > 0 else { return "nutrx" }
-        let goals = "\(score(met: met, total: total)) goals"
+        let goals = "\(score(met: met, total: total)) \(GoalProgress.goals(total))"
         guard streaksEnabled, streakDays >= 1 else { return goals }
         return "\(goals) · \(streakDays == 1 ? "1 day" : "\(streakDays) days")"
     }

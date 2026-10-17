@@ -249,7 +249,7 @@ struct WeeklyRecapView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Week of \(week.weekStart.formatted(.dateTime.day().month(.wide)))")
-        .accessibilityValue("\(week.goalsMet) of \(week.goalsCounted) goals met")
+        .accessibilityValue("\(week.goalsMet) of \(week.goalsCounted) \(GoalProgress.goals(week.goalsCounted)) met")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 

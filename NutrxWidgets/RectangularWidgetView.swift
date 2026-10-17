@@ -44,7 +44,7 @@ struct RectangularWidgetView: View {
                     .widgetAccentable()
                     .lineLimit(1)
                     .accessibilityLabel(WidgetSummary.overLimit(entry.overLimitCount))
-                Text("\(WidgetSummary.score(met: entry.metCount, total: entry.totalCount)) goals met")
+                Text("\(WidgetSummary.score(met: entry.metCount, total: entry.totalCount)) \(GoalProgress.goals(entry.totalCount)) met")
                     .font(.subheadline)
             } else if entry.totalCount > 0 {
                 Label("All done", systemImage: "checkmark.circle")
@@ -52,7 +52,7 @@ struct RectangularWidgetView: View {
                     .widgetAccentable()
                     .lineLimit(1)
                     .accessibilityLabel("All done for today")  // not "Selected" from the check symbol
-                Text("\(WidgetSummary.score(met: entry.metCount, total: entry.totalCount)) goals met")
+                Text("\(WidgetSummary.score(met: entry.metCount, total: entry.totalCount)) \(GoalProgress.goals(entry.totalCount)) met")
                     .font(.subheadline)
             } else {
                 Text("nutrx")

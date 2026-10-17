@@ -116,7 +116,7 @@ struct WatchTodayList: View {
         }
         .textCase(nil)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(totalCount > 0 ? "Today, \(metCount) of \(totalCount) goals met" : "Today")
+        .accessibilityLabel(totalCount > 0 ? "Today, \(metCount) of \(totalCount) \(GoalProgress.goals(totalCount)) met" : "Today")
         .accessibilityAddTraits(.isHeader)
     }
 }

@@ -22,6 +22,6 @@ enum HistoryText {
 
     /// "4 of 6 goals" — "1 of 1 goal".
     static func goalsLine(met: Int, total: Int) -> String {
-        "\(met) of \(total) \(total == 1 ? "goal" : "goals")"
+        "\(met) of \(total) \(GoalProgress.goals(total))"
     }
 }

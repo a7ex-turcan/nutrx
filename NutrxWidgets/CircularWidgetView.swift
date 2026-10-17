@@ -33,7 +33,7 @@ struct CircularWidgetView: View {
         }
         .gaugeStyle(.accessoryCircularCapacity)
         .widgetAccentable()
-        .accessibilityLabel("\(entry.metCount) of \(entry.totalCount) goals met")
+        .accessibilityLabel("\(entry.metCount) of \(entry.totalCount) \(GoalProgress.goals(entry.totalCount)) met")
         .widgetURL(URL(string: "nutrx://today"))
     }
 }
