@@ -48,7 +48,7 @@ struct ManageGroupsView: View {
                             Button(role: .destructive) {
                                 groupToDelete = group
                             } label: {
-                                Image(systemName: "trash")
+                                Label("Delete", systemImage: "trash")
                             }
                         }
                     }
