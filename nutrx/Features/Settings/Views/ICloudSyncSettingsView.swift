@@ -22,7 +22,8 @@ struct ICloudSyncSettingsView: View {
     }
 
     private var statusText: String {
-        SettingsSummary.iCloudStatus(hasAccount: hasICloudAccount, enabled: syncEnabled, active: ICloudSync.isActive)
+        SettingsSummary.iCloudStatus(hasAccount: hasICloudAccount, enabled: syncEnabled, active: ICloudSync.isActive,
+                                     couldNotConnect: ICloudSync.couldNotConnect)
     }
 
     private var statusColor: Color {
@@ -50,13 +51,14 @@ struct ICloudSyncSettingsView: View {
                 Section {
                     Toggle("iCloud Sync", isOn: $syncEnabled)
                 } footer: {
-                    Text(SettingsSummary.iCloudFooter(enabled: syncEnabled, active: ICloudSync.isActive))
+                    Text(SettingsSummary.iCloudFooter(enabled: syncEnabled, active: ICloudSync.isActive,
+                                                      couldNotConnect: ICloudSync.couldNotConnect))
                 }
                 .listRowBackground(Theme.surfaceCard)
 
-                // Only while this launch doesn't sync: deleting the zone under a running sync can make it re-upload
-                // everything or clear this device.
-                if !ICloudSync.isActive {
+                // Only while sync is off by choice and this launch doesn't sync: deleting the zone under a running
+                // sync can make it re-upload everything or clear this device.
+                if !syncEnabled && !ICloudSync.isActive {
                     deleteSection
                 }
             } else {
@@ -83,7 +85,7 @@ struct ICloudSyncSettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will permanently delete all your nutrx data from iCloud. Your local data on this device will not be affected. This cannot be undone.")
+            Text("This permanently deletes your nutrx data from iCloud. Data on this device stays. Turn off iCloud Sync on your other devices first: they sync with this data. This can't be undone.")
         }
         .alert("Delete Failed", isPresented: Binding(
             get: { deleteError != nil },

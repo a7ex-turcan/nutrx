@@ -5,9 +5,11 @@ import XCTest
 final class SettingsSummaryTests: XCTestCase {
 
     func testICloud() {
-        XCTAssertEqual(SettingsSummary.iCloud(hasAccount: true, syncEnabled: true), "On")
-        XCTAssertEqual(SettingsSummary.iCloud(hasAccount: true, syncEnabled: false), "Off")
-        XCTAssertEqual(SettingsSummary.iCloud(hasAccount: false, syncEnabled: true), "No account")
+        XCTAssertEqual(SettingsSummary.iCloud(hasAccount: true, enabled: true, active: true), "On")
+        XCTAssertEqual(SettingsSummary.iCloud(hasAccount: true, enabled: false, active: false), "Off")
+        XCTAssertEqual(SettingsSummary.iCloud(hasAccount: true, enabled: false, active: true), "Turning off")
+        XCTAssertEqual(SettingsSummary.iCloud(hasAccount: true, enabled: true, active: false), "Turning on")
+        XCTAssertEqual(SettingsSummary.iCloud(hasAccount: false, enabled: true, active: true), "No account")
 
         // This launch vs this device's choice (applies when nutrx next opens).
         XCTAssertEqual(SettingsSummary.iCloudStatus(hasAccount: true, enabled: true, active: true), "Syncing")
@@ -19,6 +21,11 @@ final class SettingsSummaryTests: XCTestCase {
         XCTAssertEqual(SettingsSummary.iCloudStatus(hasAccount: false, enabled: true, active: false), "No iCloud account")
         XCTAssertTrue(SettingsSummary.iCloudFooter(enabled: false, active: true).hasPrefix("Close nutrx from the app switcher"))
         XCTAssertFalse(SettingsSummary.iCloudFooter(enabled: false, active: false).contains("app switcher"))
+        // On, but the CloudKit store failed to open at launch: not "Starts when you reopen".
+        XCTAssertEqual(SettingsSummary.iCloudStatus(hasAccount: true, enabled: true, active: false, couldNotConnect: true),
+                       "Couldn't connect")
+        XCTAssertTrue(SettingsSummary.iCloudFooter(enabled: true, active: false, couldNotConnect: true)
+            .hasPrefix("nutrx couldn't connect to iCloud"))
     }
 
     func testNotifications() {

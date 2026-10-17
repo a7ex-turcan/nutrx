@@ -32,7 +32,7 @@ struct ContentView: View {
                     // (reinstall or new device) and this device syncs. Genuine first-time users skip straight
                     // to onboarding with no delay.
                     let hadPriorOnboarding = UserDefaults.standard.bool(forKey: "nutrx.onboardingCompletedOnce")
-                    if hadPriorOnboarding && ICloudSync.isActive {
+                    if hadPriorOnboarding && ICloudSync.isActive && FileManager.default.ubiquityIdentityToken != nil {
                         try? await Task.sleep(for: .seconds(3))
                     }
                     hasFinishedWaiting = true

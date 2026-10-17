@@ -2,15 +2,22 @@ import Foundation
 
 /// The trailing values on the Settings rows (DESIGN.md §5.9): "On", "Noon check-in", "2".
 enum SettingsSummary {
-    static func iCloud(hasAccount: Bool, syncEnabled: Bool) -> String {
+    /// The Settings row: this device's choice, and whether it still has to apply (it applies when nutrx next opens).
+    static func iCloud(hasAccount: Bool, enabled: Bool, active: Bool) -> String {
         guard hasAccount else { return "No account" }
-        return syncEnabled ? "On" : "Off"
+        switch (active, enabled) {
+        case (true, true): return "On"
+        case (false, false): return "Off"
+        case (true, false): return "Turning off"
+        case (false, true): return "Turning on"
+        }
     }
 
     /// Settings → iCloud Sync's status: what this launch does, and what changes when nutrx next opens (the store opens
     /// with or without iCloud at launch).
-    static func iCloudStatus(hasAccount: Bool, enabled: Bool, active: Bool) -> String {
+    static func iCloudStatus(hasAccount: Bool, enabled: Bool, active: Bool, couldNotConnect: Bool = false) -> String {
         guard hasAccount else { return "No iCloud account" }
+        if enabled && couldNotConnect { return "Couldn't connect" }
         switch (active, enabled) {
         case (true, true): return "Syncing"
         case (false, false): return "Off"
@@ -20,8 +27,12 @@ enum SettingsSummary {
     }
 
     /// The footer under the switch.
-    static func iCloudFooter(enabled: Bool, active: Bool) -> String {
+    static func iCloudFooter(enabled: Bool, active: Bool, couldNotConnect: Bool = false) -> String {
         let privacy = "Your data syncs via your private iCloud container. No one else can see it."
+        if enabled && couldNotConnect {
+            return "nutrx couldn't connect to iCloud when it opened and is keeping your data on this device for now. "
+                + "It tries again the next time you open it."
+        }
         if enabled != active {
             return "Close nutrx from the app switcher and open it again to apply this. \(privacy)"
         }

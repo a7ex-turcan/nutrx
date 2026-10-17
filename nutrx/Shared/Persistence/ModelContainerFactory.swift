@@ -97,6 +97,7 @@ enum ModelContainerFactory {
             // The full error (domain, code, underlying error), not localizedDescription: for SwiftData / Core Data
             // that's often just "The operation couldn't be completed."
             logger.error("CloudKit container failed: \(String(describing: error), privacy: .public)")
+            ICloudSync.couldNotConnect = true
             // Fallback to local-only if CloudKit config fails
             if needsCloudKitUpgrade {
                 UserDefaults.standard.set(true, forKey: cloudKitUpgradeKey)
@@ -424,6 +425,8 @@ enum ICloudSync {
 
     /// Whether the store opened at this launch syncs. Set by `ModelContainerFactory.create()`.
     fileprivate(set) static var isActive = false
+    /// Sync was on but the CloudKit store failed to open, so this launch fell back to a local store.
+    fileprivate(set) static var couldNotConnect = false
 
     /// The first launch with the per-device choice keeps what this device's switch showed (the old synced flag),
     /// when there's a store to read it from. A fresh install starts on, so an "off" synced from another device can't
