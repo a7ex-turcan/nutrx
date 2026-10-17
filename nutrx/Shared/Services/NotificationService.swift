@@ -119,7 +119,7 @@ enum NotificationService {
     /// deleted nutrients, for times that have passed, and in the old repeating format are removed.
     @discardableResult
     static func refreshAllNutrientReminders(context: ModelContext, now: Date = .now) -> Task<Void, Never>? {
-        let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isDeleted })
+        let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isRemoved })
         guard let nutrients = try? context.fetch(descriptor) else { return nil }
         let totals = todayTotals(context: context, now: now)
         // A course that has ended (#99) has nothing left to remind about.

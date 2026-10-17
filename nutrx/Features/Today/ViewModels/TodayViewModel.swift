@@ -106,7 +106,7 @@ final class TodayViewModel {
 
         // Fetch non-deleted nutrients, without those whose course has ended (#99).
         let nutrientDescriptor = FetchDescriptor<Nutrient>(
-            predicate: #Predicate { !$0.isDeleted },
+            predicate: #Predicate { !$0.isRemoved },
             sortBy: [SortDescriptor(\Nutrient.sortOrder)]
         )
         guard let fetched = try? context.fetch(nutrientDescriptor) else { return }

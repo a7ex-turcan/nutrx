@@ -16,6 +16,9 @@ All notable changes to nutrx are documented in this file.
 - **Your plan at a glance** — Today shows a small "Free" or "PRO" chip at the top left. On the free plan it opens what nutrx Pro adds; on Pro it shows your plan and what's on, with a way to manage it.
 - **Stacks tab** — The + button sits before your profile picture, as on the other tabs.
 
+### Fixes
+- **Deleted nutrients stay deleted** — With iCloud on, a nutrient you deleted could come back after reopening the app, or on another device. Deleted nutrients now stay deleted.
+
 ---
 
 ## v2.1 — 2026-10-16

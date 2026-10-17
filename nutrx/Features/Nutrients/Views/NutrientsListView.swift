@@ -4,7 +4,7 @@ import SwiftData
 struct NutrientsListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Query(filter: #Predicate<Nutrient> { !$0.isDeleted },
+    @Query(filter: #Predicate<Nutrient> { !$0.isRemoved },
            sort: \Nutrient.sortOrder)
     private var nutrients: [Nutrient]
     @Query(sort: \NutrientGroup.sortOrder) private var allGroups: [NutrientGroup]
@@ -190,7 +190,7 @@ struct NutrientsListView: View {
             ) {
                 Button("Delete", role: .destructive) {
                     if let nutrient = nutrientToDelete {
-                        nutrient.isDeleted = true
+                        nutrient.isRemoved = true
                         nutrientToDelete = nil
                         // Its pending reminders go now, not at the next foreground.
                         try? modelContext.save()
@@ -400,7 +400,7 @@ struct NutrientsListView: View {
     /// Soft-deletes the selection like a single delete, saving and rescheduling reminders once.
     private func deleteSelection() {
         for nutrient in actingOn {
-            nutrient.isDeleted = true
+            nutrient.isRemoved = true
         }
         try? modelContext.save()
         NotificationService.refreshAllNutrientReminders(context: modelContext)

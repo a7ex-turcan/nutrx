@@ -85,7 +85,7 @@ final class ExportServiceTests: XCTestCase {
         let container = try ModelContainer.inMemoryForTests()
         let context = container.mainContext
         let vitaminD = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 4000, sortOrder: 0)
-        let caffeine = Nutrient(name: "Caffeine", unit: "mg", step: 100, dailyTarget: 400, sortOrder: 1, isDeleted: true)
+        let caffeine = Nutrient(name: "Caffeine", unit: "mg", step: 100, dailyTarget: 400, sortOrder: 1, isRemoved: true)
         context.insert(vitaminD)
         context.insert(caffeine)
         let now = Date()

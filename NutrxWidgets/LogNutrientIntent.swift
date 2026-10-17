@@ -41,7 +41,7 @@ struct LogNutrientIntent: AppIntent {
         guard let nutrientUUID = UUID(uuidString: nutrientID) else { return .result() }
 
         let descriptor = FetchDescriptor<Nutrient>(
-            predicate: #Predicate { !$0.isDeleted }
+            predicate: #Predicate { !$0.isRemoved }
         )
         let nutrients = (try? context.fetch(descriptor)) ?? []
         guard let nutrient = nutrients.first(where: { $0.id == nutrientUUID }) else {

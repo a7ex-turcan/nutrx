@@ -16,7 +16,7 @@ enum StreakService {
 
         // Fetch all non-deleted nutrients
         let nutrientDescriptor = FetchDescriptor<Nutrient>(
-            predicate: #Predicate { !$0.isDeleted }
+            predicate: #Predicate { !$0.isRemoved }
         )
         guard let nutrients = try? context.fetch(nutrientDescriptor), !nutrients.isEmpty else {
             return StreakResult(current: 0, best: 0)

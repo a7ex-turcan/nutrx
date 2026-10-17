@@ -517,7 +517,7 @@ struct TodayView: View {
     }
 
     private func addNutrient() {
-        let count = (try? modelContext.fetchCount(FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isDeleted }))) ?? 0
+        let count = (try? modelContext.fetchCount(FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isRemoved }))) ?? 0
         addDraft.insertNutrient(into: modelContext, group: selectedGroupForAdd ?? allGroups.first(where: \.isSystem),
                                 sortOrder: count)
         viewModel.refresh(context: modelContext)

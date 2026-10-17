@@ -53,7 +53,7 @@ struct ComplicationProvider: TimelineProvider {
         let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
 
         let nutrientDescriptor = FetchDescriptor<Nutrient>(
-            predicate: #Predicate { !$0.isDeleted }
+            predicate: #Predicate { !$0.isRemoved }
         )
         // As on Today: a nutrient whose course has ended (#99) doesn't count.
         let nutrients = ((try? context.fetch(nutrientDescriptor)) ?? []).filter { $0.isRunning(on: startOfDay) }
