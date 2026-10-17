@@ -29,10 +29,10 @@ struct ContentView: View {
                 .task {
                     hasStartedWaiting = true
                     // Only wait for iCloud sync if onboarding was previously completed
-                    // (reinstall or new device). Genuine first-time users skip straight
+                    // (reinstall or new device) and this device syncs. Genuine first-time users skip straight
                     // to onboarding with no delay.
                     let hadPriorOnboarding = UserDefaults.standard.bool(forKey: "nutrx.onboardingCompletedOnce")
-                    if hadPriorOnboarding {
+                    if hadPriorOnboarding && ICloudSync.isActive && FileManager.default.ubiquityIdentityToken != nil {
                         try? await Task.sleep(for: .seconds(3))
                     }
                     hasFinishedWaiting = true

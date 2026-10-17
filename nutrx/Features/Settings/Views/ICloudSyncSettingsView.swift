@@ -1,23 +1,14 @@
 import SwiftUI
-import SwiftData
 import CloudKit
 
-/// Settings → iCloud Sync: status, the sync toggle and Delete iCloud Data.
+/// Settings → iCloud Sync: status, this device's sync switch and Delete iCloud Data. The switch applies the next time
+/// nutrx opens (`ICloudSync`), and the status says so until then.
 struct ICloudSyncSettingsView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var allPreferences: [UserPreferences]
+    @AppStorage(ICloudSync.enabledKey) private var syncEnabled = true
     @State private var showDeleteConfirmation = false
     @State private var isDeleting = false
+    @State private var didDelete = false
     @State private var deleteError: String?
-
-    private var preferences: UserPreferences {
-        if let existing = allPreferences.first {
-            return existing
-        }
-        let new = UserPreferences()
-        modelContext.insert(new)
-        return new
-    }
 
     private var hasICloudAccount: Bool {
         FileManager.default.ubiquityIdentityToken != nil
@@ -27,21 +18,16 @@ struct ICloudSyncSettingsView: View {
         if !hasICloudAccount {
             return "xmark.icloud"
         }
-        return preferences.iCloudSyncEnabled ? "checkmark.icloud" : "icloud.slash"
+        return ICloudSync.isActive ? "checkmark.icloud" : "icloud.slash"
     }
 
     private var statusText: String {
-        if !hasICloudAccount {
-            return "No iCloud account"
-        }
-        return preferences.iCloudSyncEnabled ? "Syncing" : "Disabled"
+        SettingsSummary.iCloudStatus(hasAccount: hasICloudAccount, enabled: syncEnabled, active: ICloudSync.isActive,
+                                     couldNotConnect: ICloudSync.couldNotConnect)
     }
 
     private var statusColor: Color {
-        if !hasICloudAccount {
-            return .secondary
-        }
-        return preferences.iCloudSyncEnabled ? Theme.textGreenInk : .secondary
+        hasICloudAccount && ICloudSync.isActive ? Theme.textGreenInk : .secondary
     }
 
     var body: some View {
@@ -63,34 +49,18 @@ struct ICloudSyncSettingsView: View {
 
             if hasICloudAccount {
                 Section {
-                    Toggle(isOn: Binding(
-                        get: { preferences.iCloudSyncEnabled },
-                        set: { preferences.iCloudSyncEnabled = $0 }
-                    )) {
-                        Text("iCloud Sync")
-                    }
+                    Toggle("iCloud Sync", isOn: $syncEnabled)
                 } footer: {
-                    Text("Your data syncs via your private iCloud container. No one else can see it.")
+                    Text(SettingsSummary.iCloudFooter(enabled: syncEnabled, active: ICloudSync.isActive,
+                                                      couldNotConnect: ICloudSync.couldNotConnect))
                 }
                 .listRowBackground(Theme.surfaceCard)
 
-                Section {
-                    Button(role: .destructive) {
-                        showDeleteConfirmation = true
-                    } label: {
-                        HStack {
-                            Label("Delete iCloud Data", systemImage: "trash")
-                            if isDeleting {
-                                Spacer()
-                                ProgressView()
-                            }
-                        }
-                    }
-                    .disabled(isDeleting)
-                } footer: {
-                    Text("Permanently removes your data from iCloud. Data on this device is not affected.")
+                // Only while sync is off by choice and this launch doesn't sync: deleting the zone under a running
+                // sync can make it re-upload everything or clear this device.
+                if !syncEnabled && !ICloudSync.isActive {
+                    deleteSection
                 }
-                .listRowBackground(Theme.surfaceCard)
             } else {
                 Section {
                     Button {
@@ -115,7 +85,7 @@ struct ICloudSyncSettingsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This will permanently delete all your nutrx data from iCloud. Your local data on this device will not be affected. This cannot be undone.")
+            Text("This permanently deletes your nutrx data from iCloud. Data on this device stays. Turn off iCloud Sync on your other devices first: they sync with this data. This can't be undone.")
         }
         .alert("Delete Failed", isPresented: Binding(
             get: { deleteError != nil },
@@ -127,6 +97,27 @@ struct ICloudSyncSettingsView: View {
         }
     }
 
+    private var deleteSection: some View {
+        Section {
+            Button(role: .destructive) {
+                showDeleteConfirmation = true
+            } label: {
+                HStack {
+                    Label("Delete iCloud Data", systemImage: "trash")
+                    if isDeleting {
+                        Spacer()
+                        ProgressView()
+                    }
+                }
+            }
+            .disabled(isDeleting || didDelete)
+        } footer: {
+            Text(didDelete ? "Deleted nutrx's data from iCloud. Data on this device is not affected."
+                           : "Permanently removes your data from iCloud. Data on this device is not affected.")
+        }
+        .listRowBackground(Theme.surfaceCard)
+    }
+
     private func deleteICloudData() {
         isDeleting = true
         Task {
@@ -134,8 +125,8 @@ struct ICloudSyncSettingsView: View {
                 let container = CKContainer(identifier: ModelContainerFactory.cloudKitContainerID)
                 let zoneID = CKRecordZone.ID(zoneName: "com.apple.coredata.cloudkit.zone", ownerName: CKCurrentUserDefaultName)
                 try await container.privateCloudDatabase.deleteRecordZone(withID: zoneID)
-                preferences.iCloudSyncEnabled = false
                 isDeleting = false
+                didDelete = true
             } catch {
                 isDeleting = false
                 deleteError = error.localizedDescription
@@ -149,5 +140,4 @@ struct ICloudSyncSettingsView: View {
         ICloudSyncSettingsView()
             .navigationTitle("iCloud Sync")
     }
-    .modelContainer(previewContainer)
 }

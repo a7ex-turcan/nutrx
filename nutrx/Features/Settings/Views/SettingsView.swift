@@ -13,6 +13,8 @@ struct SettingsView: View {
     @Query(filter: #Predicate<NutrientGroup> { !$0.isSystem }) private var userGroups: [NutrientGroup]
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @State private var showPaywall = false
+    /// Read here so the iCloud Sync row follows the switch on its page.
+    @AppStorage(ICloudSync.enabledKey) private var iCloudSyncEnabled = true
     /// Read here so the Apple Health row follows the switch on its page.
     @AppStorage(HealthReader.connectedKey) private var healthConnected = false
     @State private var notificationsAllowed = false
@@ -52,8 +54,9 @@ struct SettingsView: View {
                         .navigationBarTitleDisplayMode(.inline)
                 } label: {
                     row("iCloud Sync", symbol: "icloud", color: Theme.SettingsTile.blue,
-                        value: SettingsSummary.iCloud(hasAccount: hasICloudAccount,
-                                                      syncEnabled: preferences?.iCloudSyncEnabled ?? true))
+                        value: SettingsSummary.iCloud(hasAccount: hasICloudAccount, enabled: iCloudSyncEnabled,
+                                                      active: ICloudSync.isActive,
+                                                      couldNotConnect: ICloudSync.couldNotConnect))
                 }
                 NavigationLink {
                     NotificationsSettingsView()

@@ -17,6 +17,7 @@ All notable changes to nutrx are documented in this file.
 - **Stacks tab** — The + button sits before your profile picture, as on the other tabs.
 
 ### Fixes
+- **iCloud Sync switch works** — Turning iCloud Sync off in Settings now stops syncing on that device; before, nutrx kept syncing. The switch is per device and applies the next time you open nutrx.
 - **Deleted nutrients stay deleted** — With iCloud on, a nutrient you deleted could come back after reopening the app, or on another device. Deleted nutrients now stay deleted.
 
 ---

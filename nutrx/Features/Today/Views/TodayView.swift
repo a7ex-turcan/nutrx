@@ -584,8 +584,9 @@ struct TodayView: View {
     }
 
     private func refreshSyncBannerVisibility() {
-        // Don't show sync banner if notification banner is visible
-        guard !showBanner else {
+        // Don't show sync banner if notification banner is visible, or while this device doesn't sync (switched off, or
+        // no iCloud account: the CloudKit store still opens then)
+        guard !showBanner, ICloudSync.isActive, FileManager.default.ubiquityIdentityToken != nil else {
             showSyncBanner = false
             return
         }
