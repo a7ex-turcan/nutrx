@@ -7,8 +7,22 @@ import XCTest
 /// Data read the stored value by name as false, so iCloud sync brought removed nutrients back after a relaunch, and
 /// the flag could read false right after a save (#56). `isRemoved` replaces it; old removals are copied over.
 final class NutrientRemovalTests: XCTestCase {
+    /// A temp store, removed with its -wal / -shm files after the test.
     private func storeURL() -> URL {
-        FileManager.default.temporaryDirectory.appendingPathComponent("removal-\(UUID()).store")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("removal-\(UUID()).store")
+        addTeardownBlock {
+            for suffix in ["", "-wal", "-shm"] {
+                try? FileManager.default.removeItem(atPath: url.path + suffix)
+            }
+        }
+        return url
+    }
+
+    /// A fresh suite, so the once-per-device copy runs in each test.
+    private func freshDefaults() -> UserDefaults {
+        let name = "removal-\(UUID())"
+        addTeardownBlock { UserDefaults().removePersistentDomain(forName: name) }
+        return UserDefaults(suiteName: name)!
     }
 
     private func open(_ url: URL) throws -> ModelContainer {
@@ -61,16 +75,25 @@ final class NutrientRemovalTests: XCTestCase {
         let kept = Nutrient(name: "Magnesium", unit: "mg", step: 100, dailyTarget: 400, sortOrder: 2)
         [removedBefore, removedNow, kept].forEach(context.insert)
         try context.save()
+        let defaults = freshDefaults()
 
-        ModelContainerFactory.copyLegacyRemovals(context: context)
+        ModelContainerFactory.copyLegacyRemovals(context: context, defaults: defaults)
 
         let removed = try context.fetch(FetchDescriptor<Nutrient>(predicate: #Predicate { $0.isRemoved }))
         XCTAssertEqual(Set(removed.map(\.name)), ["Iron", "Zinc"])
+
+        // Once per device: an old flag that turns up later doesn't remove anything.
+        kept.isDeleted = true
+        try context.save()
+        ModelContainerFactory.copyLegacyRemovals(context: context, defaults: defaults)
+        XCTAssertFalse(kept.isRemoved)
     }
 
     /// A store from 2.2 (60) and earlier opens with the CloudKit configuration (renaming a property there fails
-    /// and the app can't start), and its removed nutrients stay removed.
+    /// and the app can't start), and its removed nutrients stay removed. Skipped when signed in to iCloud: the
+    /// container would mirror these rows to the account's development database and its devices.
     func testAStoreFromBeforeOpensAndKeepsRemovedNutrients() throws {
+        try XCTSkipIf(FileManager.default.ubiquityIdentityToken != nil, "signed in to iCloud: would mirror test data")
         let url = storeURL()
         do {
             let old = try ModelContainer(for: Schema([Before.Nutrient.self]),
@@ -84,7 +107,7 @@ final class NutrientRemovalTests: XCTestCase {
                                        cloudKitDatabase: .private(ModelContainerFactory.cloudKitContainerID))
         let container = try ModelContainer(for: schema, configurations: [cloud])
         let context = container.mainContext
-        ModelContainerFactory.copyLegacyRemovals(context: context)
+        ModelContainerFactory.copyLegacyRemovals(context: context, defaults: freshDefaults())
         let nutrients = try context.fetch(FetchDescriptor<Nutrient>(sortBy: [SortDescriptor(\.name)]))
         XCTAssertEqual(nutrients.map(\.name), ["Iron", "Zinc"])
         XCTAssertEqual(nutrients.map(\.isRemoved), [true, false])

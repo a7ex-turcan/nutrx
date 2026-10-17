@@ -21,13 +21,13 @@ final class HistoryLogTests: XCTestCase {
     private func nutrients(createdDaysAgo: Int = 30) -> [HistoryNutrient] {
         [
             HistoryNutrient(id: vitaminD, goalType: .minimum, target: 4000, upperBound: nil,
-                            createdAt: day(createdDaysAgo), isDeleted: false),
+                            createdAt: day(createdDaysAgo), isRemoved: false),
             HistoryNutrient(id: omega, goalType: .minimum, target: 2000, upperBound: nil,
-                            createdAt: day(createdDaysAgo), isDeleted: false),
+                            createdAt: day(createdDaysAgo), isRemoved: false),
             HistoryNutrient(id: caffeine, goalType: .maximum, target: 400, upperBound: nil,
-                            createdAt: day(createdDaysAgo), isDeleted: false),
+                            createdAt: day(createdDaysAgo), isRemoved: false),
             HistoryNutrient(id: removed, goalType: .minimum, target: 1, upperBound: nil,
-                            createdAt: day(createdDaysAgo), isDeleted: true),
+                            createdAt: day(createdDaysAgo), isRemoved: true),
         ]
     }
 
@@ -60,7 +60,7 @@ final class HistoryLogTests: XCTestCase {
     func testNutrientsCreatedLaterDontCount() {
         var nutrients = nutrients()
         nutrients[1] = HistoryNutrient(id: omega, goalType: .minimum, target: 2000, upperBound: nil,
-                                       createdAt: day(1), isDeleted: false)
+                                       createdAt: day(1), isRemoved: false)
         let result = log([2: [vitaminD: 4000]], nutrients: nutrients).day(day(2))
         XCTAssertEqual(result.goals.map(\.nutrientID), [vitaminD, caffeine])
         XCTAssertEqual(result.completion, .allMet)
@@ -86,7 +86,7 @@ final class HistoryLogTests: XCTestCase {
     }
 
     func testLoggedButNothingMetIsNoneMet() {
-        let atLeastOnly = nutrients().filter { $0.goalType == .minimum && !$0.isDeleted }
+        let atLeastOnly = nutrients().filter { $0.goalType == .minimum && !$0.isRemoved }
         XCTAssertEqual(log([1: [vitaminD: 100]], nutrients: atLeastOnly).day(day(1)).completion, .noneMet)
     }
 
@@ -117,7 +117,7 @@ final class HistoryLogTests: XCTestCase {
         let today = Calendar.current.startOfDay(for: .now)
         let id = UUID()
         let nutrient = HistoryNutrient(id: id, goalType: .minimum, target: 1, upperBound: nil, createdAt: today,
-                                       isDeleted: false)
+                                       isRemoved: false)
         let onlyToday = HistoryLog(nutrients: [nutrient], totals: [today: [id: 1]], today: today, calendar: .current)
         XCTAssertTrue(onlyToday.hasEntries, "Export data's All time includes today (#103)")
         XCTAssertFalse(onlyToday.hasPastEntries)

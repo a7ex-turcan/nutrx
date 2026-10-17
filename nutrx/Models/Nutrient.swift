@@ -18,7 +18,7 @@ final class Nutrient {
     /// Soft delete: off Today and My Nutrients, kept for history.
     var isRemoved: Bool = false
     /// The old soft-delete flag. Never set it or read it outside `ModelContainerFactory.copyLegacyRemovals`, which
-    /// copies it into `isRemoved` at launch. Its name is also `NSManagedObject`'s own `isDeleted`, so Core Data
+    /// copies it into `isRemoved` once per device. Its name is also `NSManagedObject`'s own `isDeleted`, so Core Data
     /// read the stored value by name as false: iCloud sync brought removed nutrients back, and the flag could read
     /// false right after a save (#56). It stays because a CloudKit store can't rename a property.
     var isDeleted: Bool = false

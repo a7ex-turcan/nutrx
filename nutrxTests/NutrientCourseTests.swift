@@ -28,7 +28,7 @@ final class NutrientCourseTests: XCTestCase {
     func testHistoryCountsACourseOnlyUpToItsLastDay() {
         let id = UUID()
         let nutrient = HistoryNutrient(id: id, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(10, 1),
-                                       isDeleted: false, endDate: day(10, 5))
+                                       isRemoved: false, endDate: day(10, 5))
         let log = HistoryLog(nutrients: [nutrient], totals: [day(10, 5): [id: 1], day(10, 6): [id: 1]],
                              today: day(10, 10), calendar: calendar)
         XCTAssertEqual(log.day(day(10, 5)).goals.map(\.nutrientID), [id])
@@ -104,7 +104,7 @@ final class NutrientCourseTests: XCTestCase {
     func testHistorySkipsTheGapBetweenACourseAndItsRestart() {
         let id = UUID()
         let nutrient = HistoryNutrient(id: id, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(10, 1),
-                                       isDeleted: false, endDate: nil, courseGaps: [day(10, 17)...day(10, 19)])
+                                       isRemoved: false, endDate: nil, courseGaps: [day(10, 17)...day(10, 19)])
         let log = HistoryLog(nutrients: [nutrient], totals: [day(10, 16): [id: 1], day(10, 20): [id: 1]],
                              today: day(10, 25), calendar: calendar)
         XCTAssertEqual(log.day(day(10, 16)).goals.map(\.nutrientID), [id])
