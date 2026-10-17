@@ -14,6 +14,7 @@ struct SettingsView: View {
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @State private var showPaywall = false
     /// Read here so the Apple Health row follows the switch on its page.
+    @AppStorage(ICloudSync.enabledKey) private var iCloudSyncEnabled = true
     @AppStorage(HealthReader.connectedKey) private var healthConnected = false
     @State private var notificationsAllowed = false
     @AppStorage(RecapSchedule.enabledKey) private var weeklyRecapEnabled = true
@@ -53,7 +54,7 @@ struct SettingsView: View {
                 } label: {
                     row("iCloud Sync", symbol: "icloud", color: Theme.SettingsTile.blue,
                         value: SettingsSummary.iCloud(hasAccount: hasICloudAccount,
-                                                      syncEnabled: preferences?.iCloudSyncEnabled ?? true))
+                                                      syncEnabled: iCloudSyncEnabled))
                 }
                 NavigationLink {
                     NotificationsSettingsView()

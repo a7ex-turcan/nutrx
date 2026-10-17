@@ -42,6 +42,26 @@ enum ModelContainerFactory {
         let schema = Self.schema
 
         let storeURL = sharedStoreURL()
+        #if os(iOS)
+        // The Watch never had the switch, so it keeps syncing.
+        ICloudSync.adoptLegacyChoice(storeExists: FileManager.default.fileExists(atPath: storeURL.path()),
+                                     legacy: legacySyncChoice)
+        #endif
+
+        guard ICloudSync.isEnabled() else {
+            let localConfig = ModelConfiguration(schema: schema, url: storeURL, cloudKitDatabase: .none)
+            do {
+                let container = try ModelContainer(for: schema, configurations: [localConfig])
+                logger.info("iCloud sync is off on this device: local store at \(storeURL.path(), privacy: .public)")
+                seedGeneralGroupIfNeeded(context: container.mainContext)
+                deduplicateSingletons(context: container.mainContext)
+                copyLegacyRemovals(context: container.mainContext)
+                return container
+            } catch {
+                fatalError("Failed to create ModelContainer: \(error)")
+            }
+        }
+
         let needsCloudKitUpgrade = !UserDefaults.standard.bool(forKey: cloudKitUpgradeKey)
 
         // Back up existing local store before CloudKit touches it
@@ -61,6 +81,7 @@ enum ModelContainerFactory {
             // Interpolated strings are redacted outside a debugger unless marked public; neither the store path
             // (the App Group container) nor an error description is personal data.
             logger.info("CloudKit container created at \(storeURL.path(), privacy: .public)")
+            ICloudSync.isActive = true
 
             if needsCloudKitUpgrade {
                 migrateFromBackupIfNeeded(into: container, schema: schema)
@@ -91,6 +112,15 @@ enum ModelContainerFactory {
                 fatalError("Failed to create ModelContainer: \(error)")
             }
         }
+    }
+
+    /// The old synced `UserPreferences.iCloudSyncEnabled`, read without opening the store for sync. Nil when the
+    /// store can't be read.
+    private static func legacySyncChoice() -> Bool? {
+        guard let container = try? createForExtension(allowsSave: false),
+              let preferences = try? container.mainContext.fetch(FetchDescriptor<UserPreferences>())
+        else { return nil }
+        return preferences.first?.iCloudSyncEnabled ?? true
     }
 
     // MARK: - Shared Store URL
@@ -376,6 +406,35 @@ enum ModelContainerFactory {
 
         for duplicate in prefs.dropFirst() {
             context.delete(duplicate)
+        }
+    }
+}
+
+/// Whether this device syncs with iCloud (#113). The choice is per device, in UserDefaults. The old
+/// `UserPreferences.iCloudSyncEnabled` synced itself to every device, and nothing read it, so nutrx kept syncing
+/// with the switch off. The store opens with or without CloudKit at launch, so a change applies the next time
+/// nutrx opens.
+enum ICloudSync {
+    static let enabledKey = "nutrx.iCloudSyncEnabled"
+
+    /// This device's choice: on unless turned off.
+    static func isEnabled(defaults: UserDefaults = .standard) -> Bool {
+        defaults.object(forKey: enabledKey) as? Bool ?? true
+    }
+
+    /// Whether the store opened at this launch syncs. Set by `ModelContainerFactory.create()`.
+    fileprivate(set) static var isActive = false
+
+    /// The first launch with the per-device choice keeps what this device's switch showed (the old synced flag),
+    /// when there's a store to read it from. A fresh install starts on, so an "off" synced from another device can't
+    /// turn a new device off. If an existing store can't be read (`legacy` is nil), the choice stays unset so the next
+    /// launch tries again.
+    static func adoptLegacyChoice(storeExists: Bool, legacy: () -> Bool?, defaults: UserDefaults = .standard) {
+        guard defaults.object(forKey: enabledKey) == nil else { return }
+        if !storeExists {
+            defaults.set(true, forKey: enabledKey)
+        } else if let choice = legacy() {
+            defaults.set(choice, forKey: enabledKey)
         }
     }
 }

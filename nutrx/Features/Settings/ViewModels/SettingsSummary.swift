@@ -7,6 +7,27 @@ enum SettingsSummary {
         return syncEnabled ? "On" : "Off"
     }
 
+    /// Settings → iCloud Sync's status: what this launch does, and what changes when nutrx next opens (the store opens
+    /// with or without iCloud at launch).
+    static func iCloudStatus(hasAccount: Bool, enabled: Bool, active: Bool) -> String {
+        guard hasAccount else { return "No iCloud account" }
+        switch (active, enabled) {
+        case (true, true): return "Syncing"
+        case (false, false): return "Off"
+        case (true, false): return "Stops when you reopen nutrx"
+        case (false, true): return "Starts when you reopen nutrx"
+        }
+    }
+
+    /// The footer under the switch.
+    static func iCloudFooter(enabled: Bool, active: Bool) -> String {
+        let privacy = "Your data syncs via your private iCloud container. No one else can see it."
+        if enabled != active {
+            return "Close nutrx from the app switcher and open it again to apply this. \(privacy)"
+        }
+        return active ? "\(privacy) To delete nutrx's data from iCloud, turn sync off and reopen nutrx." : privacy
+    }
+
     /// `weeklyRecap`: the Pro recap will actually arrive (Pro, its switch on, notifications allowed).
     static func notifications(dailyReminderEnabled: Bool, weeklyRecap: Bool = false) -> String {
         switch (dailyReminderEnabled, weeklyRecap) {

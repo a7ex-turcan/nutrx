@@ -6,6 +6,8 @@ final class UserPreferences {
     var dailyReminderEnabled: Bool = false
     var hasSeenNotificationBanner: Bool = false
     var streaksEnabled: Bool = true
+    /// Legacy: synced to every device and never read for syncing. The per-device choice is `ICloudSync` (#113),
+    /// which reads this once, on the first launch that has it.
     var iCloudSyncEnabled: Bool = true
     var hasSeenSyncRestoredBanner: Bool = false
     var hasSeenSyncEnabledBanner: Bool = false

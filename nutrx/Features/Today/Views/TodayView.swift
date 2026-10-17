@@ -584,8 +584,8 @@ struct TodayView: View {
     }
 
     private func refreshSyncBannerVisibility() {
-        // Don't show sync banner if notification banner is visible
-        guard !showBanner else {
+        // Don't show sync banner if notification banner is visible, or while this device doesn't sync
+        guard !showBanner, ICloudSync.isActive else {
             showSyncBanner = false
             return
         }
