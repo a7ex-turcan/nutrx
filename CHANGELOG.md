@@ -4,7 +4,7 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
-## Unreleased
+## v2.2 — 2026-10-18
 
 ### nutrx Pro
 - **Nutrients for a set time** — Taking something for 5 days, or until a date? Set a duration when you add or edit a nutrient. After the last day it leaves Today and its reminders stop, and it waits in a Finished section in My Nutrients, where Restart brings it back. History and streaks count it only for the days it was meant to be taken.
