@@ -79,16 +79,16 @@ Released on the App Store on 18 Oct 2026 (build 63, phased release; tag `v2.2`).
 
 | Feature | Status |
 |---|---|
-| Nutrients for a set time / courses (Pro) | ✅ Built (#99) |
-| Select several nutrients to move or delete | ✅ Built (#98) |
-| Free / PRO chip on Today | ✅ Built (#101) |
-| Your data (export, doctor report) in History | ✅ Built (#103) |
-| Where Apple Health insights appear | ✅ Built (#102) |
-| Stacks tab button order | ✅ Built (#100) |
-| Deleted nutrients stay deleted (iCloud) | ✅ Fixed (#114) |
-| iCloud Sync switch works, per device | ✅ Fixed (#113) |
-| "0 of 1 goal met" wording | ✅ Fixed (#115) |
-| VoiceOver in Settings (Groups +, About) | ✅ Fixed (#120) |
+| Nutrients for a set time / courses (Pro) | ✅ Shipped (v2.2, #99) |
+| Select several nutrients to move or delete | ✅ Shipped (v2.2, #98) |
+| Free / PRO chip on Today | ✅ Shipped (v2.2, #101) |
+| Your data (export, doctor report) in History | ✅ Shipped (v2.2, #103) |
+| Where Apple Health insights appear | ✅ Shipped (v2.2, #102) |
+| Stacks tab button order | ✅ Shipped (v2.2, #100) |
+| Deleted nutrients stay deleted (iCloud) | ✅ Shipped (v2.2, #114) |
+| iCloud Sync switch works, per device | ✅ Shipped (v2.2, #113) |
+| "0 of 1 goal met" wording | ✅ Shipped (v2.2, #115) |
+| VoiceOver in Settings (Groups +, About) | ✅ Shipped (v2.2, #120) |
 | App Store release | ✅ Shipped (v2.2, 18 Oct 2026) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
