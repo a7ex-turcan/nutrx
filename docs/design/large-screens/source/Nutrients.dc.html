@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — My Nutrients and analytics, split view</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: {{W}}px; height: {{H}}px; position: relative; overflow: hidden; background: {{c.bg}}; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+
+  <sc-if value="{{topBar}}" hint-placeholder-val="{{true}}">
+    <nav aria-label="Tabs" style="position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; gap: 2px; padding: 4px; border-radius: 24px; background: {{c.glass}}; border: 1px solid {{c.glassBorder}}; backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 10px 28px -14px rgba(14,26,19,0.35)">
+      <a href="Main.dc.html" style="height: 36px; padding: 0 18px; border-radius: 18px; color: {{c.ink2}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">Today</a>
+      <a href="Nutrients.dc.html" aria-current="page" style="height: 36px; padding: 0 18px; border-radius: 18px; background: {{c.onBg}}; color: {{c.on}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">Nutrients</a>
+      <a href="History.dc.html" style="height: 36px; padding: 0 18px; border-radius: 18px; color: {{c.ink2}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">History</a>
+    </nav>
+  </sc-if>
+
+  <sc-if value="{{sideBar}}" hint-placeholder-val="{{false}}">
+    <nav aria-label="Tabs" style="position: absolute; right: 24px; top: 50%; transform: translateY(-50%); z-index: 2; width: 48px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 4px; border-radius: 24px; background: {{c.glass}}; border: 1px solid {{c.glassBorder}}; backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 10px 28px -14px rgba(14,26,19,0.35)">
+      <a href="Main.dc.html" aria-label="Today" style="width: 40px; height: 40px; border-radius: 20px; color: {{c.ink2}}; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path><path d="M12 8a4 4 0 1 0 4 4"></path></svg>
+      </a>
+      <a href="Nutrients.dc.html" aria-label="Nutrients" aria-current="page" style="width: 40px; height: 40px; border-radius: 20px; background: {{c.onBg}}; color: {{c.on}}; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19C5 10.5 11 5 20 4c0 9-5.5 15-14 15zM5 19l7-7"></path></svg>
+      </a>
+      <a href="History.dc.html" aria-label="History" style="width: 40px; height: 40px; border-radius: 20px; color: {{c.ink2}}; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v15H4zM4 10h16M8 3v4M16 3v4"></path></svg>
+      </a>
+    </nav>
+  </sc-if>
+
+  <aside aria-label="My Nutrients" style="position: absolute; left: 0; top: 0; bottom: 0; width: {{SB}}px; box-sizing: border-box; padding: {{top}}px {{sbPadR}}px 0 {{sbPadL}}px; border-right: 1px solid {{c.divider}}">
+    <div style="padding: 0 4px; display: flex; align-items: flex-end; justify-content: space-between; gap: 10px">
+      <h1 style="margin: 0; font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: -0.02em">My Nutrients</h1>
+      <a href="Nutrients.dc.html" aria-label="Add nutrient" style="width: 44px; height: 44px; border-radius: 22px; background: {{c.btn}}; display: flex; align-items: center; justify-content: center; flex: none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{c.btnInk}}" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      </a>
+    </div>
+    <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+      <div style="margin-top: 20px">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 4px 8px 4px">
+          <h2 style="margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: {{c.ink2}}">{{g.name}}</h2>
+          <span style="font-size: 13px; color: {{c.ink2}}">{{g.count}}</span>
+        </div>
+        <div style="border-radius: 22px; background: {{c.card}}; overflow: hidden; box-shadow: {{c.shadow}}; padding: 4px">
+          <sc-for list="{{g.items}}" as="n" hint-placeholder-count="3">
+            <a href="Nutrients.dc.html" aria-current="{{n.current}}" style="min-height: 64px; padding: 0 10px; border-radius: 18px; background: {{n.rowBg}}; display: flex; align-items: center; gap: 12px; text-decoration: none; color: {{c.ink}}">
+              <span aria-hidden="true" style="width: 42px; height: 42px; border-radius: 13px; background: {{n.tile}}; display: flex; align-items: center; justify-content: center; flex: none">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{n.tint}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{n.icon}}"></path></svg>
+              </span>
+              <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+                <span style="font-size: 16px; font-weight: 600">{{n.name}}</span>
+                <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: {{c.ink2}}">
+                  <span style="padding: 2px 7px; border-radius: 6px; background: {{c.pill}}; font-size: 11px; font-weight: 700; color: {{c.pillInk}}">{{n.goal}}</span>
+                  <span>{{n.target}}</span>
+                  <sc-if value="{{n.hasReminder}}" hint-placeholder-val="{{false}}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{c.ink2}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Has reminders" role="img"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"></path></svg>
+                  </sc-if>
+                </span>
+              </span>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+    <button style="margin-top: 14px; width: 100%; height: 52px; border-radius: 18px; border: 1.5px dashed {{c.dash}}; background: transparent; display: flex; align-items: center; justify-content: center; gap: 8px; font: 600 15px -apple-system, system-ui, sans-serif; color: {{c.link}}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3zM12 12v4M10 14h4"></path></svg>
+      New group
+    </button>
+  </aside>
+
+  <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+    <div style="position: absolute; left: {{SB}}px; width: {{DW}}px; top: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 0 32px; box-sizing: border-box">
+      <span aria-hidden="true" style="width: 64px; height: 64px; border-radius: 20px; background: {{c.emptyTile}}; display: flex; align-items: center; justify-content: center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="{{c.on}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M21 19H3"></path></svg>
+      </span>
+      <h2 style="margin: 4px 0 0 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em">Select a nutrient</h2>
+      <p style="margin: 0; max-width: 300px; font-size: 15px; line-height: 21px; color: {{c.ink2}}">Its trends, weekday pattern, supply and Apple Health patterns show up here.</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{selected}}" hint-placeholder-val="{{true}}">
+    <main style="position: absolute; left: {{DX}}px; width: {{DC}}px; top: {{top}}px">
+      <div style="display: flex; align-items: center; gap: 14px; padding: 0 4px">
+        <span aria-hidden="true" style="width: 52px; height: 52px; border-radius: 16px; background: {{c.sunTile}}; display: flex; align-items: center; justify-content: center; flex: none">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{{c.sunInk}}" stroke-width="2" stroke-linecap="round"><path d="{{I.sun}}"></path></svg>
+        </span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+          <h2 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em">Vitamin D</h2>
+          <div style="font-size: 14px; color: {{c.ink2}}">At least 4,000 IU a day · Morning stack</div>
+        </div>
+        <button style="height: 44px; padding: 0 16px; border-radius: 22px; border: 0; background: {{c.glass}}; font: 600 16px -apple-system, system-ui, sans-serif; color: {{c.link}}">Edit</button>
+      </div>
+
+      <div role="tablist" aria-label="Period" style="margin-top: 18px; padding: 3px; border-radius: 14px; background: {{c.seg}}; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; max-width: 420px">
+        <button role="tab" aria-selected="true" style="height: 36px; border-radius: 11px; border: 0; background: {{c.segOn}}; box-shadow: 0 1px 3px rgba(14,26,19,0.12); font: 600 14px -apple-system, system-ui, sans-serif; color: {{c.ink}}">7 days</button>
+        <button role="tab" aria-selected="false" style="height: 36px; border-radius: 11px; border: 0; background: transparent; font: 600 14px -apple-system, system-ui, sans-serif; color: {{c.ink2}}">30 days</button>
+        <button role="tab" aria-selected="false" style="height: 36px; border-radius: 11px; border: 0; background: transparent; font: 600 14px -apple-system, system-ui, sans-serif; color: {{c.ink2}}">90 days</button>
+      </div>
+
+      <section style="margin-top: 14px; padding: 18px; border-radius: 24px; background: {{c.card}}; box-shadow: {{c.shadow}}">
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">Hit rate</span>
+            <span style="font: 700 28px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: -0.02em">83<span style="font-size: 17px; color: {{c.ink2}}">%</span></span>
+            <span style="font-size: 12px; color: {{c.ink2}}">5 of 6 days</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">Daily avg</span>
+            <span style="font: 700 28px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: -0.02em">3,830</span>
+            <span style="font-size: 12px; color: {{c.ink2}}">IU</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">Best day</span>
+            <span style="font: 700 28px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: -0.02em">5,000</span>
+            <span style="font-size: 12px; color: {{c.ink2}}">Friday</span>
+          </div>
+        </div>
+        <div style="margin-top: 18px; position: relative; height: {{chartH}}px">
+          <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: {{goalTop}}px; border-top: 1.5px dashed {{c.chev}}"></div>
+          <div aria-hidden="true" style="position: absolute; right: 0; top: {{goalLabelTop}}px; font: 600 11px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink2}}">Goal 4,000</div>
+          <div role="img" aria-label="Daily Vitamin D intake, last 7 days" style="position: absolute; inset: 0 0 22px 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: {{barGap}}px; align-items: end">
+            <sc-for list="{{bars}}" as="b" hint-placeholder-count="7">
+              <div style="height: {{b.h}}; border-radius: 10px; background: {{b.fill}}; border: {{b.border}}; box-sizing: border-box"></div>
+            </sc-for>
+          </div>
+          <div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: {{barGap}}px">
+            <sc-for list="{{bars}}" as="b" hint-placeholder-count="7">
+              <span style="text-align: center; font-size: 12px; font-weight: 600; color: {{b.labelColor}}">{{b.label}}</span>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <div style="margin-top: 12px; display: grid; grid-template-columns: {{pairCols}}; gap: 12px; align-items: start">
+        <section style="padding: 18px; border-radius: 24px; background: {{c.card}}; box-shadow: {{c.shadow}}">
+          <div style="display: flex; align-items: baseline; justify-content: space-between">
+            <h3 style="margin: 0; font-size: 17px; font-weight: 700">Weekday pattern</h3>
+            <span style="font-size: 12px; color: {{c.ink2}}">Last 4 weeks</span>
+          </div>
+          <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
+            <sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 6px">
+                <div style="width: 100%; aspect-ratio: 1; border-radius: 12px; background: {{d.fill}}; display: flex; align-items: center; justify-content: center; font: 700 12px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{d.ink}}">{{d.pct}}</div>
+                <span style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">{{d.label}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <p style="margin: 14px 0 0 0; font-size: 14px; line-height: 20px">Sundays are your weakest day — <span style="color: {{c.ink2}}">a 10:00 reminder on weekends could help.</span></p>
+        </section>
+
+        <section aria-label="Supply" style="padding: 18px; border-radius: 24px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between">
+            <h3 style="margin: 0; font-size: 17px; font-weight: 700">Supply</h3>
+            <button style="height: 32px; padding: 0; border: 0; background: transparent; font: 600 15px -apple-system, system-ui, sans-serif; color: {{c.link}}">Edit</button>
+          </div>
+          <div style="display: flex; align-items: baseline; gap: 6px">
+            <span style="font: 700 34px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.amberInk}}">6</span>
+            <span style="font-size: 17px; font-weight: 600; color: {{c.amberInk}}">days left</span>
+            <span style="flex: 1"></span>
+            <span style="font-size: 13px; color: {{c.ink2}}"><span style="font: 700 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink}}">12</span> of 120 softgels</span>
+          </div>
+          <div role="img" aria-label="12 of 120 servings left" style="position: relative; height: 12px; border-radius: 6px; background: {{c.chip}}">
+            <span style="position: absolute; left: 0; top: 0; bottom: 0; width: 10%; border-radius: 6px; background: #E08A1E"></span>
+            <span aria-hidden="true" style="position: absolute; left: 11.7%; top: -3px; bottom: -3px; width: 2px; border-radius: 1px; background: {{c.ink2}}"></span>
+          </div>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: {{c.ink2}}">At your usual <span style="font: 700 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink}}">2,000 IU</span> a day. Reminder at 7 days left.</p>
+          <button style="height: 50px; border-radius: 16px; border: 1.5px solid {{c.ghost}}; background: transparent; color: {{c.ink}}; font: 600 16px -apple-system, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"></path></svg>
+            Refilled
+          </button>
+        </section>
+      </div>
+
+      <section aria-label="With Apple Health" style="margin-top: 12px; padding: 18px; border-radius: 24px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E2674A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"></path></svg>
+          <h3 style="margin: 0; font-size: 17px; font-weight: 700; flex: 1">With Apple Health</h3>
+          <span style="font-size: 12px; color: {{c.ink2}}">Last 28 days</span>
+        </div>
+        <p style="margin: 0; font-size: 15px; line-height: 21px">On days you hit your Vitamin D goal, you seem to sleep about 20 minutes longer on average.</p>
+        <div role="img" aria-label="Sleep 7 hours 20 minutes on goal days, 7 hours on other days" style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) 64px; align-items: center; gap: 8px">
+            <span style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">Goal days</span>
+            <span style="height: 12px; border-radius: 6px; background: {{c.chip}}; display: block"><span style="display: block; height: 12px; width: 92%; border-radius: 6px; background: #E5A500"></span></span>
+            <span style="text-align: right; font: 700 13px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">7 h 20</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) 64px; align-items: center; gap: 8px">
+            <span style="font-size: 12px; font-weight: 600; color: {{c.ink2}}">Other days</span>
+            <span style="height: 12px; border-radius: 6px; background: {{c.chip}}; display: block"><span style="display: block; height: 12px; width: 88%; border-radius: 6px; background: {{c.sunSoft}}"></span></span>
+            <span style="text-align: right; font: 700 13px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">7 h 00</span>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: {{c.ink2}}">Based on 23 goal days and 5 other days. Patterns in your own data, not causes.</span>
+      </section>
+    </main>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"empty":{"editor":"boolean","default":false},"dev":{"editor":"enum","options":["ipad","duoIn"],"default":"ipad"},"w":{"editor":"int","default":834},"h":{"editor":"int","default":1210},"$preview":{"width":834,"height":1210}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var P = this.props;
+    var W = Number(P.w ?? 834), H = Number(P.h ?? 1210), dev = String(P.dev ?? 'ipad'), D = !!P.dark, E = !!P.empty;
+    var c = D ? {
+      bg: '#0A130E', card: '#142019', ink: '#EAF2EC', ink2: '#97AA9E', ghost: '#2C4035', chip: 'rgba(255,255,255,0.08)', chev: '#5F7268', divider: '#22332A',
+      shadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)', btn: '#1EB955', btnInk: '#0A130E', link: '#5BD88A', amberInk: '#F0B35A', dash: '#2C4035',
+      glass: 'rgba(28,42,34,0.78)', glassBorder: 'rgba(255,255,255,0.08)', onBg: 'rgba(30,185,85,0.16)', on: '#7BE3A0', selBg: 'rgba(30,185,85,0.16)',
+      pill: 'rgba(255,255,255,0.08)', pillInk: '#C4D3C9', seg: 'rgba(255,255,255,0.08)', segOn: '#22332A', emptyTile: 'rgba(30,185,85,0.16)',
+      sunTile: 'rgba(229,165,0,0.2)', sunInk: '#E5A500', sunSoft: 'rgba(229,165,0,0.35)', tileA: '33'
+    } : {
+      bg: '#F2F4EF', card: '#FFFFFF', ink: '#0E1A13', ink2: '#56655C', ghost: '#D5DCD3', chip: 'rgba(14,26,19,0.07)', chev: '#9AA69F', divider: '#D5DCD3',
+      shadow: '0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)', btn: '#1B3B2D', btnInk: '#FFFFFF', link: '#1B3B2D', amberInk: '#9A5A0C', dash: '#B9C4BC',
+      glass: 'rgba(255,255,255,0.8)', glassBorder: 'rgba(14,26,19,0.08)', onBg: 'rgba(27,59,45,0.10)', on: '#1B3B2D', selBg: 'rgba(27,59,45,0.10)',
+      pill: '#EEF1EC', pillInk: '#3D4B43', seg: '#E3E8E1', segOn: '#FFFFFF', emptyTile: 'rgba(27,59,45,0.10)',
+      sunTile: '#FCF1D2', sunInk: '#B07E00', sunSoft: '#F5DFA0', tileA: '2E'
+    };
+    var I = {
+      sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+      fish: 'M2.5 12c2.8-3.6 7.5-5 11.5-3.2L18.5 6v12L14 15.2C10 17 5.3 15.6 2.5 12z',
+      pill: 'M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7zM7 7l7 7',
+      drop: 'M12 3c0 0 6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+      dumbbell: 'M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11',
+      cup: 'M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2.5M12 3.5v2.5'
+    };
+    var wide = W >= 1000;
+    var SB, top, sbPadL, sbPadR, DX, DC, DW;
+    if (dev === 'duoIn') { SB = W / 2; top = 28; sbPadL = 20; sbPadR = 16; DW = W - SB - 84; DX = SB + 16; DC = DW - 16; }
+    else {
+      SB = wide ? 380 : 340; top = 92; sbPadL = wide ? 24 : 20; sbPadR = wide ? 24 : 20; DW = W - SB;
+      var pad = wide ? 40 : 24; DC = Math.min(760, DW - 2 * pad); DX = SB + (DW - DC) / 2;
+    }
+    var T = { amber: '#E5A500', teal: '#13A39C', indigo: '#6B5BE0', blue: '#2F80ED', coral: '#E2674A', brown: '#9B6A45' };
+    function n(name, icon, t, goal, target, rem, sel) {
+      return { name: name, icon: I[icon], tint: T[t], tile: T[t] + c.tileA, goal: goal, target: target, hasReminder: rem,
+        rowBg: sel ? c.selBg : 'transparent', current: sel ? 'page' : 'false' };
+    }
+    var sel = !E;
+    var groups = [
+      { name: 'Morning stack', count: '3', items: [
+        n('Vitamin D', 'sun', 'amber', 'AT LEAST', '4,000 IU', true, sel),
+        n('Omega-3', 'fish', 'teal', 'AT LEAST', '2,000 mg', true, false),
+        n('Magnesium', 'pill', 'indigo', 'AT LEAST', '400 mg', false, false) ] },
+      { name: 'Through the day', count: '3', items: [
+        n('Water', 'drop', 'blue', 'AT LEAST', '2.5 L', true, false),
+        n('Protein', 'dumbbell', 'coral', 'BETWEEN', '120–160 g', false, false),
+        n('Caffeine', 'cup', 'brown', 'AT MOST', '400 mg', false, false) ] }
+    ];
+    var chartH = wide ? 240 : 170, plotH = chartH - 22;
+    var vals = [4000, 4000, 2000, 5000, 4000, 4000, 2000], labels = ['T', 'W', 'T', 'F', 'S', 'S', 'Today'];
+    var bars = vals.map(function (v, i) {
+      var today = i === vals.length - 1, hit = v >= 4000;
+      return { h: Math.round(v / 6000 * (plotH - 4)) + 'px', fill: today ? 'transparent' : (hit ? '#E5A500' : c.sunSoft),
+        border: today ? '2px dashed #E5A500' : '0', label: labels[i], labelColor: today ? c.ink : c.ink2 };
+    });
+    var goalTop = Math.round(plotH - 4000 / 6000 * (plotH - 4));
+    var pcts = [100, 75, 100, 50, 100, 75, 25], days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    var week = pcts.map(function (p, i) {
+      var fill = D ? (p === 100 ? '#E5A500' : p >= 75 ? 'rgba(229,165,0,0.62)' : p >= 50 ? 'rgba(229,165,0,0.36)' : 'rgba(229,165,0,0.18)')
+                   : (p === 100 ? '#E5A500' : p >= 75 ? '#F2CC5E' : p >= 50 ? '#F7E2A6' : '#FBF0D3');
+      var ink = D ? (p >= 75 ? '#1A1300' : '#F0D58A') : '#3A2A00';
+      return { pct: p + '%', label: days[i], fill: fill, ink: ink };
+    });
+    return {
+      W: W, H: H, c: c, I: I, SB: SB, top: top, sbPadL: sbPadL, sbPadR: sbPadR, DX: DX, DC: DC, DW: DW,
+      topBar: dev === 'ipad', sideBar: dev !== 'ipad', empty: E, selected: !E, groups: groups,
+      chartH: chartH, goalTop: goalTop, goalLabelTop: goalTop - 18, barGap: wide ? 16 : 10, bars: bars, week: week,
+      pairCols: DC >= 656 ? 'repeat(2, minmax(0, 1fr))' : 'minmax(0, 1fr)'
+    };
+  }
+}
+</script>
+</body>
+</html>

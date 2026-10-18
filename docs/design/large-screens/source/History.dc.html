@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — History, calendar and day detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: {{W}}px; height: {{H}}px; position: relative; overflow: hidden; background: {{c.bg}}; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+
+  <sc-if value="{{topBar}}" hint-placeholder-val="{{true}}">
+    <nav aria-label="Tabs" style="position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; gap: 2px; padding: 4px; border-radius: 24px; background: {{c.glass}}; border: 1px solid {{c.glassBorder}}; backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 10px 28px -14px rgba(14,26,19,0.35)">
+      <a href="Main.dc.html" style="height: 36px; padding: 0 18px; border-radius: 18px; color: {{c.ink2}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">Today</a>
+      <a href="Nutrients.dc.html" style="height: 36px; padding: 0 18px; border-radius: 18px; color: {{c.ink2}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">Nutrients</a>
+      <a href="History.dc.html" aria-current="page" style="height: 36px; padding: 0 18px; border-radius: 18px; background: {{c.onBg}}; color: {{c.on}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">History</a>
+    </nav>
+  </sc-if>
+
+  <sc-if value="{{sideBar}}" hint-placeholder-val="{{false}}">
+    <nav aria-label="Tabs" style="position: absolute; right: 24px; top: 50%; transform: translateY(-50%); z-index: 2; width: 48px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 4px; border-radius: 24px; background: {{c.glass}}; border: 1px solid {{c.glassBorder}}; backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 10px 28px -14px rgba(14,26,19,0.35)">
+      <a href="Main.dc.html" aria-label="Today" style="width: 40px; height: 40px; border-radius: 20px; color: {{c.ink2}}; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path><path d="M12 8a4 4 0 1 0 4 4"></path></svg>
+      </a>
+      <a href="Nutrients.dc.html" aria-label="Nutrients" style="width: 40px; height: 40px; border-radius: 20px; color: {{c.ink2}}; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19C5 10.5 11 5 20 4c0 9-5.5 15-14 15zM5 19l7-7"></path></svg>
+      </a>
+      <a href="History.dc.html" aria-label="History" aria-current="page" style="width: 40px; height: 40px; border-radius: 20px; background: {{c.onBg}}; color: {{c.on}}; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v15H4zM4 10h16M8 3v4M16 3v4"></path></svg>
+      </a>
+    </nav>
+  </sc-if>
+
+  <aside aria-label="Calendar" style="position: absolute; left: 0; top: 0; bottom: 0; width: {{SB}}px; box-sizing: border-box; padding: {{top}}px {{sbPadR}}px 0 {{sbPadL}}px; border-right: 1px solid {{c.divider}}; display: flex; flex-direction: column">
+    <div style="padding: 0 4px; display: flex; align-items: flex-end; justify-content: space-between">
+      <h1 style="margin: 0; font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: -0.02em">History</h1>
+      <div style="display: flex; gap: 8px">
+        <a href="History.dc.html" aria-label="Report for your doctor" style="width: 44px; height: 44px; border-radius: 22px; background: {{c.glass}}; display: flex; align-items: center; justify-content: center">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{c.ink}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6"></path></svg>
+        </a>
+        <button aria-label="Profile menu" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: {{c.avatarBg}}; color: {{c.avatarInk}}; font: 600 17px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">A</button>
+      </div>
+    </div>
+
+    <section style="margin-top: 16px; padding: 18px 20px; border-radius: 24px; background: #1B3B2D; color: #FFFFFF; display: flex; align-items: center; gap: 16px">
+      <span aria-hidden="true" style="width: 52px; height: 52px; border-radius: 26px; background: rgba(123,227,160,0.16); display: flex; align-items: center; justify-content: center; flex: none">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#7BE3A0"><path d="M12 3c.8 3 4.5 4.8 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2.2 1.2-3.6 2.2-4.5.3 1.6 1.1 2.6 2.1 2.6-.3-2.6-.6-4.9.2-7.6z"></path></svg>
+      </span>
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+        <span style="font: 700 28px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">10 days</span>
+        <span style="font-size: 13px; color: #B7CCBF">Current streak</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-left: 16px; border-left: 1px solid rgba(255,255,255,0.14)">
+        <span style="font: 700 22px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">31</span>
+        <span style="font-size: 13px; color: #B7CCBF">Best</span>
+      </div>
+    </section>
+
+    <a href="History.dc.html" style="margin-top: 12px; padding: 12px 14px; border-radius: 22px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; align-items: center; gap: 12px; text-decoration: none; color: {{c.ink}}">
+      <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: {{c.indigoTile}}; display: flex; align-items: center; justify-content: center; flex: none">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="{{c.indigoInk}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v15H4zM4 10h16M8 3v4M16 3v4M8 14h4"></path></svg>
+      </span>
+      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+        <span style="font-size: 16px; font-weight: 600">Weekly recaps</span>
+        <span style="font-size: 13px; color: {{c.ink2}}">Latest: 5 – 11 October · 31 of 42 goals</span>
+      </span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{c.chev}}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+    </a>
+
+    <section aria-label="October 2026" style="margin-top: 12px; padding: 16px 14px 14px 14px; border-radius: 24px; background: {{c.card}}; box-shadow: {{c.shadow}}">
+      <h2 style="margin: 0 0 10px 0; text-align: center; font-size: 17px; font-weight: 700">October 2026</h2>
+      <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-bottom: 4px">
+        <sc-for list="{{dow}}" as="d" hint-placeholder-count="7">
+          <span style="text-align: center; font-size: 12px; font-weight: 600; color: {{c.ink2}}">{{d}}</span>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+        <sc-for list="{{days}}" as="d" hint-placeholder-count="35">
+          <div style="height: 42px; display: flex; align-items: center; justify-content: center">
+            <sc-if value="{{d.real}}" hint-placeholder-val="{{true}}">
+              <button aria-label="{{d.label}}" aria-pressed="{{d.pressed}}" style="width: 38px; height: 38px; padding: 0; border-radius: 19px; background: {{d.fill}}; border: {{d.border}}; box-shadow: {{d.ring}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font: 600 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{d.ink}}">{{d.n}}</button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </aside>
+
+  <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+    <div style="position: absolute; left: {{SB}}px; width: {{DW}}px; top: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 0 32px; box-sizing: border-box">
+      <span aria-hidden="true" style="width: 64px; height: 64px; border-radius: 20px; background: {{c.onBg}}; display: flex; align-items: center; justify-content: center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="{{c.on}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v15H4zM4 10h16M8 3v4M16 3v4M9 15l2 2 4-4"></path></svg>
+      </span>
+      <h2 style="margin: 4px 0 0 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em">Pick a day</h2>
+      <p style="margin: 0; max-width: 300px; font-size: 15px; line-height: 21px; color: {{c.ink2}}">Tap a date in the calendar to see which goals you met.</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{selected}}" hint-placeholder-val="{{true}}">
+    <main style="position: absolute; left: {{DX}}px; width: {{DC}}px; top: {{top}}px">
+      <div style="padding: 0 4px; display: flex; flex-direction: column; gap: 2px">
+        <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{c.ink2}}">Thursday</div>
+        <h2 style="margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em">1 October</h2>
+      </div>
+      <section style="margin-top: 16px; padding: 16px 18px; border-radius: 22px; background: {{c.card}}; display: flex; align-items: center; gap: 16px; box-shadow: {{c.shadow}}">
+        <svg width="64" height="64" viewBox="0 0 116 116" role="img" aria-label="4 of 6 goals met">
+          <sc-for list="{{segments}}" as="s" hint-placeholder-count="6">
+            <circle cx="58" cy="58" r="50" fill="none" stroke="{{s.color}}" stroke-width="14" stroke-linecap="round" stroke-dasharray="32.4 281.8" stroke-dashoffset="{{s.offset}}" transform="rotate(-90 58 58)"></circle>
+          </sc-for>
+        </svg>
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font: 700 24px/1.1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">4 of 6 goals</span>
+          <span style="font-size: 14px; color: {{c.ink2}}">Missed Omega-3 and Protein</span>
+        </div>
+      </section>
+      <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 8px">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+          <button style="width: 100%; border: 0; text-align: left; padding: 14px 16px; border-radius: 20px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; align-items: center; gap: 12px; font-family: inherit; color: {{c.ink}}">
+            <span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 12px; background: {{r.tile}}; display: flex; align-items: center; justify-content: center; flex: none">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{r.tint}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{r.icon}}"></path></svg>
+            </span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+              <span style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px">
+                <span style="font-size: 16px; font-weight: 600">{{r.name}}</span>
+                <span style="font-size: 13px; color: {{c.ink2}}"><span style="font: 700 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink}}">{{r.cur}}</span> {{r.of}}</span>
+              </span>
+              <span aria-hidden="true" style="height: 8px; border-radius: 4px; background: {{c.line}}; display: block; overflow: hidden">
+                <span style="display: block; height: 8px; width: {{r.w}}; border-radius: 4px; background: {{r.tint}}"></span>
+              </span>
+            </span>
+            <span role="img" aria-label="{{r.hitLabel}}" style="width: 24px; height: 24px; border-radius: 12px; background: {{r.badgeBg}}; display: flex; align-items: center; justify-content: center; flex: none">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{r.badgeInk}}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.badge}}"></path></svg>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+    </main>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"empty":{"editor":"boolean","default":false},"dev":{"editor":"enum","options":["ipad","duoIn"],"default":"ipad"},"w":{"editor":"int","default":834},"h":{"editor":"int","default":1210},"$preview":{"width":834,"height":1210}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var P = this.props;
+    var W = Number(P.w ?? 834), H = Number(P.h ?? 1210), dev = String(P.dev ?? 'ipad'), D = !!P.dark, E = !!P.empty;
+    var c = D ? {
+      bg: '#0A130E', card: '#142019', ink: '#EAF2EC', ink2: '#97AA9E', line: '#22332A', chev: '#5F7268', divider: '#22332A',
+      shadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)', glass: 'rgba(28,42,34,0.8)', glassBorder: 'rgba(255,255,255,0.08)', onBg: 'rgba(30,185,85,0.16)', on: '#7BE3A0',
+      avatarBg: '#1B3B2D', avatarInk: '#7BE3A0', indigoTile: 'rgba(107,91,224,0.22)', indigoInk: '#8E81EE',
+      partial: 'rgba(30,185,85,0.22)', future: '#5F7268', dayInk: '#EAF2EC', todayRing: '#1EB955', selFill: '#EAF2EC', selInk: '#0A130E', missTrack: '#22332A', badgeOff: '#22332A', tileA: '33'
+    } : {
+      bg: '#F2F4EF', card: '#FFFFFF', ink: '#0E1A13', ink2: '#56655C', line: '#EEF1EC', chev: '#9AA69F', divider: '#D5DCD3',
+      shadow: '0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)', glass: 'rgba(255,255,255,0.8)', glassBorder: 'rgba(14,26,19,0.08)', onBg: 'rgba(27,59,45,0.10)', on: '#1B3B2D',
+      avatarBg: '#DCE7DF', avatarInk: '#1B3B2D', indigoTile: '#E6E3FB', indigoInk: '#5A4BCF',
+      partial: '#CDEFD8', future: '#9AA69F', dayInk: '#0E1A13', todayRing: '#1B3B2D', selFill: '#1B3B2D', selInk: '#FFFFFF', missTrack: '#E3E8E1', badgeOff: '#EEF1EC', tileA: '2E'
+    };
+    var wide = W >= 1000;
+    var SB, top, sbPadL, sbPadR, DX, DC, DW;
+    if (dev === 'duoIn') { SB = W / 2; top = 28; sbPadL = 20; sbPadR = 16; DW = W - SB - 84; DX = SB + 16; DC = DW - 16; }
+    else {
+      SB = wide ? 380 : 340; top = 92; sbPadL = wide ? 24 : 20; sbPadR = wide ? 24 : 20; DW = W - SB;
+      var pad = wide ? 40 : 24; DC = Math.min(640, DW - 2 * pad); DX = SB + (DW - DC) / 2;
+    }
+    var sel = !E;
+    var days = [];
+    for (var b = 0; b < 3; b++) days.push({ real: false });
+    for (var d = 1; d <= 31; d++) {
+      var x = { real: true, n: String(d), fill: 'transparent', border: '0', ring: 'none', ink: c.future, pressed: 'false', label: d + ' October' };
+      if (d === 1 || d === 3) { x.fill = c.partial; x.ink = c.dayInk; x.label += ', some goals met'; }
+      else if (d <= 13) { x.fill = '#1EB955'; x.ink = '#0E1A13'; x.label += ', all goals met'; }
+      else if (d === 14) { x.fill = c.partial; x.border = '2px solid ' + c.todayRing; x.ink = c.dayInk; x.label += ', today'; }
+      if (d === 1 && sel) { x.fill = c.selFill; x.ink = c.selInk; x.ring = '0 0 0 2px ' + c.card + ', 0 0 0 4px ' + c.selFill; x.pressed = 'true'; }
+      days.push(x);
+    }
+    var I = {
+      sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+      fish: 'M2.5 12c2.8-3.6 7.5-5 11.5-3.2L18.5 6v12L14 15.2C10 17 5.3 15.6 2.5 12z',
+      pill: 'M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7zM7 7l7 7',
+      drop: 'M12 3c0 0 6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+      dumbbell: 'M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11',
+      cup: 'M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2.5M12 3.5v2.5'
+    };
+    var CHECK = 'M5 12.5l4.5 4.5L19 7.5', DASH = 'M6 12h12';
+    function r(name, icon, tint, frac, cur, of, hit) {
+      return { name: name, icon: I[icon], tint: tint, tile: tint + c.tileA, w: Math.round(Math.min(frac, 1) * 100) + '%', cur: cur, of: of,
+        badge: hit ? CHECK : DASH, badgeBg: hit ? '#1EB955' : c.badgeOff, badgeInk: hit ? '#0E1A13' : c.ink2, hitLabel: hit ? 'Goal met' : 'Goal missed' };
+    }
+    var met = [true, true, true, true, false, false];
+    var segments = met.map(function (m, i) { return { color: m ? '#1EB955' : c.missTrack, offset: (-(i * 52.36) - 10).toFixed(2) }; });
+    return {
+      W: W, H: H, c: c, SB: SB, top: top, sbPadL: sbPadL, sbPadR: sbPadR, DX: DX, DC: DC, DW: DW,
+      topBar: dev === 'ipad', sideBar: dev !== 'ipad', empty: E, selected: sel,
+      dow: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], days: days, segments: segments,
+      rows: [
+        r('Vitamin D', 'sun', '#E5A500', 1, '4,000', '/ 4,000 IU', true),
+        r('Omega-3', 'fish', '#13A39C', 0.5, '1,000', '/ 2,000 mg', false),
+        r('Magnesium', 'pill', '#6B5BE0', 1, '400', '/ 400 mg', true),
+        r('Water', 'drop', '#2F80ED', 1, '2.6', '/ 2.5 L', true),
+        r('Protein', 'dumbbell', '#E2674A', 0.65, '104', '/ 120–160 g', false),
+        r('Caffeine', 'cup', '#9B6A45', 0.6, '240', 'max 400 mg', true)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
