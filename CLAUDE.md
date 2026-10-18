@@ -254,7 +254,7 @@ nutrx/
 │   │   │   ├── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
 │   │   │   └── PlanChip.swift               # Today's Free / PRO chip and the "Enjoy nutrx Pro" sheet (#101).
 │   │   └── ViewModels/
-│   │       ├── ProFeature.swift             # The five Pro features; `listed` = shipped ones only.
+│   │       ├── ProFeature.swift             # The six Pro features (courses since 2.2); `listed` = shipped ones only.
 │   │       └── ProText.swift                # Paywall / status copy (pure).
 │   │
 │   └── Profile/
@@ -697,7 +697,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 ## Monetisation
 
 - Free with no ads. **nutrx Pro** is an optional subscription (or lifetime purchase) that only *adds* things around tracking. Nothing that's free today becomes Pro.
-- **What Pro is:** $1.99 a month, $14.99 a year with a one-week free trial, or $29.99 once (`docs/pro/PLAN.md`, agreed 2026-10-14; designer prompts in `docs/pro/DESIGN-PROMPTS.md`). Five features, all built for 2.1: supply & refills, label scanning, weekly recap, Apple Health trends and the report for your doctor (their sections follow). Everything in 2.0 stays free, and so do stacks, Siri logging and export.
+- **What Pro is:** $1.99 a month, $14.99 a year with a one-week free trial, or $29.99 once (`docs/pro/PLAN.md`, agreed 2026-10-14; designer prompts in `docs/pro/DESIGN-PROMPTS.md`). Five features built for 2.1: supply & refills, label scanning, weekly recap, Apple Health trends and the report for your doctor; courses came in 2.2 (their sections follow). Everything in 2.0 stays free, and so do stacks, Siri logging and export.
 - **Rules that stay:** StoreKit 2 verifies on the device; no receipt or entitlement leaves it or goes into SwiftData, iCloud or UserDefaults; AI runs on the device only (Foundation Models), with a non-AI path or a clear "needs Apple Intelligence" mark (label scanning and recaps have a non-AI path), and nothing is charged for what the device can't run; Health data is read live and never stored. A Pro entry point is a `ProGatedButton` (PRO chip + paywall), never a lock or a wall, and nothing free may become Pro: check this in every PR.
 - **Launched** with 2.1 on 2026-10-16 (tag `v2.1`, build 59): the three products were approved with the version, and the store listing, review notes and website carry the Pro section and the "everything else stays free" line. First-time products can't be attached by the public API: they go into the review draft from the web UI (each product and the subscription group), then the version is added and submitted by API.
 - The old "no paywall / StoreKit / AI before MVP 4" guardrail is retired.
@@ -723,7 +723,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - At accessibility sizes the button scrolls with the content.
   - The paywall never claims a store it can't reach, and never says nothing was charged.
   - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
-- **`ProFeature`**: the five Pro features with titles, symbols and tints. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all five until one ships, to check the design. All five are shipped since phase 8.
+- **`ProFeature`**: the Pro features with titles, symbols and tints (six since courses, #147). A new Pro feature gets a case here, or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2).
 - **Settings:** `ProSettingsCard` sits under the profile card, only when `isStoreVisible` is true.
   - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Supply and label scan" now, a plain list for two or three, and "… and more" only from four) with **Learn more**, which opens the paywall.
   - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.
@@ -848,6 +848,7 @@ A nutrient taken for a set time ("for 5 days", "until 24 Oct").
 - **Form:** a **Duration** row after Reminders (`ProGatedButton`; free users see the PRO chip) opens `DurationSheet`: Ongoing, For days (a stepper, counting today) or Until a date (today on). It writes `NutrientDraft.endDate`; `insertNutrient` / `apply` save it and reschedule reminders. The row reads `CourseText.summary`.
 - **My Nutrients:** ended courses leave their group for a collapsed **Finished** section at the end (newest first, "FINISHED 2"), with "Ended 24 Oct" in place of the goal. No bell (their reminders have stopped). Long-press: **Restart** (back to ongoing and onto Today, reminders back), Edit Nutrient, Delete. Analytics still open. Select mode hides the section, and Select All picks only running nutrients.
 - **If Pro lapses:** existing end dates keep working (nothing reappears on Today); setting one needs Pro.
+- **Paywall:** listed as `ProFeature.courses` ("Courses", "Take something for a set time", green `hourglass`), so the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line include it (#147).
 - Not built: a "Last day" line on Today's card (#128).
 
 ### nutrx Pro: Report for your doctor (phase 8)
