@@ -73,9 +73,9 @@ AI runs on the device only.
 | Streak freeze / grace period | 📋 Later, outside the plan (#125) |
 | Shareable streak card | 📋 Later, outside the plan (#126) |
 
-### v2.2 — Quality of life 🚧
+### v2.2 — Quality of life ✅
 
-On TestFlight (build 63, 17 Oct 2026); App Store steps in #123.
+Released on the App Store on 18 Oct 2026 (build 63, phased release; tag `v2.2`).
 
 | Feature | Status |
 |---|---|
@@ -89,7 +89,7 @@ On TestFlight (build 63, 17 Oct 2026); App Store steps in #123.
 | iCloud Sync switch works, per device | ✅ Fixed (#113) |
 | "0 of 1 goal met" wording | ✅ Fixed (#115) |
 | VoiceOver in Settings (Groups +, About) | ✅ Fixed (#120) |
-| App Store release | 📋 #123 |
+| App Store release | ✅ Shipped (v2.2, 18 Oct 2026) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 

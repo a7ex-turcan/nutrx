@@ -876,7 +876,7 @@ Every item here has an issue, so GitHub issues are the one list of what's left (
 
 **Deferred:** Localisation (#129), iPad-specific layout (#130)
 
-**Next release:** 2.2 is on TestFlight (build 63); the App Store steps are in #123.
+**Last release:** 2.2 on 2026-10-18 (build 63, tag `v2.2`, phased release; website updated). Courses still needs to be listed on the paywall (#147).
 
 ---
 
