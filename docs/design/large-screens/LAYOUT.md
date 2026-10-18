@@ -1,6 +1,6 @@
 # nutrx — large-screen layout rules
 
-The v2 visual system doesn't change: same tokens, cards, rings and radii. Only the layout changes. Every number is in points. Artboards are drawn in points, and `screens@2x/` holds the 2x exports.
+The v2 visual system doesn't change: same tokens, cards, rings and radii. Only the layout changes. Every number is in points. Artboards are drawn in points, and `screens/` holds the 2x exports (named `screens@2x/` in the original zip).
 
 ## Canvases
 
