@@ -1,12 +1,13 @@
 import Foundation
 
-/// What nutrx Pro adds (docs/pro/PLAN.md, D5 order), as the paywall and the Pro screen list them.
+/// What nutrx Pro adds (docs/pro/PLAN.md, D5 order, then courses from 2.2), as the paywall and the Pro screen list them.
 enum ProFeature: String, CaseIterable, Identifiable {
     case supply
     case scan
     case recap
     case health
     case report
+    case courses
 
     var id: Self { self }
 
@@ -17,6 +18,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .recap: "Weekly recap"
         case .health: "Trends with Apple Health"
         case .report: "A report for your doctor"
+        case .courses: "Courses"
         }
     }
 
@@ -32,6 +34,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .recap: "Your week, summarised"
         case .health: "Intake against sleep and workouts"
         case .report: "A PDF of any period"
+        case .courses: "Take something for a set time"
         }
     }
 
@@ -43,6 +46,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .recap: "recaps"
         case .health: "Health trends"
         case .report: "doctor reports"
+        case .courses: "courses"
         }
     }
 
@@ -54,6 +58,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .recap: "weekly recaps"
         case .health: "Apple Health trends"
         case .report: "doctor reports"
+        case .courses: "courses"
         }
     }
 
@@ -62,7 +67,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         switch self {
         case .scan: "label scanning"
         case .recap: "recaps"
-        case .supply, .health, .report: nil
+        case .supply, .health, .report, .courses: nil
         }
     }
 
@@ -73,6 +78,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .recap: "calendar"
         case .health: "heart"
         case .report: "doc.text"
+        case .courses: "calendar.badge.checkmark"
         }
     }
 
@@ -83,10 +89,11 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .recap: .indigo
         case .health: .coral
         case .report: .blue
+        case .courses: .green
         }
     }
 
-    /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8: all five).
+    /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, and courses since 2.2: all six).
     var isShipped: Bool {
         true
     }

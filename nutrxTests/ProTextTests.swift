@@ -94,12 +94,19 @@ final class ProTextTests: XCTestCase {
         XCTAssertNil(ProText.appleIntelligenceRowNote(.supply, reading: .basic, device: "iPhone"))
     }
 
+    /// Courses (#99) is Pro, so the paywall, the Pro screen and "Enjoy nutrx Pro" list it (#147).
+    func testCoursesIsListed() {
+        XCTAssertTrue(ProFeature.listed.contains(.courses))
+        XCTAssertEqual(ProFeature.courses.title, "Courses")
+        XCTAssertNil(ProFeature.courses.appleIntelligenceName, "courses don't use the on-device model")
+    }
+
     func testWelcomeNamesWhatsOn() {
         XCTAssertEqual(ProText.welcome([.supply]), "Supply is on. Nothing you already use has changed.")
         XCTAssertEqual(ProText.welcome([.supply, .scan]),
                        "Supply and label scanning are on. Nothing you already use has changed.")
         XCTAssertEqual(ProText.welcome(ProFeature.allCases),
-                       "Supply, label scanning, weekly recaps, Apple Health trends and doctor reports are on. Nothing you already use has changed.")
+                       "Supply, label scanning, weekly recaps, Apple Health trends, doctor reports and courses are on. Nothing you already use has changed.")
     }
 
     func testPlanChip() {

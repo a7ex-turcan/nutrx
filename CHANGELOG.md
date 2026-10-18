@@ -4,6 +4,13 @@ All notable changes to nutrx are documented in this file.
 
 ---
 
+## Unreleased
+
+### Fixes
+- **Courses on the nutrx Pro screens** — The paywall, the Pro screen and "Enjoy nutrx Pro" now list Courses, so it's clear Pro includes it.
+
+---
+
 ## v2.2 — 2026-10-18
 
 ### nutrx Pro
