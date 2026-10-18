@@ -24,7 +24,7 @@ enum ProText {
         }
     }
 
-    /// "Supply, label scanning, weekly recaps, Apple Health trends and doctor reports are on. Nothing you
+    /// "Supply, label scanning, weekly recaps, Apple Health trends, doctor reports and courses are on. Nothing you
     /// already use has changed." — no serial comma, as in the design; "Supply is on." for one.
     static func welcome(_ features: [ProFeature]) -> String {
         let names = features.map(\.welcomeName)

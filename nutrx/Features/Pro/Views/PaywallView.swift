@@ -38,7 +38,8 @@ struct PaywallView: View {
                 paywall
             }
         }
-        .presentationDetents(welcomed ? [.medium] : [.large])
+        // The welcome sheet is half height, or full height at accessibility sizes, where its text doesn't fit.
+        .presentationDetents(welcomed && !dynamicTypeSize.isAccessibilitySize ? [.medium] : [.large])
         .presentationDragIndicator(welcomed ? .visible : .hidden)
         .task { await loadStore() }
         .alert(item: $message) { message in

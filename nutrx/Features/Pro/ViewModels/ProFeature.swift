@@ -78,7 +78,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .recap: "calendar"
         case .health: "heart"
         case .report: "doc.text"
-        case .courses: "calendar.badge.checkmark"
+        case .courses: "hourglass"
         }
     }
 
