@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// "Welcome to nutrx Pro" (docs/pro/design/2-paywall: success), shown in the paywall's sheet at medium height
-/// once a purchase or restore unlocks Pro: the ring badge, what's on now, the plan line and Continue. The text scrolls
-/// and Continue stays pinned below it, so it's reachable at any text size.
+/// "Welcome to nutrx Pro" (docs/pro/design/2-paywall: success), shown in the paywall's sheet (half height, full height
+/// at accessibility sizes) once a purchase or restore unlocks Pro: the ring badge, what's on now, the plan line and
+/// Continue. The text scrolls and Continue stays pinned below it, so it's reachable at any text size.
 struct ProWelcomeView: View {
     let onContinue: () -> Void
 
@@ -89,4 +89,10 @@ private struct SegmentedRingMark: View {
 #Preview("Welcome") {
     ProWelcomeView {}
         .environment(ProAccess())
+}
+
+#Preview("Welcome, largest text") {
+    ProWelcomeView {}
+        .environment(ProAccess())
+        .dynamicTypeSize(.accessibility5)
 }

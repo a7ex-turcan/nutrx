@@ -4,7 +4,7 @@ import SwiftUI
 /// The nutrx Pro paywall (docs/pro/design/2-paywall: paywall, paywall-lifetime), a full-height sheet: a forest
 /// header with the wordmark, what Pro adds, the three plans as radio cards (lifetime under "or pay once"), the
 /// buy button with its price terms, and Restore · Terms · Privacy. After a purchase the sheet turns into the
-/// welcome (`ProWelcomeView`) at medium height.
+/// welcome (`ProWelcomeView`) at half height, or full height at accessibility sizes.
 struct PaywallView: View {
     @Environment(ProAccess.self) private var proAccess
     @Environment(\.dismiss) private var dismiss
