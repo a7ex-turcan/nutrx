@@ -7,6 +7,7 @@ All notable changes to nutrx are documented in this file.
 ## Unreleased
 
 ### Fixes
+- **The "Enable notifications" banner goes away** — Allowing notifications from Settings or a nutrient's reminders now removes the banner on Today straight away, instead of leaving it until you closed it.
 - **Courses on the nutrx Pro screens** — The paywall, the Pro screen and "Enjoy nutrx Pro" now list Courses, so it's clear Pro includes it.
 
 ---

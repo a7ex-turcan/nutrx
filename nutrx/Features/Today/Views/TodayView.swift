@@ -286,9 +286,18 @@ struct TodayView: View {
                 refreshStreak()
                 refreshWeekRecap()
                 refreshNotificationPermission()
+                // Allowed in iOS Settings, or after the system prompt (#44).
+                refreshBannerVisibility()
                 NotificationService.refreshDailyReminder(context: modelContext)
                 viewModel.rescheduleReminders(context: modelContext)
             }
+        }
+        // Answered the permission prompt somewhere else in the app (Settings → Notifications sits in a sheet over
+        // Today, so Today doesn't re-appear when it closes, #44).
+        .onReceive(NotificationCenter.default.publisher(for: .notificationPermissionAnswered)
+            .receive(on: DispatchQueue.main)) { _ in
+            refreshBannerVisibility()
+            refreshNotificationPermission()
         }
         .onReceive(NotificationCenter.default.publisher(for: .intakeLoggedByShortcut).receive(on: DispatchQueue.main)) { _ in
             // A Siri or shortcut log while Today is on screen; the intent already rescheduled reminders.
@@ -545,11 +554,11 @@ struct TodayView: View {
                 return
             }
 
-            if preferences.hasSeenNotificationBanner {
-                showBanner = false
-                return
+            let shows = NotificationService.showsPermissionBanner(status: status,
+                                                                   hasSeenBanner: preferences.hasSeenNotificationBanner)
+            if shows != showBanner {
+                withAnimation(.unlessReduceMotion(reduceMotion)) { showBanner = shows }
             }
-            showBanner = status != .granted
         }
     }
 

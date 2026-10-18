@@ -618,7 +618,7 @@ All local — no push infrastructure. Four notification types:
 3. **Refill reminders** (nutrx Pro, supply): see nutrx Pro: Supply & refills. They're scheduled first; dose reminders share the rest of the budget.
 4. **Weekly recap** (nutrx Pro): Sunday 18:00, one slot of the budget; see nutrx Pro: Weekly recap.
 
-Permission flow handles not-asked, granted, and denied states. A one-time notification banner appears on Today after onboarding.
+Permission flow handles not-asked, granted, and denied states. A one-time notification banner appears on Today after onboarding; whether it shows is `NotificationService.showsPermissionBanner` (always while iOS hasn't asked, never once closed, otherwise until allowed). `requestPermission()` is the only place the prompt is shown and posts `.notificationPermissionAnswered`, so Today re-checks the banner when it's answered anywhere (Settings sits in a sheet over Today, so Today doesn't re-appear), and again whenever the app becomes active (#44).
 
 **Reinstall/new-device safety:** iOS resets notification permission on app delete, but CloudKit may sync stale `dailyReminderEnabled` and `hasSeenNotificationBanner` flags. On appear, both TodayView and NotificationsSettingsView check the actual iOS permission status — if `notDetermined`, they reset the synced flags so the banner reappears and the toggle reflects reality.
 

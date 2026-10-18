@@ -12,6 +12,12 @@ enum NotificationPermissionStatus {
     case denied
 }
 
+extension Notification.Name {
+    /// Posted after the notification permission prompt is answered, wherever it was shown (Settings, a reminders
+    /// sheet, Today's banner), so Today can drop its "Enable notifications" banner (#44).
+    static let notificationPermissionAnswered = Notification.Name("nutrx.notificationPermissionAnswered")
+}
+
 enum NotificationService {
     private static let dailyReminderID = "daily-checkin-reminder"
     private static let nutrientReminderPrefix = "nutrient-"
@@ -37,13 +43,30 @@ enum NotificationService {
         }
     }
 
+    /// `ask` is the system prompt; tests pass a stand-in so they never wait on one.
     @discardableResult
-    static func requestPermission() async -> Bool {
+    static func requestPermission(
+        ask: () async throws -> Bool = {
+            try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+        }
+    ) async -> Bool {
+        let granted: Bool
         do {
-            return try await UNUserNotificationCenter.current()
-                .requestAuthorization(options: [.alert, .sound, .badge])
+            granted = try await ask()
         } catch {
-            return false
+            granted = false
+        }
+        NotificationCenter.default.post(name: .notificationPermissionAnswered, object: nil)
+        return granted
+    }
+
+    /// Today's "Enable notifications" banner: always while iOS hasn't asked yet (a reinstall resets the permission but
+    /// not the synced "seen" flag), never once it's been closed, and otherwise only until notifications are allowed.
+    static func showsPermissionBanner(status: NotificationPermissionStatus, hasSeenBanner: Bool) -> Bool {
+        switch status {
+        case .notDetermined: true
+        case .granted: false
+        case .denied: !hasSeenBanner
         }
     }
 
