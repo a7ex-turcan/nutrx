@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — Today at the largest text size, regular width</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 834px; height: 1210px; position: relative; overflow: hidden; background: {{c.bg}}; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+  <nav aria-label="Tabs" style="position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; gap: 2px; padding: 4px; border-radius: 24px; background: {{c.glass}}; border: 1px solid {{c.glassBorder}}; backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 10px 28px -14px rgba(14,26,19,0.35)">
+    <a href="Main.dc.html" aria-current="page" style="height: 36px; padding: 0 18px; border-radius: 18px; background: {{c.onBg}}; color: {{c.on}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">Today</a>
+    <a href="Nutrients.dc.html" style="height: 36px; padding: 0 18px; border-radius: 18px; color: {{c.ink2}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">Nutrients</a>
+    <a href="History.dc.html" style="height: 36px; padding: 0 18px; border-radius: 18px; color: {{c.ink2}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">History</a>
+  </nav>
+
+  <main style="position: absolute; left: 97px; width: 640px; top: 92px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 4px 6px 4px">
+      <h1 style="margin: 0; flex: 1; font-size: 34px; line-height: 42px; font-weight: 700">Vitamins &amp; minerals</h1>
+      <span style="font: 600 24px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink2}}; padding: 8px 14px; border-radius: 999px; background: {{c.chip}}">2/3</span>
+    </div>
+    <sc-for list="{{cards}}" as="n" hint-placeholder-count="4">
+      <div style="padding: 20px; border-radius: 22px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; flex-direction: column; gap: 16px">
+        <a href="Main.dc.html" style="display: flex; align-items: flex-start; gap: 18px; text-decoration: none; color: inherit">
+          <span style="position: relative; width: 72px; height: 72px; flex: none">
+            <svg width="72" height="72" viewBox="0 0 52 52" aria-hidden="true">
+              <circle cx="26" cy="26" r="22" fill="none" stroke="{{n.track}}" stroke-width="5"></circle>
+              <circle cx="26" cy="26" r="22" fill="none" stroke="{{n.tint}}" stroke-width="5" stroke-linecap="round" stroke-dasharray="{{n.dash}}" transform="rotate(-90 26 26)"></circle>
+            </svg>
+            <svg style="position: absolute; left: 21px; top: 21px" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="{{n.tint}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.icon}}"></path></svg>
+          </span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 32px; line-height: 38px; font-weight: 600">{{n.title}}</span>
+            <span style="font: 700 30px/36px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">{{n.cur}} <span style="font: 400 26px -apple-system, system-ui, sans-serif; color: {{c.ink2}}">{{n.of}}</span></span>
+            <span style="font-size: 24px; line-height: 30px; font-weight: 600; color: {{n.statusColor}}">{{n.status}}</span>
+          </span>
+        </a>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <button aria-label="Remove one step of {{n.title}}" style="height: 64px; border-radius: 32px; border: 2px solid {{c.ghost}}; background: transparent; display: flex; align-items: center; justify-content: center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{{c.ink2}}" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg>
+          </button>
+          <button aria-label="Add one step of {{n.title}}" style="height: 64px; border-radius: 32px; border: 0; background: {{c.btn}}; display: flex; align-items: center; justify-content: center">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="{{c.btnInk}}" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
+        </div>
+      </div>
+    </sc-for>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 14px 4px 6px 4px">
+      <h2 style="margin: 0; flex: 1; font-size: 34px; line-height: 42px; font-weight: 700">Through the day</h2>
+      <span style="font: 600 24px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink2}}; padding: 8px 14px; border-radius: 999px; background: {{c.chip}}">1/3</span>
+    </div>
+    <sc-for list="{{cards2}}" as="n" hint-placeholder-count="4">
+      <div style="padding: 20px; border-radius: 22px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; flex-direction: column; gap: 16px">
+        <a href="Main.dc.html" style="display: flex; align-items: flex-start; gap: 18px; text-decoration: none; color: inherit">
+          <span style="position: relative; width: 72px; height: 72px; flex: none">
+            <svg width="72" height="72" viewBox="0 0 52 52" aria-hidden="true">
+              <circle cx="26" cy="26" r="22" fill="none" stroke="{{n.track}}" stroke-width="5"></circle>
+              <circle cx="26" cy="26" r="22" fill="none" stroke="{{n.tint}}" stroke-width="5" stroke-linecap="round" stroke-dasharray="{{n.dash}}" transform="rotate(-90 26 26)"></circle>
+            </svg>
+            <svg style="position: absolute; left: 21px; top: 21px" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="{{n.tint}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.icon}}"></path></svg>
+          </span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 32px; line-height: 38px; font-weight: 600">{{n.title}}</span>
+            <span style="font: 700 30px/36px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">{{n.cur}} <span style="font: 400 26px -apple-system, system-ui, sans-serif; color: {{c.ink2}}">{{n.of}}</span></span>
+            <span style="font-size: 24px; line-height: 30px; font-weight: 600; color: {{n.statusColor}}">{{n.status}}</span>
+          </span>
+        </a>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+          <button aria-label="Remove one step of {{n.title}}" style="height: 64px; border-radius: 32px; border: 2px solid {{c.ghost}}; background: transparent; display: flex; align-items: center; justify-content: center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="{{c.ink2}}" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg>
+          </button>
+          <button aria-label="Add one step of {{n.title}}" style="height: 64px; border-radius: 32px; border: 0; background: {{c.btn}}; display: flex; align-items: center; justify-content: center">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="{{c.btnInk}}" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+          </button>
+        </div>
+      </div>
+    </sc-for>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"$preview":{"width":834,"height":1210}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var D = !!this.props.dark;
+    var c = D ? { bg: '#0A130E', card: '#142019', ink: '#EAF2EC', ink2: '#97AA9E', ghost: '#2C4035', chip: 'rgba(255,255,255,0.07)', shadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)', btn: '#1EB955', btnInk: '#0A130E', green: '#5BD88A',
+                  glass: 'rgba(28,42,34,0.78)', glassBorder: 'rgba(255,255,255,0.08)', onBg: 'rgba(30,185,85,0.16)', on: '#7BE3A0', trackA: '33' }
+              : { bg: '#F2F4EF', card: '#FFFFFF', ink: '#0E1A13', ink2: '#56655C', ghost: '#D5DCD3', chip: 'rgba(14,26,19,0.06)', shadow: '0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)', btn: '#1B3B2D', btnInk: '#FFFFFF', green: '#137A3A',
+                  glass: 'rgba(255,255,255,0.78)', glassBorder: 'rgba(14,26,19,0.08)', onBg: 'rgba(27,59,45,0.10)', on: '#1B3B2D', trackA: '26' };
+    var I = {
+      sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+      fish: 'M2.5 12c2.8-3.6 7.5-5 11.5-3.2L18.5 6v12L14 15.2C10 17 5.3 15.6 2.5 12z',
+      drop: 'M12 3c0 0 6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+      pill: 'M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7zM7 7l7 7'
+    };
+    var C = 138.23;
+    function n(title, icon, t, frac, cur, of, status, done) {
+      return { title: title, icon: I[icon], tint: t, track: t + c.trackA, dash: (Math.min(frac, 1) * C).toFixed(1) + ' ' + C, cur: cur, of: of, status: status, statusColor: done ? c.green : c.ink2 };
+    }
+    return { c: c, cards: [
+      n('Vitamin D', 'sun', '#E5A500', 0.5, '2,000', '/ 4,000 IU', '2,000 IU to go', false),
+      n('Omega-3', 'fish', '#13A39C', 1, '2,000', '/ 2,000 mg', 'Done', true),
+      n('Magnesium', 'pill', '#6B5BE0', 1, '400', '/ 400 mg', 'Done', true)
+    ], cards2: [
+      n('Water', 'drop', '#2F80ED', 0.72, '1.8', '/ 2.5 L', '0.7 L to go', false)
+    ] };
+  }
+}
+</script>
+</body>
+</html>

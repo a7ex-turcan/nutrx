@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>nutrx — Today on large screens</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: {{W}}px; height: {{H}}px; position: relative; overflow: hidden; background: {{c.bg}}; color: {{c.ink}}; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif; -webkit-font-smoothing: antialiased">
+
+  <sc-if value="{{topBar}}" hint-placeholder-val="{{true}}">
+    <nav aria-label="Tabs" style="position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 2; display: flex; gap: 2px; padding: 4px; border-radius: 24px; background: {{c.glass}}; border: 1px solid {{c.glassBorder}}; backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 10px 28px -14px rgba(14,26,19,0.35)">
+      <a href="Main.dc.html" aria-current="page" style="height: 36px; padding: 0 18px; border-radius: 18px; background: {{c.onBg}}; color: {{c.on}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">Today</a>
+      <a href="Nutrients.dc.html" style="height: 36px; padding: 0 18px; border-radius: 18px; color: {{c.ink2}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">Nutrients</a>
+      <a href="History.dc.html" style="height: 36px; padding: 0 18px; border-radius: 18px; color: {{c.ink2}}; text-decoration: none; display: flex; align-items: center; font-size: 15px; font-weight: 600">History</a>
+    </nav>
+  </sc-if>
+
+  <sc-if value="{{sideBar}}" hint-placeholder-val="{{false}}">
+    <nav aria-label="Tabs" style="position: absolute; right: 24px; top: 50%; transform: translateY(-50%); z-index: 2; width: 48px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 4px; border-radius: 24px; background: {{c.glass}}; border: 1px solid {{c.glassBorder}}; backdrop-filter: blur(24px) saturate(1.6); -webkit-backdrop-filter: blur(24px) saturate(1.6); box-shadow: 0 10px 28px -14px rgba(14,26,19,0.35)">
+      <a href="Main.dc.html" aria-label="Today" aria-current="page" style="width: 40px; height: 40px; border-radius: 20px; background: {{c.onBg}}; color: {{c.on}}; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"></path><path d="M12 8a4 4 0 1 0 4 4"></path></svg>
+      </a>
+      <a href="Nutrients.dc.html" aria-label="Nutrients" style="width: 40px; height: 40px; border-radius: 20px; color: {{c.ink2}}; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19C5 10.5 11 5 20 4c0 9-5.5 15-14 15zM5 19l7-7"></path></svg>
+      </a>
+      <a href="History.dc.html" aria-label="History" style="width: 40px; height: 40px; border-radius: 20px; color: {{c.ink2}}; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v15H4zM4 10h16M8 3v4M16 3v4"></path></svg>
+      </a>
+    </nav>
+  </sc-if>
+
+  <div style="position: absolute; left: {{padL}}px; top: {{top}}px; width: {{CW}}px">
+
+    <sc-if value="{{anchored}}" hint-placeholder-val="{{false}}">
+      <div style="height: 44px; margin-top: -8px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 600">Today</div>
+    </sc-if>
+
+    <sc-if value="{{showHeader}}" hint-placeholder-val="{{true}}">
+      <div style="padding: 0 4px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <div style="font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{c.ink2}}">Wednesday, 14 October</div>
+          <h1 style="margin: 0; font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: -0.02em">Today</h1>
+        </div>
+        <button aria-label="Profile menu" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: {{c.avatarBg}}; color: {{c.avatarInk}}; font: 600 17px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">A</button>
+      </div>
+    </sc-if>
+
+    <div style="margin-top: {{bodyGap}}px; display: flex; align-items: flex-start; gap: 24px">
+
+      <sc-if value="{{isSide}}" hint-placeholder-val="{{false}}">
+        <aside aria-label="Day and stacks" style="width: 360px; flex: none; display: flex; flex-direction: column">
+          <section style="padding: 16px 18px; border-radius: 28px; background: #1B3B2D; display: flex; align-items: center; gap: 18px">
+            <div style="position: relative; width: 92px; height: 92px; flex: none">
+              <svg width="92" height="92" viewBox="0 0 116 116" role="img" aria-label="3 of 6 goals met">
+                <sc-for list="{{segments}}" as="s" hint-placeholder-count="6">
+                  <circle cx="58" cy="58" r="50" fill="none" stroke="{{s.color}}" stroke-width="12" stroke-linecap="round" stroke-dasharray="34.4 279.8" stroke-dashoffset="{{s.offset}}" transform="rotate(-90 58 58)"></circle>
+                </sc-for>
+              </svg>
+              <div aria-hidden="true" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center">
+                <div style="font: 700 27px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #FFFFFF">3<span style="color: #9FC2AE">/6</span></div>
+                <div style="font-size: 11px; font-weight: 600; color: #B7CCBF; margin-top: 3px">goals met</div>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+              <div style="font-size: 18px; line-height: 23px; font-weight: 700; color: #FFFFFF">Halfway there — 3 to go</div>
+              <div style="display: flex; align-items: center; gap: 6px; align-self: flex-start; padding: 5px 10px 5px 8px; border-radius: 999px; background: rgba(255,255,255,0.10)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#7BE3A0" aria-hidden="true"><path d="{{I.flame}}"></path></svg>
+                <span style="font: 600 13px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #FFFFFF">10-day streak</span>
+              </div>
+            </div>
+          </section>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 22px 4px 10px 4px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 700">Stacks</h2>
+            <button style="height: 32px; padding: 0 2px; border: 0; background: transparent; font: 600 15px -apple-system, system-ui, sans-serif; color: {{c.link}}">Edit</button>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <sc-for list="{{stacks}}" as="s" hint-placeholder-count="3">
+              <div style="padding: 14px; border-radius: 22px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; align-items: center; gap: 12px">
+                <div style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0">
+                  <div style="display: flex; align-items: center; gap: 8px">
+                    <span style="font-size: 16px; font-weight: 600">{{s.title}}</span>
+                    <sc-if value="{{s.done}}" hint-placeholder-val="{{false}}">
+                      <span role="img" aria-label="Logged today" style="width: 20px; height: 20px; border-radius: 10px; background: #1EB955; display: flex; align-items: center; justify-content: center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0E1A13" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{I.check}}"></path></svg>
+                      </span>
+                    </sc-if>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px">
+                    <sc-for list="{{s.icons}}" as="ic" hint-placeholder-count="3">
+                      <span aria-hidden="true" style="width: 26px; height: 26px; border-radius: 8px; background: {{ic.tile}}; display: flex; align-items: center; justify-content: center">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{ic.tint}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.d}}"></path></svg>
+                      </span>
+                    </sc-for>
+                    <span style="font-size: 13px; color: {{c.ink2}}; margin-left: 2px">{{s.count}}</span>
+                  </div>
+                </div>
+                <button style="height: 44px; padding: 0 20px; border-radius: 22px; border: {{s.btnBorder}}; background: {{s.btnBg}}; color: {{s.btnInk}}; font: 600 15px -apple-system, system-ui, sans-serif">{{s.cta}}</button>
+              </div>
+            </sc-for>
+          </div>
+        </aside>
+      </sc-if>
+
+      <div style="flex: 1; min-width: 0">
+        <sc-if value="{{showTopBlock}}" hint-placeholder-val="{{true}}">
+          <div>
+            <section style="padding: 16px 18px; border-radius: 28px; background: #1B3B2D; display: flex; align-items: center; gap: 18px">
+              <div style="position: relative; width: 92px; height: 92px; flex: none">
+                <svg width="92" height="92" viewBox="0 0 116 116" role="img" aria-label="3 of 6 goals met">
+                  <sc-for list="{{segments}}" as="s" hint-placeholder-count="6">
+                    <circle cx="58" cy="58" r="50" fill="none" stroke="{{s.color}}" stroke-width="12" stroke-linecap="round" stroke-dasharray="34.4 279.8" stroke-dashoffset="{{s.offset}}" transform="rotate(-90 58 58)"></circle>
+                  </sc-for>
+                </svg>
+                <div aria-hidden="true" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center">
+                  <div style="font: 700 27px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #FFFFFF">3<span style="color: #9FC2AE">/6</span></div>
+                  <div style="font-size: 11px; font-weight: 600; color: #B7CCBF; margin-top: 3px">goals met</div>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0">
+                <div style="font-size: 18px; line-height: 23px; font-weight: 700; color: #FFFFFF">Halfway there — 3 to go</div>
+                <div style="display: flex; align-items: center; gap: 6px; align-self: flex-start; padding: 5px 10px 5px 8px; border-radius: 999px; background: rgba(255,255,255,0.10)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="#7BE3A0" aria-hidden="true"><path d="{{I.flame}}"></path></svg>
+                  <span style="font: 600 13px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: #FFFFFF">10-day streak</span>
+                </div>
+              </div>
+            </section>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 4px 10px 4px">
+              <h2 style="margin: 0; font-size: 17px; font-weight: 700">Stacks</h2>
+              <button style="height: 32px; padding: 0 2px; border: 0; background: transparent; font: 600 15px -apple-system, system-ui, sans-serif; color: {{c.link}}">Edit</button>
+            </div>
+            <div style="display: {{stackDisplay}}; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; overflow: hidden">
+              <sc-for list="{{stacks}}" as="s" hint-placeholder-count="3">
+                <div style="width: {{stackW}}; flex: none; padding: 14px; border-radius: 22px; background: {{c.card}}; box-shadow: {{c.shadow}}; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px">
+                    <span style="font-size: 16px; font-weight: 600">{{s.title}}</span>
+                    <sc-if value="{{s.done}}" hint-placeholder-val="{{false}}">
+                      <span role="img" aria-label="Logged today" style="width: 20px; height: 20px; border-radius: 10px; background: #1EB955; display: flex; align-items: center; justify-content: center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0E1A13" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{I.check}}"></path></svg>
+                      </span>
+                    </sc-if>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 5px">
+                    <sc-for list="{{s.icons}}" as="ic" hint-placeholder-count="3">
+                      <span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 7px; background: {{ic.tile}}; display: flex; align-items: center; justify-content: center">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ic.tint}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ic.d}}"></path></svg>
+                      </span>
+                    </sc-for>
+                  </div>
+                  <button style="height: 44px; border-radius: 22px; border: {{s.btnBorder}}; background: {{s.btnBg}}; color: {{s.btnInk}}; font: 600 15px -apple-system, system-ui, sans-serif">{{s.cta}}</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+          <div style="margin-top: {{g.gap}}px">
+            <div style="display: flex; align-items: center; gap: 8px; padding: 0 4px 10px 4px">
+              <h2 style="margin: 0; font-size: 17px; font-weight: 700">{{g.name}}</h2>
+              <span style="font: 600 13px/1 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink2}}; padding: 4px 8px; border-radius: 999px; background: {{c.chip}}">{{g.met}}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: {{gridCols}}; column-gap: {{gutter}}px; row-gap: 10px">
+              <sc-for list="{{g.cards}}" as="n" hint-placeholder-count="3">
+                <div style="display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 22px; background: {{c.card}}; box-shadow: {{c.shadow}}">
+                  <div style="position: relative; width: 52px; height: 52px; flex: none">
+                    <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
+                      <circle cx="26" cy="26" r="22" fill="none" stroke="{{n.track}}" stroke-width="5"></circle>
+                      <circle cx="26" cy="26" r="22" fill="none" stroke="{{n.tint}}" stroke-width="5" stroke-linecap="round" stroke-dasharray="{{n.dash}}" transform="rotate(-90 26 26)"></circle>
+                    </svg>
+                    <svg style="position: absolute; left: 15px; top: 15px" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{n.tint}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{n.icon}}"></path></svg>
+                    <sc-if value="{{n.done}}" hint-placeholder-val="{{false}}">
+                      <div style="position: absolute; right: -2px; bottom: -2px; width: 20px; height: 20px; border-radius: 10px; background: #1EB955; border: 2px solid {{c.card}}; display: flex; align-items: center; justify-content: center">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0E1A13" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{I.check}}"></path></svg>
+                      </div>
+                    </sc-if>
+                  </div>
+                  <a href="Main.dc.html" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; text-decoration: none; color: inherit">
+                    <span style="font-size: 16px; font-weight: 600">{{n.title}}</span>
+                    <span style="display: flex; align-items: baseline; gap: 4px">
+                      <span style="font: 700 16px/1.2 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">{{n.cur}}</span>
+                      <span style="font-size: 13px; color: {{c.ink2}}">{{n.of}}</span>
+                    </span>
+                    <span style="font-size: 12px; font-weight: 600; color: {{n.statusColor}}">{{n.status}}</span>
+                  </a>
+                  <div style="display: flex; gap: 8px; flex: none">
+                    <button aria-label="Remove one step of {{n.title}}" style="width: 44px; height: 44px; border-radius: 22px; border: 1.5px solid {{c.ghost}}; background: transparent; display: flex; align-items: center; justify-content: center">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.ink2}}" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="{{I.minus}}"></path></svg>
+                    </button>
+                    <button aria-label="Add one step of {{n.title}}" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: {{c.btn}}; display: flex; align-items: center; justify-content: center">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{c.btnInk}}" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="{{I.plus}}"></path></svg>
+                    </button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{sheet}}" hint-placeholder-val="{{false}}">
+    <div aria-hidden="true" style="position: absolute; inset: 0; z-index: 3; background: {{c.scrim}}"></div>
+    <section role="dialog" aria-label="Log Vitamin D" style="position: absolute; z-index: 4; left: {{sh.left}}px; top: {{sh.top}}px; width: {{sh.w}}px; height: {{sh.h}}px; border-radius: {{sh.radius}}; background: {{c.card}}; box-shadow: 0 30px 80px -20px rgba(0,0,0,0.45); overflow: hidden; padding: {{sh.padTop}}px {{sh.pad}}px 0 {{sh.pad}}px; box-sizing: border-box; display: flex; flex-direction: column">
+      <sc-if value="{{sh.grabber}}" hint-placeholder-val="{{false}}">
+        <div aria-hidden="true" style="align-self: center; width: 36px; height: 5px; border-radius: 3px; background: {{c.grabber}}; margin-bottom: 10px"></div>
+      </sc-if>
+      <div style="display: flex; align-items: center; gap: 14px">
+        <div style="position: relative; width: 56px; height: 56px; flex: none">
+          <svg width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">
+            <circle cx="28" cy="28" r="24" fill="none" stroke="{{c.sunTrack}}" stroke-width="5"></circle>
+            <circle cx="28" cy="28" r="24" fill="none" stroke="#E5A500" stroke-width="5" stroke-linecap="round" stroke-dasharray="75.4 150.8" transform="rotate(-90 28 28)"></circle>
+          </svg>
+          <svg style="position: absolute; left: 16px; top: 16px" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E5A500" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="{{I.sun}}"></path></svg>
+        </div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+          <h2 style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.01em">Vitamin D</h2>
+          <div style="font-size: 14px; color: {{c.ink2}}"><span style="font: 600 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink}}">2,000</span> of 4,000 IU today</div>
+        </div>
+        <button aria-label="Close" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: {{c.line}}; display: flex; align-items: center; justify-content: center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.ink2}}" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </div>
+
+      <div style="margin-top: 20px; padding: 18px 12px; border-radius: 24px; background: {{c.bg}}; display: flex; align-items: center; justify-content: space-between; gap: 8px">
+        <button aria-label="Decrease amount" style="width: 48px; height: 48px; border-radius: 24px; border: 0; background: {{c.card}}; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(14,26,19,0.08)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{c.ink}}" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="{{I.minus}}"></path></svg>
+        </button>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0">
+          <label for="amt" style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: {{c.ink2}}">Amount</label>
+          <div style="display: flex; align-items: baseline; gap: 6px">
+            <input id="amt" value="1,000" inputmode="decimal" style="width: 150px; border: 0; background: transparent; text-align: right; font: 700 52px/1.05 ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; letter-spacing: -0.03em; color: {{c.ink}}; padding: 0; outline: none">
+            <span style="font: 600 20px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink2}}">IU</span>
+          </div>
+        </div>
+        <button aria-label="Increase amount" style="width: 48px; height: 48px; border-radius: 24px; border: 0; background: {{c.card}}; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(14,26,19,0.08)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{c.ink}}" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="{{I.plus}}"></path></svg>
+        </button>
+      </div>
+
+      <div role="group" aria-label="Quick amounts" style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap">
+        <button style="height: 40px; padding: 0 14px; border-radius: 20px; border: 1.5px solid {{c.ghost}}; background: {{c.card}}; font: 600 15px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink}}">500</button>
+        <button aria-pressed="true" style="height: 40px; padding: 0 14px; border-radius: 20px; border: 1.5px solid {{c.btn}}; background: {{c.btn}}; font: 600 15px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.btnInk}}">1,000</button>
+        <button style="height: 40px; padding: 0 14px; border-radius: 20px; border: 1.5px solid {{c.ghost}}; background: {{c.card}}; font: 600 15px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink}}">2,000</button>
+        <button style="height: 40px; padding: 0 14px; border-radius: 20px; border: 1.5px dashed #1EB955; background: {{c.fillBg}}; font: 600 15px -apple-system, system-ui, sans-serif; color: {{c.green}}">Fill to goal</button>
+      </div>
+
+      <div style="margin-top: 16px; display: flex; flex-direction: column; gap: 6px">
+        <label for="note" style="font-size: 13px; font-weight: 600; color: {{c.ink2}}">Note</label>
+        <input id="note" value="with breakfast" style="height: 48px; border-radius: 14px; border: 1.5px solid {{c.field}}; background: {{c.card}}; padding: 0 14px; font: 400 16px -apple-system, system-ui, sans-serif; color: {{c.ink}}; outline: none">
+      </div>
+
+      <button style="margin-top: 16px; flex: none; height: 56px; border-radius: 18px; border: 0; background: {{c.btn}}; color: {{c.btnInk}}; font: 600 17px -apple-system, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.logPlus}}" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="{{I.plus}}"></path></svg>
+        Log 1,000 IU
+      </button>
+
+      <div style="margin-top: 24px; display: flex; align-items: baseline; justify-content: space-between">
+        <h3 style="margin: 0; font-size: 17px; font-weight: 700">Logged today</h3>
+        <span style="font-size: 13px; color: {{c.ink2}}">2 entries</span>
+      </div>
+      <ol style="list-style: none; margin: 8px 0 0 0; padding: 0; display: flex; flex-direction: column">
+        <sc-for list="{{entries}}" as="e" hint-placeholder-count="2">
+          <li style="display: flex; align-items: center; gap: 12px; min-height: 56px; border-bottom: 1px solid {{c.line}}">
+            <span style="width: 48px; font: 600 14px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif; color: {{c.ink2}}">{{e.time}}</span>
+            <span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 5px; background: #E5A500; flex: none"></span>
+            <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+              <span style="font: 700 16px ui-rounded, 'SF Pro Rounded', -apple-system, system-ui, sans-serif">{{e.amount}}</span>
+              <span style="font-size: 13px; color: {{c.ink2}}">{{e.note}}</span>
+            </span>
+            <button aria-label="Delete entry" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.chev}}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"></path></svg>
+            </button>
+          </li>
+        </sc-for>
+      </ol>
+    </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"dark":{"editor":"boolean","default":false},"layout":{"editor":"enum","options":["auto","top","side","one"],"default":"auto"},"dev":{"editor":"enum","options":["ipad","duoIn","duoOut"],"default":"ipad"},"w":{"editor":"int","default":834},"h":{"editor":"int","default":1210},"sheet":{"editor":"boolean","default":false},"scrolled":{"editor":"boolean","default":false},"$preview":{"width":834,"height":1210}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var P = this.props;
+    var W = Number(P.w ?? 834), H = Number(P.h ?? 1210), dev = String(P.dev ?? 'ipad'), D = !!P.dark;
+    var layout = String(P.layout ?? 'auto'), sheet = !!P.sheet, anchored = !!P.scrolled;
+    var c = D ? {
+      bg: '#0A130E', card: '#142019', ink: '#EAF2EC', ink2: '#97AA9E', line: '#22332A', ghost: '#2C4035', chip: 'rgba(255,255,255,0.07)', chev: '#5F7268',
+      shadow: 'inset 0 0 0 1px rgba(255,255,255,0.06)', avatarBg: '#1B3B2D', avatarInk: '#7BE3A0', btn: '#1EB955', btnInk: '#0A130E', link: '#5BD88A', green: '#5BD88A',
+      glass: 'rgba(28,42,34,0.78)', glassBorder: 'rgba(255,255,255,0.08)', onBg: 'rgba(30,185,85,0.16)', on: '#7BE3A0', tileA: '33', trackA: '33',
+      scrim: 'rgba(5,10,7,0.62)', grabber: '#2C4035', sunTrack: 'rgba(229,165,0,0.2)', fillBg: 'rgba(30,185,85,0.14)', field: '#2C4035', logPlus: '#0A130E'
+    } : {
+      bg: '#F2F4EF', card: '#FFFFFF', ink: '#0E1A13', ink2: '#56655C', line: '#EEF1EC', ghost: '#D5DCD3', chip: 'rgba(14,26,19,0.06)', chev: '#9AA69F',
+      shadow: '0 1px 0 rgba(14,26,19,0.04), 0 8px 20px -14px rgba(27,59,45,0.30)', avatarBg: '#DCE7DF', avatarInk: '#1B3B2D', btn: '#1B3B2D', btnInk: '#FFFFFF', link: '#1B3B2D', green: '#137A3A',
+      glass: 'rgba(255,255,255,0.78)', glassBorder: 'rgba(14,26,19,0.08)', onBg: 'rgba(27,59,45,0.10)', on: '#1B3B2D', tileA: '2E', trackA: '26',
+      scrim: 'rgba(14,26,19,0.36)', grabber: '#CBD3CA', sunTrack: '#E5A50026', fillBg: '#EAF8EF', field: '#E1E6DF', logPlus: '#7BE3A0'
+    };
+    var I = {
+      sun: 'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+      fish: 'M2.5 12c2.8-3.6 7.5-5 11.5-3.2L18.5 6v12L14 15.2C10 17 5.3 15.6 2.5 12z',
+      pill: 'M10.5 3.5a5 5 0 0 1 7 7l-7 7a5 5 0 0 1-7-7zM7 7l7 7',
+      drop: 'M12 3c0 0 6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z',
+      dumbbell: 'M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11',
+      cup: 'M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3.5v2.5M12 3.5v2.5',
+      moon: 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z',
+      leaf: 'M5 19C5 10.5 11 5 20 4c0 9-5.5 15-14 15zM5 19l7-7',
+      flame: 'M12 3c.8 3 4.5 4.8 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2.2 1.2-3.6 2.2-4.5.3 1.6 1.1 2.6 2.1 2.6-.3-2.6-.6-4.9.2-7.6z',
+      check: 'M5 12.5l4.5 4.5L19 7.5', plus: 'M12 5v14M5 12h14', minus: 'M5 12h14'
+    };
+    var T = { amber: '#E5A500', teal: '#13A39C', indigo: '#6B5BE0', blue: '#2F80ED', green: '#1EB955', coral: '#E2674A', brown: '#9B6A45' };
+
+    var padL, padR, top;
+    if (dev === 'ipad') { var m = W >= 1000 ? Math.max(40, (W - 1120) / 2) : 24; padL = m; padR = m; top = 92; }
+    else if (dev === 'duoIn') { padL = 20; padR = 84; top = 28; }
+    else { padL = 20; padR = 84; top = 54; }
+    var CW = W - padL - padR;
+    if (layout === 'auto') layout = dev === 'duoOut' ? 'one' : (W >= 1000 ? 'side' : 'top');
+    var isSide = layout === 'side', isOne = layout === 'one';
+    var gridCols, gutter;
+    if (isOne) { gridCols = 'minmax(0, 1fr)'; gutter = 0; }
+    else if (dev === 'duoIn') { gutter = 24; gridCols = (W / 2 - 12 - padL) + 'px minmax(0, 1fr)'; }
+    else { gutter = W >= 1000 ? 20 : 16; gridCols = 'repeat(2, minmax(0, 1fr))'; }
+
+    function ic(icon, t) { return { d: I[icon], tint: T[t], tile: T[t] + c.tileA }; }
+    function stack(title, icons, done) {
+      return { title: title, icons: icons, done: done, count: icons.length + ' nutrients', cta: done ? 'Log again' : 'Log',
+        btnBg: done ? 'transparent' : c.btn, btnInk: done ? c.ink2 : c.btnInk, btnBorder: done ? '1.5px solid ' + c.ghost : '0' };
+    }
+    var stacks = [
+      stack('Morning', [ic('sun', 'amber'), ic('fish', 'teal'), ic('pill', 'indigo')], true),
+      stack('With dinner', [ic('leaf', 'green'), ic('fish', 'teal')], false),
+      stack('Before bed', [ic('moon', 'blue'), ic('pill', 'indigo')], false)
+    ];
+    var C = 138.23;
+    function n(title, icon, t, frac, cur, of, status, done) {
+      return { title: title, icon: I[icon], tint: T[t], track: T[t] + c.trackA, dash: (Math.min(frac, 1) * C).toFixed(1) + ' ' + C,
+        cur: cur, of: of, status: status, statusColor: done ? c.green : c.ink2, done: done };
+    }
+    var groups = [
+      { name: 'Vitamins & minerals', met: '2/3', gap: anchored ? 4 : 22, cards: [
+        n('Vitamin D', 'sun', 'amber', 0.5, '2,000', '/ 4,000 IU', '2,000 IU to go', false),
+        n('Omega-3', 'fish', 'teal', 1, '2,000', '/ 2,000 mg', 'Done', true),
+        n('Magnesium', 'pill', 'indigo', 1, '400', '/ 400 mg', 'Done', true) ] },
+      { name: 'Through the day', met: '1/3', gap: 22, cards: [
+        n('Water', 'drop', 'blue', 0.72, '1.8', '/ 2.5 L', '0.7 L to go', false),
+        n('Protein', 'dumbbell', 'coral', 0.65, '104', '/ 120–160 g', '16 g to go', false),
+        n('Caffeine', 'cup', 'brown', 0.6, '240', 'max 400 mg', '160 mg under limit', true) ] }
+    ];
+    if (isSide && !anchored) groups[0].gap = 0;
+    var met = [true, true, true, false, false, false];
+    var segments = met.map(function (x, i) { return { color: x ? '#1EB955' : 'rgba(255,255,255,0.13)', offset: (-(i * 52.36) - 8.5).toFixed(2) }; });
+
+    var sh = { left: 0, top: 0, w: 0, h: 0, radius: '0', pad: 20, padTop: 8, grabber: false };
+    if (sheet) {
+      if (dev === 'duoOut') { sh = { left: 0, top: 40, w: W, h: H - 40, radius: '38px 38px 0 0', pad: 20, padTop: 8, grabber: true }; }
+      else { var sw = 540, shh = Math.min(640, H - 48); sh = { left: (W - sw) / 2, top: (H - shh) / 2, w: sw, h: shh, radius: '38px', pad: 24, padTop: 24, grabber: false }; }
+    }
+
+    return {
+      W: W, H: H, c: c, I: I, padL: padL, top: top, CW: CW,
+      topBar: dev === 'ipad', sideBar: dev !== 'ipad',
+      anchored: anchored, showHeader: !anchored, bodyGap: anchored ? 0 : 14,
+      isSide: isSide && !anchored, showTopBlock: !isSide && !anchored,
+      stackDisplay: isOne ? 'flex' : 'grid', stackW: isOne ? '176px' : 'auto',
+      stacks: stacks, groups: groups, gridCols: gridCols, gutter: gutter, segments: segments,
+      sheet: sheet, sh: sh,
+      entries: [ { time: '08:12', amount: '+1,000 IU', note: 'with breakfast' }, { time: '12:40', amount: '+1,000 IU', note: 'Widget' } ]
+    };
+  }
+}
+</script>
+</body>
+</html>
