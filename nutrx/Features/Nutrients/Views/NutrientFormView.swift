@@ -62,7 +62,9 @@ struct NutrientFormView: View {
         self.onSave = onSave
     }
 
+    /// Something would be lost by closing: edits since the form opened, or a scanned label.
     private var hasChanges: Bool {
+        if draft.wasScanned { return true }
         guard let opened else { return false }
         return draft.snapshot != opened.draft || selectedGroup?.persistentModelID != opened.groupID
     }
@@ -190,7 +192,7 @@ struct NutrientFormView: View {
             }
         }
         // A swipe would throw away what was typed or read from a label; Cancel asks first (#74).
-        .interactiveDismissDisabled(draft.wasScanned || hasChanges)
+        .interactiveDismissDisabled(hasChanges)
         .onAppear {
             if opened == nil { opened = (draft.snapshot, selectedGroup?.persistentModelID) }
         }

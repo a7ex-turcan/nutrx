@@ -24,6 +24,7 @@ final class NutrientDraftSnapshotTests: XCTestCase {
             { $0.name = "Iron" }, { $0.unit = "mg" }, { $0.dailyTarget = "18" }, { $0.step = "9" },
             { $0.notes = "with food" }, { $0.goalType = .range }, { $0.tint = .coral }, { $0.symbolName = "drop" },
             { $0.pendingReminderTimes = [Date(timeIntervalSince1970: 0)] }, { $0.endDate = Date(timeIntervalSince1970: 0) },
+            { $0.upperBound = "40" }, { $0.supplyServings = "120" }, { $0.pendingStacks = [.new("Morning")] },
         ]
         for edit in edits {
             let edited = NutrientDraft()
