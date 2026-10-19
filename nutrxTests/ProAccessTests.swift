@@ -83,7 +83,8 @@ final class ProAccessTests: XCTestCase {
     private func waitUntil(_ pro: ProAccess, timeout: TimeInterval = 10, _ condition: (ProAccess) -> Bool) async {
         let deadline = Date().addingTimeInterval(timeout)
         repeat {
-            await pro.refreshEntitlement()
+            // currentEntitlements is a StoreKitTest call too: a stuck read times out and the loop carries on.
+            try? await withDeadline(5) { await pro.refreshEntitlement() }
             if condition(pro) { return }
             try? await Task.sleep(for: .milliseconds(250))
         } while Date() < deadline
@@ -143,7 +144,7 @@ final class ProAccessTests: XCTestCase {
         session = try makeSession()
         let pro = ProAccess()
         try await withDeadline { await pro.loadProducts() }
-        await pro.refreshEntitlement()
+        try await withDeadline { await pro.refreshEntitlement() }
         XCTAssertFalse(pro.isPro)
         XCTAssertTrue(pro.hasCheckedEntitlements)
 
@@ -202,8 +203,9 @@ final class ProAccessTests: XCTestCase {
         let pro = ProAccess()
         let session = try XCTUnwrap(self.session)
         try await withDeadline { try await session.buyProduct(identifier: ProAccess.ProductID.lifetime) }
-        // AppStore.sync() against the test session, then a fresh entitlement check.
+        // AppStore.sync() against the test session, then a fresh entitlement check; settled like the test below.
         try await withDeadline { try await pro.restore() }
+        await waitUntil(pro) { $0.entitlement?.plan == .lifetime }
         XCTAssertEqual(pro.entitlement?.plan, .lifetime)
     }
 
