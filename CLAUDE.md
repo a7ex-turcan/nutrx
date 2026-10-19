@@ -577,6 +577,8 @@ Redesigned in phase 4 (DESIGN.md §5.7). Sheet with **Cancel / title / Add (or S
 5. **Group** row (new nutrients only — a dialog listing groups + "New Group…"; edits use Move to Group) and **Reminders** row (saved nutrient → `NutrientRemindersSheet`; new nutrient → `PendingRemindersSheet`, created with it).
 6. **Notes**, then **Delete Nutrient** when editing.
 
+**Unsaved changes (#74):** the form keeps a `NutrientDraft.Snapshot` (plus the chosen group) from when it opened. While the draft differs, the swipe-down is disabled and Cancel asks "Discard changes?" (a popover from Cancel on iOS 26, with Discard Changes; tapping outside keeps editing). An untouched form closes freely. A scanned form counts as changed, since the label filled it in.
+
 `NutrientFormFields` (sections 2–4 + notes, with a slot for rows before notes) is used by `NutrientFormView`; onboarding has its own goal fields on the same `NutrientDraft`. Focus (`NutrientFormField`) is owned by the container, which declares the keyboard's Done button at the root of its toolbar — a keyboard toolbar declared inside the scroll view's content caused SwiftUI attribute-graph cycles. That toolbar makes SwiftUI log "Invalid frame dimension" on the sheet's first keyboard open and when it closes with the keyboard up; a bare sheet with one field and the toolbar logs it too, there's no visible effect, and it's left as is (#41). The draft's `apply(to:)` / `insertNutrient(into:group:sortOrder:)` (`Shared/Persistence/NutrientDraft+Persistence.swift`) are the only places a draft is written to a nutrient.
 
 ---
