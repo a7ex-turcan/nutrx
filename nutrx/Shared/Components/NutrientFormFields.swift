@@ -58,6 +58,23 @@ final class NutrientDraft {
 
     static let defaultSymbol = "pills"
 
+    /// What the form lets the user change, to tell whether closing it would lose anything (#74).
+    struct Snapshot: Equatable {
+        let name, unit, step, dailyTarget, notes, upperBound, supplyServings: String
+        let goalType: GoalType
+        let tint: NutrientTint
+        let symbolName: String
+        let pendingReminderTimes: [Date]
+        let pendingStacks: [StackLogging.Choice]
+        let endDate: Date?
+    }
+
+    var snapshot: Snapshot {
+        Snapshot(name: name, unit: unit, step: step, dailyTarget: dailyTarget, notes: notes, upperBound: upperBound,
+                 supplyServings: supplyServings, goalType: goalType, tint: tint, symbolName: symbolName,
+                 pendingReminderTimes: pendingReminderTimes, pendingStacks: pendingStacks, endDate: endDate)
+    }
+
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
             && !unit.trimmingCharacters(in: .whitespaces).isEmpty

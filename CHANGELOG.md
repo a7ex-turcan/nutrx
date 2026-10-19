@@ -7,6 +7,7 @@ All notable changes to nutrx are documented in this file.
 ## Unreleased
 
 ### Fixes
+- **No more lost changes in the nutrient form** — Swiping the New or Edit Nutrient sheet down no longer throws away what you typed; Cancel asks "Discard changes?" first. An untouched form still closes straight away.
 - **Disabled Add and Save look disabled in dark mode** — In the nutrient form and Edit Profile, the Add or Save button no longer looks tappable before the form is ready.
 - **Next reminder shows right away** — Today's card now shows your next reminder as soon as the app opens or notifications are allowed, instead of only after switching tabs.
 - **The "Enable notifications" banner goes away** — Allowing notifications from Settings or a nutrient's reminders now removes the banner on Today straight away, instead of leaving it until you closed it.

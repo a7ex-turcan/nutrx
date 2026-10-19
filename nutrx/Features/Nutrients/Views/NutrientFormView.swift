@@ -35,6 +35,9 @@ struct NutrientFormView: View {
     @State private var showStackPicker = false
     /// After adding a nutrient from a label with more ingredients: offer the next one.
     @State private var showNextIngredient = false
+    /// The draft and group as the form opened, so Cancel and the swipe only ask when something would be lost (#74).
+    @State private var opened: (draft: NutrientDraft.Snapshot, groupID: PersistentIdentifier?)?
+    @State private var showDiscard = false
     @FocusState private var focusedField: NutrientFormField?
 
     init(
@@ -57,6 +60,13 @@ struct NutrientFormView: View {
         self.offersScan = offersScan && nutrient == nil && ProAccess.isStoreVisible
         self.onDelete = onDelete
         self.onSave = onSave
+    }
+
+    /// Something would be lost by closing: edits since the form opened, or a scanned label.
+    private var hasChanges: Bool {
+        if draft.wasScanned { return true }
+        guard let opened else { return false }
+        return draft.snapshot != opened.draft || selectedGroup?.persistentModelID != opened.groupID
     }
 
     var body: some View {
@@ -121,7 +131,13 @@ struct NutrientFormView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { dismiss() }
+                        Button("Cancel") {
+                            if hasChanges { showDiscard = true } else { dismiss() }
+                        }
+                        .confirmationDialog("Discard changes?", isPresented: $showDiscard, titleVisibility: .visible) {
+                            Button("Discard Changes", role: .destructive) { dismiss() }
+                            Button("Keep Editing", role: .cancel) {}
+                        }
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button(buttonLabel) {
@@ -175,8 +191,11 @@ struct NutrientFormView: View {
                 LabelPrefill.apply(label, to: draft)
             }
         }
-        // A swipe would throw away what the label filled in; Cancel still closes it.
-        .interactiveDismissDisabled(draft.wasScanned)
+        // A swipe would throw away what was typed or read from a label; Cancel asks first (#74).
+        .interactiveDismissDisabled(hasChanges)
+        .onAppear {
+            if opened == nil { opened = (draft.snapshot, selectedGroup?.persistentModelID) }
+        }
         // An alert, not a confirmation dialog: presented from the toolbar, a dialog becomes a popover that hides Done.
         .alert("\(draft.name) added", isPresented: $showNextIngredient) {
             ForEach(LabelPrefill.otherIngredients(on: draft), id: \.self) { ingredient in
