@@ -276,6 +276,7 @@ nutrx/
     │   └── Double+Formatting.swift
     ├── Components/
     │   ├── CheckmarkShape.swift             # A tick drawn as a shape for decorative badges (never an accessibility element, #77).
+    │   ├── ConfirmButtonStyle.swift         # .confirmButton(enabled:): toolbar Add / Save, glassProminent when enabled, plain glass when not (#73).
     │   ├── ProgressRing.swift               # Redesign ring: tint arc + track, centre symbol, check badge when met.
     │   ├── SegmentedDayRing.swift           # Day score ring, one segment per nutrient ("3/6 goals met").
     │   ├── NutrientIconTile.swift           # Rounded tile with a nutrient's symbol on its tint.
