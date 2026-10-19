@@ -117,6 +117,10 @@ struct TodayView: View {
     }
 
     var body: some View {
+        // Read here, not only inside the TimelineView below: a read in its closure didn't make Today redraw when the
+        // permission check finished after launch or a grant, so the line waited for the next minute or a tab switch
+        // (#45).
+        let remindersShown = notificationsAllowed
         Group {
             if viewModel.groupSections.isEmpty {
                 emptyState
@@ -127,7 +131,7 @@ struct TodayView: View {
                         DayScoreCard(
                             score: viewModel.dayScore,
                             streak: preferences.streaksEnabled ? streak?.current : nil,
-                            nextReminder: notificationsAllowed ? viewModel.nextReminder(after: timeline.date) : nil
+                            nextReminder: remindersShown ? viewModel.nextReminder(after: timeline.date) : nil
                         )
                     }
                     .listRowInsets(EdgeInsets(top: 8, leading: Theme.Spacing.screenMargin,
@@ -545,13 +549,10 @@ struct TodayView: View {
             // After reinstall, iOS permission resets but CloudKit may sync stale flags.
             // If iOS hasn't been asked yet, reset the synced preferences so the banner
             // reappears and the toggle reflects reality.
-            if status == .notDetermined {
-                if preferences.hasSeenNotificationBanner || preferences.dailyReminderEnabled {
-                    preferences.hasSeenNotificationBanner = false
-                    preferences.dailyReminderEnabled = false
-                }
-                showBanner = true
-                return
+            if status == .notDetermined,
+               preferences.hasSeenNotificationBanner || preferences.dailyReminderEnabled {
+                preferences.hasSeenNotificationBanner = false
+                preferences.dailyReminderEnabled = false
             }
 
             let shows = NotificationService.showsPermissionBanner(status: status,
