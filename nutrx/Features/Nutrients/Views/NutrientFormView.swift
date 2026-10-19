@@ -134,8 +134,7 @@ struct NutrientFormView: View {
                             }
                         }
                         .fontWeight(.semibold)
-                        .buttonStyle(.glassProminent)
-                        .disabled(!draft.isValid)
+                        .confirmButton(enabled: draft.isValid)
                     }
                     // Done for the return-less .decimalPad fields. SwiftUI logs "Invalid frame dimension (negative
                     // or non-finite)" for this toolbar on the sheet's first keyboard open, and again when the sheet
@@ -344,11 +343,26 @@ private struct NutrientFormPreview: View {
     }
 }
 
+/// Nothing typed yet, so Add is disabled (#73).
+private struct EmptyNutrientFormPreview: View {
+    @State private var draft = NutrientDraft()
+
+    var body: some View {
+        NutrientFormView(draft: draft, title: "New Nutrient", buttonLabel: "Add", showGroupPicker: true) {}
+            .modelContainer(previewContainer)
+    }
+}
+
 #Preview("Light") {
     NutrientFormPreview()
 }
 
 #Preview("Dark") {
     NutrientFormPreview()
+        .preferredColorScheme(.dark)
+}
+
+#Preview("Dark, Add disabled") {
+    EmptyNutrientFormPreview()
         .preferredColorScheme(.dark)
 }

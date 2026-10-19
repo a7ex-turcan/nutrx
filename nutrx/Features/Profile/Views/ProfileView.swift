@@ -44,8 +44,7 @@ struct ProfileView: View {
                     dismiss()
                 }
                 .fontWeight(.semibold)
-                .buttonStyle(.glassProminent)
-                .disabled(!viewModel.hasChanges || !viewModel.isValid)
+                .confirmButton(enabled: viewModel.hasChanges && viewModel.isValid)
             }
         }
         .onAppear {
