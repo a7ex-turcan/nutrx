@@ -35,6 +35,7 @@ Run tests (the `nutrx` scheme's test action runs `nutrxTests`):
 ```bash
 xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
+If parallel runs stall ("Simulator device failed to launch" from the test clones, over and over), run serially with `-parallel-testing-enabled NO`, and never start two test runs on the same simulator.
 
 ## App Store Connect API
 
@@ -730,7 +731,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.
   - `ProStatusView` has the plan card, the included features, Manage subscription (`manageSubscriptionsSheet`; not for lifetime or family-shared) and Restore purchases.
 - **Gate:** `ProGatedButton` (`Shared/Components/ProGate.swift`). For a Pro user it runs the action; for a free user it opens the paywall, and its label gets `showsBadge` for the `ProBadge` chip. Never a lock, blur or wall, and the free version of anything stays.
-- **Local testing:** `StoreKit/nutrxPro.storekit` mirrors the products. It's referenced by the nutrx scheme's Run action, so it applies to Xcode runs only, not `simctl launch`, and `ProAccessTests` load it with `SKTestSession(contentsOf:)`.
+- **Local testing:** `StoreKit/nutrxPro.storekit` mirrors the products. It's referenced by the nutrx scheme's Run action, so it applies to Xcode runs only, not `simctl launch`, and `ProAccessTests` load it with `SKTestSession(contentsOf:)`. Every StoreKitTest call there goes through `withDeadline` (20 s), and checks after a purchase made through the session poll (`waitUntil`), because StoreKitTest reports those a moment later and a stuck call used to hang the whole run (#121).
   - Keep it a *local* config: with `_applicationInternalID` / `_developerTeamID` in its settings, StoreKit treated it as synced and returned App Store Connect's products instead.
   - When resetting scheme churn, check out only the Watch schemes, not `nutrx.xcscheme`.
 
