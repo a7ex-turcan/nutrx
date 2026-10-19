@@ -12,6 +12,12 @@ enum ProText {
         }
     }
 
+    /// The primary button's VoiceOver label: its title, or "Purchasing…" while the purchase runs and it shows only a
+    /// spinner (#94).
+    static func primaryAccessibilityLabel(plan: ProAccess.Plan, trialEligible: Bool, purchasing: Bool) -> String {
+        purchasing ? "Purchasing…" : primaryTitle(plan: plan, trialEligible: trialEligible)
+    }
+
     /// The price terms under the button, as App Review wants them: what's charged, how often, how to cancel.
     static func terms(plan: ProAccess.Plan, price: String, trialEligible: Bool) -> String {
         switch plan {
