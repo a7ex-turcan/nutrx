@@ -21,4 +21,12 @@ final class NotificationBannerTests: XCTestCase {
         XCTAssertTrue(granted)
         await fulfillment(of: [announced], timeout: 5)
     }
+
+    func testAFailedPromptIsStillAnnouncedAndNotGranted() async {
+        struct PromptFailed: Error {}
+        let announced = expectation(forNotification: .notificationPermissionAnswered, object: nil)
+        let granted = await NotificationService.requestPermission(ask: { throw PromptFailed() })
+        XCTAssertFalse(granted)
+        await fulfillment(of: [announced], timeout: 5)
+    }
 }
