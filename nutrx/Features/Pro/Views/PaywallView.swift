@@ -164,6 +164,7 @@ struct PaywallView: View {
         if loading {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 120)
+                .accessibilityLabel("Loading plans")
         } else if proAccess.products.isEmpty {
             VStack(spacing: 10) {
                 Text("Couldn't reach the App Store")
@@ -271,7 +272,8 @@ struct PaywallView: View {
             } label: {
                 ZStack {
                     if purchasing {
-                        ProgressView().tint(Theme.controlOnPrimary)
+                        // Hidden: the button's label says "Purchasing…"; the spinner's own value read as "1" (#94).
+                        ProgressView().tint(Theme.controlOnPrimary).accessibilityHidden(true)
                     } else {
                         Text(ProText.primaryTitle(plan: selected, trialEligible: trialEligible))
                     }
@@ -286,6 +288,9 @@ struct PaywallView: View {
             }
             .buttonStyle(.plain)
             .disabled(product == nil || purchasing || restoring)
+            // While purchasing the label is only a spinner, which VoiceOver read as nothing (#94).
+            .accessibilityLabel(ProText.primaryAccessibilityLabel(plan: selected, trialEligible: trialEligible,
+                                                                  purchasing: purchasing))
 
             VStack(spacing: 4) {
                 if let product {

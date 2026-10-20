@@ -101,6 +101,15 @@ final class ProTextTests: XCTestCase {
         XCTAssertNil(ProFeature.courses.appleIntelligenceName, "courses don't use the on-device model")
     }
 
+    func testPrimaryButtonIsLabelledWhilePurchasing() {
+        XCTAssertEqual(ProText.primaryAccessibilityLabel(plan: .yearly, trialEligible: true, purchasing: false),
+                       "Start free week")
+        XCTAssertEqual(ProText.primaryAccessibilityLabel(plan: .lifetime, trialEligible: false, purchasing: false),
+                       "Buy lifetime")
+        XCTAssertEqual(ProText.primaryAccessibilityLabel(plan: .monthly, trialEligible: false, purchasing: true),
+                       "Purchasing…", "the spinner alone read as nothing (#94)")
+    }
+
     func testWelcomeNamesWhatsOn() {
         XCTAssertEqual(ProText.welcome([.supply]), "Supply is on. Nothing you already use has changed.")
         XCTAssertEqual(ProText.welcome([.supply, .scan]),
