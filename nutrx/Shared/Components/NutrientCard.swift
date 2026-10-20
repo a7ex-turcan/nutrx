@@ -131,7 +131,7 @@ struct NutrientCard: View {
                     if let compact = supply.compactText {
                         outLine { bottle; outText("\(compact) ·") }
                     }
-                    outLine { bottle }
+                    outLine(fixed: false) { bottle }  // the last try may truncate rather than push into the buttons
                 }
             }
         } else if let hint = lineHint {
@@ -176,13 +176,13 @@ struct NutrientCard: View {
             .accessibilityHidden(true)  // the card's "Refilled" action
     }
 
-    private func outLine(@ViewBuilder _ lead: () -> some View) -> some View {
+    private func outLine(fixed: Bool = true, @ViewBuilder _ lead: () -> some View) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 4) {
             lead()
             refilledButton
         }
         .lineLimit(1)
-        .fixedSize()
+        .fixedSize(horizontal: fixed, vertical: false)
     }
 
     private func hintView(_ hint: LineHint, _ text: String) -> some View {
