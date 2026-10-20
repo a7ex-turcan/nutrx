@@ -84,8 +84,11 @@ enum ScreenshotDemoData {
         }
 
         // Past days, newest first. d 1–10: every goal met (the current streak). d 11: Vitamin D short, which ends
-        // it. d 12–28: Vitamin D short on Sundays and Water short every sixth day. d 29–42: every goal met (part
+        // it. d 12–28: Vitamin D short on Sundays, and Water short on d 12 and d 20. d 29–42: every goal met (part
         // of the best streak). d 43–50: Protein under its range every other day.
+        // The recap's "day you tend to miss" needs Sunday missed more often than any other weekday in the four weeks
+        // it looks at, which can hold only two of those Sundays (Monday to Wednesday). So the other misses (d 11, 12,
+        // 20) are on three different weekdays: d 11 and a d 18 used to share one and tied with Sunday (#164).
         for daysAgo in 1...50 {
             guard let day = calendar.date(byAdding: .day, value: -daysAgo, to: today) else { continue }
             let weekday = calendar.component(.weekday, from: day)
@@ -97,7 +100,7 @@ enum ScreenshotDemoData {
                 day: day, hours: [8, 13])
             log(omega3, daysAgo.isMultiple(of: 4) ? [1000, 1500] : [1000, 1000], day: day, hours: [8, 20])
             log(magnesium, [400], day: day, hours: [21])
-            let waterTotal: Double = inGap && daysAgo.isMultiple(of: 6) ? 1.75 : (daysAgo.isMultiple(of: 3) ? 2.75 : 2.5)
+            let waterTotal: Double = [12, 20].contains(daysAgo) ? 1.75 : (daysAgo.isMultiple(of: 3) ? 2.75 : 2.5)
             log(water, [0.75, 1, waterTotal - 1.75], day: day, hours: [9, 13, 18])
             let proteinTotal: Double = daysAgo > 42 && !daysAgo.isMultiple(of: 2) ? 100 : [130, 140, 150][daysAgo % 3]
             log(protein, [proteinTotal - 60, 60], day: day, hours: [12, 19])

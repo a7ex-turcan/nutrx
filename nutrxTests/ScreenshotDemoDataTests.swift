@@ -73,6 +73,29 @@ final class ScreenshotDemoDataTests: XCTestCase {
         XCTAssertTrue(RecapPhrasing.isAcceptable(text.summary, for: text), "the template passes its own check")
     }
 
+    /// The recap names Sunday on every day of the week, mornings and Sunday evenings included: the demo data is
+    /// relative to today, and on Mondays to Wednesdays another weekday used to tie with Sunday (#164).
+    func testTheRecapNamesSundayWhateverTheDay() throws {
+        let calendar = Calendar.current
+        let start = calendar.date(from: DateComponents(year: 2026, month: 10, day: 12))!  // a Monday
+        for offset in 0..<14 {
+            let day = calendar.date(byAdding: .day, value: offset, to: start)!
+            for hour in [10, 20] {
+                let now = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: day)!
+                let container = try ModelContainer.inMemoryForTests()
+                ScreenshotDemoData.replaceStore(in: container.mainContext, now: now)
+                let history = HistoryViewModel()
+                history.refresh(context: container.mainContext, now: now)
+                let log = try XCTUnwrap(history.log)
+                let names = Dictionary(try container.mainContext.fetch(FetchDescriptor<Nutrient>()).map { ($0.id, $0.name) },
+                                       uniquingKeysWith: { first, _ in first })
+                let recap = WeeklyRecap.build(log: log, names: names, week: WeeklyRecap.latestWeek(at: now, calendar: calendar),
+                                              streaksEnabled: true)
+                XCTAssertEqual(recap.weakestWeekday?.weekday, 1, "on \(now.formatted(date: .abbreviated, time: .shortened))")
+            }
+        }
+    }
+
     func testOneWeeksRecapFromThatWeeksEntriesMatchesTheFullHistory() throws {
         // Today's card and the notification read only the week's entries; the facts must be the same.
         let week = WeeklyRecap.latestWeek(at: .now, calendar: .current)
