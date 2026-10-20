@@ -190,6 +190,14 @@ final class GoalProgressTests: XCTestCase {
         XCTAssertEqual(between.goalText(locale: enUS), "/ 120–160 g")
     }
 
+    func testGoalTextWithoutUnit() {
+        XCTAssertEqual(progress(2000, .minimum, target: 4000, unit: "IU").goalText(locale: enUS, includingUnit: false),
+                       "/ 4,000")
+        XCTAssertEqual(progress(320, .maximum, target: 400).goalText(locale: enUS, includingUnit: false), "max 400")
+        XCTAssertEqual(progress(92, .range, target: 120, upper: 160, unit: "g").goalText(locale: enUS, includingUnit: false),
+                       "/ 120–160")
+    }
+
     // MARK: - Log sheet
 
     func testGoalAmountTextForEachGoalType() {

@@ -35,6 +35,9 @@ struct LogStackSheet: View {
         _detent = State(initialValue: StackLogging.activeEntries(of: stack).count > Self.rowsAtHalfHeight ? .large : .medium)
     }
 
+    /// Whether every row puts its stepper under the name and total (from xLarge, #97) rather than beside them.
+    private var rowsAreStacked: Bool { dynamicTypeSize >= .xLarge }
+
     private var entries: [LogStackEntry] { StackLogging.activeEntries(of: stack) }
 
     /// Rows shown at the medium detent before the sheet opens full height instead.
@@ -127,6 +130,14 @@ struct LogStackSheet: View {
         }
     }
 
+    /// One line per word, so a word shrinks a little rather than breaking ("Magne-sium"). A word too long to fit even
+    /// shrunk ("Phosphatidylserine") gets one more line: broken, it's still readable; cut off, it isn't.
+    static func nameLineLimit(_ name: String) -> Int {
+        let words = name.split(separator: " ")
+        let longest = words.map(\.count).max() ?? 0
+        return max(words.count, 1) + (longest > 12 ? 1 : 0)
+    }
+
     private var countText: String {
         entries.count == 1 ? "1 nutrient" : "\(entries.count) nutrients"
     }
@@ -143,19 +154,16 @@ struct LogStackSheet: View {
                 Text(nutrient.name)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
-                Text(logged != nil && progress.countsAsMet
-                     ? "\(progress.currentText) \(progress.goalText) · Done"
-                     : "\(progress.currentText) \(progress.goalText)")
-                    .font(.subheadline)
-                    .fontDesign(.rounded)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textSecondary)
+                    .lineLimit(Self.nameLineLimit(nutrient.name))
+                    .minimumScaleFactor(0.7)
+                totalLine(progress)
             }
             .accessibilityElement(children: .combine)
         }
         return Group {
-            // At accessibility sizes the amount goes under the name, so neither is broken mid-word.
-            if dynamicTypeSize.isAccessibilitySize {
+            // From xLarge the amount goes under the name in every row, so neither is broken mid-word: beside the
+            // stepper, names broke from xLarge on an iPhone 17e (#97). One threshold for the whole sheet, never row by row.
+            if rowsAreStacked {
                 VStack(alignment: .leading, spacing: 10) {
                     summary
                     trailing(entry, nutrient: nutrient)
@@ -164,13 +172,42 @@ struct LogStackSheet: View {
             } else {
                 HStack(spacing: 8) {
                     summary
-                    Spacer(minLength: 8)
+                    // No extra minimum: the stack's spacing keeps them apart, and the total needs every point (#97).
+                    Spacer(minLength: 0)
                     trailing(entry, nutrient: nutrient)
                 }
             }
         }
         .padding(.horizontal, Theme.Spacing.cardPadding)
         .padding(.vertical, 12)
+    }
+
+    /// "2,000 / 4,000 IU" (with "· Done" once logged and met). Beside the stepper it stays on one line: without the
+    /// unit, which the stepper shows, when the whole doesn't fit, rather than wrapping at the slash (#97). Stacked
+    /// rows have the width and may wrap.
+    @ViewBuilder
+    private func totalLine(_ progress: GoalProgress) -> some View {
+        let done = logged != nil && progress.countsAsMet ? " · Done" : ""
+        let full = "\(progress.currentText) \(progress.goalText)\(done)"
+        if rowsAreStacked {
+            totalText(full)
+        } else {
+            ViewThatFits(in: .horizontal) {
+                totalText(full).lineLimit(1)
+                totalText("\(progress.currentText) \(progress.goalTextWithoutUnit)\(done)")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .accessibilityLabel(full)
+            }
+        }
+    }
+
+    private func totalText(_ text: String) -> some View {
+        Text(text)
+            .font(.subheadline)
+            .fontDesign(.rounded)
+            .monospacedDigit()
+            .foregroundStyle(Theme.textSecondary)
     }
 
     /// The amount stepper before logging; the logged amount ("+2,000 IU", green) after.
@@ -356,4 +393,35 @@ private struct LogStackSheetPreview: View {
     LogStackSheetPreview()
         .modelContainer(previewContainer)
         .environment(\.dynamicTypeSize, .accessibility3)
+}
+
+#Preview("Extra large") {
+    LogStackSheetPreview()
+        .modelContainer(previewContainer)
+        .environment(\.dynamicTypeSize, .xLarge)
+}
+
+/// A stack whose first nutrient has one word too long to shrink into the row, in a container of its own so the other
+/// previews keep the shared sample data.
+@MainActor
+private let longNamePreviewContainer: ModelContainer = {
+    let container = try! ModelContainer(for: ModelContainerFactory.schema,
+                                        configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let context = container.mainContext
+    let stack = LogStack(name: "Morning", sortOrder: 0)
+    context.insert(stack)
+    let nutrients = [Nutrient(name: "Phosphatidylserine", unit: "mg", step: 100, dailyTarget: 300, sortOrder: 0),
+                     Nutrient(name: "Omega-3", unit: "mg", step: 1000, dailyTarget: 2000, sortOrder: 1)]
+    for (order, nutrient) in nutrients.enumerated() {
+        context.insert(nutrient)
+        let entry = LogStackEntry(nutrient: nutrient, amount: nutrient.step, sortOrder: order)
+        context.insert(entry)
+        entry.stack = stack
+    }
+    return container
+}()
+
+#Preview("Long name") {
+    LogStackSheetPreview()
+        .modelContainer(longNamePreviewContainer)
 }
