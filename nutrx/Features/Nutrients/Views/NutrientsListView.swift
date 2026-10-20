@@ -244,8 +244,16 @@ struct NutrientsListView: View {
             ForEach(groupedSections, id: \.group.persistentModelID) { section in
                 Section {
                     ForEach(section.nutrients, id: \.persistentModelID) { nutrient in
-                        NavigationLink(value: nutrient.persistentModelID) {
-                            nutrientRow(nutrient)
+                        Group {
+                            // While selecting a tap selects, so the row has no link and no chevron, which leaves the
+                            // text room beside the selection circle and drag handle (#108).
+                            if isSelecting {
+                                nutrientRow(nutrient)
+                            } else {
+                                NavigationLink(value: nutrient.persistentModelID) {
+                                    nutrientRow(nutrient)
+                                }
+                            }
                         }
                         .listRowBackground(Theme.surfaceCard)
                         .listRowSeparatorTint(Theme.lineHairline)
@@ -429,15 +437,26 @@ struct NutrientsListView: View {
         // A finished course's reminders have stopped.
         let hasReminders = !(nutrient.reminders ?? []).isEmpty && !nutrient.hasEnded()
 
+        // At accessibility sizes there's no room beside the name (less still in Select mode, with the selection circle
+        // and drag handle): no icon tile, and the tag and target go under it, so nothing breaks mid-word (#108).
+        let large = dynamicTypeSize.isAccessibilitySize
+        let details = large ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 8))
+
         return HStack(spacing: 12) {
-            NutrientIconTile(nutrient: nutrient)
+            if !large {
+                NutrientIconTile(nutrient: nutrient)
+            }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(nutrient.name)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
+                    // At most one line per word, so a word too long for the row ("Magnesium", "Omega-3",
+                    // "Magnesium glycinate") shrinks rather than breaking mid-word; names still wrap between words.
+                    .lineLimit(large ? max(nutrient.name.split(separator: " ").count, 1) : nil)
+                    .minimumScaleFactor(large ? 0.5 : 1)
 
-                HStack(spacing: 8) {
+                details {
                     Text(GoalTypePicker.label(for: nutrient.goalType))
                         .font(.caption2.bold())
                         .textCase(.uppercase)
@@ -445,6 +464,7 @@ struct NutrientsListView: View {
                         .padding(.horizontal, 7)
                         .padding(.vertical, 3)
                         .background(Theme.surfaceChip, in: RoundedRectangle(cornerRadius: Theme.Radius.tag, style: .continuous))
+                        .fixedSize()
 
                     if let endDate = nutrient.endDate, nutrient.hasEnded() {
                         Text(CourseText().ended(endDate))
@@ -455,6 +475,10 @@ struct NutrientsListView: View {
                             .font(.subheadline)
                             .monospacedDigit()
                             .foregroundStyle(Theme.textSecondary)
+                            // In Select mode's narrower row, a range ("120–160 g") shrinks a little rather than splitting
+                            // at the dash; the full-width list has room for it.
+                            .lineLimit(large && isSelecting ? 1 : nil)
+                            .minimumScaleFactor(large && isSelecting ? 0.7 : 1)
                     }
 
                     if hasReminders {
