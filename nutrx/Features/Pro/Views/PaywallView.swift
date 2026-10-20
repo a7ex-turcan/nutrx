@@ -272,7 +272,8 @@ struct PaywallView: View {
             } label: {
                 ZStack {
                     if purchasing {
-                        ProgressView().tint(Theme.controlOnPrimary)
+                        // Hidden: the button's label says "Purchasing…"; the spinner's own value read as "1" (#94).
+                        ProgressView().tint(Theme.controlOnPrimary).accessibilityHidden(true)
                     } else {
                         Text(ProText.primaryTitle(plan: selected, trialEligible: trialEligible))
                     }
