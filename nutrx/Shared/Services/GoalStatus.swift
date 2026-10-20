@@ -192,14 +192,14 @@ struct GoalProgress: Equatable {
     }
 
     func goalText(locale: Locale, includingUnit: Bool = true) -> String {
-        let amount = { (value: Double) in includingUnit ? self.amount(value, locale) : Self.number(value, locale) }
+        let goalAmount = { (value: Double) in includingUnit ? amount(value, locale) : Self.number(value, locale) }
         switch goal {
         case .atLeast(let target):
-            return "/ \(amount(target))"
+            return "/ \(goalAmount(target))"
         case .atMost(let limit):
-            return "max \(amount(limit))"
+            return "max \(goalAmount(limit))"
         case .between(let lower, let upper):
-            return "/ \(Self.number(lower, locale))–\(amount(upper))"
+            return "/ \(Self.number(lower, locale))–\(goalAmount(upper))"
         }
     }
 

@@ -35,7 +35,8 @@ struct LogStackSheet: View {
         _detent = State(initialValue: StackLogging.activeEntries(of: stack).count > Self.rowsAtHalfHeight ? .large : .medium)
     }
 
-    private var stacksRows: Bool { dynamicTypeSize >= .xLarge }
+    /// Whether every row puts its stepper under the name and total (from xLarge, #97) rather than beside them.
+    private var rowsAreStacked: Bool { dynamicTypeSize >= .xLarge }
 
     private var entries: [LogStackEntry] { StackLogging.activeEntries(of: stack) }
 
@@ -129,6 +130,14 @@ struct LogStackSheet: View {
         }
     }
 
+    /// One line per word, so a word shrinks a little rather than breaking ("Magne-sium"). A word too long to fit even
+    /// shrunk ("Phosphatidylserine") gets one more line: broken, it's still readable; cut off, it isn't.
+    static func nameLineLimit(_ name: String) -> Int {
+        let words = name.split(separator: " ")
+        let longest = words.map(\.count).max() ?? 0
+        return max(words.count, 1) + (longest > 12 ? 1 : 0)
+    }
+
     private var countText: String {
         entries.count == 1 ? "1 nutrient" : "\(entries.count) nutrients"
     }
@@ -142,11 +151,10 @@ struct LogStackSheet: View {
             ProgressRing(nutrient: nutrient, progress: progress)
                 .frame(width: 44, height: 44)
             VStack(alignment: .leading, spacing: 2) {
-                // One line per word at most, so a long word shrinks a little rather than breaking ("Magne-sium").
                 Text(nutrient.name)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
-                    .lineLimit(max(nutrient.name.split(separator: " ").count, 1))
+                    .lineLimit(Self.nameLineLimit(nutrient.name))
                     .minimumScaleFactor(0.7)
                 totalLine(progress)
             }
@@ -155,7 +163,7 @@ struct LogStackSheet: View {
         return Group {
             // From xLarge the amount goes under the name in every row, so neither is broken mid-word: beside the
             // stepper, names broke from xLarge on an iPhone 17e (#97). One threshold for the whole sheet, never row by row.
-            if stacksRows {
+            if rowsAreStacked {
                 VStack(alignment: .leading, spacing: 10) {
                     summary
                     trailing(entry, nutrient: nutrient)
@@ -181,7 +189,7 @@ struct LogStackSheet: View {
     private func totalLine(_ progress: GoalProgress) -> some View {
         let done = logged != nil && progress.countsAsMet ? " · Done" : ""
         let full = "\(progress.currentText) \(progress.goalText)\(done)"
-        if stacksRows {
+        if rowsAreStacked {
             totalText(full)
         } else {
             ViewThatFits(in: .horizontal) {
@@ -354,10 +362,12 @@ struct LogStackSheet: View {
 
 private struct LogStackSheetPreview: View {
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
+    var firstName: String?
 
     // Rendered inline: preview snapshots don't capture presented sheets.
     var body: some View {
         if let stack = stacks.first {
+            let _ = firstName.map { StackLogging.activeEntries(of: stack).first?.nutrient?.name = $0 }
             LogStackSheet(
                 stack: stack,
                 totalFor: { nutrient in (nutrient.intakeRecords ?? []).filter { Calendar.current.isDateInToday($0.date) }
@@ -391,4 +401,9 @@ private struct LogStackSheetPreview: View {
     LogStackSheetPreview()
         .modelContainer(previewContainer)
         .environment(\.dynamicTypeSize, .xLarge)
+}
+
+#Preview("Long name") {
+    LogStackSheetPreview(firstName: "Phosphatidylserine")
+        .modelContainer(previewContainer)
 }
