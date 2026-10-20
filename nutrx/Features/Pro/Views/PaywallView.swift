@@ -235,7 +235,8 @@ struct PaywallView: View {
                                     .padding(.vertical, 3)
                                     .background(Theme.green.opacity(0.16),
                                                 in: RoundedRectangle(cornerRadius: Theme.Radius.tag, style: .continuous))
-                                    .fixedSize()
+                                    // On its own line it keeps its width; beside the name it can still give way.
+                                    .fixedSize(horizontal: large, vertical: false)
                             }
                         }
                         Text(ProText.planSubtitle(plan, monthlyEquivalent: plan == .yearly
