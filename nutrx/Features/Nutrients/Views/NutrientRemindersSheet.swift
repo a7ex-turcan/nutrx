@@ -124,9 +124,12 @@ struct NutrientRemindersSheet: View {
         NutrientReminder.hasReminder(at: selectedTime, among: reminders)
     }
 
+    /// This nutrient's reminders. Loaded on appear and after each add or delete, so one synced in from another device
+    /// while the sheet is open shows the next time it's opened.
     private func loadReminders() {
-        let all = (try? modelContext.fetch(FetchDescriptor<NutrientReminder>())) ?? []
-        reminders = all.filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }
+        let nutrientID = nutrient.id
+        let descriptor = FetchDescriptor<NutrientReminder>(predicate: #Predicate { $0.nutrient?.id == nutrientID })
+        reminders = (try? modelContext.fetch(descriptor)) ?? []
     }
 
     private func addReminder() {
