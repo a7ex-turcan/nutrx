@@ -210,15 +210,20 @@ struct PaywallView: View {
             Button {
                 selected = plan
             } label: {
-                HStack(spacing: 14) {
+                // At accessibility sizes the parts stack under the radio, so nothing breaks mid-word (#161).
+                let large = dynamicTypeSize.isAccessibilitySize
+                HStack(alignment: large ? .top : .center, spacing: 14) {
                     ZStack {
                         Circle()
                             .strokeBorder(isSelected ? selectedBorder : Theme.controlGhostBorder, lineWidth: isSelected ? 6 : 2)
                     }
                     .frame(width: 22, height: 22)
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 8) {
+                    .padding(.top, large ? 6 : 0)
+                    VStack(alignment: .leading, spacing: large ? 6 : 2) {
+                        let titleRow = large ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+                                             : AnyLayout(HStackLayout(spacing: 8))
+                        titleRow {
                             Text(ProText.planTitle(plan))
                                 .font(.headline)
                                 .foregroundStyle(Theme.textPrimary)
@@ -230,6 +235,8 @@ struct PaywallView: View {
                                     .padding(.vertical, 3)
                                     .background(Theme.green.opacity(0.16),
                                                 in: RoundedRectangle(cornerRadius: Theme.Radius.tag, style: .continuous))
+                                    // On its own line it keeps its width; beside the name it can still give way.
+                                    .fixedSize(horizontal: large, vertical: false)
                             }
                         }
                         Text(ProText.planSubtitle(plan, monthlyEquivalent: plan == .yearly
@@ -237,11 +244,14 @@ struct PaywallView: View {
                                                   : nil))
                             .font(.subheadline)
                             .foregroundStyle(Theme.textSecondary)
+                        if large {
+                            price(product)
+                        }
                     }
-                    Spacer(minLength: 8)
-                    Text(product.displayPrice)
-                        .font(.system(.title3, design: .rounded, weight: .bold))
-                        .foregroundStyle(Theme.textPrimary)
+                    if !large {
+                        Spacer(minLength: 8)
+                        price(product)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -262,6 +272,12 @@ struct PaywallView: View {
         }
     }
 
+    private func price(_ product: Product) -> some View {
+        Text(product.displayPrice)
+            .font(.system(.title3, design: .rounded, weight: .bold))
+            .foregroundStyle(Theme.textPrimary)
+    }
+
     // MARK: - Buy
 
     private var purchaseFooter: some View {
@@ -276,6 +292,7 @@ struct PaywallView: View {
                         ProgressView().tint(Theme.controlOnPrimary).accessibilityHidden(true)
                     } else {
                         Text(ProText.primaryTitle(plan: selected, trialEligible: trialEligible))
+                            .multilineTextAlignment(.center)  // "Start free / week" at the largest sizes (#161)
                     }
                 }
                 .font(.headline)
@@ -318,6 +335,7 @@ struct PaywallView: View {
     private var footerLinks: some View {
         Button(restoring ? "Restoring…" : "Restore purchases") { restore() }
             .disabled(restoring || purchasing)
+            .multilineTextAlignment(.center)  // its two lines centred when it wraps (#161)
             .frame(minHeight: 36)
         Button("Terms") { openURL(Self.termsURL) }
             .frame(minHeight: 36)

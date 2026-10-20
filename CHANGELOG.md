@@ -8,6 +8,13 @@ All notable changes to nutrx are documented in this file.
 
 ### Fixes
 - **Analytics charts stay readable** — The goal label sits beside the chart instead of on top of the bars; at large text sizes it moves above the chart, dates no longer run into each other, and the weekday pattern shows its percentages and title in full.
+- **Select mode at large text sizes** — In My Nutrients, the Select bar is one short row of buttons at accessibility text sizes instead of taking half the screen.
+- **Stacks fit on smaller phones** — When you log a stack, each row's total stays on one line beside the amount instead of wrapping, and at larger text sizes the amount moves under the name so names don't break mid-word.
+- **The paywall at large text sizes** — Plan names, prices and the free-week badge no longer break mid-word; each plan stacks its details instead.
+
+## v2.2.1 — in review
+
+### Fixes
 - **Reminders show up when you add them** — In a nutrient's Reminders, a newly added time now appears in the list straight away, and a time that's already set can't be added twice.
 - **My Nutrients at large text sizes** — At accessibility text sizes, rows put the goal and amount under the name instead of breaking words mid-way, also in Select mode.
 - **VoiceOver on the paywall** — While a purchase is in progress, the button reads "Purchasing…" instead of nothing, and the spinner while plans load reads "Loading plans".
