@@ -37,7 +37,7 @@ struct PendingRemindersSheet: View {
                         .disabled(isAlreadyAdded)
                 } footer: {
                     if isAlreadyAdded {
-                        Text("\(selectedTime, format: .dateTime.hour().minute()) is already in the list.")
+                        Text("\(selectedTime.formatted(date: .omitted, time: .shortened)) is already in the list.")
                     }
                 }
             }

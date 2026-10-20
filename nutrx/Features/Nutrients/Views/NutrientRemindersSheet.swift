@@ -5,8 +5,10 @@ struct NutrientRemindersSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Query private var allReminders: [NutrientReminder]
     let nutrient: Nutrient
+    /// Fetched, and fetched again after each add or delete. The \@Query this replaced didn't update in this sheet
+    /// (opened from Edit Nutrient), so an added time never appeared and people added it again (#163).
+    @State private var reminders: [NutrientReminder] = []
 
     @State private var showTimePicker = false
     @State private var selectedTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now)!
@@ -14,8 +16,7 @@ struct NutrientRemindersSheet: View {
     @State private var showNotAskedAlert = false
 
     private var sortedReminders: [NutrientReminder] {
-        allReminders
-            .filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }
+        reminders
             .sorted { lhs, rhs in
                 let (lh, lm) = lhs.timeComponents
                 let (rh, rm) = rhs.timeComponents
@@ -52,7 +53,7 @@ struct NutrientRemindersSheet: View {
                 }
 
                 if showTimePicker {
-                    Section("New Reminder") {
+                    Section {
                         DatePicker(
                             "Time",
                             selection: $selectedTime,
@@ -69,6 +70,13 @@ struct NutrientRemindersSheet: View {
                         .buttonStyle(.borderedProminent)
                         .tint(Theme.controlPrimary)
                         .foregroundStyle(Theme.controlOnPrimary)
+                        .disabled(isAlreadyAdded)
+                    } header: {
+                        Text("New Reminder")
+                    } footer: {
+                        if isAlreadyAdded {
+                            Text("\(selectedTime.formatted(date: .omitted, time: .shortened)) is already in the list.")
+                        }
                     }
                 }
             }
@@ -109,6 +117,16 @@ struct NutrientRemindersSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .onAppear { loadReminders() }
+    }
+
+    private var isAlreadyAdded: Bool {
+        NutrientReminder.hasReminder(at: selectedTime, among: reminders)
+    }
+
+    private func loadReminders() {
+        let all = (try? modelContext.fetch(FetchDescriptor<NutrientReminder>())) ?? []
+        reminders = all.filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }
     }
 
     private func addReminder() {
@@ -142,9 +160,11 @@ struct NutrientRemindersSheet: View {
     }
 
     private func insertReminder() {
+        guard !isAlreadyAdded else { return }
         let reminder = NutrientReminder(nutrient: nutrient, timeOfDay: selectedTime)
         modelContext.insert(reminder)
         try? modelContext.save()
+        loadReminders()
         NotificationService.refreshAllNutrientReminders(context: modelContext)
 
         withAnimation(.unlessReduceMotion(reduceMotion)) {
@@ -160,6 +180,7 @@ struct NutrientRemindersSheet: View {
         }
         // Saved first, so the reschedule no longer sees the deleted reminders.
         try? modelContext.save()
+        loadReminders()
         NotificationService.refreshAllNutrientReminders(context: modelContext)
     }
 }
