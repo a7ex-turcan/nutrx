@@ -60,5 +60,6 @@ CD_UserProfile CD_heightUnit
 CD_UserProfile CD_name
 CD_UserProfile CD_onboardingCompleted
 CD_UserProfile CD_profileImageData
+CD_UserProfile CD_profileImageData_ckAsset
 CD_UserProfile CD_weight
 CD_UserProfile CD_weightUnit
