@@ -362,12 +362,10 @@ struct LogStackSheet: View {
 
 private struct LogStackSheetPreview: View {
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
-    var firstName: String?
 
     // Rendered inline: preview snapshots don't capture presented sheets.
     var body: some View {
         if let stack = stacks.first {
-            let _ = firstName.map { StackLogging.activeEntries(of: stack).first?.nutrient?.name = $0 }
             LogStackSheet(
                 stack: stack,
                 totalFor: { nutrient in (nutrient.intakeRecords ?? []).filter { Calendar.current.isDateInToday($0.date) }
@@ -403,7 +401,27 @@ private struct LogStackSheetPreview: View {
         .environment(\.dynamicTypeSize, .xLarge)
 }
 
+/// A stack whose first nutrient has one word too long to shrink into the row, in a container of its own so the other
+/// previews keep the shared sample data.
+@MainActor
+private let longNamePreviewContainer: ModelContainer = {
+    let container = try! ModelContainer(for: ModelContainerFactory.schema,
+                                        configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let context = container.mainContext
+    let stack = LogStack(name: "Morning", sortOrder: 0)
+    context.insert(stack)
+    let nutrients = [Nutrient(name: "Phosphatidylserine", unit: "mg", step: 100, dailyTarget: 300, sortOrder: 0),
+                     Nutrient(name: "Omega-3", unit: "mg", step: 1000, dailyTarget: 2000, sortOrder: 1)]
+    for (order, nutrient) in nutrients.enumerated() {
+        context.insert(nutrient)
+        let entry = LogStackEntry(nutrient: nutrient, amount: nutrient.step, sortOrder: order)
+        context.insert(entry)
+        entry.stack = stack
+    }
+    return container
+}()
+
 #Preview("Long name") {
-    LogStackSheetPreview(firstName: "Phosphatidylserine")
-        .modelContainer(previewContainer)
+    LogStackSheetPreview()
+        .modelContainer(longNamePreviewContainer)
 }
