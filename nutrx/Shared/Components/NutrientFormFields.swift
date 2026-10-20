@@ -148,7 +148,7 @@ final class NutrientDraft {
 
     /// Whether a reminder at this hour and minute is already in the list.
     func hasPendingReminder(at time: Date, calendar: Calendar = .current) -> Bool {
-        pendingReminderTimes.contains { Self.hourMinute($0, calendar) == Self.hourMinute(time, calendar) }
+        pendingReminderTimes.contains { NutrientReminder.isSameTime($0, time, calendar: calendar) }
     }
 
     private static func hourMinute(_ date: Date, _ calendar: Calendar) -> (Int, Int) {

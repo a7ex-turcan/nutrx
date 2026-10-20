@@ -7,6 +7,7 @@ All notable changes to nutrx are documented in this file.
 ## Unreleased
 
 ### Fixes
+- **Reminders show up when you add them** — In a nutrient's Reminders, a newly added time now appears in the list straight away, and a time that's already set can't be added twice.
 - **My Nutrients at large text sizes** — At accessibility text sizes, rows put the goal and amount under the name instead of breaking words mid-way, also in Select mode.
 - **VoiceOver on the paywall** — While a purchase is in progress, the button reads "Purchasing…" instead of nothing, and the spinner while plans load reads "Loading plans".
 - **No more lost changes in the nutrient form** — Swiping the New or Edit Nutrient sheet down no longer throws away what you typed; Cancel asks "Discard changes?" first. An untouched form still closes straight away.

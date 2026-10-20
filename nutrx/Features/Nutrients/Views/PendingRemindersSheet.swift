@@ -15,7 +15,7 @@ struct PendingRemindersSheet: View {
                 Section {
                     ForEach(draft.pendingReminderTimes, id: \.timeIntervalSinceReferenceDate) { time in
                         Label {
-                            Text(time, format: .dateTime.hour().minute())
+                            Text(time.formatted(date: .omitted, time: .shortened))
                                 .monospacedDigit()
                         } icon: {
                             Image(systemName: "bell.fill")
@@ -37,7 +37,7 @@ struct PendingRemindersSheet: View {
                         .disabled(isAlreadyAdded)
                 } footer: {
                     if isAlreadyAdded {
-                        Text("\(selectedTime, format: .dateTime.hour().minute()) is already in the list.")
+                        Text("\(selectedTime.formatted(date: .omitted, time: .shortened)) is already in the list.")
                     }
                 }
             }
