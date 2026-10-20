@@ -25,6 +25,13 @@ final class NutrientCourseTests: XCTestCase {
         XCTAssertFalse(NutrientCourse.hasEnded(nil, by: day(12, 31), calendar: calendar), "ongoing never ends")
     }
 
+    func testLastDay() {
+        XCTAssertTrue(NutrientCourse.isLastDay(day(10, 24), on: day(10, 24, hour: 23), calendar: calendar))
+        XCTAssertFalse(NutrientCourse.isLastDay(day(10, 24), on: day(10, 23, hour: 23), calendar: calendar), "the day before")
+        XCTAssertFalse(NutrientCourse.isLastDay(day(10, 24), on: day(10, 25), calendar: calendar), "ended")
+        XCTAssertFalse(NutrientCourse.isLastDay(nil, on: day(10, 24), calendar: calendar), "ongoing has no last day")
+    }
+
     func testHistoryCountsACourseOnlyUpToItsLastDay() {
         let id = UUID()
         let nutrient = HistoryNutrient(id: id, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(10, 1),

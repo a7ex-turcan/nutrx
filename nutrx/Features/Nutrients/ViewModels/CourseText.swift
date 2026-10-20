@@ -8,6 +8,10 @@ struct CourseText {
 
     static let ongoing = "Ongoing"
 
+    /// Today's card on a course's last day (#128), and what VoiceOver reads for it.
+    static let lastDay = "Last day"
+    static let lastDaySpoken = "Last day of this course"
+
     /// The form's Duration row: "Ongoing", "Until Fri 24 Oct · 5 days", "Last day today", "Ended 24 Oct".
     func summary(endDate: Date?, now: Date) -> String {
         guard let endDate else { return Self.ongoing }

@@ -99,6 +99,12 @@ enum NutrientCourse {
         return max(1, days + 1)
     }
 
+    /// The course's last day is `date`'s day (Today's "Last day" line, #128). Never for an ongoing nutrient.
+    static func isLastDay(_ endDate: Date?, on date: Date, calendar: Calendar = .current) -> Bool {
+        guard let endDate else { return false }
+        return calendar.isDate(endDate, inSameDayAs: date)
+    }
+
     /// Past the last day (the day after it, or later).
     static func hasEnded(_ endDate: Date?, by date: Date, calendar: Calendar = .current) -> Bool {
         guard let endDate else { return false }
