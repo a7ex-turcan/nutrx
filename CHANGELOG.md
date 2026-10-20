@@ -7,7 +7,7 @@ All notable changes to nutrx are documented in this file.
 ## Unreleased
 
 ### Fixes
-- **My Nutrients at large text sizes** — At the largest text sizes, rows put the goal and amount under the name instead of breaking words mid-way, also in Select mode.
+- **My Nutrients at large text sizes** — At accessibility text sizes, rows put the goal and amount under the name instead of breaking words mid-way, also in Select mode.
 - **VoiceOver on the paywall** — While a purchase is in progress, the button reads "Purchasing…" instead of nothing, and the spinner while plans load reads "Loading plans".
 - **No more lost changes in the nutrient form** — Swiping the New or Edit Nutrient sheet down no longer throws away what you typed; Cancel asks "Discard changes?" first. An untouched form still closes straight away.
 - **Disabled Add and Save look disabled in dark mode** — In the nutrient form and Edit Profile, the Add or Save button no longer looks tappable before the form is ready.

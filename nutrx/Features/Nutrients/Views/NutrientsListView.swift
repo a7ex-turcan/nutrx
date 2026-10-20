@@ -451,10 +451,10 @@ struct NutrientsListView: View {
                 Text(nutrient.name)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
-                    // One long word ("Magnesium", "Omega-3") shrinks a little rather than breaking mid-word; names
-                    // with spaces wrap between words as usual.
-                    .lineLimit(large && !nutrient.name.contains(" ") ? 1 : nil)
-                    .minimumScaleFactor(large && !nutrient.name.contains(" ") ? 0.6 : 1)
+                    // At most one line per word, so a word too long for the row ("Magnesium", "Omega-3",
+                    // "Magnesium glycinate") shrinks rather than breaking mid-word; names still wrap between words.
+                    .lineLimit(large ? max(nutrient.name.split(separator: " ").count, 1) : nil)
+                    .minimumScaleFactor(large ? 0.5 : 1)
 
                 details {
                     Text(GoalTypePicker.label(for: nutrient.goalType))
