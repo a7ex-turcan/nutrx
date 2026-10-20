@@ -148,16 +148,7 @@ struct LogStackSheet: View {
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(max(nutrient.name.split(separator: " ").count, 1))
                     .minimumScaleFactor(0.7)
-                // One line, shrinking a little beside the stepper rather than wrapping at the slash (#97).
-                Text(logged != nil && progress.countsAsMet
-                     ? "\(progress.currentText) \(progress.goalText) · Done"
-                     : "\(progress.currentText) \(progress.goalText)")
-                    .font(.subheadline)
-                    .fontDesign(.rounded)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                totalLine(progress)
             }
             .accessibilityElement(children: .combine)
         }
@@ -173,13 +164,42 @@ struct LogStackSheet: View {
             } else {
                 HStack(spacing: 8) {
                     summary
-                    Spacer(minLength: 8)
+                    // No extra minimum: the stack's spacing keeps them apart, and the total needs every point (#97).
+                    Spacer(minLength: 0)
                     trailing(entry, nutrient: nutrient)
                 }
             }
         }
         .padding(.horizontal, Theme.Spacing.cardPadding)
         .padding(.vertical, 12)
+    }
+
+    /// "2,000 / 4,000 IU" (with "· Done" once logged and met). Beside the stepper it stays on one line: without the
+    /// unit, which the stepper shows, when the whole doesn't fit, rather than wrapping at the slash (#97). Stacked
+    /// rows have the width and may wrap.
+    @ViewBuilder
+    private func totalLine(_ progress: GoalProgress) -> some View {
+        let done = logged != nil && progress.countsAsMet ? " · Done" : ""
+        let full = "\(progress.currentText) \(progress.goalText)\(done)"
+        if stacksRows {
+            totalText(full)
+        } else {
+            ViewThatFits(in: .horizontal) {
+                totalText(full).lineLimit(1)
+                totalText("\(progress.currentText) \(progress.goalTextWithoutUnit)\(done)")
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .accessibilityLabel(full)
+            }
+        }
+    }
+
+    private func totalText(_ text: String) -> some View {
+        Text(text)
+            .font(.subheadline)
+            .fontDesign(.rounded)
+            .monospacedDigit()
+            .foregroundStyle(Theme.textSecondary)
     }
 
     /// The amount stepper before logging; the logged amount ("+2,000 IU", green) after.

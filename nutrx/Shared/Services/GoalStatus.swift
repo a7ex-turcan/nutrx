@@ -114,6 +114,9 @@ struct GoalProgress: Equatable {
     /// The goal after the bold total: "/ 4,000 IU", "max 400 mg", "/ 120–160 g".
     var goalText: String { goalText(locale: .current) }
 
+    /// The goal without its unit, beside a stepper that shows it (the stack log sheet, #97): "/ 4,000", "max 400".
+    var goalTextWithoutUnit: String { goalText(locale: .current, includingUnit: false) }
+
     /// The goal on its own: "4,000 IU", "400 mg", "120–160 g".
     var goalAmountText: String { goalAmountText(locale: .current) }
 
@@ -188,14 +191,15 @@ struct GoalProgress: Equatable {
         Self.number(current, locale)
     }
 
-    func goalText(locale: Locale) -> String {
+    func goalText(locale: Locale, includingUnit: Bool = true) -> String {
+        let amount = { (value: Double) in includingUnit ? self.amount(value, locale) : Self.number(value, locale) }
         switch goal {
         case .atLeast(let target):
-            return "/ \(amount(target, locale))"
+            return "/ \(amount(target))"
         case .atMost(let limit):
-            return "max \(amount(limit, locale))"
+            return "max \(amount(limit))"
         case .between(let lower, let upper):
-            return "/ \(Self.number(lower, locale))–\(amount(upper, locale))"
+            return "/ \(Self.number(lower, locale))–\(amount(upper))"
         }
     }
 
