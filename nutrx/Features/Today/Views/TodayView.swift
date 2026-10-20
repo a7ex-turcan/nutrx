@@ -62,6 +62,8 @@ struct TodayView: View {
     @State private var streak: StreakResult?
     @State private var notificationsAllowed = false
     @State private var showAddSheet = false
+    @State private var showPaywall = false
+    @State private var showEnjoyPro = false
     @State private var addDraft = NutrientDraft()
     @State private var selectedGroupForAdd: NutrientGroup?
     @AppStorage("wasSyncRestored") private var wasSyncRestored = false
@@ -164,11 +166,12 @@ struct TodayView: View {
             // bar caps its items' text size, so the chip itself never sees an accessibility size.
             if !dynamicTypeSize.isAccessibilitySize {
                 ToolbarItem(placement: .topBarLeading) {
-                    PlanChip()
+                    PlanChip(showPaywall: $showPaywall, showEnjoy: $showEnjoyPro)
                 }
                 .sharedBackgroundVisibility(.hidden)
             }
         }
+        .planChipSheets(showPaywall: $showPaywall, showEnjoy: $showEnjoyPro)
         .onAppear {
             viewModel.refresh(context: modelContext)
             refreshBannerVisibility()
