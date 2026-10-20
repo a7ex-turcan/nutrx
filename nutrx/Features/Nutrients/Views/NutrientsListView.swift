@@ -348,27 +348,31 @@ struct NutrientsListView: View {
         let count = selection.count
         let selectable = nutrients.filter { !$0.hasEnded() }
         let allSelected = count == selectable.count
-        return VStack(spacing: 10) {
-            HStack {
-                Button(allSelected ? "Deselect All" : "Select All") {
-                    selection = allSelected ? [] : Set(selectable.map(\.persistentModelID))
-                }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.controlPrimary)
-                Spacer()
-                Text(count == 1 ? "1 selected" : "\(count) selected")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.textSecondary)
-                    .monospacedDigit()
+        let toggleAll = { selection = allSelected ? [] : Set(selectable.map(\.persistentModelID)) }
+        return Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                iconSelectionBar(count: count, allSelected: allSelected, toggleAll: toggleAll)
+            } else {
+                labelledSelectionBar(count: count, allSelected: allSelected, toggleAll: toggleAll)
             }
-            // Side by side, or stacked at accessibility sizes so "Move to Group" isn't cut short.
-            let actions = dynamicTypeSize.isAccessibilitySize
-                ? AnyLayout(VStackLayout(spacing: 10)) : AnyLayout(HStackLayout(spacing: 10))
-            actions {
-                Button {
-                    actingOn = selectedNutrients
-                    showMoveSelection = true
-                } label: {
+        }
+        .padding(.horizontal, Theme.Spacing.screenMargin)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background(Theme.surfaceGround)
+    }
+
+    private func labelledSelectionBar(count: Int, allSelected: Bool, toggleAll: @escaping () -> Void) -> some View {
+        VStack(spacing: 10) {
+            HStack {
+                Button(allSelected ? "Deselect All" : "Select All", action: toggleAll)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.controlPrimary)
+                Spacer()
+                selectedCount(count)
+            }
+            HStack(spacing: 10) {
+                Button(action: moveSelection) {
                     Label("Move to Group", systemImage: "folder")
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 50)
@@ -376,11 +380,8 @@ struct NutrientsListView: View {
                         .background(Theme.controlPrimary,
                                     in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
                 }
-                .accessibilityLabel(count == 1 ? "Move 1 nutrient to a group" : "Move \(count) nutrients to a group")
-                Button(role: .destructive) {
-                    actingOn = selectedNutrients
-                    confirmDeleteSelection = true
-                } label: {
+                .accessibilityLabel(moveLabel(count))
+                Button(role: .destructive, action: deleteSelectionAsking) {
                     Label("Delete", systemImage: "trash")
                         .font(.headline)
                         .frame(maxWidth: .infinity, minHeight: 50)
@@ -388,16 +389,83 @@ struct NutrientsListView: View {
                         .background(Color.red.opacity(0.12),
                                     in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
                 }
-                .accessibilityLabel(count == 1 ? "Delete 1 nutrient" : "Delete \(count) nutrients")
+                .accessibilityLabel(deleteLabel(count))
             }
             .buttonStyle(.plain)
             .disabled(count == 0)
             .opacity(count == 0 ? 0.4 : 1)
         }
-        .padding(.horizontal, Theme.Spacing.screenMargin)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
-        .background(Theme.surfaceGround)
+    }
+
+    /// At accessibility sizes the labelled bar wrapped every label and took half the screen, leaving less than a row
+    /// to select from (#171). Here it's one row of icon buttons that stops growing at XXXL, like the tab bar, and shows
+    /// its labels in the Large Content Viewer on a long press.
+    private func iconSelectionBar(count: Int, allSelected: Bool, toggleAll: @escaping () -> Void) -> some View {
+        HStack(spacing: 12) {
+            selectionIconButton(allSelected ? "Deselect All" : "Select All",
+                                systemImage: allSelected ? "checklist.unchecked" : "checklist.checked",
+                                foreground: Theme.controlPrimary, background: Theme.controlPrimary.opacity(0.12),
+                                action: toggleAll)
+            Spacer(minLength: 0)
+            selectedCount(count)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .accessibilityShowsLargeContentViewer()
+            Spacer(minLength: 0)
+            Group {
+                selectionIconButton("Move to Group", systemImage: "folder",
+                                    foreground: Theme.controlOnPrimary, background: Theme.controlPrimary,
+                                    spokenAs: moveLabel(count), action: moveSelection)
+                selectionIconButton("Delete", systemImage: "trash",
+                                    foreground: .red, background: Color.red.opacity(0.12),
+                                    role: .destructive, spokenAs: deleteLabel(count), action: deleteSelectionAsking)
+            }
+            .disabled(count == 0)
+            .opacity(count == 0 ? 0.4 : 1)
+        }
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+
+    private func selectionIconButton(_ title: String, systemImage: String, foreground: Color, background: Color,
+                                     role: ButtonRole? = nil, spokenAs spoken: String? = nil,
+                                     action: @escaping () -> Void) -> some View {
+        Button(role: role, action: action) {
+            Image(systemName: systemImage)
+                .font(.headline)
+                .foregroundStyle(foreground)
+                .frame(width: 56, height: 50)
+                .background(background, in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(spoken ?? title)
+        .accessibilityShowsLargeContentViewer {
+            Label(title, systemImage: systemImage)
+        }
+    }
+
+    private func selectedCount(_ count: Int) -> some View {
+        Text(count == 1 ? "1 selected" : "\(count) selected")
+            .font(.subheadline)
+            .foregroundStyle(Theme.textSecondary)
+            .monospacedDigit()
+    }
+
+    private func moveLabel(_ count: Int) -> String {
+        count == 1 ? "Move 1 nutrient to a group" : "Move \(count) nutrients to a group"
+    }
+
+    private func deleteLabel(_ count: Int) -> String {
+        count == 1 ? "Delete 1 nutrient" : "Delete \(count) nutrients"
+    }
+
+    private func moveSelection() {
+        actingOn = selectedNutrients
+        showMoveSelection = true
+    }
+
+    private func deleteSelectionAsking() {
+        actingOn = selectedNutrients
+        confirmDeleteSelection = true
     }
 
     private func endSelecting() {
