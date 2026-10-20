@@ -97,6 +97,7 @@ struct LogStackSheet: View {
             .padding(.top, large ? 20 : 12)
             .padding(.bottom, 24)
         }
+        .scrollBounceBehavior(.basedOnSize)
         // Rows scrolled up at half height were drawn above the sheet's top edge.
         .clipped()
         // Pinned, so Log (or Undo / Done) is on screen at half height whatever the phone and text size; the rows
