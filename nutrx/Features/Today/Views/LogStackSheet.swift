@@ -48,9 +48,35 @@ struct LogStackSheet: View {
     }
 
     var body: some View {
+        let large = dynamicTypeSize.isAccessibilitySize
+        VStack(spacing: 0) {
+            // Pinned above the rows, so the title never scrolls past the sheet's rounded top corners, which a
+            // rectangular clip doesn't follow (#180). At accessibility sizes it scrolls with the rows, like the footer.
+            if !large {
+                header
+                    .padding(.horizontal, Theme.Spacing.screenMargin)
+                    .padding(.top, 20)
+                    .padding(.bottom, 4)
+            }
+            sheetContent(large: large)
+        }
+        .background(Theme.surfaceGround)
+        // At accessibility sizes half a screen holds only the header and one row, so it opens full height. With
+        // more than three rows it opens full height too, so they're all in view (it can still be dragged down).
+        .presentationDetents(large ? [.large] : [.medium, .large],
+                             selection: large ? .constant(.large) : $detent)
+        .presentationDragIndicator(.visible)
+        // At half height a swipe on the rows scrolls them rather than growing the sheet, so a row behind the pinned
+        // footer can be reached (#180); the grabber still resizes it.
+        .presentationContentInteraction(.scrolls)
+    }
+
+    private func sheetContent(large: Bool) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                header
+                if large {
+                    header
+                }
                 VStack(spacing: 0) {
                     ForEach(Array(entries.enumerated()), id: \.element.persistentModelID) { index, entry in
                         if index > 0 {
@@ -62,12 +88,13 @@ struct LogStackSheet: View {
                 .cardStyle()
 
                 // At accessibility sizes the sheet is full height and the footer scrolls with the rows.
-                if dynamicTypeSize.isAccessibilitySize {
+                if large {
                     footer
                 }
             }
             .padding(.horizontal, Theme.Spacing.screenMargin)
-            .padding(.top, 20)
+            // Room above the card for its shadow when the header is pinned.
+            .padding(.top, large ? 20 : 12)
             .padding(.bottom, 24)
         }
         .scrollBounceBehavior(.basedOnSize)
@@ -76,7 +103,7 @@ struct LogStackSheet: View {
         // Pinned, so Log (or Undo / Done) is on screen at half height whatever the phone and text size; the rows
         // scroll above it.
         .safeAreaInset(edge: .bottom) {
-            if !dynamicTypeSize.isAccessibilitySize {
+            if !large {
                 footer
                     .padding(.horizontal, Theme.Spacing.screenMargin)
                     .padding(.top, 12)
@@ -84,12 +111,6 @@ struct LogStackSheet: View {
                     .background(Theme.surfaceGround)
             }
         }
-        .background(Theme.surfaceGround)
-        // At accessibility sizes half a screen holds only the header and one row, so it opens full height. With
-        // more than three rows it opens full height too, so they're all in view (it can still be dragged down).
-        .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large],
-                             selection: dynamicTypeSize.isAccessibilitySize ? .constant(.large) : $detent)
-        .presentationDragIndicator(.visible)
     }
 
     @ViewBuilder
