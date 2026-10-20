@@ -1,0 +1,40 @@
+#!/bin/bash
+# Checks that a CloudKit environment's schema has every field the app's SwiftData models need (#145).
+# TestFlight and App Store builds use the PRODUCTION schema, so a new model field must be deployed there (CloudKit
+# Console → Deploy Schema Changes…) before any TestFlight upload, or CloudKit can reject that record type's saves.
+#
+# Usage: Tools/check-cloudkit-schema [production|development]   (default: production)
+# Needs a cktool token saved for team 6396A6L9J3 (`xcrun cktool save-token`). Exits 1 and lists what to deploy when
+# a field is missing. The expected fields come from Tools/CloudKitSchema/fields.txt, which CloudKitSchemaFieldsTests
+# keeps in step with ModelContainerFactory.models.
+set -euo pipefail
+
+environment="${1:-production}"
+root="$(cd "$(dirname "$0")/.." && pwd)"
+expected="$root/Tools/CloudKitSchema/fields.txt"
+exported="$(mktemp -t nutrx-ckschema)"
+trap 'rm -f "$exported"' EXIT
+
+xcrun cktool export-schema --team-id 6396A6L9J3 --container-id iCloud.nutrx-labs.nutrx \
+    --environment "$environment" --output-file "$exported" >/dev/null
+
+python3 - "$expected" "$exported" "$environment" <<'PY'
+import re, sys
+expected_path, exported_path, environment = sys.argv[1:4]
+wanted = [line.split() for line in open(expected_path) if line.strip() and not line.startswith("#")]
+have, current = {}, None
+for line in open(exported_path):
+    m = re.match(r"\s*RECORD TYPE (\S+) \(", line)
+    if m:
+        current = m.group(1); have[current] = set(); continue
+    m = re.match(r"\s*(CD_\w+)\s+\w+", line)
+    if current and m:
+        have[current].add(m.group(1))
+missing = [f"{t}.{f}" for t, f in wanted if f not in have.get(t, set())]
+if missing:
+    print(f"The {environment} CloudKit schema is missing {len(missing)} field(s). Deploy these first:")
+    for item in missing:
+        print(f"  {item}")
+    sys.exit(1)
+print(f"The {environment} CloudKit schema has all {len(wanted)} fields the models need.")
+PY
