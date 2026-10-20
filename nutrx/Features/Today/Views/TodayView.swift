@@ -467,7 +467,8 @@ struct TodayView: View {
                 checkForReview()
             },
             supply: supplyHint(for: entry.nutrient),
-            onRefill: { nutrientToRefill = entry.nutrient }
+            onRefill: { nutrientToRefill = entry.nutrient },
+            isLastDay: NutrientCourse.isLastDay(entry.nutrient.endDate, on: .now)
         )
         .listRowInsets(cardRowInsets)
         .listRowSeparator(.hidden)

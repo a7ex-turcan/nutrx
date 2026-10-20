@@ -12,6 +12,8 @@ struct NutrientCard: View {
     /// The supply hint for the third line (nutrx Pro): low or out, nil otherwise.
     var supply: SupplyHint? = nil
     var onRefill: () -> Void = {}
+    /// A course's last day (nutrx Pro, #128): "Last day" on the third line, in place of a low-supply hint.
+    var isLastDay: Bool = false
 
     /// What Today shows about supply: "About 6 days left", or out with a Refilled? link.
     struct SupplyHint: Equatable {
@@ -86,9 +88,30 @@ struct NutrientCard: View {
         .accessibilityAddTraits(.isButton)  // children: .ignore can drop the button's own trait
     }
 
-    /// The third line. With a supply hint it's shared, so the card's height never changes: "2,000 IU to go ·
-    /// About 6 days left" (amber with a bottle), or "Out of supply · Refilled?" in place of the goal status. If both
-    /// don't fit on one line, the supply part stays.
+    /// A short note that shares the third line with the goal status: supply running low, or a course's last day.
+    private struct LineHint {
+        let symbol: String
+        let text: String
+        var shortText: String? = nil
+        var compactText: String? = nil
+        let color: Color
+    }
+
+    /// On a course's last day that beats a low-supply hint: the days of supply left past the course don't matter.
+    private var lineHint: LineHint? {
+        if isLastDay {
+            return LineHint(symbol: "hourglass", text: CourseText.lastDay, color: Theme.textSecondary)
+        }
+        if let supply, !supply.isOut {
+            return LineHint(symbol: "waterbottle", text: supply.text, shortText: supply.shortText,
+                            compactText: supply.compactText, color: Theme.textAmberInk)
+        }
+        return nil
+    }
+
+    /// The third line. With a hint it's shared, so the card's height never changes: "2,000 IU to go · About 6 days
+    /// left" (amber with a bottle), "2,000 IU to go · Last day" (an hourglass), or "Out of supply · Refilled?" in
+    /// place of the goal status. If both don't fit on one line, the hint stays.
     @ViewBuilder
     private func statusLine(_ progress: GoalProgress) -> some View {
         let goal = Text(progress.remainingText)
@@ -107,16 +130,16 @@ struct NutrientCard: View {
                     .accessibilityHidden(true)  // the card's "Refilled" action
             }
             .lineLimit(1)
-        } else if let supply {
+        } else if let hint = lineHint {
             if dynamicTypeSize.isAccessibilitySize {
                 // Wrapping is fine here: the card already grows at these sizes.
-                VStack(alignment: .leading, spacing: 2) { goal; supplyHint(supply.text) }
+                VStack(alignment: .leading, spacing: 2) { goal; hintView(hint, hint.text) }
             } else {
                 ViewThatFits(in: .horizontal) {
-                    sharedLine(goal, supply.text)
-                    if let short = supply.shortText { sharedLine(goal, short) }
-                    if let compact = supply.compactText { sharedLine(goal, compact) }
-                    supplyHint(supply.text).lineLimit(1)
+                    sharedLine(goal, hint, hint.text)
+                    if let short = hint.shortText { sharedLine(goal, hint, short) }
+                    if let compact = hint.compactText { sharedLine(goal, hint, compact) }
+                    hintView(hint, hint.text).lineLimit(1)
                 }
             }
         } else {
@@ -124,32 +147,34 @@ struct NutrientCard: View {
         }
     }
 
-    private func supplyHint(_ text: String) -> some View {
+    private func hintView(_ hint: LineHint, _ text: String) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 3) {
-            Image(systemName: "waterbottle")
+            Image(systemName: hint.symbol)
                 .font(.caption2.weight(.semibold))
                 .accessibilityHidden(true)
             Text(text)
                 .font(.caption.weight(.semibold))
         }
-        .foregroundStyle(Theme.textAmberInk)
+        .foregroundStyle(hint.color)
     }
 
-    private func sharedLine(_ goal: some View, _ text: String) -> some View {
+    private func sharedLine(_ goal: some View, _ hint: LineHint, _ text: String) -> some View {
         HStack(spacing: 4) {
             goal
             Text("·").font(.caption.weight(.semibold)).foregroundStyle(Theme.textSecondary)
-            supplyHint(text)
+            hintView(hint, text)
         }
         .lineLimit(1)
         .fixedSize()
     }
 
-    /// "2,000 / 4,000 IU, 2,000 IU to go", plus the supply hint when there is one (out replaces the goal status).
+    /// "2,000 / 4,000 IU, 2,000 IU to go", plus what the third line adds: the supply hint (out replaces the goal
+    /// status) or a course's last day, which takes a low-supply hint's place there too.
     private func accessibilityValue(_ progress: GoalProgress) -> String {
         var parts = [progress.progressText]
         if supply?.isOut != true { parts.append(progress.remainingText) }
-        if let supply { parts.append(supply.text) }
+        if let supply, supply.isOut || !isLastDay { parts.append(supply.text) }
+        if isLastDay { parts.append(CourseText.lastDaySpoken) }
         return parts.joined(separator: ", ")
     }
 
@@ -204,6 +229,8 @@ private struct NutrientCardPreviewGallery: View {
                 card("Water", unit: "L", target: 2.5, current: 0, tint: .blue, symbol: "drop")
                 card("Caffeine", unit: "mg", target: 400, current: 320, tint: .brown, symbol: "cup.and.saucer", goal: .maximum)
                 card("Protein", unit: "g", target: 120, upper: 160, current: 92, tint: .coral, symbol: "dumbbell", goal: .range)
+                card("Zinc", unit: "mg", target: 25, current: 10, tint: .green, symbol: "pills", lastDay: true)
+                card("Magnesium", unit: "mg", target: 400, current: 400, tint: .indigo, symbol: "pills", lastDay: true)
             }
             .padding(Theme.Spacing.screenMargin)
         }
@@ -211,12 +238,12 @@ private struct NutrientCardPreviewGallery: View {
     }
 
     private func card(_ name: String, unit: String, target: Double, upper: Double? = nil, current: Double,
-                      tint: NutrientTint, symbol: String, goal: GoalType = .minimum) -> some View {
+                      tint: NutrientTint, symbol: String, goal: GoalType = .minimum, lastDay: Bool = false) -> some View {
         let nutrient = Nutrient(name: name, unit: unit, step: 1, dailyTarget: target, sortOrder: 0,
                                 goalType: goal, upperBound: upper)
         nutrient.tint = tint
         nutrient.symbolName = symbol
-        return NutrientCard(nutrient: nutrient, currentIntake: current)
+        return NutrientCard(nutrient: nutrient, currentIntake: current, isLastDay: lastDay)
     }
 }
 

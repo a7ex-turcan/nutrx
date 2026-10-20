@@ -853,7 +853,7 @@ A nutrient taken for a set time ("for 5 days", "until 24 Oct").
 - **My Nutrients:** ended courses leave their group for a collapsed **Finished** section at the end (newest first, "FINISHED 2"), with "Ended 24 Oct" in place of the goal. No bell (their reminders have stopped). Long-press: **Restart** (back to ongoing and onto Today, reminders back), Edit Nutrient, Delete. Analytics still open. Select mode hides the section, and Select All picks only running nutrients.
 - **If Pro lapses:** existing end dates keep working (nothing reappears on Today); setting one needs Pro.
 - **Paywall:** listed as `ProFeature.courses` ("Courses", "Take something for a set time", green `hourglass`), so the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line include it (#147).
-- Not built: a "Last day" line on Today's card (#128).
+- **Today on the last day** (#128): the card's third line reads "2,000 IU to go · ⌛ Last day" (`NutrientCard.isLastDay`, `NutrientCourse.isLastDay`, `CourseText.lastDay`), sharing the line like the supply hint, so the card's height doesn't change; if both don't fit the hint stays, and at accessibility sizes they wrap. It takes a low-supply hint's place that day; "Out of supply · Refilled?" still wins.
 
 ### nutrx Pro: Report for your doctor (phase 8)
 
