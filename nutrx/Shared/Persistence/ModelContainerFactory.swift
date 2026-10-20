@@ -9,18 +9,21 @@ enum ModelContainerFactory {
     static let cloudKitContainerID = "iCloud.nutrx-labs.nutrx"
     private static let cloudKitUpgradeKey = "nutrx.hasCompletedCloudKitUpgrade"
 
+    /// Every stored model: the schema, and the tests that check every model (`ManagedObjectNameTests`).
+    static let models: [any PersistentModel.Type] = [
+        UserProfile.self,
+        Nutrient.self,
+        IntakeRecord.self,
+        Exclusion.self,
+        UserPreferences.self,
+        NutrientReminder.self,
+        NutrientGroup.self,
+        LogStack.self,
+        LogStackEntry.self,
+    ]
+
     static var schema: Schema {
-        Schema([
-            UserProfile.self,
-            Nutrient.self,
-            IntakeRecord.self,
-            Exclusion.self,
-            UserPreferences.self,
-            NutrientReminder.self,
-            NutrientGroup.self,
-            LogStack.self,
-            LogStackEntry.self,
-        ])
+        Schema(models)
     }
 
     /// The shared App Group store without CloudKit, for app extensions (the widget's "+" buttons).

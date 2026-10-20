@@ -12,12 +12,8 @@ final class ManagedObjectNameTests: XCTestCase {
     private let allowed: Set<String> = ["Nutrient.isDeleted"]
 
     func testNoStoredPropertyClashesWithNSManagedObject() throws {
-        let models: [any PersistentModel.Type] = ModelContainerFactory.schema.entities.compactMap { _ in nil }
-            + [UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self, UserPreferences.self,
-               NutrientReminder.self, NutrientGroup.self, LogStack.self, LogStackEntry.self]
-        let model = try XCTUnwrap(NSManagedObjectModel.makeManagedObjectModel(for: models))
-        XCTAssertEqual(model.entities.count, ModelContainerFactory.schema.entities.count,
-                       "a model was added to the schema but not to this test")
+        // The same list the store's schema is built from, so a model added later is checked too.
+        let model = try XCTUnwrap(NSManagedObjectModel.makeManagedObjectModel(for: ModelContainerFactory.models))
 
         var clashes: [String] = []
         for entity in model.entities {
