@@ -7,15 +7,20 @@ struct WeekdayHeatmap: View {
     let tint: NutrientTint
 
     @Environment(\.self) private var environment
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     private let calendar = Calendar.current
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
+            // Stacked at accessibility sizes, where side by side the title broke as "Week-day" (#66).
+            let header = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+                : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
+            header {
                 Text("Weekday pattern")
                     .font(.headline)
                     .foregroundStyle(Theme.textPrimary)
-                Spacer()
+                if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                 Text("Last 4 weeks")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
@@ -51,6 +56,9 @@ struct WeekdayHeatmap: View {
                         .foregroundStyle(ink)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
+                        // The square doesn't grow with the text, so the percentage stops growing too: at the
+                        // largest sizes it read "1…" (#66). VoiceOver reads the full value.
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .padding(2)
                 }
             Text(calendar.veryShortWeekdaySymbols[entry.weekday - 1])

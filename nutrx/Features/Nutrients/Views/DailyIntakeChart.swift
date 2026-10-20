@@ -10,6 +10,15 @@ struct DailyIntakeChart: View {
     let nutrientName: String
     let unit: String
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    /// The widest goal label, measured, so the plot leaves exactly that much room on its right for the labels.
+    @State private var labelWidth: CGFloat = 0
+
+    /// Goal labels sit in a gutter right of the plot, where no bar reaches (#47). At accessibility sizes even that
+    /// gutter would squeeze the bars, so they become a legend line above the chart instead (#66).
+    private var labelsInGutter: Bool { !dynamicTypeSize.isAccessibilitySize }
+    private static let gutterGap: CGFloat = 6
+
     private var isWeek: Bool { days.count <= 7 }
     private var barRadius: CGFloat { isWeek ? 10 : (days.count <= 30 ? 4 : 2) }
     private static let barWidth = 0.7
@@ -28,6 +37,35 @@ struct DailyIntakeChart: View {
     }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if !labelsInGutter {
+                legend
+            }
+            chart
+        }
+    }
+
+    /// The goal labels as a line above the chart, at accessibility sizes: a dashed swatch and "Goal 4,000".
+    private var legend: some View {
+        HStack(spacing: 14) {
+            ForEach(goalLabels, id: \.text) { label in
+                HStack(spacing: 6) {
+                    Path { path in
+                        path.move(to: CGPoint(x: 0, y: 1))
+                        path.addLine(to: CGPoint(x: 18, y: 1))
+                    }
+                    .stroke(Theme.textSecondary.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .frame(width: 18, height: 2)
+                    Text(label.text)
+                        .font(.system(.caption2, design: .rounded, weight: .semibold))
+                        .foregroundStyle(Theme.textSecondary)
+                }
+            }
+        }
+        .accessibilityHidden(true)
+    }
+
+    private var chart: some View {
         Chart {
             ForEach(days.filter { !$0.isToday }) { day in
                 BarMark(
@@ -59,22 +97,25 @@ struct DailyIntakeChart: View {
         .chartYScale(domain: 0...yMax)
         .chartYAxis(.hidden)
         .chartXAxis { xAxis }
+        .chartPlotStyle { plot in
+            plot.padding(.trailing, labelsInGutter ? labelWidth + Self.gutterGap : 0)
+        }
         .chartOverlay { proxy in
             GeometryReader { geo in
                 if let frame = proxy.plotFrame {
                     let plot = geo[frame]
                     todayOutline(proxy: proxy, plot: plot)
-                    // Labels here rather than as mark annotations: Swift Charts draws later bars over annotations.
-                    ForEach(goalLabels, id: \.text) { label in
-                        if let y = proxy.position(forY: label.value) {
-                            Text(label.text)
-                                .font(.system(.caption2, design: .rounded, weight: .semibold))
-                                .foregroundStyle(Theme.textSecondary)
-                                .padding(.horizontal, 4)
-                                .background(Theme.surfaceCard, in: Capsule())
-                                .fixedSize()
-                                .frame(width: plot.width, alignment: .trailing)
-                                .position(x: plot.midX, y: plot.minY + y + (label.isAbove ? -9 : 9))
+                    // In the gutter right of the plot, where no bar reaches (#47); drawn here rather than as mark
+                    // annotations, which Swift Charts draws later bars over.
+                    if labelsInGutter {
+                        ForEach(goalLabels, id: \.text) { label in
+                            if let y = proxy.position(forY: label.value) {
+                                goalLabelText(label)
+                                    .fixedSize()
+                                    .frame(width: labelWidth, alignment: .leading)
+                                    .position(x: plot.maxX + Self.gutterGap + labelWidth / 2,
+                                              y: plot.minY + y + labelOffset(label))
+                            }
                         }
                     }
                 }
@@ -83,7 +124,30 @@ struct DailyIntakeChart: View {
             .accessibilityHidden(true)
         }
         .frame(height: 170)
+        .background(alignment: .topLeading) {
+            // Measures the widest label for the gutter; never shown.
+            VStack(alignment: .leading) {
+                ForEach(goalLabels, id: \.text) { goalLabelText($0) }
+            }
+            .fixedSize()
+            .hidden()
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { labelWidth = $0 }
+            .accessibilityHidden(true)
+        }
         .accessibilityLabel("Daily \(nutrientName) intake, last \(days.count) days")
+    }
+
+    private func goalLabelText(_ label: GoalLabel) -> some View {
+        Text(label.text)
+            .font(.system(.caption2, design: .rounded, weight: .semibold))
+            .foregroundStyle(Theme.textSecondary)
+    }
+
+    /// Centred on its line, except a range's two labels, which move apart (Max up, Min down) so close bounds don't
+    /// overlap.
+    private func labelOffset(_ label: GoalLabel) -> CGFloat {
+        guard goal.goalType == .range else { return 0 }
+        return label.isAbove ? -7 : 7
     }
 
     private func accessibilityValue(for day: AnalyticsDay) -> String {
@@ -154,7 +218,9 @@ struct DailyIntakeChart: View {
                 }
             }
         } else {
-            AxisMarks(values: .stride(by: .day, count: days.count <= 30 ? 7 : 30)) { _ in
+            // Half as many dates at accessibility sizes, where weekly ones ran into each other.
+            let large = dynamicTypeSize.isAccessibilitySize
+            AxisMarks(values: .stride(by: .day, count: days.count <= 30 ? (large ? 14 : 7) : (large ? 45 : 30))) { _ in
                 AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
                     .foregroundStyle(Theme.textSecondary)
             }
