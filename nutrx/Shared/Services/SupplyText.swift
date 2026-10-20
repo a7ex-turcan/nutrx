@@ -25,8 +25,9 @@ enum SupplyText {
         }
     }
 
-    /// The tightest form, next to the bottle symbol: "6 days", "1 day", "Today".
+    /// The tightest form, next to the bottle symbol: "6 days", "1 day", "Today", or "Out" (before "Refilled?").
     static func compactHint(_ status: SupplySchedule.Status) -> String? {
+        if status.level == .out { return "Out" }
         guard status.level == .low else { return nil }
         switch status.daysLeft ?? 0 {
         case ...0: return "Today"

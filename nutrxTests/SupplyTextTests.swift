@@ -59,6 +59,7 @@ final class SupplyTextTests: XCTestCase {
         XCTAssertEqual(SupplyText.shortHint(status(level: .out, remaining: 0, daysLeft: 0)), "Out of supply")
         XCTAssertEqual(SupplyText.compactHint(status(level: .low)), "6 days")
         XCTAssertEqual(SupplyText.compactHint(status(level: .low, daysLeft: 0)), "Today")
+        XCTAssertEqual(SupplyText.compactHint(status(level: .out, remaining: 0, daysLeft: 0)), "Out")
         XCTAssertNil(SupplyText.compactHint(status(level: .plenty, daysLeft: 50)))
     }
 

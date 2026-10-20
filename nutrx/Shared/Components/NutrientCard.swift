@@ -118,18 +118,22 @@ struct NutrientCard: View {
             .font(.caption.weight(.semibold))
             .foregroundStyle(progress.status.textColor)
         if let supply, supply.isOut {
-            HStack(spacing: 4) {
-                Text("\(supply.text) ·")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.textSecondary)
-                Button("Refilled?", action: onRefill)
-                    .font(.caption.weight(.semibold))
-                    .underline()
-                    .foregroundStyle(Theme.textGreenInk)
-                    .buttonStyle(.plain)
-                    .accessibilityHidden(true)  // the card's "Refilled" action
+            // Shorter until it fits on the line ("Out of supply · Refilled?" was cut off on an iPhone 17e, #185);
+            // at accessibility sizes the card grows, so the two parts wrap instead.
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 2) {
+                    outText(supply.text)
+                    refilledButton
+                }
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    outLine { outText("\(supply.text) ·") }
+                    if let compact = supply.compactText {
+                        outLine { bottle; outText("\(compact) ·") }
+                    }
+                    outLine(fixed: false) { bottle }  // the last try may truncate rather than push into the buttons
+                }
             }
-            .lineLimit(1)
         } else if let hint = lineHint {
             if dynamicTypeSize.isAccessibilitySize {
                 // Wrapping is fine here: the card already grows at these sizes.
@@ -139,12 +143,46 @@ struct NutrientCard: View {
                     sharedLine(goal, hint, hint.text)
                     if let short = hint.shortText { sharedLine(goal, hint, short) }
                     if let compact = hint.compactText { sharedLine(goal, hint, compact) }
-                    hintView(hint, hint.text).lineLimit(1)
+                    // Alone, it shortens too: "About 6 day…" was cut off at XXXL on an iPhone 17e (#185).
+                    hintView(hint, hint.text).lineLimit(1).fixedSize()
+                    if let short = hint.shortText { hintView(hint, short).lineLimit(1).fixedSize() }
+                    hintView(hint, hint.compactText ?? hint.shortText ?? hint.text).lineLimit(1)
                 }
             }
         } else {
             goal
         }
+    }
+
+    private func outText(_ text: String) -> some View {
+        Text(text)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.textSecondary)
+    }
+
+    private var bottle: some View {
+        Image(systemName: "waterbottle")
+            .font(.caption2.weight(.semibold))
+            .foregroundStyle(Theme.textSecondary)
+            .accessibilityHidden(true)
+    }
+
+    private var refilledButton: some View {
+        Button("Refilled?", action: onRefill)
+            .font(.caption.weight(.semibold))
+            .underline()
+            .foregroundStyle(Theme.textGreenInk)
+            .buttonStyle(.plain)
+            .accessibilityHidden(true)  // the card's "Refilled" action
+    }
+
+    private func outLine(fixed: Bool = true, @ViewBuilder _ lead: () -> some View) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            lead()
+            refilledButton
+        }
+        .lineLimit(1)
+        .fixedSize(horizontal: fixed, vertical: false)
     }
 
     private func hintView(_ hint: LineHint, _ text: String) -> some View {
@@ -238,6 +276,10 @@ private struct NutrientCardPreviewGallery: View {
                 card("Protein", unit: "g", target: 120, upper: 160, current: 92, tint: .coral, symbol: "dumbbell", goal: .range)
                 card("Zinc", unit: "mg", target: 25, current: 10, tint: .green, symbol: "pills", lastDay: true)
                 card("Magnesium", unit: "mg", target: 400, current: 400, tint: .indigo, symbol: "pills", lastDay: true)
+                card("Omega-3 Fish Oil", unit: "mg", target: 2000, current: 1000, tint: .teal, symbol: "fish",
+                     supply: .init(text: "Out of supply", shortText: "Out of supply", compactText: "Out", isOut: true))
+                card("Vitamin B12", unit: "mcg", target: 1000, current: 0, tint: .pink, symbol: "pills",
+                     supply: .init(text: "About 6 days left", shortText: "6 days left", compactText: "6 days", isOut: false))
             }
             .padding(Theme.Spacing.screenMargin)
         }
@@ -245,12 +287,13 @@ private struct NutrientCardPreviewGallery: View {
     }
 
     private func card(_ name: String, unit: String, target: Double, upper: Double? = nil, current: Double,
-                      tint: NutrientTint, symbol: String, goal: GoalType = .minimum, lastDay: Bool = false) -> some View {
+                      tint: NutrientTint, symbol: String, goal: GoalType = .minimum, lastDay: Bool = false,
+                      supply: NutrientCard.SupplyHint? = nil) -> some View {
         let nutrient = Nutrient(name: name, unit: unit, step: 1, dailyTarget: target, sortOrder: 0,
                                 goalType: goal, upperBound: upper)
         nutrient.tint = tint
         nutrient.symbolName = symbol
-        return NutrientCard(nutrient: nutrient, currentIntake: current, isLastDay: lastDay)
+        return NutrientCard(nutrient: nutrient, currentIntake: current, supply: supply, isLastDay: lastDay)
     }
 }
 
