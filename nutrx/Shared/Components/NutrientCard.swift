@@ -168,13 +168,20 @@ struct NutrientCard: View {
         .fixedSize()
     }
 
-    /// "2,000 / 4,000 IU, 2,000 IU to go", plus what the third line adds: the supply hint (out replaces the goal
-    /// status) or a course's last day, which takes a low-supply hint's place there too.
+    /// "2,000 / 4,000 IU, 2,000 IU to go", plus what the third line shows: out of supply (in place of the goal
+    /// status), else a course's last day, else a low-supply hint, so VoiceOver says what the screen does.
     private func accessibilityValue(_ progress: GoalProgress) -> String {
         var parts = [progress.progressText]
-        if supply?.isOut != true { parts.append(progress.remainingText) }
-        if let supply, supply.isOut || !isLastDay { parts.append(supply.text) }
-        if isLastDay { parts.append(CourseText.lastDaySpoken) }
+        if let supply, supply.isOut {
+            parts.append(supply.text)
+        } else {
+            parts.append(progress.remainingText)
+            if isLastDay {
+                parts.append(CourseText.lastDaySpoken)
+            } else if let supply {
+                parts.append(supply.text)
+            }
+        }
         return parts.joined(separator: ", ")
     }
 
