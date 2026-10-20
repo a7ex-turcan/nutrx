@@ -46,23 +46,27 @@ struct DailyIntakeChart: View {
     }
 
     /// The goal labels as a line above the chart, at accessibility sizes: a dashed swatch and "Goal 4,000".
+    /// Side by side when they fit; a range's "Min" and "Max" stack when they don't.
     private var legend: some View {
-        HStack(spacing: 14) {
-            ForEach(goalLabels, id: \.text) { label in
-                HStack(spacing: 6) {
-                    Path { path in
-                        path.move(to: CGPoint(x: 0, y: 1))
-                        path.addLine(to: CGPoint(x: 18, y: 1))
-                    }
-                    .stroke(Theme.textSecondary.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                    .frame(width: 18, height: 2)
-                    Text(label.text)
-                        .font(.system(.caption2, design: .rounded, weight: .semibold))
-                        .foregroundStyle(Theme.textSecondary)
-                }
-            }
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 14) { legendItems }
+            VStack(alignment: .leading, spacing: 4) { legendItems }
         }
         .accessibilityHidden(true)
+    }
+
+    private var legendItems: some View {
+        ForEach(goalLabels, id: \.text) { label in
+            HStack(spacing: 6) {
+                Path { path in
+                    path.move(to: CGPoint(x: 0, y: 1))
+                    path.addLine(to: CGPoint(x: 18, y: 1))
+                }
+                .stroke(Theme.textSecondary.opacity(0.6), style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                .frame(width: 18, height: 2)
+                goalLabelText(label)
+            }
+        }
     }
 
     private var chart: some View {
@@ -254,4 +258,9 @@ private struct DailyIntakeChartPreview: View {
 #Preview("30 days, dark") { DailyIntakeChartPreview(days: 30).preferredColorScheme(.dark) }
 #Preview("Range, 7 days") {
     DailyIntakeChartPreview(days: 7, goal: AnalyticsGoal(goalType: .range, target: 3000, upperBound: 4500))
+}
+#Preview("30 days, largest text") { DailyIntakeChartPreview(days: 30).dynamicTypeSize(.accessibility5) }
+#Preview("Range, largest text") {
+    DailyIntakeChartPreview(days: 30, goal: AnalyticsGoal(goalType: .range, target: 3000, upperBound: 10000))
+        .dynamicTypeSize(.accessibility5)
 }

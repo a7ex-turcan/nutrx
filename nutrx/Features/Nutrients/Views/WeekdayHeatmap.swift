@@ -113,3 +113,4 @@ private struct WeekdayHeatmapPreview: View {
 #Preview("Light") { WeekdayHeatmapPreview() }
 #Preview("Dark") { WeekdayHeatmapPreview().preferredColorScheme(.dark) }
 #Preview("Indigo — white ink") { WeekdayHeatmapPreview(tint: .indigo) }
+#Preview("Largest text") { WeekdayHeatmapPreview().dynamicTypeSize(.accessibility5) }
