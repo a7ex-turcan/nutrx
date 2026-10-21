@@ -21,6 +21,7 @@ struct HistoryListView: View {
     @Environment(\.widthClass) private var widthClass
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.isPreparingSplitViews) private var isPreparingSplitViews
 
     /// A split view from regular widths (docs/design/large-screens/LAYOUT.md, #154): the calendar and the rest of
     /// History in the sidebar, the selected day beside it. As in My Nutrients, only where the system shows both
@@ -152,6 +153,11 @@ struct HistoryListView: View {
             openRecapIfAsked()
         }
         .onChange(of: router?.showsRecap) { openRecapIfAsked() }
+        // Shown during the launch visit to the split-view tabs: the recap opens once that's over and the tab bar
+        // has come here.
+        .onChange(of: isPreparingSplitViews) { _, preparing in
+            if !preparing { openRecapIfAsked() }
+        }
         .onChange(of: scenePhase) { _, phase in
             // Back from the background, possibly on a new day: move today's ring and pick up synced entries.
             if phase == .active { viewModel.refresh(context: modelContext) }
@@ -170,7 +176,7 @@ struct HistoryListView: View {
     /// A tapped recap notification (the tab bar has already switched here) — still Pro only: one left in
     /// Notification Center doesn't open the recap after Pro has lapsed.
     private func openRecapIfAsked() {
-        guard router?.showsRecap == true else { return }
+        guard router?.showsRecap == true, !isPreparingSplitViews else { return }
         router?.showsRecap = false
         Task {
             // A tap can cold-launch the app before the entitlement is known.
