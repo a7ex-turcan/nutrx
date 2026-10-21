@@ -34,6 +34,8 @@ struct nutrxApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // The window's width class for large-screen layouts (#151); sheets inherit it.
+                .measuresWidthClass()
                 .environment(proAccess)
                 .environment(NotificationRouter.shared)
                 .task { await proAccess.refreshEntitlement() }

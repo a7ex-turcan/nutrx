@@ -88,6 +88,7 @@ struct StackDetailView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+        .readableColumn(ownMargin: 20)
         .background(Theme.surfaceGround)
         .navigationTitle("Stack")
         .navigationBarTitleDisplayMode(.inline)

@@ -32,6 +32,7 @@ struct WeeklyRecapView: View {
             .padding(.horizontal, Theme.Spacing.screenMargin)
             .padding(.bottom, Theme.Spacing.sectionTop)
         }
+        .readableColumn()
         .background(Theme.surfaceGround)
         .navigationTitle("Weekly recap")
         .navigationBarTitleDisplayMode(.large)

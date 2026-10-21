@@ -128,6 +128,7 @@ struct StacksView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+        .readableColumn(ownMargin: 20)  // rows were 1,336 pt wide on a 13" iPad (#151)
     }
 
     private func stackRow(_ stack: LogStack) -> some View {

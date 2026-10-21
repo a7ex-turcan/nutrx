@@ -9,6 +9,9 @@ All notable changes to nutrx are documented in this file.
 ### nutrx Pro
 - **"Last day" for courses** — On the last day of a course, its card on Today says so next to the goal, so the nutrient leaving Today tomorrow isn't a surprise.
 
+### Improvements
+- **Readable on iPad** — Stacks, a stack's details, the weekly recap, the nutrx Pro screen, About and onboarding keep their content in a centred column instead of stretching across the screen, and logging an amount opens a centred sheet that shows today's entries in full. iPhone in portrait is unchanged; in landscape those pages get the centred column too.
+
 ### Fixes
 - **Analytics charts stay readable** — The goal label sits beside the chart instead of on top of the bars; at large text sizes it moves above the chart, dates no longer run into each other, and the weekday pattern shows its percentages and title in full.
 - **Select mode at large text sizes** — In My Nutrients, the Select bar is one short row of buttons at accessibility text sizes instead of taking half the screen.
