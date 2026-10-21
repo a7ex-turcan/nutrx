@@ -157,9 +157,9 @@ struct PaywallView: View {
         .padding(.top, 26 + 20)  // the sheet's top inset, then the design's 26
         .padding(.horizontal, 22)
         .padding(.bottom, 22)
-        // Lined up with the 640 pt column below in a wide sheet (its 16 pt margins are 6 pt narrower than these 22);
+        // Lined up with the 640 pt column below in a wide sheet (its screen margins are narrower than these 22);
         // the forest and the rings still span the sheet.
-        .frame(maxWidth: ReadableColumn.maxWidth + 12, alignment: .leading)
+        .frame(maxWidth: ReadableColumn.maxWidth + 2 * (22 - Theme.Spacing.screenMargin), alignment: .leading)
         .frame(maxWidth: .infinity)
         .background(alignment: .topTrailing) {
             // Centred about 50pt in from the right and 40pt down, so the green arc lands near the header's bottom.
