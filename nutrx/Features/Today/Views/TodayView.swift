@@ -39,9 +39,8 @@ struct TodayView: View {
     @State private var showNewStack = false
     @State private var newStackName = ""
     @AppStorage("nutrx.dismissedRecapWeek") private var dismissedRecapWeek: Double = 0
-    /// The release whose "What's new" card was closed on this device (#148).
-    @AppStorage("nutrx.whatsNewHiddenVersion") private var whatsNewHiddenVersion = ""
-    @Query private var profiles: [UserProfile]
+    /// The release whose "What's new" card was closed, or seen at onboarding, on this device (#148).
+    @AppStorage(WhatsNew.hiddenVersionKey) private var whatsNewHiddenVersion = ""
     /// Apple Health insights (#102): the status, and whether its Today card was hidden while gathering / once ready.
     @State private var healthStatus: HealthInsights.Status?
     /// Bumped on every appearance, so the Health status is read again after connecting elsewhere (Settings, analytics).
@@ -541,7 +540,7 @@ struct TodayView: View {
         }
     }
 
-    /// This release's "What's new" card, unless it was closed here or nutrx is new to this person (#148). In Debug
+    /// This release's "What's new" card, unless it was closed here or onboarding ran on this release (#148). In Debug
     /// builds `simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.whatsNewVersion 2.3` pretends to be
     /// that version. To show a closed card again, delete `nutrx.whatsNewHiddenVersion` from the app's own
     /// preferences (`simctl get_app_container <UDID> nutrx-labs.nutrx data` + `/Library/Preferences/nutrx-labs.nutrx`;
@@ -552,7 +551,7 @@ struct TodayView: View {
         if let override = UserDefaults.standard.string(forKey: "nutrx.debug.whatsNewVersion") { appVersion = override }
         #endif
         return WhatsNew.card(appVersion: appVersion, hiddenVersion: whatsNewHiddenVersion,
-                             startedUsing: profiles.first?.createdAt, now: .now)
+                             isPad: UIDevice.current.userInterfaceIdiom == .pad)
     }
 
     /// The cards under the day score: what's new, the weekly recap, Apple Health insights, a banner, the stack

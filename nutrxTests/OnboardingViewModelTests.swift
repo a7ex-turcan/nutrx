@@ -90,6 +90,13 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(profile.birthdate, .distantPast)
     }
 
+    /// A fresh install has nothing "new": finishing onboarding marks this release's "What's new" card seen (#148).
+    func testFinishingMarksThisReleasesWhatsNewSeen() {
+        OnboardingViewModel().complete(context: context, defaults: defaults)
+
+        XCTAssertEqual(defaults.string(forKey: WhatsNew.hiddenVersionKey), WhatsNew.majorMinor(Bundle.main.appVersion))
+    }
+
     func testFinishingReusesAnExistingProfile() throws {
         context.insert(UserProfile(name: "Alex", birthdate: .now, weight: 70, height: 180))
         OnboardingViewModel().complete(context: context, defaults: defaults)

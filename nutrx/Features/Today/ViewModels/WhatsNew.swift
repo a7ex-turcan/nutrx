@@ -14,31 +14,42 @@ nonisolated struct WhatsNew: Equatable {
         let tint: NutrientTint
         /// A Pro feature shows the PRO chip; the card itself never opens the paywall.
         var isPro = false
+        /// Shown only on iPad, where it's something the reader will see.
+        var iPadOnly = false
     }
 
     var title: String { "New in \(version)" }
+
+    /// The release whose card was closed, or seen at onboarding, on this device (per device, never synced).
+    static let hiddenVersionKey = "nutrx.whatsNewHiddenVersion"
 
     /// Every release with a card, newest last.
     static let releases: [WhatsNew] = [
         WhatsNew(version: "2.3", items: [
             Item(title: "Built for iPad", subtitle: "Two columns on Today, and your nutrients and history side by side.",
-                 symbolName: "ipad.landscape", tint: .blue),
+                 symbolName: "ipad.landscape", tint: .blue, iPadOnly: true),
             Item(title: "Last day of a course", subtitle: "Today says when a course ends, so it's no surprise.",
                  symbolName: "hourglass", tint: .green, isPro: true),
         ]),
     ]
 
-    /// The card to show, if any: the release `appVersion` belongs to (its first two numbers), unless it was hidden
-    /// on this device, and never for someone who started using nutrx in the last day (a fresh install has
-    /// nothing "new" to compare with).
-    static func card(appVersion: String, hiddenVersion: String?, startedUsing: Date?, now: Date,
+    /// The card to show, if any: the release `appVersion` belongs to (its first two numbers), with only the items
+    /// for this device, unless it was hidden here. Onboarding marks the release it ran on as hidden
+    /// (`markSeenAtOnboarding`), so a fresh install never shows one; a new device restored from iCloud skips
+    /// onboarding and does.
+    static func card(appVersion: String, hiddenVersion: String?, isPad: Bool,
                      releases: [WhatsNew] = releases) -> WhatsNew? {
         let release = majorMinor(appVersion)
         guard let card = releases.first(where: { $0.version == release }), hiddenVersion != card.version else {
             return nil
         }
-        if let startedUsing, now.timeIntervalSince(startedUsing) < 24 * 60 * 60 { return nil }
-        return card
+        let items = card.items.filter { isPad || !$0.iPadOnly }
+        return items.isEmpty ? nil : WhatsNew(version: card.version, items: items)
+    }
+
+    /// A fresh install has nothing "new" to compare with: the release onboarding ran on counts as seen.
+    static func markSeenAtOnboarding(appVersion: String, defaults: UserDefaults) {
+        defaults.set(majorMinor(appVersion), forKey: hiddenVersionKey)
     }
 
     /// "2.3.1" → "2.3".

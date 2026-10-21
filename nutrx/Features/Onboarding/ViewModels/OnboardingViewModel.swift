@@ -62,6 +62,8 @@ final class OnboardingViewModel {
         profile.onboardingCompleted = true
         try? context.save()
         defaults.set(true, forKey: Self.completedOnceKey)
+        // A fresh install: this release's "What's new" card has nothing new to tell them (#148).
+        WhatsNew.markSeenAtOnboarding(appVersion: Bundle.main.appVersion, defaults: defaults)
     }
 
     private func addNutrient(from draft: NutrientDraft, context: ModelContext) {
