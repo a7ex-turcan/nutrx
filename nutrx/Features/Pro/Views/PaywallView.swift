@@ -377,10 +377,11 @@ struct PaywallView: View {
     @ViewBuilder
     private func planSummary(showPlans: @escaping () -> Void) -> some View {
         if let product = proAccess.product(selected) {
+            let summary = ProText.planSummary(plan: selected, price: product.displayPrice, trialEligible: trialEligible)
             Button(action: showPlans) {
                 // No stack spacing: the spacer's minimum is the gap, and the summary needs every point at xLarge.
                 HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    Text(ProText.planSummary(plan: selected, price: product.displayPrice, trialEligible: trialEligible))
+                    Text(summary)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(Theme.textPrimary)
                         .multilineTextAlignment(.leading)
@@ -397,8 +398,7 @@ struct PaywallView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(ProText.planSummary(plan: selected, price: product.displayPrice,
-                                                    trialEligible: trialEligible))
+            .accessibilityLabel(summary)
             .accessibilityHint("Shows the plans")
         }
     }
@@ -485,4 +485,12 @@ extension View {
     Color.clear
         .sheet(isPresented: .constant(true)) { PaywallView() }
         .environment(ProAccess())
+}
+
+// Inline rather than in a sheet: preview snapshots don't capture presented sheets. Shows the button pinned with
+// the plan summary above it (#189).
+#Preview("Paywall, xLarge") {
+    PaywallView()
+        .environment(ProAccess())
+        .dynamicTypeSize(.xLarge)
 }
