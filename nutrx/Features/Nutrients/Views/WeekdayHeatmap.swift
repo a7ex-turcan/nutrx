@@ -49,6 +49,8 @@ struct WeekdayHeatmap: View {
             RoundedRectangle(cornerRadius: Theme.Radius.iconTile, style: .continuous)
                 .fill(tint.color.opacity(opacity))
                 .aspectRatio(1, contentMode: .fit)
+                // At most 64 pt: in a wide analytics pane each square was about 182 pt (#153).
+                .frame(maxWidth: 64)
                 .overlay {
                     Text(percent)
                         .font(.system(.caption2, design: .rounded, weight: .bold))

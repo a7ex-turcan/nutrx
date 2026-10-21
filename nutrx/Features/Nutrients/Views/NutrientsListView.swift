@@ -69,140 +69,217 @@ struct NutrientsListView: View {
         }
     }
 
-    /// Pushed analytics; set by a refill reminder.
+    /// Pushed analytics on iPhone; set by a refill reminder or Today's Health card too.
     @State private var path: [PersistentIdentifier] = []
+    /// The nutrient whose analytics fill the detail pane on large screens (#153).
+    @State private var selectedID: PersistentIdentifier?
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
+    @Environment(\.widthClass) private var widthClass
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// A split view from regular widths (docs/design/large-screens/LAYOUT.md, #153): the list as the sidebar and
+    /// the selected nutrient's analytics beside it. Only where the system shows both columns, though: a landscape
+    /// iPhone is regular by width but a compact size class, where a split view collapses to a stack, so it keeps
+    /// the push.
+    private var usesSplitView: Bool {
+        widthClass != .compact && horizontalSizeClass == .regular
+    }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            Group {
-                if nutrients.isEmpty {
-                    emptyState
-                } else {
-                    nutrientList
+        Group {
+            if usesSplitView {
+                NavigationSplitView {
+                    listPage
+                        .navigationSplitViewColumnWidth(widthClass == .wide ? 380 : 340)
+                } detail: {
+                    NavigationStack {
+                        analyticsDetail
+                    }
                 }
-            }
-            .background(Theme.surfaceGround)
-            .navigationTitle("My Nutrients")
-            .navigationBarTitleDisplayMode(.large)
-            .withProfileMenu()
-            .toolbar {
-                if !nutrients.isEmpty {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button(isSelecting ? "Done" : "Select") {
-                            withAnimation(.unlessReduceMotion(reduceMotion, .default)) {
-                                if isSelecting { endSelecting() } else { editMode = .active }
+            } else {
+                NavigationStack(path: $path) {
+                    listPage
+                        .navigationDestination(for: PersistentIdentifier.self) { id in
+                            if let nutrient = nutrients.first(where: { $0.persistentModelID == id }) {
+                                NutrientAnalyticsView(nutrient: nutrient)
                             }
                         }
-                        .fontWeight(isSelecting ? .semibold : .regular)
+                }
+            }
+        }
+        // The open nutrient carries over when the layout switches (a window resized across 704 pt).
+        .onChange(of: usesSplitView) { _, split in
+            if split {
+                selectedID = path.last ?? selectedID
+                path = []
+            } else if let selectedID {
+                path = [selectedID]
+            }
+        }
+    }
+
+    /// Opens a nutrient's analytics: selected in the split view, pushed on iPhone.
+    private func show(_ nutrient: Nutrient) {
+        if usesSplitView {
+            selectedID = nutrient.persistentModelID
+        } else {
+            path = [nutrient.persistentModelID]
+        }
+    }
+
+    /// The detail pane: the selected nutrient's analytics, or "Select a nutrient".
+    @ViewBuilder
+    private var analyticsDetail: some View {
+        if let selectedID, let nutrient = nutrients.first(where: { $0.persistentModelID == selectedID }) {
+            NutrientAnalyticsView(nutrient: nutrient)
+                .id(selectedID)
+        } else {
+            VStack(spacing: 14) {
+                Image(systemName: "chart.bar")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(Theme.controlPrimary)
+                    .frame(width: 64, height: 64)
+                    .background(Theme.surfaceChip, in: RoundedRectangle(cornerRadius: Theme.Radius.iconTile,
+                                                                       style: .continuous))
+                    .accessibilityHidden(true)
+                Text("Select a nutrient")
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(Theme.textPrimary)
+                Text("Its trends, weekday pattern, supply and Apple Health patterns show up here.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 320)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.surfaceGround)
+        }
+    }
+
+    private var listPage: some View {
+        Group {
+            if nutrients.isEmpty {
+                emptyState
+            } else {
+                nutrientList
+            }
+        }
+        .background(Theme.surfaceGround)
+        .navigationTitle("My Nutrients")
+        .navigationBarTitleDisplayMode(.large)
+        .withProfileMenu()
+        .toolbar {
+            if !nutrients.isEmpty {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(isSelecting ? "Done" : "Select") {
+                        withAnimation(.unlessReduceMotion(reduceMotion, .default)) {
+                            if isSelecting { endSelecting() } else { editMode = .active }
+                        }
                     }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: startAdding) {
-                        Image(systemName: "plus")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(Theme.controlOnPrimary)
-                            .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
-                            .background(Theme.controlPrimary, in: Circle())
-                            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                    }
-                    .accessibilityLabel("New nutrient")
-                }
-                .sharedBackgroundVisibility(.hidden)
-            }
-            .alert("New Group", isPresented: $showNewGroupAlert) {
-                TextField("Group name", text: $newGroupName)
-                Button("Add") {
-                    NutrientGroup.create(named: newGroupName, among: allGroups, in: modelContext)
-                }
-                .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
-                Button("Cancel", role: .cancel) {}
-            }
-            .onChange(of: router?.healthNutrientID, initial: true) { _, id in
-                // Today's Apple Health card: that nutrient's analytics, which scrolls to its Health card.
-                if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
-                    path = [nutrient.persistentModelID]
+                    .fontWeight(isSelecting ? .semibold : .regular)
                 }
             }
-            .onChange(of: router?.supplyNutrientID, initial: true) { _, id in
-                // A refill reminder: show that nutrient's analytics (its Supply card focuses itself).
-                if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
-                    path = [nutrient.persistentModelID]
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: startAdding) {
+                    Image(systemName: "plus")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(Theme.controlOnPrimary)
+                        .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                        .background(Theme.controlPrimary, in: Circle())
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                 }
+                .accessibilityLabel("New nutrient")
             }
-            .navigationDestination(for: PersistentIdentifier.self) { id in
-                if let nutrient = nutrients.first(where: { $0.persistentModelID == id }) {
-                    NutrientAnalyticsView(nutrient: nutrient)
-                }
+            .sharedBackgroundVisibility(.hidden)
+        }
+        .alert("New Group", isPresented: $showNewGroupAlert) {
+            TextField("Group name", text: $newGroupName)
+            Button("Add") {
+                NutrientGroup.create(named: newGroupName, among: allGroups, in: modelContext)
             }
-            .sheet(isPresented: $showAddSheet) {
-                NutrientFormView(
-                    draft: addDraft,
-                    title: "New Nutrient",
-                    buttonLabel: "Add",
-                    selectedGroup: $selectedGroupForAdd,
-                    showGroupPicker: true,
-                    offersScan: true
-                ) {
-                    addNutrient()
-                }
+            .disabled(newGroupName.trimmingCharacters(in: .whitespaces).isEmpty)
+            Button("Cancel", role: .cancel) {}
+        }
+        .onChange(of: router?.healthNutrientID, initial: true) { _, id in
+            // Today's Apple Health card: that nutrient's analytics, which scrolls to its Health card.
+            if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
+                show(nutrient)
             }
-            .sheet(item: $nutrientToEdit) { nutrient in
-                NutrientFormView(
-                    draft: editDraft,
-                    title: "Edit Nutrient",
-                    buttonLabel: "Save",
-                    nutrient: nutrient,
-                    onDelete: {
-                        nutrientToEdit = nil
-                        nutrientToDelete = nutrient
-                    }
-                ) {
-                    applyEdit(to: nutrient)
-                }
+        }
+        .onChange(of: router?.supplyNutrientID, initial: true) { _, id in
+            // A refill reminder: show that nutrient's analytics (its Supply card focuses itself).
+            if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
+                show(nutrient)
             }
-            .sheet(item: $nutrientToMove) { nutrient in
-                MoveToGroupSheet(nutrient: nutrient)
-            }
-            .sheet(isPresented: $showMoveSelection) {
-                MoveToGroupSheet(nutrients: actingOn) {
-                    endSelecting()
-                }
-            }
-            .alert(actingOn.count == 1 ? "Delete 1 nutrient?" : "Delete \(actingOn.count) nutrients?",
-                   isPresented: $confirmDeleteSelection) {
-                Button("Delete", role: .destructive) { deleteSelection() }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text(actingOn.count == 1
-                     ? "It'll be removed from your daily tracking. Your logged history stays."
-                     : "They'll be removed from your daily tracking. Your logged history stays.")
-            }
-            .sheet(item: $nutrientToStack) { nutrient in
-                StackPickerSheet(mode: .nutrient(nutrient))
-            }
-            .alert(
-                "Delete \(nutrientToDelete?.name ?? "Nutrient")?",
-                isPresented: Binding(
-                    get: { nutrientToDelete != nil },
-                    set: { if !$0 { nutrientToDelete = nil } }
-                )
+        }
+        .sheet(isPresented: $showAddSheet) {
+            NutrientFormView(
+                draft: addDraft,
+                title: "New Nutrient",
+                buttonLabel: "Add",
+                selectedGroup: $selectedGroupForAdd,
+                showGroupPicker: true,
+                offersScan: true
             ) {
-                Button("Delete", role: .destructive) {
-                    if let nutrient = nutrientToDelete {
-                        nutrient.isRemoved = true
-                        nutrientToDelete = nil
-                        // Its pending reminders go now, not at the next foreground.
-                        try? modelContext.save()
-                        NotificationService.refreshAllNutrientReminders(context: modelContext)
-                    }
-                }
-                Button("Cancel", role: .cancel) {
-                    nutrientToDelete = nil
-                }
-            } message: {
-                Text("This nutrient will be removed from your daily tracking. Your previously tracked intakes will not be affected.")
+                addNutrient()
             }
+        }
+        .sheet(item: $nutrientToEdit) { nutrient in
+            NutrientFormView(
+                draft: editDraft,
+                title: "Edit Nutrient",
+                buttonLabel: "Save",
+                nutrient: nutrient,
+                onDelete: {
+                    nutrientToEdit = nil
+                    nutrientToDelete = nutrient
+                }
+            ) {
+                applyEdit(to: nutrient)
+            }
+        }
+        .sheet(item: $nutrientToMove) { nutrient in
+            MoveToGroupSheet(nutrient: nutrient)
+        }
+        .sheet(isPresented: $showMoveSelection) {
+            MoveToGroupSheet(nutrients: actingOn) {
+                endSelecting()
+            }
+        }
+        .alert(actingOn.count == 1 ? "Delete 1 nutrient?" : "Delete \(actingOn.count) nutrients?",
+               isPresented: $confirmDeleteSelection) {
+            Button("Delete", role: .destructive) { deleteSelection() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(actingOn.count == 1
+                 ? "It'll be removed from your daily tracking. Your logged history stays."
+                 : "They'll be removed from your daily tracking. Your logged history stays.")
+        }
+        .sheet(item: $nutrientToStack) { nutrient in
+            StackPickerSheet(mode: .nutrient(nutrient))
+        }
+        .alert(
+            "Delete \(nutrientToDelete?.name ?? "Nutrient")?",
+            isPresented: Binding(
+                get: { nutrientToDelete != nil },
+                set: { if !$0 { nutrientToDelete = nil } }
+            )
+        ) {
+            Button("Delete", role: .destructive) {
+                if let nutrient = nutrientToDelete {
+                    nutrient.isRemoved = true
+                    nutrientToDelete = nil
+                    // Its pending reminders go now, not at the next foreground.
+                    try? modelContext.save()
+                    NotificationService.refreshAllNutrientReminders(context: modelContext)
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                nutrientToDelete = nil
+            }
+        } message: {
+            Text("This nutrient will be removed from your daily tracking. Your previously tracked intakes will not be affected.")
         }
     }
 
@@ -233,7 +310,10 @@ struct NutrientsListView: View {
     private var nutrientList: some View {
         // No selection binding outside selecting: even an empty one made a tap select the row instead of opening its
         // analytics (the rows' link values are the same type).
-        List(selection: isSelecting ? $selection : nil) {
+        // In the split view's sidebar the list's own selection drew selected rows for a tinted sidebar highlight (a
+        // white circle and drag handle on the white card, and a focus ring), so there the rows draw their own
+        // circles (`sidebarSelectableRow`).
+        List(selection: isSelecting && !usesSplitView ? $selection : nil) {
             if !isSelecting, let prefs = allPreferences.first, !prefs.hasSeenAnalyticsBanner {
                 analyticsBanner
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
@@ -248,14 +328,16 @@ struct NutrientsListView: View {
                             // While selecting a tap selects, so the row has no link and no chevron, which leaves the
                             // text room beside the selection circle and drag handle (#108).
                             if isSelecting {
-                                nutrientRow(nutrient)
-                            } else {
-                                NavigationLink(value: nutrient.persistentModelID) {
+                                if usesSplitView {
+                                    sidebarSelectableRow(nutrient)
+                                } else {
                                     nutrientRow(nutrient)
                                 }
+                            } else {
+                                analyticsLink(nutrient)
                             }
                         }
-                        .listRowBackground(Theme.surfaceCard)
+                        .listRowBackground(rowBackground(nutrient))
                         .listRowSeparatorTint(Theme.lineHairline)
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
@@ -560,6 +642,63 @@ struct NutrientsListView: View {
         }
     }
 
+    /// A row that opens the nutrient's analytics: a push on iPhone; in the split view it selects the nutrient, with
+    /// no chevron, for the detail pane (#153).
+    @ViewBuilder
+    private func analyticsLink(_ nutrient: Nutrient) -> some View {
+        if usesSplitView {
+            Button {
+                selectedID = nutrient.persistentModelID
+            } label: {
+                nutrientRow(nutrient)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(selectedID == nutrient.persistentModelID ? .isSelected : [])
+        } else {
+            NavigationLink(value: nutrient.persistentModelID) {
+                nutrientRow(nutrient)
+            }
+        }
+    }
+
+    /// Select mode in the split view's sidebar: a circle like the list's own (forest with a tick when selected), and
+    /// a tap that toggles it.
+    private func sidebarSelectableRow(_ nutrient: Nutrient) -> some View {
+        let id = nutrient.persistentModelID
+        let isSelected = selection.contains(id)
+        return Button {
+            if isSelected { selection.remove(id) } else { selection.insert(id) }
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title2)
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(isSelected ? Theme.controlOnPrimary : Theme.controlGhostBorder,
+                                     isSelected ? Theme.controlPrimary : Theme.controlGhostBorder)
+                    .accessibilityHidden(true)
+                nutrientRow(nutrient)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        // Its name, as the list's own selection reads it: the drag handle takes it too ("Reorder Vitamin D").
+        .accessibilityLabel(nutrient.name)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    /// The card, with the selected row tinted in the split view.
+    @ViewBuilder
+    private func rowBackground(_ nutrient: Nutrient) -> some View {
+        if usesSplitView, !isSelecting, selectedID == nutrient.persistentModelID {
+            Theme.surfaceCard.overlay(Theme.surfaceSelected)
+        } else {
+            Theme.surfaceCard
+        }
+    }
+
     // MARK: - Finished (#99)
 
     /// Courses that have ended, collapsed at the end: still here for analytics, and Restart puts one back on Today.
@@ -567,10 +706,8 @@ struct NutrientsListView: View {
         Section {
             if showsFinished {
                 ForEach(finishedNutrients, id: \.persistentModelID) { nutrient in
-                    NavigationLink(value: nutrient.persistentModelID) {
-                        nutrientRow(nutrient)
-                    }
-                    .listRowBackground(Theme.surfaceCard)
+                    analyticsLink(nutrient)
+                    .listRowBackground(rowBackground(nutrient))
                     .listRowSeparatorTint(Theme.lineHairline)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
