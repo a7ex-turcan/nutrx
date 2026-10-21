@@ -281,10 +281,16 @@ enum StackAccessibility {
 private struct StacksRowPreview: View {
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
     var onlyFirst = false
+    var layout: StacksRow.Layout = .row
+    /// The large-screen layouts at the width they get there (LAYOUT.md): tiles across an 11-inch iPad's 786 pt,
+    /// the list in the 360 pt side column.
+    var width: CGFloat? = nil
 
     var body: some View {
         ScrollView {
-            StacksRow(stacks: onlyFirst ? Array(stacks.prefix(1)) : stacks, onLog: { _ in }, onEdit: {})
+            StacksRow(stacks: onlyFirst ? Array(stacks.prefix(1)) : stacks, layout: layout,
+                      horizontalMargin: width == nil ? Theme.Spacing.screenMargin : 0, onLog: { _ in }, onEdit: {})
+                .frame(width: width)
                 .padding(.vertical)
         }
         .background(Theme.surfaceGround)
@@ -305,4 +311,21 @@ private struct StacksRowPreview: View {
     StacksRowPreview()
         .modelContainer(previewContainer)
         .environment(\.dynamicTypeSize, .accessibility3)
+}
+
+// The sample data has two stacks, so the tiles fill two of three slots. A single stack keeps the one full-width card
+// in every layout, as on iPhone, rather than a lone tile.
+#Preview("Tiles", traits: .fixedLayout(width: 834, height: 400)) {
+    StacksRowPreview(layout: .tiles, width: 786)
+        .modelContainer(previewContainer)
+}
+
+#Preview("Tiles, one stack", traits: .fixedLayout(width: 834, height: 400)) {
+    StacksRowPreview(onlyFirst: true, layout: .tiles, width: 786)
+        .modelContainer(previewContainer)
+}
+
+#Preview("Side column list", traits: .fixedLayout(width: 420, height: 400)) {
+    StacksRowPreview(layout: .list, width: 360)
+        .modelContainer(previewContainer)
 }

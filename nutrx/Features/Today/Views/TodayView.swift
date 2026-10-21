@@ -11,8 +11,19 @@ struct TodayView: View {
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.widthClass) private var widthClass
-    /// Today's own width, which picks between the columns and the side column (`TodayLayout`).
-    @State private var width: CGFloat = 0
+    /// Today's own width, which picks between the columns and the side column (`TodayLayout`); nil until measured.
+    @State private var measuredWidth: CGFloat?
+
+    /// Until Today has measured itself, a guess from the window's class, so an iPad's first frame doesn't build the
+    /// iPhone list and then swap it for the grid.
+    private var width: CGFloat {
+        if let measuredWidth { return measuredWidth }
+        switch widthClass {
+        case .compact: return 0
+        case .regular: return WidthClass.regularMinimum
+        case .wide: return TodayLayout.sideColumnMinimum
+        }
+    }
     /// Set by a card's "Refilled?"; confirmed before the count restarts.
     @State private var nutrientToRefill: Nutrient?
     /// Last week's recap, for the "Your week" card (nutrx Pro): Sunday 18:00 through Monday.
@@ -137,7 +148,7 @@ struct TodayView: View {
                 }
             }
         }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { measuredWidth = $0 }
         .background(Theme.surfaceGround)
         .toolbar {
             // Free / PRO (#101), on the leading side; the profile avatar keeps the trailing one. Left out at
@@ -325,7 +336,6 @@ struct TodayView: View {
         }
     }
 
-    /// 16pt side margins and a 10pt gap between cards.
     // MARK: - Layouts
 
     private func compactList(remindersShown: Bool) -> some View {
@@ -395,7 +405,7 @@ struct TodayView: View {
     /// The score, cards and stacks in a 360 pt side column that stays in view while the nutrients scroll;
     /// everything capped at 1120 pt and centred, with at least 40 pt margins.
     private func sideColumnLayout(remindersShown: Bool) -> some View {
-        HStack(alignment: .top, spacing: 24) {
+        HStack(alignment: .top, spacing: TodayLayout.sideColumnGap) {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
                     sideColumn(remindersShown: remindersShown)
@@ -406,7 +416,7 @@ struct TodayView: View {
             .scrollIndicators(.hidden)
             .frame(width: TodayLayout.sideColumnWidth)
             ScrollView {
-                groupsGrid(gutter: 20)
+                groupsGrid(gutter: TodayLayout.gutter(.wide))
                     .padding(.top, 8)
                     .padding(.bottom, 24)
             }
@@ -418,7 +428,9 @@ struct TodayView: View {
 
     /// Everything in one scroll: the score, cards and stack tiles across both columns, then the groups.
     private func columnsLayout(remindersShown: Bool) -> some View {
-        let gutter: CGFloat = widthClass == .wide ? 20 : 16
+        // Today's own width, like the layout, not the window's: they differ once Today sits in a split pane.
+        let ownClass = WidthClass(width: width)
+        let gutter = TodayLayout.gutter(ownClass)
         return ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
                 dayScoreCard(remindersShown: remindersShown)
@@ -429,7 +441,7 @@ struct TodayView: View {
                 }
                 groupsGrid(gutter: gutter)
             }
-            .padding(.horizontal, widthClass.minimumMargin)
+            .padding(.horizontal, ownClass.minimumMargin)
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
@@ -545,6 +557,7 @@ struct TodayView: View {
         nutrientToEdit = nutrient
     }
 
+    /// 16pt side margins and a 10pt gap between cards.
     private var cardRowInsets: EdgeInsets {
         EdgeInsets(top: Theme.Spacing.cardGap / 2, leading: Theme.Spacing.screenMargin,
                    bottom: Theme.Spacing.cardGap / 2, trailing: Theme.Spacing.screenMargin)
