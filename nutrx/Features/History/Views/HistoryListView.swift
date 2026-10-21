@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 /// History tab (DESIGN.md §5.4): streak card, the weekly recaps row (nutrx Pro), month calendar, and the most recent
-/// days. Tapping a past day — in the calendar or the list — pushes `HistoryDayView`; the recaps row (or a recap
-/// notification) pushes `WeeklyRecapView`.
+/// days. Tapping a past day — in the calendar or the list — pushes `HistoryDayView`, and the recaps row (or a recap
+/// notification) pushes `WeeklyRecapView`; in the large-screen split view (#154) both open in the detail instead.
 struct HistoryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -18,10 +18,78 @@ struct HistoryListView: View {
     @State private var recapID = UUID()
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @Environment(ProAccess.self) private var proAccess: ProAccess?
+    @Environment(\.widthClass) private var widthClass
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    /// A split view from regular widths (docs/design/large-screens/LAYOUT.md, #154): the calendar and the rest of
+    /// History in the sidebar, the selected day beside it. As in My Nutrients, only where the system shows both
+    /// columns: a landscape iPhone (compact size class) keeps the push.
+    private var usesSplitView: Bool {
+        widthClass != .compact && horizontalSizeClass == .regular
+    }
 
     private var streaksEnabled: Bool { allPreferences.first?.streaksEnabled != false }
 
     var body: some View {
+        Group {
+            if usesSplitView {
+                NavigationSplitView {
+                    historyPage
+                        .navigationSplitViewColumnWidth(widthClass == .wide ? 380 : 340)
+                } detail: {
+                    NavigationStack {
+                        dayDetail
+                            // The recap opens over the day, in the detail.
+                            .navigationDestination(isPresented: $showRecap) {
+                                WeeklyRecapView().id(recapID)
+                            }
+                    }
+                }
+            } else {
+                NavigationStack {
+                    historyPage
+                        .navigationDestination(item: $selectedDay) { date in
+                            HistoryDayView(date: date, viewModel: viewModel)
+                        }
+                        .navigationDestination(isPresented: $showRecap) {
+                            WeeklyRecapView().id(recapID)
+                        }
+                }
+            }
+        }
+        // A window narrowed to compact with the recap open in the detail: keep just the recap, or the stack would
+        // push the day and the recap on top of it, which the user never stacked.
+        .onChange(of: usesSplitView) { _, split in
+            if !split, showRecap { selectedDay = nil }
+        }
+    }
+
+    /// Opens a day: pushed on iPhone; in the split view's detail, closing a recap open there, even when it's the day
+    /// already selected (a change of `selectedDay` alone missed that).
+    private func select(_ day: Date) {
+        if usesSplitView { showRecap = false }
+        selectedDay = day
+    }
+
+    /// The split view's detail: the selected day, or "Pick a day".
+    @ViewBuilder
+    private var dayDetail: some View {
+        if let selectedDay {
+            HistoryDayView(date: selectedDay, viewModel: viewModel)
+                .id(selectedDay)
+        } else if viewModel.log?.hasPastEntries == true {
+            SplitDetailPlaceholder(
+                systemImage: "calendar",
+                title: "Pick a day",
+                message: "Choose a day in the calendar to see which goals you met and what you logged."
+            )
+        } else {
+            // No past days yet: the sidebar says "No History Yet" and has no calendar to pick from.
+            Theme.surfaceGround.ignoresSafeArea()
+        }
+    }
+
+    private var historyPage: some View {
         Group {
             if let log = viewModel.log {
                 if log.hasPastEntries {
@@ -33,12 +101,8 @@ struct HistoryListView: View {
                 Theme.surfaceGround.ignoresSafeArea()
             }
         }
-        .navigationDestination(item: $selectedDay) { date in
-            HistoryDayView(date: date, viewModel: viewModel)
-        }
-        .navigationDestination(isPresented: $showRecap) {
-            WeeklyRecapView().id(recapID)
-        }
+        .navigationTitle("History")
+        .navigationBarTitleDisplayMode(.large)
         // Before the report button's toolbar, so the avatar keeps the far-right spot it has on every tab.
         .withProfileMenu()
         .toolbar {
@@ -144,7 +208,8 @@ struct HistoryListView: View {
                     canShowNext: viewModel.canShowNextMonth,
                     onPrevious: { viewModel.showPreviousMonth() },
                     onNext: { viewModel.showNextMonth() },
-                    onSelect: { selectedDay = $0 }
+                    onSelect: { select($0) },
+                    selected: usesSplitView ? selectedDay : nil
                 )
                 .padding(Theme.Spacing.cardPadding + 4)
                 .cardStyle()
@@ -159,7 +224,7 @@ struct HistoryListView: View {
                     VStack(spacing: 0) {
                         ForEach(viewModel.recentDays) { day in
                             RecentDayRow(day: day, tints: day.goals.map { viewModel.nutrient($0.nutrientID)?.tint ?? .green }) {
-                                selectedDay = day.date
+                                select(day.date)
                             }
                             if day.id != viewModel.recentDays.last?.id {
                                 Divider().overlay(Theme.lineHairline)
@@ -337,18 +402,12 @@ private struct RecentDayRow: View {
 }
 
 #Preview("Light") {
-    NavigationStack {
-        HistoryListView()
-            .navigationTitle("History")
-    }
-    .modelContainer(previewContainer)
+    HistoryListView()
+        .modelContainer(previewContainer)
 }
 
 #Preview("Dark") {
-    NavigationStack {
-        HistoryListView()
-            .navigationTitle("History")
-    }
-    .modelContainer(previewContainer)
-    .preferredColorScheme(.dark)
+    HistoryListView()
+        .modelContainer(previewContainer)
+        .preferredColorScheme(.dark)
 }

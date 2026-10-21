@@ -133,27 +133,15 @@ struct NutrientsListView: View {
         if let selectedID, let nutrient = nutrients.first(where: { $0.persistentModelID == selectedID }) {
             NutrientAnalyticsView(nutrient: nutrient)
                 .id(selectedID)
+        } else if !nutrients.isEmpty {
+            SplitDetailPlaceholder(
+                systemImage: "chart.bar",
+                title: "Select a nutrient",
+                message: "Its trends, weekday pattern, supply and Apple Health patterns show up here."
+            )
         } else {
-            VStack(spacing: 14) {
-                Image(systemName: "chart.bar")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(Theme.controlPrimary)
-                    .frame(width: 64, height: 64)
-                    .background(Theme.surfaceChip, in: RoundedRectangle(cornerRadius: Theme.Radius.iconTile,
-                                                                       style: .continuous))
-                    .accessibilityHidden(true)
-                Text("Select a nutrient")
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(Theme.textPrimary)
-                Text("Its trends, weekday pattern, supply and Apple Health patterns show up here.")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 320)
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Theme.surfaceGround)
+            // No nutrients yet: the sidebar's empty state has Add a nutrient, and there's nothing to select.
+            Theme.surfaceGround.ignoresSafeArea()
         }
     }
 
