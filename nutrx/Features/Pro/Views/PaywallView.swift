@@ -52,8 +52,9 @@ struct PaywallView: View {
     }
 
     /// From xLarge up (below accessibility sizes), and on large screens at any size, the whole pinned footer hid the
-    /// plans behind it (#189, #205): only the button stays pinned, with a line naming the selected plan that scrolls to the plans; the terms and links
-    /// scroll after them. At accessibility sizes everything scrolls (pinned, it covered a third of the screen).
+    /// plans behind it (#189, #205): only the button stays pinned, with a line naming the selected plan that scrolls
+    /// to the plans; the terms and links scroll after them. At accessibility sizes everything scrolls (pinned, it
+    /// covered a third of the screen).
     private enum FooterLayout { case pinned, buttonPinned, scrolls }
 
     private var footerLayout: FooterLayout {
@@ -82,6 +83,10 @@ struct PaywallView: View {
                     .padding(.horizontal, Theme.Spacing.screenMargin)
                     .padding(.top, 18)
                     .padding(.bottom, 16)
+                    // In the iPad's 928 pt page sheet: a centred 640 pt column (LAYOUT.md, Pro screens), so a price
+                    // stays near its plan; the forest header still spans the sheet.
+                    .frame(maxWidth: ReadableColumn.maxWidth)
+                    .frame(maxWidth: .infinity)
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -105,6 +110,8 @@ struct PaywallView: View {
                     }
                     .padding(.horizontal, Theme.Spacing.screenMargin)
                     .padding(.top, 10)
+                    .frame(maxWidth: ReadableColumn.maxWidth)
+                    .frame(maxWidth: .infinity)
                     .background(Theme.surfaceGround)
                     // With only the button pinned, the plans scroll under it: a hairline marks the edge.
                     .overlay(alignment: .top) {
@@ -150,7 +157,10 @@ struct PaywallView: View {
         .padding(.top, 26 + 20)  // the sheet's top inset, then the design's 26
         .padding(.horizontal, 22)
         .padding(.bottom, 22)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // Lined up with the 640 pt column below in a wide sheet (its 16 pt margins are 6 pt narrower than these 22);
+        // the forest and the rings still span the sheet.
+        .frame(maxWidth: ReadableColumn.maxWidth + 12, alignment: .leading)
+        .frame(maxWidth: .infinity)
         .background(alignment: .topTrailing) {
             // Centred about 50pt in from the right and 40pt down, so the green arc lands near the header's bottom.
             ProRingMotif(lineWidth: 26)
@@ -499,4 +509,11 @@ extension View {
     PaywallView()
         .environment(ProAccess())
         .dynamicTypeSize(.xLarge)
+}
+
+// The large-screen branch (#205) without an iPad: only the button pinned, the plan summary above it, a 640 pt column.
+#Preview("Paywall, large screen") {
+    PaywallView()
+        .environment(ProAccess())
+        .environment(\.widthClass, .regular)
 }
