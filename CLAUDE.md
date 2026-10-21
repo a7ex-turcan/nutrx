@@ -888,7 +888,7 @@ Every item here has an issue, so GitHub issues are the one list of what's left (
 
 **Deferred:** Localisation (#129), iPad-specific layout (#130)
 
-**Last release:** 2.2 on 2026-10-18 (build 63, tag `v2.2`, phased release; website updated). Courses still needs to be listed on the paywall (#147).
+**Last release:** 2.2.1 on 2026-10-21 (build 128, tag `v2.2.1`, phased release; website updated).
 
 ---
 

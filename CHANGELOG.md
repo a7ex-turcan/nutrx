@@ -27,7 +27,7 @@ All notable changes to nutrx are documented in this file.
 - **The paywall's plans in view** — At larger text sizes, on iPad and on an iPhone in landscape, only the purchase button stays pinned, with the selected plan named above it (tap it to see the plans), so the plans are no longer hidden behind the button and its small print. On iPad the paywall also opens taller.
 - **The paywall at large text sizes** — Plan names, prices and the free-week badge no longer break mid-word; each plan stacks its details instead.
 
-## v2.2.1 — in review
+## v2.2.1 — 2026-10-21
 
 ### Fixes
 - **Reminders show up when you add them** — In a nutrient's Reminders, a newly added time now appears in the list straight away, and a time that's already set can't be added twice.
