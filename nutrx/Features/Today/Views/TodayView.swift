@@ -13,6 +13,12 @@ struct TodayView: View {
     @Environment(\.widthClass) private var widthClass
     /// Today's own width, which picks between the columns and the side column (`TodayLayout`); nil until measured.
     @State private var measuredWidth: CGFloat?
+    /// The first nutrient card on screen, so a layout change (rotation, a resized window, unfolding) keeps it at
+    /// the top (#198). It only moves while the layout is settled: mid-switch, cards vanishing and the new layout's
+    /// first cards appearing would overwrite it.
+    @State private var visibleCardIDs: Set<PersistentIdentifier> = []
+    @State private var anchorID: PersistentIdentifier?
+    @State private var settledLayout: TodayLayout?
 
     /// Until Today has measured itself, a guess from the window's class, so an iPad's first frame doesn't build the
     /// iPhone list and then swap it for the grid.
@@ -139,11 +145,11 @@ struct TodayView: View {
             if viewModel.groupSections.isEmpty {
                 emptyState
             } else {
-                switch TodayLayout.of(width: width, isAccessibilitySize: dynamicTypeSize.isAccessibilitySize) {
+                switch layout {
                 // iPhone, and the largest text sizes on any width (one column, LAYOUT.md): the list, for its swipe
                 // actions.
-                case .list: compactList(remindersShown: remindersShown)
-                case .columns: columnsLayout(remindersShown: remindersShown)
+                case .list: keepsAnchor(.list) { compactList(remindersShown: remindersShown) }
+                case .columns: keepsAnchor(.columns) { columnsLayout(remindersShown: remindersShown) }
                 case .sideColumn: sideColumnLayout(remindersShown: remindersShown)
                 }
             }
@@ -338,6 +344,43 @@ struct TodayView: View {
 
     // MARK: - Layouts
 
+    private var layout: TodayLayout {
+        TodayLayout.of(width: width, isAccessibilitySize: dynamicTypeSize.isAccessibilitySize)
+    }
+
+    /// Wraps a layout's scroll view: when it replaces another layout, the anchor card goes back to the top (#198).
+    private func keepsAnchor(_ layout: TodayLayout, @ViewBuilder _ content: () -> some View) -> some View {
+        let content = content()
+        return ScrollViewReader { proxy in
+            content
+                .onAppear {
+                    let switched = settledLayout != nil && settledLayout != layout
+                    guard switched, let anchorID else {
+                        settledLayout = layout
+                        return
+                    }
+                    Task { @MainActor in
+                        // A frame for the new layout to exist before scrolling in it.
+                        await Task.yield()
+                        // Flipped again meanwhile (a window dragged back and forth): that layout settles itself.
+                        guard self.layout == layout else { return }
+                        proxy.scrollTo(anchorID, anchor: .top)
+                        settledLayout = layout
+                    }
+                }
+        }
+    }
+
+    /// Follows which cards are on screen; the anchor is the first of them in Today's order.
+    private func cardVisibility(_ id: PersistentIdentifier, visible: Bool) {
+        if visible { visibleCardIDs.insert(id) } else { visibleCardIDs.remove(id) }
+        guard settledLayout == layout else { return }
+        let order = viewModel.groupSections.flatMap { section in
+            section.group.isCollapsed ? [] : section.intakes.map(\.nutrient.persistentModelID)
+        }
+        anchorID = TodayLayout.anchor(in: order, visible: visibleCardIDs)
+    }
+
     private func compactList(remindersShown: Bool) -> some View {
         List {
             dayScoreCard(remindersShown: remindersShown)
@@ -417,10 +460,12 @@ struct TodayView: View {
             }
             .scrollIndicators(.hidden)
             .frame(width: TodayLayout.sideColumnWidth)
-            ScrollView {
-                groupsGrid(gutter: TodayLayout.gutter(.wide))
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
+            keepsAnchor(.sideColumn) {
+                ScrollView {
+                    groupsGrid(gutter: TodayLayout.gutter(.wide))
+                        .padding(.top, 8)
+                        .padding(.bottom, 24)
+                }
             }
         }
         .frame(maxWidth: TodayLayout.maxContentWidth)
@@ -613,6 +658,9 @@ struct TodayView: View {
             // In the list the swipe action covers it; the grid has none.
             onEdit: inGrid ? { edit(entry.nutrient) } : nil
         )
+        .onScrollVisibilityChange(threshold: 0.6) { visible in
+            cardVisibility(entry.nutrient.persistentModelID, visible: visible)
+        }
         .contextMenu {
             Button {
                 nutrientToLog = entry.nutrient

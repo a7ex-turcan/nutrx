@@ -22,4 +22,17 @@ final class TodayLayoutTests: XCTestCase {
         let cards = (TodayLayout.sideColumnMinimum - 2 * 40 - TodayLayout.sideColumnWidth - 24 - 20) / 2
         XCTAssertEqual(cards, TodayLayout.minimumCardWidth)
     }
+
+    func testTheAnchorIsTheFirstVisibleCardInOrder() {
+        let order = ["vitD", "omega", "mag", "water", "protein"]
+        XCTAssertEqual(TodayLayout.anchor(in: order, visible: ["water", "mag", "protein"]), "mag")
+        XCTAssertEqual(TodayLayout.anchor(in: order, visible: ["protein"]), "protein")
+    }
+
+    func testNoAnchorAtTheTopOrWithNothingVisible() {
+        let order = ["vitD", "omega", "mag"]
+        XCTAssertNil(TodayLayout.anchor(in: order, visible: ["vitD", "omega"]), "the page is at the top")
+        XCTAssertNil(TodayLayout.anchor(in: order, visible: []))
+        XCTAssertNil(TodayLayout.anchor(in: [String](), visible: ["vitD"]))
+    }
 }

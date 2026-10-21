@@ -25,6 +25,13 @@ nonisolated enum TodayLayout: Equatable {
     /// Between card columns and stack tiles: 16 pt, 20 on wide.
     static func gutter(_ widthClass: WidthClass) -> CGFloat { widthClass == .wide ? 20 : 16 }
 
+    /// The card to keep at the top when the layout changes (#198): the first visible one in Today's order, or nil
+    /// when that's the very first card (the page is at the top, and stays there with the score in view).
+    static func anchor<ID: Hashable>(in order: [ID], visible: Set<ID>) -> ID? {
+        let first = order.first(where: visible.contains)
+        return first == order.first ? nil : first
+    }
+
     static func of(width: CGFloat, isAccessibilitySize: Bool) -> TodayLayout {
         if isAccessibilitySize || WidthClass(width: width) == .compact { return .list }
         return width >= sideColumnMinimum ? .sideColumn : .columns
