@@ -105,12 +105,20 @@ struct MainTabView: View {
                 return
             }
         }
-        // A notification routed during the cover (a recap, a refill reminder) wins over where the app opened; a recap
-        // flag set before this view appeared never fired `onChange`, so it's checked too.
-        selection = routedTab ?? (router?.showsRecap == true ? .history : start)
+        // A notification routed during the cover (a recap, a refill reminder) wins over where the app opened; a flag
+        // set before this view appeared never fired `onChange`, so they're checked too.
+        selection = routedTab ?? routeSetBeforeAppearing ?? start
         try? await Task.sleep(for: .milliseconds(16))
         if Task.isCancelled { return }
         preparedSplitViews = true
+    }
+
+    /// The tab a notification's flag asks for when it was set before this view appeared: a recap opens History; a
+    /// refill reminder or Today's Health card opens My Nutrients.
+    private var routeSetBeforeAppearing: TabID? {
+        if router?.showsRecap == true { return .history }
+        if router?.supplyNutrientID != nil || router?.healthNutrientID != nil { return .nutrients }
+        return nil
     }
 
     /// Switches tab for a notification or one of Today's links, remembered if the launch cover is up so the visit
