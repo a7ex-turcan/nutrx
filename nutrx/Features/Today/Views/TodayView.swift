@@ -39,6 +39,8 @@ struct TodayView: View {
     @State private var showNewStack = false
     @State private var newStackName = ""
     @AppStorage("nutrx.dismissedRecapWeek") private var dismissedRecapWeek: Double = 0
+    /// The release whose "What's new" card was closed, or seen at onboarding, on this device (#148).
+    @AppStorage(WhatsNew.hiddenVersionKey) private var whatsNewHiddenVersion = ""
     /// Apple Health insights (#102): the status, and whether its Today card was hidden while gathering / once ready.
     @State private var healthStatus: HealthInsights.Status?
     /// Bumped on every appearance, so the Health status is read again after connecting elsewhere (Settings, analytics).
@@ -538,9 +540,32 @@ struct TodayView: View {
         }
     }
 
-    /// The cards under the day score: the weekly recap, Apple Health insights, a banner, the stack suggestion.
+    /// This release's "What's new" card, unless it was closed here or onboarding ran on this release (#148). In Debug
+    /// builds `simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.whatsNewVersion 2.3` pretends to be
+    /// that version. To show a closed card again, delete `nutrx.whatsNewHiddenVersion` from the app's own
+    /// preferences (`simctl get_app_container <UDID> nutrx-labs.nutrx data` + `/Library/Preferences/nutrx-labs.nutrx`;
+    /// plain `defaults delete nutrx-labs.nutrx` misses it).
+    private var whatsNew: WhatsNew? {
+        var appVersion = Bundle.main.appVersion
+        #if DEBUG
+        if let override = UserDefaults.standard.string(forKey: "nutrx.debug.whatsNewVersion") { appVersion = override }
+        #endif
+        return WhatsNew.card(appVersion: appVersion, hiddenVersion: whatsNewHiddenVersion,
+                             isPad: UIDevice.current.userInterfaceIdiom == .pad)
+    }
+
+    /// The cards under the day score: what's new, the weekly recap, Apple Health insights, a banner, the stack
+    /// suggestion.
     @ViewBuilder
     private var todayCards: some View {
+        if let whatsNew {
+            WhatsNewTodayCard(whatsNew: whatsNew) {
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                    whatsNewHiddenVersion = whatsNew.version
+                }
+            }
+        }
+
         if let weekRecap {
             RecapTodayCard(recap: weekRecap, onOpen: { showRecap = true }, onDismiss: {
                 dismissedRecapWeek = weekRecap.weekStart.timeIntervalSince1970

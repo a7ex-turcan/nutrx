@@ -10,6 +10,7 @@ All notable changes to nutrx are documented in this file.
 - **"Last day" for courses** — On the last day of a course, its card on Today says so next to the goal, so the nutrient leaving Today tomorrow isn't a surprise.
 
 ### Improvements
+- **What's new, on Today** — After an update, a card under the day score shows what's new in that version, once. Close it and it's gone; it never shows on a fresh install, and iPad news only shows on an iPad.
 - **Readable on iPad** — Stacks, a stack's details, the weekly recap, the nutrx Pro screen, About and onboarding keep their content in a centred column instead of stretching across the screen, and logging an amount opens a centred sheet that shows today's entries in full. iPhone in portrait is unchanged; in landscape those pages get the centred column too.
 - **Largest text sizes on iPad** — Today becomes one column with big − and + buttons, and My Nutrients and History switch to one screen at a time when the text no longer fits beside a sidebar.
 - **History on iPad** — The calendar, your streak and recent days stay in a sidebar, and the day you pick opens beside them.
