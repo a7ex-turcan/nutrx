@@ -362,6 +362,8 @@ struct TodayView: View {
                     Task { @MainActor in
                         // A frame for the new layout to exist before scrolling in it.
                         await Task.yield()
+                        // Flipped again meanwhile (a window dragged back and forth): that layout settles itself.
+                        guard self.layout == layout else { return }
                         proxy.scrollTo(anchorID, anchor: .top)
                         settledLayout = layout
                     }
@@ -376,10 +378,7 @@ struct TodayView: View {
         let order = viewModel.groupSections.flatMap { section in
             section.group.isCollapsed ? [] : section.intakes.map(\.nutrient.persistentModelID)
         }
-        // The first card in Today's order means the page is at (or near) the top: no anchor, so a layout change keeps
-        // it at the top with the score and header in view, instead of scrolling them away.
-        let first = order.first(where: visibleCardIDs.contains)
-        anchorID = first == order.first ? nil : first
+        anchorID = TodayLayout.anchor(in: order, visible: visibleCardIDs)
     }
 
     private func compactList(remindersShown: Bool) -> some View {
