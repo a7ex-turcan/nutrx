@@ -11,6 +11,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Improvements
 - **Readable on iPad** — Stacks, a stack's details, the weekly recap, the nutrx Pro screen, About and onboarding keep their content in a centred column instead of stretching across the screen, and logging an amount opens a centred sheet that shows today's entries in full. iPhone in portrait is unchanged; in landscape those pages get the centred column too.
+- **My Nutrients on iPad** — Your nutrients stay in a sidebar and the one you pick shows its stats beside them; on a wide screen the weekday pattern and Supply sit side by side.
 - **Today on iPad** — Nutrient cards sit in two columns and stacks become tiles. On a wide screen, the day score and your stacks stay in a column on the left while you log; logging a stack opens a centred sheet.
 
 ### Fixes

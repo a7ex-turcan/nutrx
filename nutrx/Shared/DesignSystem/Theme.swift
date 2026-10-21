@@ -28,6 +28,8 @@ enum Theme {
     static let surfaceGround = color(.surfaceGround)
     static let surfaceCard = color(.surfaceCard)
     static let surfaceChip = color(.surfaceChip)
+    /// The selected row in a large-screen sidebar: Forest @ 10% (light), Green @ 16% (dark) (#153).
+    static let surfaceSelected = color(.surfaceSelected)
     static let lineHairline = color(.lineHairline)
 
     // MARK: - Controls
@@ -112,6 +114,7 @@ enum Theme {
         case surfaceGround = "Surface/Ground"
         case surfaceCard = "Surface/Card"
         case surfaceChip = "Surface/Chip"
+        case surfaceSelected = "Surface/Selected"
         case lineHairline = "Line/Hairline"
         case controlGhostBorder = "Control/GhostBorder"
         case controlPrimary = "Control/Primary"

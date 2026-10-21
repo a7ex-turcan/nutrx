@@ -38,8 +38,17 @@ private struct NutrientAnalyticsContent: View {
 
     @State private var showHealthIntro = false
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
+    @Environment(\.widthClass) private var widthClass
+    /// The content column's width, which decides whether the heatmap and Supply sit side by side.
+    @State private var contentWidth: CGFloat = 0
 
     private static let healthCardID = "health-trends"
+
+    /// On large screens (docs/design/large-screens/LAYOUT.md, #153): 24 pt padding (40 on wide), the content capped
+    /// at 760 pt and centred, a taller chart on wide, and the heatmap and Supply side by side from 656 pt.
+    private var isLarge: Bool { widthClass != .compact }
+    private static let maxContentWidth: CGFloat = 760
+    private static let sideBySideMinimum: CGFloat = 656
 
     /// Analytics cards use a roomier inset than list cards (design source: 18pt).
     private let cardPadding: CGFloat = 18
@@ -63,18 +72,23 @@ private struct NutrientAnalyticsContent: View {
                         VStack(alignment: .leading, spacing: 22) {
                             StatTriplet(stats: viewModel.stats)
                             DailyIntakeChart(days: summary.days, goal: viewModel.goal, tint: nutrient.tint,
-                                             nutrientName: nutrient.name, unit: nutrient.unit)
+                                             nutrientName: nutrient.name, unit: nutrient.unit,
+                                             height: widthClass == .wide ? 240 : 170)
                         }
                         .padding(cardPadding)
                         .cardStyle()
                     }
 
-                    SupplyCard(nutrient: nutrient)
-
-                    if let pattern = viewModel.weekdayPattern {
-                        WeekdayHeatmap(pattern: pattern, tint: nutrient.tint)
-                            .padding(cardPadding)
-                            .cardStyle()
+                    if contentWidth >= Self.sideBySideMinimum {
+                        HStack(alignment: .top, spacing: Theme.Spacing.cardGap + 2) {
+                            heatmapCard
+                                .frame(maxWidth: .infinity)
+                            SupplyCard(nutrient: nutrient)
+                                .frame(maxWidth: .infinity)
+                        }
+                    } else {
+                        SupplyCard(nutrient: nutrient)
+                        heatmapCard
                     }
 
                     HealthTrendsCard(nutrient: nutrient, state: viewModel.healthState,
@@ -83,8 +97,11 @@ private struct NutrientAnalyticsContent: View {
 
                     remindersRow
                 }
-                .padding(.horizontal, Theme.Spacing.screenMargin)
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
+                .frame(maxWidth: isLarge ? Self.maxContentWidth : nil)
+                .padding(.horizontal, isLarge ? widthClass.minimumMargin : Theme.Spacing.screenMargin)
                 .padding(.bottom, Theme.Spacing.sectionTop)
+                .frame(maxWidth: .infinity)
             }
             // Opened from Today's Apple Health card (#102): scroll to where the insights are.
             .task(id: router?.healthNutrientID) {
@@ -123,6 +140,15 @@ private struct NutrientAnalyticsContent: View {
         }
         .sheet(isPresented: $showReminders) {
             NutrientRemindersSheet(nutrient: nutrient)
+        }
+    }
+
+    @ViewBuilder
+    private var heatmapCard: some View {
+        if let pattern = viewModel.weekdayPattern {
+            WeekdayHeatmap(pattern: pattern, tint: nutrient.tint)
+                .padding(cardPadding)
+                .cardStyle()
         }
     }
 

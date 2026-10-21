@@ -9,6 +9,8 @@ struct DailyIntakeChart: View {
     let tint: NutrientTint
     let nutrientName: String
     let unit: String
+    /// 170 pt, or 240 on wide screens (#153).
+    var height: CGFloat = 170
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// The widest goal label, measured, so the plot leaves exactly that much room on its right for the labels.
@@ -127,7 +129,7 @@ struct DailyIntakeChart: View {
             .allowsHitTesting(false)
             .accessibilityHidden(true)
         }
-        .frame(height: 170)
+        .frame(height: height)
         .background(alignment: .topLeading) {
             // Measures the widest label for the gutter; never shown.
             VStack(alignment: .leading) {
