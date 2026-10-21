@@ -11,6 +11,7 @@ struct PaywallView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.widthClass) private var widthClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var selected: ProAccess.Plan = .yearly
@@ -41,20 +42,26 @@ struct PaywallView: View {
         // The welcome sheet is half height, or full height at accessibility sizes, where its text doesn't fit.
         .presentationDetents(welcomed && !dynamicTypeSize.isAccessibilitySize ? [.medium] : [.large])
         .presentationDragIndicator(welcomed ? .visible : .hidden)
+        // On iPad a page sheet, taller than the default form sheet, so more of the plans are in view (#205); sizing
+        // doesn't change a sheet on iPhone.
+        .presentationSizing(.page)
         .task { await loadStore() }
         .alert(item: $message) { message in
             Alert(title: Text(message.title), message: Text(message.body), dismissButton: .default(Text("OK")))
         }
     }
 
-    /// From xLarge up (below accessibility sizes) the whole pinned footer hid the plans behind it (#189): only the
-    /// button stays pinned, with a line naming the selected plan that scrolls to the plans; the terms and links
-    /// scroll after them. At accessibility sizes everything scrolls (pinned, it covered a third of the screen).
+    /// From xLarge up (below accessibility sizes), and on large screens at any size, the whole pinned footer hid the
+    /// plans behind it (#189, #205): only the button stays pinned, with a line naming the selected plan that scrolls
+    /// to the plans; the terms and links scroll after them. At accessibility sizes everything scrolls (pinned, it
+    /// covered a third of the screen).
     private enum FooterLayout { case pinned, buttonPinned, scrolls }
 
     private var footerLayout: FooterLayout {
         if dynamicTypeSize.isAccessibilitySize { return .scrolls }
-        return dynamicTypeSize >= .xLarge ? .buttonPinned : .pinned
+        // On large screens the paywall is a sheet shorter than the screen (a landscape iPhone is short too), and with
+        // the whole footer pinned the plans started below the fold even at the default size (#205).
+        return dynamicTypeSize >= .xLarge || widthClass != .compact ? .buttonPinned : .pinned
     }
 
     private var paywall: some View {
@@ -76,6 +83,10 @@ struct PaywallView: View {
                     .padding(.horizontal, Theme.Spacing.screenMargin)
                     .padding(.top, 18)
                     .padding(.bottom, 16)
+                    // In the iPad's 928 pt page sheet: a centred 640 pt column (LAYOUT.md, Pro screens), so a price
+                    // stays near its plan; the forest header still spans the sheet.
+                    .frame(maxWidth: ReadableColumn.maxWidth)
+                    .frame(maxWidth: .infinity)
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -99,6 +110,8 @@ struct PaywallView: View {
                     }
                     .padding(.horizontal, Theme.Spacing.screenMargin)
                     .padding(.top, 10)
+                    .frame(maxWidth: ReadableColumn.maxWidth)
+                    .frame(maxWidth: .infinity)
                     .background(Theme.surfaceGround)
                     // With only the button pinned, the plans scroll under it: a hairline marks the edge.
                     .overlay(alignment: .top) {
@@ -144,7 +157,10 @@ struct PaywallView: View {
         .padding(.top, 26 + 20)  // the sheet's top inset, then the design's 26
         .padding(.horizontal, 22)
         .padding(.bottom, 22)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // Lined up with the 640 pt column below in a wide sheet (its screen margins are narrower than these 22);
+        // the forest and the rings still span the sheet.
+        .frame(maxWidth: ReadableColumn.maxWidth + 2 * (22 - Theme.Spacing.screenMargin), alignment: .leading)
+        .frame(maxWidth: .infinity)
         .background(alignment: .topTrailing) {
             // Centred about 50pt in from the right and 40pt down, so the green arc lands near the header's bottom.
             ProRingMotif(lineWidth: 26)
@@ -493,4 +509,11 @@ extension View {
     PaywallView()
         .environment(ProAccess())
         .dynamicTypeSize(.xLarge)
+}
+
+// The large-screen branch (#205) without an iPad: only the button pinned, the plan summary above it, a 640 pt column.
+#Preview("Paywall, large screen") {
+    PaywallView()
+        .environment(ProAccess())
+        .environment(\.widthClass, .regular)
 }

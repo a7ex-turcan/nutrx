@@ -23,7 +23,7 @@ All notable changes to nutrx are documented in this file.
 - **Stacks fit on smaller phones** — When you log a stack, each row's total stays on one line beside the amount instead of wrapping, and at larger text sizes the amount moves under the name so names don't break mid-word.
 - **Every nutrient in a stack can be reached** — When you log a stack in a half-height sheet, the rows now scroll, so the last one no longer hides behind the Log button.
 - **Supply hints fit on Today** — "Out of supply · Refilled?" and "About 6 days left" shorten to fit the card instead of being cut off, and at accessibility text sizes they wrap.
-- **The paywall's plans in view** — At larger text sizes only the purchase button stays pinned, with the selected plan named above it (tap it to see the plans), so the plans are no longer hidden behind the button and its small print.
+- **The paywall's plans in view** — At larger text sizes, on iPad and on an iPhone in landscape, only the purchase button stays pinned, with the selected plan named above it (tap it to see the plans), so the plans are no longer hidden behind the button and its small print. On iPad the paywall also opens taller.
 - **The paywall at large text sizes** — Plan names, prices and the free-week badge no longer break mid-word; each plan stacks its details instead.
 
 ## v2.2.1 — in review
