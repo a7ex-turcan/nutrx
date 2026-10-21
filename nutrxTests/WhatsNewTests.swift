@@ -35,7 +35,9 @@ final class WhatsNewTests: XCTestCase {
 
     /// Installed fresh on 2.3: onboarding marks 2.3 seen, so no card on day two or any day of 2.3 — but 2.4's.
     func testAFreshInstallSeesNothingUntilTheNextRelease() throws {
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: "WhatsNewTests-\(UUID())"))
+        let name = "WhatsNewTests-\(UUID())"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: name))
+        addTeardownBlock { UserDefaults().removePersistentDomain(forName: name) }
         WhatsNew.markSeenAtOnboarding(appVersion: "2.3.0", defaults: defaults)
         let hidden = defaults.string(forKey: WhatsNew.hiddenVersionKey)
         XCTAssertEqual(hidden, "2.3")
