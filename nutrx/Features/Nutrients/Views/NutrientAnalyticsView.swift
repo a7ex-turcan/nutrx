@@ -39,6 +39,7 @@ private struct NutrientAnalyticsContent: View {
     @State private var showHealthIntro = false
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @Environment(\.widthClass) private var widthClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// The content column's width, which decides whether the heatmap and Supply sit side by side.
     @State private var contentWidth: CGFloat = 0
 
@@ -79,7 +80,8 @@ private struct NutrientAnalyticsContent: View {
                         .cardStyle()
                     }
 
-                    if contentWidth >= Self.sideBySideMinimum {
+                    // One column at the largest text sizes, whatever the width (#155).
+                    if contentWidth >= Self.sideBySideMinimum, !dynamicTypeSize.isAccessibilitySize {
                         HStack(alignment: .top, spacing: Theme.Spacing.cardGap + 2) {
                             heatmapCard
                                 .frame(maxWidth: .infinity)
@@ -98,7 +100,8 @@ private struct NutrientAnalyticsContent: View {
                     remindersRow
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
-                .frame(maxWidth: isLarge ? Self.maxContentWidth : nil)
+                .frame(maxWidth: isLarge ? (dynamicTypeSize.isAccessibilitySize ? ReadableColumn.maxWidth
+                                                                                 : Self.maxContentWidth) : nil)
                 .padding(.horizontal, isLarge ? widthClass.minimumMargin : Theme.Spacing.screenMargin)
                 .padding(.bottom, Theme.Spacing.sectionTop)
                 .frame(maxWidth: .infinity)

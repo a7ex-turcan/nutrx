@@ -396,6 +396,8 @@ struct TodayView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        // At the largest text sizes on a large screen the list is one 640 pt column (#155); nothing on iPhone.
+        .readableColumn()
     }
 
     // Regular and wide widths (docs/design/large-screens/LAYOUT.md, #152). A grid has no swipe actions: the card's

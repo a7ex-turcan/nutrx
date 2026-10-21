@@ -82,7 +82,9 @@ struct NutrientsListView: View {
     /// iPhone is regular by width but a compact size class, where a split view collapses to a stack, so it keeps
     /// the push.
     private var usesSplitView: Bool {
-        widthClass != .compact && horizontalSizeClass == .regular
+        guard widthClass != .compact, horizontalSizeClass == .regular else { return false }
+        // From AX1 on regular widths (under 1000 pt) the panes are too narrow for the text: a stack (#155).
+        return !(dynamicTypeSize.isAccessibilitySize && widthClass == .regular)
     }
 
     var body: some View {
@@ -393,6 +395,9 @@ struct NutrientsListView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+        // A 640 pt column where the list fills a large window (largest text sizes on an iPad, a landscape iPhone);
+        // nothing in the split view's sidebar or on a portrait iPhone (#155).
+        .readableColumn(ownMargin: 16)  // the inset-grouped sections' own margin here: cards at 640, like Today's
         .listRowSpacing(0)
         .environment(\.editMode, $editMode)
         // The selection circles in the app's colour rather than grey; only while selecting, or the swipe Delete

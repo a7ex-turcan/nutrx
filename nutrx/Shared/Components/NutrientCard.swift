@@ -28,6 +28,7 @@ struct NutrientCard: View {
     }
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.widthClass) private var widthClass
 
     private var progress: GoalProgress {
         GoalProgress(nutrient: nutrient, current: currentIntake)
@@ -37,7 +38,13 @@ struct NutrientCard: View {
         let progress = progress
 
         Group {
-            if dynamicTypeSize.isAccessibilitySize {
+            if largeLayout {
+                // Large text on a large screen (LAYOUT.md, #155): a full-width − / + row with 64 pt targets.
+                VStack(alignment: .leading, spacing: Theme.Spacing.cardPadding) {
+                    details(progress)
+                    capsuleStepButtons
+                }
+            } else if dynamicTypeSize.isAccessibilitySize {
                 // Large text: details get the full width, buttons move to their own row.
                 VStack(alignment: .trailing, spacing: Theme.Spacing.cardPadding) {
                     details(progress)
@@ -50,15 +57,18 @@ struct NutrientCard: View {
                 }
             }
         }
-        .padding(Theme.Spacing.cardPadding)
+        .padding(largeLayout ? 20 : Theme.Spacing.cardPadding)
         .cardStyle()
     }
+
+    /// Largest text sizes on a large screen: a bigger ring, roomier padding and the capsule − / + row (TodayAX).
+    private var largeLayout: Bool { dynamicTypeSize.isAccessibilitySize && widthClass != .compact }
 
     private func details(_ progress: GoalProgress) -> some View {
         Button(action: onOpen) {
             HStack(spacing: 14) {
                 ProgressRing(nutrient: nutrient, progress: progress)
-                    .frame(width: 52, height: 52)
+                    .frame(width: largeLayout ? 64 : 52, height: largeLayout ? 64 : 52)
                     .accessibilityHidden(true)  // the card's own label and value say it
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -260,6 +270,43 @@ struct NutrientCard: View {
                     .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
                     .background(Theme.controlPrimary, in: Circle())
                     .contentShape(Circle())
+            }
+            .accessibilityLabel("Add one step of \(nutrient.name)")
+        }
+        .buttonStyle(.plain)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+}
+
+extension NutrientCard {
+    /// − and + as two equal capsules across the card, 64 pt tall (largest text sizes on large screens).
+    private var capsuleStepButtons: some View {
+        HStack(spacing: 16) {
+            Button {
+                Haptics.adjusted()
+                onDecrement()
+            } label: {
+                Image(systemName: "minus")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(Theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 64)
+                    .overlay(Capsule().strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5))
+                    .contentShape(Capsule())
+            }
+            .disabled(!canDecrement)
+            .opacity(canDecrement ? 1 : 0.4)
+            .accessibilityLabel("Remove one step of \(nutrient.name)")
+
+            Button {
+                Haptics.logged(reachingGoal: progress.reachesGoal(adding: nutrient.step))
+                onIncrement()
+            } label: {
+                Image(systemName: "plus")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Theme.controlOnPrimary)
+                    .frame(maxWidth: .infinity, minHeight: 64)
+                    .background(Theme.controlPrimary, in: Capsule())
+                    .contentShape(Capsule())
             }
             .accessibilityLabel("Add one step of \(nutrient.name)")
         }

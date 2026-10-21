@@ -20,12 +20,15 @@ struct HistoryListView: View {
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.widthClass) private var widthClass
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// A split view from regular widths (docs/design/large-screens/LAYOUT.md, #154): the calendar and the rest of
     /// History in the sidebar, the selected day beside it. As in My Nutrients, only where the system shows both
     /// columns: a landscape iPhone (compact size class) keeps the push.
     private var usesSplitView: Bool {
-        widthClass != .compact && horizontalSizeClass == .regular
+        guard widthClass != .compact, horizontalSizeClass == .regular else { return false }
+        // From AX1 on regular widths (under 1000 pt) the panes are too narrow for the text: a stack (#155).
+        return !(dynamicTypeSize.isAccessibilitySize && widthClass == .regular)
     }
 
     private var streaksEnabled: Bool { allPreferences.first?.streaksEnabled != false }
