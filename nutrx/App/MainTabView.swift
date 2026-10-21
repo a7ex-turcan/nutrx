@@ -34,12 +34,8 @@ struct MainTabView: View {
             }
 
             Tab("History", systemImage: "calendar", value: TabID.history) {
-                NavigationStack {
-                    // The profile menu is added inside, so the report button sits before the avatar.
-                    HistoryListView()
-                        .navigationTitle("History")
-                        .navigationBarTitleDisplayMode(.large)
-                }
+                // Its own navigation: a stack on iPhone, a split view (calendar and day) on large screens (#154).
+                HistoryListView()
             }
 
         }

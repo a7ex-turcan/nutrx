@@ -49,6 +49,8 @@ struct HistoryDayView: View {
             .padding(.horizontal, Theme.Spacing.screenMargin)
             .padding(.bottom, Theme.Spacing.sectionTop)
         }
+        // In History's split view the detail is capped at 640 pt and centred (#154).
+        .readableColumn()
         .onScrollGeometryChange(for: Bool.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top > 60
         } action: { _, scrolledAway in

@@ -12,6 +12,9 @@ struct MonthCalendar: View {
     let onPrevious: () -> Void
     let onNext: () -> Void
     let onSelect: (Date) -> Void
+    /// The day open in the split view's detail (#154): a filled dot in the control colour (Forest, Green in dark) with
+    /// a 2 pt halo. Nil on iPhone, where a day is pushed.
+    var selected: Date? = nil
 
     @ScaledMetric(relativeTo: .body) private var cellSize: CGFloat = 38
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -88,13 +91,17 @@ struct MonthCalendar: View {
         let isFuture = date > today
         let state = isFuture ? DayCompletion.noEntries : completion(date)
         let isTappable = !isFuture && !isToday && state != .noEntries
+        let isSelected = isTappable && date == selected
 
         let circle = ZStack {
             // Today: ring with a gap around the fill, so it still shows on a green (all met) day in dark mode,
             // where the ring and the fill are the same green.
-            Circle().fill(fill(for: state))
-                .padding(isToday ? 4 : 0)
-            if state == .noneMet && !isToday {
+            Circle().fill(isSelected ? Theme.controlPrimary : fill(for: state))
+                .padding(isToday ? 4 : (isSelected ? 3 : 0))
+            if isSelected {
+                Circle().strokeBorder(Theme.controlPrimary, lineWidth: 2)
+            }
+            if state == .noneMet && !isToday && !isSelected {
                 // Logged but nothing met: no fill (§4.9), but a faint outline so it reads as tappable.
                 Circle().strokeBorder(Theme.surfaceChip, lineWidth: 2)
             }
@@ -107,7 +114,7 @@ struct MonthCalendar: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
                 .padding(4)
-                .foregroundStyle(numberColor(for: state, isFuture: isFuture))
+                .foregroundStyle(isSelected ? Theme.controlOnPrimary : numberColor(for: state, isFuture: isFuture))
         }
         // 38pt, scaled with text size but never wider than its column, so large text can't overlap days.
         .aspectRatio(1, contentMode: .fit)
@@ -119,6 +126,7 @@ struct MonthCalendar: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(date.formatted(.dateTime.weekday(.wide).day().month(.wide)))
                 .accessibilityValue(accessibilityValue(for: state, isToday: isToday))
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
         } else {
             circle
                 .accessibilityElement(children: .ignore)
