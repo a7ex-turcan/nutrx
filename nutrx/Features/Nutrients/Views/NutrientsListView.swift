@@ -707,33 +707,33 @@ struct NutrientsListView: View {
             if showsFinished {
                 ForEach(finishedNutrients, id: \.persistentModelID) { nutrient in
                     analyticsLink(nutrient)
-                    .listRowBackground(rowBackground(nutrient))
-                    .listRowSeparatorTint(Theme.lineHairline)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            nutrientToDelete = nutrient
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+                        .listRowBackground(rowBackground(nutrient))
+                        .listRowSeparatorTint(Theme.lineHairline)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                nutrientToDelete = nutrient
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
-                    }
-                    .contextMenu {
-                        Button {
-                            restart(nutrient)
-                        } label: {
-                            Label("Restart", systemImage: "arrow.clockwise")
+                        .contextMenu {
+                            Button {
+                                restart(nutrient)
+                            } label: {
+                                Label("Restart", systemImage: "arrow.clockwise")
+                            }
+                            Button {
+                                editDraft.populate(from: nutrient)
+                                nutrientToEdit = nutrient
+                            } label: {
+                                Label("Edit Nutrient", systemImage: "pencil")
+                            }
+                            Button(role: .destructive) {
+                                nutrientToDelete = nutrient
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
                         }
-                        Button {
-                            editDraft.populate(from: nutrient)
-                            nutrientToEdit = nutrient
-                        } label: {
-                            Label("Edit Nutrient", systemImage: "pencil")
-                        }
-                        Button(role: .destructive) {
-                            nutrientToDelete = nutrient
-                        } label: {
-                            Label("Delete", systemImage: "trash")
-                        }
-                    }
                 }
             }
         } header: {
