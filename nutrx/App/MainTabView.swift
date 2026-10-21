@@ -94,6 +94,8 @@ struct MainTabView: View {
         preparingSplitViews = true
         defer { preparingSplitViews = false }
         let start = selection
+        // Read before the visit: showing My Nutrients can open a refill reminder's analytics and clear its flag.
+        let routeBefore = routeSetBeforeAppearing
         routedTab = nil
         for tab in [TabID.nutrients, .history] where tab != start {
             selection = tab
@@ -101,13 +103,13 @@ struct MainTabView: View {
             // Cancelled when the window settles into another class mid-visit: back to where it was, and the next
             // run does the visit again.
             if Task.isCancelled {
-                selection = routedTab ?? start
+                selection = routedTab ?? routeBefore ?? start
                 return
             }
         }
         // A notification routed during the cover (a recap, a refill reminder) wins over where the app opened; a flag
         // set before this view appeared never fired `onChange`, so they're checked too.
-        selection = routedTab ?? routeSetBeforeAppearing ?? start
+        selection = routedTab ?? routeBefore ?? routeSetBeforeAppearing ?? start
         try? await Task.sleep(for: .milliseconds(16))
         if Task.isCancelled { return }
         preparedSplitViews = true
