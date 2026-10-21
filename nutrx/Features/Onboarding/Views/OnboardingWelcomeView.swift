@@ -30,6 +30,9 @@ struct OnboardingWelcomeView: View {
             // Opaque, so scrolled benefits (at large text sizes) don't show around the button.
             .background { Theme.forest.ignoresSafeArea() }
         }
+        // The headline, benefits and button in one centred column on large screens; the forest still fills the
+        // window (#151).
+        .readableColumn(ownMargin: 28)
         .background {
             // An overlay, not a ZStack sibling: the 520pt rings would widen a ZStack past the screen and shift them.
             Theme.forest

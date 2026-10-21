@@ -13,6 +13,7 @@ struct LogSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.widthClass) private var widthClass
     @Query private var records: [IntakeRecord]
     @State private var amountText: String
     /// The chip the user last tapped — wins when several chips share the current amount.
@@ -118,8 +119,11 @@ struct LogSheet: View {
                     }
                 }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+        // On iPhone half height first, then full. From regular widths a centred form sheet (LAYOUT.md: about 540 pt
+        // wide): at the medium detent the iPad cut off "Logged today" (#151). Sizing doesn't change an iPhone sheet.
+        .presentationDetents(widthClass == .compact ? [.medium, .large] : [.large])
+        .presentationSizing(.form)
+        .presentationDragIndicator(widthClass == .compact ? .visible : .hidden)  // nothing to resize in a form sheet
         .presentationBackground(Theme.surfaceCard)
     }
 

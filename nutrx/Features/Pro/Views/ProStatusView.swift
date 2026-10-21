@@ -56,6 +56,7 @@ struct ProStatusView: View {
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
+        .readableColumn(ownMargin: 20)
         .background(Theme.surfaceGround)
         .navigationTitle("nutrx Pro")
         .navigationBarTitleDisplayMode(.inline)

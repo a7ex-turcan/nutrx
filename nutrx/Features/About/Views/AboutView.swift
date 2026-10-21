@@ -86,6 +86,7 @@ struct AboutView: View {
             }
             .padding(.horizontal, 16)
         }
+        .readableColumn(ownMargin: 16)
         .background(Theme.surfaceGround)
     }
 

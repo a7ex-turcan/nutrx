@@ -86,6 +86,8 @@ struct OnboardingFirstNutrientView: View {
                 }
             }
         }
+        // The content and its bottom panel in one centred column on large screens (#151).
+        .readableColumn()
         .background(Theme.surfaceGround)
         .sheet(isPresented: $showCustomForm, onDismiss: {
             viewModel.finishAfterCustomForm(context: modelContext)
