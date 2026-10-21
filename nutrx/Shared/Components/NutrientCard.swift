@@ -42,33 +42,36 @@ struct NutrientCard: View {
                 // Large text on a large screen (LAYOUT.md, #155): a full-width − / + row with 64 pt targets.
                 VStack(alignment: .leading, spacing: Theme.Spacing.cardPadding) {
                     details(progress)
-                    capsuleStepButtons
+                    stepButtons(capsules: true)
                 }
             } else if dynamicTypeSize.isAccessibilitySize {
                 // Large text: details get the full width, buttons move to their own row.
                 VStack(alignment: .trailing, spacing: Theme.Spacing.cardPadding) {
                     details(progress)
-                    stepButtons
+                    stepButtons(capsules: false)
                 }
             } else {
                 HStack(spacing: 14) {
                     details(progress)
-                    stepButtons
+                    stepButtons(capsules: false)
                 }
             }
         }
-        .padding(largeLayout ? 20 : Theme.Spacing.cardPadding)
+        .padding(largeLayout ? Self.largePadding : Theme.Spacing.cardPadding)
         .cardStyle()
     }
 
     /// Largest text sizes on a large screen: a bigger ring, roomier padding and the capsule − / + row (TodayAX).
     private var largeLayout: Bool { dynamicTypeSize.isAccessibilitySize && widthClass != .compact }
+    /// The large layout's ring and its buttons' height (64 pt targets), and its card padding.
+    private static let largeTarget: CGFloat = 64
+    private static let largePadding: CGFloat = 20
 
     private func details(_ progress: GoalProgress) -> some View {
         Button(action: onOpen) {
             HStack(spacing: 14) {
                 ProgressRing(nutrient: nutrient, progress: progress)
-                    .frame(width: largeLayout ? 64 : 52, height: largeLayout ? 64 : 52)
+                    .frame(width: largeLayout ? Self.largeTarget : 52, height: largeLayout ? Self.largeTarget : 52)
                     .accessibilityHidden(true)  // the card's own label and value say it
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -243,18 +246,14 @@ struct NutrientCard: View {
         currentIntake - nutrient.step >= 0
     }
 
-    private var stepButtons: some View {
-        HStack(spacing: 10) {
+    /// − and + as 44 pt circles, or (`capsules`, the large layout) two equal 64 pt capsules across the card.
+    private func stepButtons(capsules: Bool) -> some View {
+        HStack(spacing: capsules ? 16 : 10) {
             Button {
                 Haptics.adjusted()
                 onDecrement()
             } label: {
-                Image(systemName: "minus")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(Theme.textSecondary)
-                    .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
-                    .overlay(Circle().strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5))
-                    .contentShape(Circle())
+                stepLabel(systemName: "minus", capsule: capsules, filled: false)
             }
             .disabled(!canDecrement)
             .opacity(canDecrement ? 1 : 0.4)
@@ -264,54 +263,34 @@ struct NutrientCard: View {
                 Haptics.logged(reachingGoal: progress.reachesGoal(adding: nutrient.step))
                 onIncrement()
             } label: {
-                Image(systemName: "plus")
-                    .font(.body.weight(.bold))
-                    .foregroundStyle(Theme.controlOnPrimary)
-                    .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
-                    .background(Theme.controlPrimary, in: Circle())
-                    .contentShape(Circle())
+                stepLabel(systemName: "plus", capsule: capsules, filled: true)
             }
             .accessibilityLabel("Add one step of \(nutrient.name)")
         }
         .buttonStyle(.plain)
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
-}
 
-extension NutrientCard {
-    /// − and + as two equal capsules across the card, 64 pt tall (largest text sizes on large screens).
-    private var capsuleStepButtons: some View {
-        HStack(spacing: 16) {
-            Button {
-                Haptics.adjusted()
-                onDecrement()
-            } label: {
-                Image(systemName: "minus")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(Theme.textSecondary)
-                    .frame(maxWidth: .infinity, minHeight: 64)
-                    .overlay(Capsule().strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5))
-                    .contentShape(Capsule())
-            }
-            .disabled(!canDecrement)
-            .opacity(canDecrement ? 1 : 0.4)
-            .accessibilityLabel("Remove one step of \(nutrient.name)")
-
-            Button {
-                Haptics.logged(reachingGoal: progress.reachesGoal(adding: nutrient.step))
-                onIncrement()
-            } label: {
-                Image(systemName: "plus")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(Theme.controlOnPrimary)
-                    .frame(maxWidth: .infinity, minHeight: 64)
-                    .background(Theme.controlPrimary, in: Capsule())
-                    .contentShape(Capsule())
-            }
-            .accessibilityLabel("Add one step of \(nutrient.name)")
+    /// An outlined − or a filled +, in a circle or a full-width capsule.
+    @ViewBuilder
+    private func stepLabel(systemName: String, capsule: Bool, filled: Bool) -> some View {
+        let font: Font = capsule ? .title2 : .body
+        let image = Image(systemName: systemName)
+            .font(font.weight(filled ? .bold : .semibold))
+            .foregroundStyle(filled ? Theme.controlOnPrimary : Theme.textSecondary)
+        if capsule {
+            image
+                .frame(maxWidth: .infinity, minHeight: Self.largeTarget)
+                .background(filled ? Theme.controlPrimary : .clear, in: Capsule())
+                .overlay { if !filled { Capsule().strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5) } }
+                .contentShape(Capsule())
+        } else {
+            image
+                .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
+                .background(filled ? Theme.controlPrimary : .clear, in: Circle())
+                .overlay { if !filled { Circle().strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5) } }
+                .contentShape(Circle())
         }
-        .buttonStyle(.plain)
-        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 }
 
@@ -364,4 +343,11 @@ private struct NutrientCardPreviewGallery: View {
     NutrientCardPreviewGallery()
         .modelContainer(previewContainer)
         .environment(\.dynamicTypeSize, .accessibility3)
+}
+
+#Preview("Accessibility 1, large screen") {
+    NutrientCardPreviewGallery()
+        .modelContainer(previewContainer)
+        .environment(\.dynamicTypeSize, .accessibility1)
+        .environment(\.widthClass, .regular)
 }
