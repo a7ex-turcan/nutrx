@@ -724,7 +724,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - The three plans are radio cards with prices from StoreKit. Lifetime sits under "or pay once", and yearly carries "1 WEEK FREE" only while `isEligibleForIntroOffer`.
   - The button reads Start free week / Subscribe / Buy lifetime, with the terms under it and "Everything you use today stays free." Restore purchases · Terms (Apple's standard EULA) · Privacy (the website).
   - A purchase or restore that unlocks Pro turns the sheet into `ProWelcomeView` at medium height. Pending, failed and nothing-to-restore show alerts. Offline, the plans area offers Try again.
-  - At accessibility sizes the button scrolls with the content.
+  - Below xLarge the button, terms and links are pinned at the bottom. From xLarge (#189) only the button is, with `ProText.planSummary` above it ("Yearly · $14.99 a year · 1 week free", "Plans ⌃", which scrolls to the plans) and a hairline on top; the terms and links scroll after the plans. At accessibility sizes the button scrolls with the content.
   - The paywall never claims a store it can't reach, and never says nothing was charged.
   - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
 - **`ProFeature`**: the Pro features with titles, symbols and tints (six since courses, #147). A new Pro feature gets a case here, or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2).
