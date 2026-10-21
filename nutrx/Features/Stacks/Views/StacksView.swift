@@ -166,17 +166,28 @@ struct StacksView: View {
         // The separator starts at the text, whatever's inside the row.
         .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(stack.name): \(StackLogging.summary(of: stack))")
+        // The same words as the stack's card on Today, "Logged today." included once it is.
+        .accessibilityLabel(StackAccessibility.label(for: stack, done: StackLogging.isLoggedToday(stack)))
         .accessibilityAddTraits(.isButton)
     }
+
+    @ScaledMetric(relativeTo: .subheadline) private var logTickSize: CGFloat = 11
 
     /// "Log" (or a check and "Log again" once logged today), the same action as the stack's card on Today.
     private func logButton(_ stack: LogStack) -> some View {
         let done = StackLogging.isLoggedToday(stack)
         return Button { log(stack) } label: {
-            // The symbol hidden: VoiceOver reads a checkmark as "Selected".
+            // The tick drawn, not an SF Symbol: a checkmark image was read as "Selected" even hidden (#203).
             HStack(spacing: 6) {
-                Image(systemName: done ? "checkmark" : "plus").accessibilityHidden(true)
+                if done {
+                    // Scaled with the text, like the "+" it replaces.
+                    CheckmarkShape()
+                        .stroke(style: StrokeStyle(lineWidth: logTickSize * 0.18, lineCap: .round, lineJoin: .round))
+                        .frame(width: logTickSize, height: logTickSize * 0.73)
+                        .accessibilityHidden(true)
+                } else {
+                    Image(systemName: "plus").accessibilityHidden(true)
+                }
                 Text(done ? "Log again" : "Log")
             }
                 .font(.subheadline.weight(.semibold))

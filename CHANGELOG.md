@@ -18,6 +18,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Fixes
 - **Analytics charts stay readable** — The goal label sits beside the chart instead of on top of the bars; at large text sizes it moves above the chart, dates no longer run into each other, and the weekday pattern shows its percentages and title in full.
+- **VoiceOver no longer says "Selected" for done goals** — The check on a met goal (Today, History, the log sheets) and on a logged stack was read as "Selected"; VoiceOver now reads the goal or stack, met or logged, without it. The Stacks tab also says when a stack was logged today.
 - **Select mode at large text sizes** — In My Nutrients, the Select bar is one short row of buttons at accessibility text sizes instead of taking half the screen.
 - **Stacks fit on smaller phones** — When you log a stack, each row's total stays on one line beside the amount instead of wrapping, and at larger text sizes the amount moves under the name so names don't break mid-word.
 - **Every nutrient in a stack can be reached** — When you log a stack in a half-height sheet, the rows now scroll, so the last one no longer hides behind the Log button.

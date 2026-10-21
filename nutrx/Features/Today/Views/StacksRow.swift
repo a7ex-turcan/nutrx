@@ -260,14 +260,10 @@ private struct StackLogLabelStyle: LabelStyle {
 }
 
 /// The 20pt green check by a stack's title when it was logged today (decorative: the label says "logged today").
+/// The card's label already ends "Logged today."
 private struct StackDoneBadge: View {
     var body: some View {
-        Image(systemName: "checkmark")
-            .font(.system(size: 10, weight: .heavy))
-            .foregroundStyle(Theme.forest)
-            .frame(width: 20, height: 20)
-            .background(Theme.green, in: Circle())
-            .accessibilityHidden(true)
+        TickDisc(diameter: 20)
     }
 }
 

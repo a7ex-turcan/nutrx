@@ -183,18 +183,26 @@ private struct TintBar: View {
     }
 }
 
-/// Green check when the goal was met, grey dash when it wasn't.
+/// A green tick when the goal was met, a grey dash when it wasn't, in a 28 pt circle. Drawn as shapes: a checkmark
+/// SF Symbol was read as "Selected" even hidden (#203, as #77); the row's value already says "goal met" or "missed".
 private struct StatusBadge: View {
     let isMet: Bool
 
     var body: some View {
-        Image(systemName: isMet ? "checkmark" : "minus")
-            .font(.caption.weight(.bold))
-            .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // the 28pt circle doesn't grow with text
-            .foregroundStyle(isMet ? Theme.textOnTint : Theme.textSecondary)
-            .frame(width: 28, height: 28)
-            .background(isMet ? Theme.green : Theme.surfaceChip, in: Circle())
-            .accessibilityHidden(true)
+        ZStack {
+            Circle().fill(isMet ? Theme.green : Theme.surfaceChip)
+            if isMet {
+                CheckmarkShape()
+                    .stroke(Theme.textOnTint, style: StrokeStyle(lineWidth: 2.2, lineCap: .round, lineJoin: .round))
+                    .frame(width: 11, height: 8)
+            } else {
+                Capsule()
+                    .fill(Theme.textSecondary)
+                    .frame(width: 10, height: 2.2)
+            }
+        }
+        .frame(width: 28, height: 28)
+        .accessibilityHidden(true)
     }
 }
 

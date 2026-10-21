@@ -92,15 +92,17 @@ extension ProgressRing {
 }
 
 /// 20pt green disc with a dark check and a border in the background colour, the same in light and dark
-/// (sizes scale with the ring).
+/// (sizes scale with the ring). The tick is drawn: a checkmark SF Symbol stayed in the accessibility tree as
+/// "Selected" even inside a hidden ring (#203, as #77).
 private struct CheckBadge: View {
     let diameter: CGFloat
     let borderColor: Color
 
     var body: some View {
-        Image(systemName: "checkmark")
-            .font(.system(size: diameter * 0.5, weight: .heavy))
-            .foregroundStyle(Theme.forest)
+        CheckmarkShape()
+            .stroke(Theme.forest, style: StrokeStyle(lineWidth: max(1.5, diameter * 0.11), lineCap: .round,
+                                                     lineJoin: .round))
+            .frame(width: diameter * 0.42, height: diameter * 0.32)
             .frame(width: diameter, height: diameter)
             .background(Theme.green, in: Circle())
             .overlay(Circle().strokeBorder(borderColor, lineWidth: max(1.5, diameter / 10)))

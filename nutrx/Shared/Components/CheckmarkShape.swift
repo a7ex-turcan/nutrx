@@ -11,3 +11,19 @@ struct CheckmarkShape: Shape {
         return path
     }
 }
+
+/// A dark tick on a green disc, the "done" badge (the stack done badge, the Logged and Exported strips, the Pro card):
+/// drawn, so VoiceOver never reads it as "Selected" (#203). The tick scales with the disc.
+struct TickDisc: View {
+    var diameter: CGFloat = 28
+
+    var body: some View {
+        CheckmarkShape()
+            .stroke(Theme.forest, style: StrokeStyle(lineWidth: max(1.8, diameter * 0.085), lineCap: .round,
+                                                     lineJoin: .round))
+            .frame(width: diameter * 0.43, height: diameter * 0.32)
+            .frame(width: diameter, height: diameter)
+            .background(Theme.green, in: Circle())
+            .accessibilityHidden(true)
+    }
+}
