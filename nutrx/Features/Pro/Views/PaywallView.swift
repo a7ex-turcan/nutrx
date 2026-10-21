@@ -47,35 +47,72 @@ struct PaywallView: View {
         }
     }
 
+    /// From xLarge up (below accessibility sizes) the whole pinned footer hid the plans behind it (#189): only the
+    /// button stays pinned, with a line naming the selected plan that scrolls to the plans; the terms and links
+    /// scroll after them. At accessibility sizes everything scrolls (pinned, it covered a third of the screen).
+    private enum FooterLayout { case pinned, buttonPinned, scrolls }
+
+    private var footerLayout: FooterLayout {
+        if dynamicTypeSize.isAccessibilitySize { return .scrolls }
+        return dynamicTypeSize >= .xLarge ? .buttonPinned : .pinned
+    }
+
     private var paywall: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                header
-                VStack(spacing: 22) {
-                    features
-                    plans
-                    if dynamicTypeSize.isAccessibilitySize {
-                        purchaseFooter
+        let layout = footerLayout
+        return ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    header
+                    VStack(spacing: 22) {
+                        features
+                        plans
+                            .id(Self.plansID)
+                        switch layout {
+                        case .scrolls: VStack(spacing: 10) { purchaseButton; purchaseDetails }
+                        case .buttonPinned: purchaseDetails
+                        case .pinned: EmptyView()
+                        }
                     }
+                    .padding(.horizontal, Theme.Spacing.screenMargin)
+                    .padding(.top, 18)
+                    .padding(.bottom, 16)
                 }
-                .padding(.horizontal, Theme.Spacing.screenMargin)
-                .padding(.top, 18)
-                .padding(.bottom, 16)
             }
-        }
-        .scrollBounceBehavior(.basedOnSize)
-        .ignoresSafeArea(edges: .top)
-        // At accessibility sizes the button scrolls with the content (pinned, it covered a third of the screen).
-        .safeAreaInset(edge: .bottom) {
-            if !dynamicTypeSize.isAccessibilitySize {
-                purchaseFooter
+            .scrollBounceBehavior(.basedOnSize)
+            .ignoresSafeArea(edges: .top)
+            .safeAreaInset(edge: .bottom) {
+                if layout != .scrolls {
+                    Group {
+                        if layout == .pinned {
+                            VStack(spacing: 10) { purchaseButton; purchaseDetails }
+                        } else {
+                            VStack(spacing: 8) {
+                                planSummary {
+                                    withAnimation(.unlessReduceMotion(reduceMotion, .default)) {
+                                        proxy.scrollTo(Self.plansID, anchor: .top)
+                                    }
+                                }
+                                purchaseButton
+                            }
+                            .padding(.bottom, 8)
+                        }
+                    }
                     .padding(.horizontal, Theme.Spacing.screenMargin)
                     .padding(.top, 10)
                     .background(Theme.surfaceGround)
+                    // With only the button pinned, the plans scroll under it: a hairline marks the edge.
+                    .overlay(alignment: .top) {
+                        if layout == .buttonPinned {
+                            Rectangle().fill(Theme.lineHairline).frame(height: 1)
+                        }
+                    }
+                }
             }
         }
         .background(Theme.surfaceGround)
     }
+
+    private static let plansID = "plans"
 
     // MARK: - Header
 
@@ -280,35 +317,39 @@ struct PaywallView: View {
 
     // MARK: - Buy
 
-    private var purchaseFooter: some View {
+    private var purchaseButton: some View {
+        let product = proAccess.product(selected)
+        return Button {
+            if let product { buy(product) }
+        } label: {
+            ZStack {
+                if purchasing {
+                    // Hidden: the button's label says "Purchasing…"; the spinner's own value read as "1" (#94).
+                    ProgressView().tint(Theme.controlOnPrimary).accessibilityHidden(true)
+                } else {
+                    Text(ProText.primaryTitle(plan: selected, trialEligible: trialEligible))
+                        .multilineTextAlignment(.center)  // "Start free / week" at the largest sizes (#161)
+                }
+            }
+            .font(.headline)
+            .foregroundStyle(Theme.controlOnPrimary)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, minHeight: 56)
+            .background(Theme.controlPrimary,
+                        in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+            .opacity(product == nil ? 0.4 : 1)
+        }
+        .buttonStyle(.plain)
+        .disabled(product == nil || purchasing || restoring)
+        // While purchasing the label is only a spinner, which VoiceOver read as nothing (#94).
+        .accessibilityLabel(ProText.primaryAccessibilityLabel(plan: selected, trialEligible: trialEligible,
+                                                              purchasing: purchasing))
+    }
+
+    /// The terms, "Everything you use today stays free." and Restore · Terms · Privacy.
+    private var purchaseDetails: some View {
         let product = proAccess.product(selected)
         return VStack(spacing: 10) {
-            Button {
-                if let product { buy(product) }
-            } label: {
-                ZStack {
-                    if purchasing {
-                        // Hidden: the button's label says "Purchasing…"; the spinner's own value read as "1" (#94).
-                        ProgressView().tint(Theme.controlOnPrimary).accessibilityHidden(true)
-                    } else {
-                        Text(ProText.primaryTitle(plan: selected, trialEligible: trialEligible))
-                            .multilineTextAlignment(.center)  // "Start free / week" at the largest sizes (#161)
-                    }
-                }
-                .font(.headline)
-                .foregroundStyle(Theme.controlOnPrimary)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity, minHeight: 56)
-                .background(Theme.controlPrimary,
-                            in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
-                .opacity(product == nil ? 0.4 : 1)
-            }
-            .buttonStyle(.plain)
-            .disabled(product == nil || purchasing || restoring)
-            // While purchasing the label is only a spinner, which VoiceOver read as nothing (#94).
-            .accessibilityLabel(ProText.primaryAccessibilityLabel(plan: selected, trialEligible: trialEligible,
-                                                                  purchasing: purchasing))
-
             VStack(spacing: 4) {
                 if let product {
                     Text(ProText.terms(plan: selected, price: product.displayPrice, trialEligible: trialEligible))
@@ -328,6 +369,37 @@ struct PaywallView: View {
             .font(.subheadline)
             .foregroundStyle(Theme.textSecondary)
             .buttonStyle(.plain)
+        }
+    }
+
+    /// "Yearly · $14.99 a year · 1 week free" with "Plans", pinned over the button when the plans can be out of
+    /// view; tapping it scrolls to them.
+    @ViewBuilder
+    private func planSummary(showPlans: @escaping () -> Void) -> some View {
+        if let product = proAccess.product(selected) {
+            let summary = ProText.planSummary(plan: selected, price: product.displayPrice, trialEligible: trialEligible)
+            Button(action: showPlans) {
+                // No stack spacing: the spacer's minimum is the gap, and the summary needs every point at xLarge.
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(summary)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 8)
+                    HStack(spacing: 4) {
+                        Text("Plans")
+                        Image(systemName: "chevron.up").imageScale(.small)
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textGreenInk)
+                    .fixedSize()
+                }
+                .frame(maxWidth: .infinity, minHeight: Theme.minTouchTarget, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(summary)
+            .accessibilityHint("Shows the plans")
         }
     }
 
@@ -413,4 +485,12 @@ extension View {
     Color.clear
         .sheet(isPresented: .constant(true)) { PaywallView() }
         .environment(ProAccess())
+}
+
+// Inline rather than in a sheet: preview snapshots don't capture presented sheets. Shows the button pinned with
+// the plan summary above it (#189).
+#Preview("Paywall, xLarge") {
+    PaywallView()
+        .environment(ProAccess())
+        .dynamicTypeSize(.xLarge)
 }

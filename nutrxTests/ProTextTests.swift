@@ -13,6 +13,14 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.primaryTitle(plan: .lifetime, trialEligible: true), "Buy lifetime")
     }
 
+    func testPlanSummaryNamesThePlanAndPrice() {
+        XCTAssertEqual(ProText.planSummary(plan: .yearly, price: "$14.99", trialEligible: true),
+                       "Yearly · $14.99 a year · 1 week free")
+        XCTAssertEqual(ProText.planSummary(plan: .yearly, price: "$14.99", trialEligible: false), "Yearly · $14.99 a year")
+        XCTAssertEqual(ProText.planSummary(plan: .monthly, price: "$1.99", trialEligible: true), "Monthly · $1.99 a month")
+        XCTAssertEqual(ProText.planSummary(plan: .lifetime, price: "$29.99", trialEligible: true), "Lifetime · $29.99 once")
+    }
+
     func testTermsSayWhatsChargedAndHowToCancel() {
         XCTAssertEqual(ProText.terms(plan: .yearly, price: "$14.99", trialEligible: true),
                        "1 week free, then $14.99 a year. Cancel anytime in Settings.")
