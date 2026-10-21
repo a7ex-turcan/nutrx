@@ -16,6 +16,7 @@ struct LogStackSheet: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.widthClass) private var widthClass
     /// Amounts changed for this time only, by entry.
     @State private var amounts: [PersistentIdentifier: Double] = [:]
     /// Set once logged: what was logged and the amount per entry, for the done state and Undo.
@@ -58,20 +59,25 @@ struct LogStackSheet: View {
                     .padding(.top, 20)
                     .padding(.bottom, 4)
             }
-            sheetContent(large: large)
+            // In a form sheet (regular widths and up, #152) the sheet doesn't shrink to its content, so a pinned
+            // footer left a gap under a few rows: there it follows the rows, as at accessibility sizes.
+            sheetContent(large: large, footerScrolls: large || widthClass != .compact)
         }
         .background(Theme.surfaceGround)
         // At accessibility sizes half a screen holds only the header and one row, so it opens full height. With
         // more than three rows it opens full height too, so they're all in view (it can still be dragged down).
-        .presentationDetents(large ? [.large] : [.medium, .large],
-                             selection: large ? .constant(.large) : $detent)
-        .presentationDragIndicator(.visible)
+        // From regular widths a centred form sheet, like the log sheet (#152): at half height on an iPad the rows
+        // sat far above Log with an empty gap between.
+        .presentationDetents(large || widthClass != .compact ? [.large] : [.medium, .large],
+                             selection: large || widthClass != .compact ? .constant(.large) : $detent)
+        .presentationSizing(.form)
+        .presentationDragIndicator(widthClass == .compact ? .visible : .hidden)
         // At half height a swipe on the rows scrolls them rather than growing the sheet, so a row behind the pinned
         // footer can be reached (#180); the grabber still resizes it.
         .presentationContentInteraction(.scrolls)
     }
 
-    private func sheetContent(large: Bool) -> some View {
+    private func sheetContent(large: Bool, footerScrolls: Bool) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 if large {
@@ -88,7 +94,7 @@ struct LogStackSheet: View {
                 .cardStyle()
 
                 // At accessibility sizes the sheet is full height and the footer scrolls with the rows.
-                if large {
+                if footerScrolls {
                     footer
                 }
             }
@@ -103,7 +109,7 @@ struct LogStackSheet: View {
         // Pinned, so Log (or Undo / Done) is on screen at half height whatever the phone and text size; the rows
         // scroll above it.
         .safeAreaInset(edge: .bottom) {
-            if !large {
+            if !footerScrolls {
                 footer
                     .padding(.horizontal, Theme.Spacing.screenMargin)
                     .padding(.top, 12)
