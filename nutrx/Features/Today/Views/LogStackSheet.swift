@@ -313,12 +313,12 @@ struct LogStackSheet: View {
     private func doneFooter(_ logged: StackLogging.Logged) -> some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                Image(systemName: "checkmark")
-                    .font(.subheadline.weight(.heavy))
-                    .foregroundStyle(Theme.forest)
+                // Drawn, not an SF Symbol: a checkmark image was read as "Selected" even hidden (#203).
+                CheckmarkShape()
+                    .stroke(Theme.forest, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                    .frame(width: 12, height: 9)
                     .frame(width: 28, height: 28)
                     .background(Theme.green, in: Circle())
-                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // the glyph stays inside its 28pt circle
                     .accessibilityHidden(true)
                 Text("Logged \(logged.records.count == 1 ? "1 nutrient" : "\(logged.records.count) nutrients") at \(logged.date.formatted(date: .omitted, time: .shortened))")
                     .font(.subheadline.weight(.semibold))
