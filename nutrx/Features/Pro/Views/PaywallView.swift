@@ -11,6 +11,7 @@ struct PaywallView: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.widthClass) private var widthClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var selected: ProAccess.Plan = .yearly
@@ -41,20 +42,25 @@ struct PaywallView: View {
         // The welcome sheet is half height, or full height at accessibility sizes, where its text doesn't fit.
         .presentationDetents(welcomed && !dynamicTypeSize.isAccessibilitySize ? [.medium] : [.large])
         .presentationDragIndicator(welcomed ? .visible : .hidden)
+        // On iPad a page sheet, taller than the default form sheet, so more of the plans are in view (#205); sizing
+        // doesn't change a sheet on iPhone.
+        .presentationSizing(.page)
         .task { await loadStore() }
         .alert(item: $message) { message in
             Alert(title: Text(message.title), message: Text(message.body), dismissButton: .default(Text("OK")))
         }
     }
 
-    /// From xLarge up (below accessibility sizes) the whole pinned footer hid the plans behind it (#189): only the
-    /// button stays pinned, with a line naming the selected plan that scrolls to the plans; the terms and links
+    /// From xLarge up (below accessibility sizes), and on large screens at any size, the whole pinned footer hid the
+    /// plans behind it (#189, #205): only the button stays pinned, with a line naming the selected plan that scrolls to the plans; the terms and links
     /// scroll after them. At accessibility sizes everything scrolls (pinned, it covered a third of the screen).
     private enum FooterLayout { case pinned, buttonPinned, scrolls }
 
     private var footerLayout: FooterLayout {
         if dynamicTypeSize.isAccessibilitySize { return .scrolls }
-        return dynamicTypeSize >= .xLarge ? .buttonPinned : .pinned
+        // On large screens the paywall is a sheet shorter than the screen (a landscape iPhone is short too), and with
+        // the whole footer pinned the plans started below the fold even at the default size (#205).
+        return dynamicTypeSize >= .xLarge || widthClass != .compact ? .buttonPinned : .pinned
     }
 
     private var paywall: some View {
