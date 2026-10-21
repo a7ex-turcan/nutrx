@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 /// History tab (DESIGN.md §5.4): streak card, the weekly recaps row (nutrx Pro), month calendar, and the most recent
-/// days. Tapping a past day — in the calendar or the list — pushes `HistoryDayView`; the recaps row (or a recap
-/// notification) pushes `WeeklyRecapView`.
+/// days. Tapping a past day — in the calendar or the list — pushes `HistoryDayView`, and the recaps row (or a recap
+/// notification) pushes `WeeklyRecapView`; in the large-screen split view (#154) both open in the detail instead.
 struct HistoryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -57,6 +57,11 @@ struct HistoryListView: View {
                 }
             }
         }
+        // A window narrowed to compact with the recap open in the detail: keep just the recap, or the stack would
+        // push the day and the recap on top of it, which the user never stacked.
+        .onChange(of: usesSplitView) { _, split in
+            if !split, showRecap { selectedDay = nil }
+        }
     }
 
     /// Opens a day: pushed on iPhone; in the split view's detail, closing a recap open there, even when it's the day
@@ -72,27 +77,15 @@ struct HistoryListView: View {
         if let selectedDay {
             HistoryDayView(date: selectedDay, viewModel: viewModel)
                 .id(selectedDay)
+        } else if viewModel.log?.hasPastEntries == true {
+            SplitDetailPlaceholder(
+                systemImage: "calendar",
+                title: "Pick a day",
+                message: "Choose a day in the calendar to see which goals you met and what you logged."
+            )
         } else {
-            VStack(spacing: 14) {
-                Image(systemName: "calendar")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(Theme.controlPrimary)
-                    .frame(width: 64, height: 64)
-                    .background(Theme.surfaceChip, in: RoundedRectangle(cornerRadius: Theme.Radius.iconTile,
-                                                                       style: .continuous))
-                    .accessibilityHidden(true)
-                Text("Pick a day")
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(Theme.textPrimary)
-                Text("Choose a day in the calendar to see which goals you met and what you logged.")
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 320)
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Theme.surfaceGround)
+            // No past days yet: the sidebar says "No History Yet" and has no calendar to pick from.
+            Theme.surfaceGround.ignoresSafeArea()
         }
     }
 
