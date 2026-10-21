@@ -34,13 +34,7 @@ struct ProSettingsCard: View {
                 .font(.headline)
                 .foregroundStyle(Theme.onForestPrimary)
             if isPro {
-                Image(systemName: "checkmark")
-                    .font(.caption.weight(.heavy))
-                    .foregroundStyle(Theme.forest)
-                    .frame(width: 20, height: 20)
-                    .background(Theme.green, in: Circle())
-                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                    .accessibilityHidden(true)
+                TickDisc(diameter: 20)
             }
         }
         let text = VStack(alignment: .leading, spacing: 2) {

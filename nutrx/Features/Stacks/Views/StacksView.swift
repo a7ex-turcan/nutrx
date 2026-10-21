@@ -171,6 +171,8 @@ struct StacksView: View {
         .accessibilityAddTraits(.isButton)
     }
 
+    @ScaledMetric(relativeTo: .subheadline) private var logTickSize: CGFloat = 11
+
     /// "Log" (or a check and "Log again" once logged today), the same action as the stack's card on Today.
     private func logButton(_ stack: LogStack) -> some View {
         let done = StackLogging.isLoggedToday(stack)
@@ -178,9 +180,10 @@ struct StacksView: View {
             // The tick drawn, not an SF Symbol: a checkmark image was read as "Selected" even hidden (#203).
             HStack(spacing: 6) {
                 if done {
+                    // Scaled with the text, like the "+" it replaces.
                     CheckmarkShape()
-                        .stroke(style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                        .frame(width: 11, height: 8)
+                        .stroke(style: StrokeStyle(lineWidth: logTickSize * 0.18, lineCap: .round, lineJoin: .round))
+                        .frame(width: logTickSize, height: logTickSize * 0.73)
                         .accessibilityHidden(true)
                 } else {
                     Image(systemName: "plus").accessibilityHidden(true)

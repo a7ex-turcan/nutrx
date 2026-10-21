@@ -260,16 +260,10 @@ private struct StackLogLabelStyle: LabelStyle {
 }
 
 /// The 20pt green check by a stack's title when it was logged today (decorative: the label says "logged today").
-/// Drawn, not an SF Symbol: a checkmark image was read as "Selected" even hidden (#203, as #77). The card's label
-/// already ends "Logged today."
+/// The card's label already ends "Logged today."
 private struct StackDoneBadge: View {
     var body: some View {
-        CheckmarkShape()
-            .stroke(Theme.forest, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-            .frame(width: 9, height: 7)
-            .frame(width: 20, height: 20)
-            .background(Theme.green, in: Circle())
-            .accessibilityHidden(true)
+        TickDisc(diameter: 20)
     }
 }
 

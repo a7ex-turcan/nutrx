@@ -183,9 +183,8 @@ private struct TintBar: View {
     }
 }
 
-/// Green check when the goal was met, grey dash when it wasn't.
-/// A tick or a dash in a 28 pt circle, drawn as shapes: a checkmark SF Symbol was read as "Selected" even hidden
-/// (#203, as #77); the row's value already says "goal met" or "goal missed".
+/// A green tick when the goal was met, a grey dash when it wasn't, in a 28 pt circle. Drawn as shapes: a checkmark
+/// SF Symbol was read as "Selected" even hidden (#203, as #77); the row's value already says "goal met" or "missed".
 private struct StatusBadge: View {
     let isMet: Bool
 

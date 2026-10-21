@@ -218,13 +218,7 @@ struct ExportDataView: View {
 
     private func doneStrip(_ exported: Exported) -> some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "checkmark")
-                .font(.subheadline.weight(.heavy))
-                .foregroundStyle(Theme.forest)
-                .frame(width: 28, height: 28)
-                .background(Theme.green, in: Circle())
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // the glyph stays inside its 28pt circle
-                .accessibilityHidden(true)
+            TickDisc()
             VStack(alignment: .leading, spacing: 2) {
                 Text(exported.entryCount == 1 ? "Exported 1 entry" : "Exported \(exported.entryCount.formatted()) entries")
                     .font(.subheadline.weight(.semibold))
