@@ -14,6 +14,8 @@ struct NutrientCard: View {
     var onRefill: () -> Void = {}
     /// A course's last day (nutrx Pro, #128): "Last day" on the third line, in place of a low-supply hint.
     var isLastDay: Bool = false
+    /// A VoiceOver "Edit Nutrient" action, for layouts without swipe actions (Today's grid on large screens, #152).
+    var onEdit: (() -> Void)? = nil
 
     /// What Today shows about supply: "About 6 days left", or out with a Refilled? link.
     struct SupplyHint: Equatable {
@@ -82,6 +84,9 @@ struct NutrientCard: View {
         .accessibilityActions {
             if supply?.isOut == true {
                 Button("Refilled", action: onRefill)
+            }
+            if let onEdit {
+                Button("Edit Nutrient", action: onEdit)
             }
         }
         .accessibilityHint("Opens logging options")

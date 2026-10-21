@@ -10,6 +10,9 @@ struct TodayView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.widthClass) private var widthClass
+    /// Today's own width, which picks between the columns and the side column (`TodayLayout`).
+    @State private var width: CGFloat = 0
     /// Set by a card's "Refilled?"; confirmed before the count restarts.
     @State private var nutrientToRefill: Nutrient?
     /// Last week's recap, for the "Your week" card (nutrx Pro): Sunday 18:00 through Monday.
@@ -125,108 +128,16 @@ struct TodayView: View {
             if viewModel.groupSections.isEmpty {
                 emptyState
             } else {
-                List {
-                    // Re-evaluated every minute so a reminder drops off once its time passes.
-                    TimelineView(.everyMinute) { timeline in
-                        DayScoreCard(
-                            score: viewModel.dayScore,
-                            streak: preferences.streaksEnabled ? streak?.current : nil,
-                            nextReminder: remindersShown ? viewModel.nextReminder(after: timeline.date) : nil
-                        )
-                    }
-                    .listRowInsets(EdgeInsets(top: 8, leading: Theme.Spacing.screenMargin,
-                                              bottom: Theme.Spacing.cardGap / 2, trailing: Theme.Spacing.screenMargin))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-
-                    if let weekRecap {
-                        RecapTodayCard(recap: weekRecap, onOpen: { showRecap = true }, onDismiss: {
-                            dismissedRecapWeek = weekRecap.weekStart.timeIntervalSince1970
-                            withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
-                                self.weekRecap = nil
-                            }
-                        })
-                        .listRowInsets(cardRowInsets)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                    }
-
-                    if let healthCard = visibleHealthStatus {
-                        HealthInsightsTodayCard(status: healthCard, onSeeWhere: {
-                            seeHealthInsights(healthCard)
-                        }, onDismiss: {
-                            withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
-                                hideHealthCard(healthCard)
-                            }
-                        })
-                        .listRowInsets(cardRowInsets)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                    }
-
-                    if showBanner {
-                        NotificationBannerView(
-                            onEnable: { enableReminder() },
-                            onDismiss: { dismissBanner() }
-                        )
-                        .listRowInsets(cardRowInsets)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                    } else if showSyncBanner {
-                        SyncBannerView(variant: syncBannerVariant) {
-                            dismissSyncBanner()
-                        }
-                        .listRowInsets(cardRowInsets)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                    }
-
-                    if stacksToShow.isEmpty, StackLogging.suggestsStack(
-                        nutrientCount: viewModel.groupSections.reduce(0) { $0 + $1.intakes.count },
-                        stackCount: stacks.count, hidden: hidesStackSuggestion) {
-                        StackSuggestionCard(
-                            onMake: {
-                                newStackName = ""
-                                showNewStack = true
-                            },
-                            onHide: {
-                                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
-                                    hidesStackSuggestion = true
-                                }
-                            }
-                        )
-                        .listRowInsets(cardRowInsets)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                    }
-
-                    if !stacksToShow.isEmpty {
-                        StacksRow(
-                            stacks: stacksToShow,
-                            onLog: { stackToLog = $0 },
-                            onEdit: { NotificationRouter.shared.showsStacks = true }
-                        )
-                        .listRowInsets(EdgeInsets(top: Theme.Spacing.sectionTop - Theme.Spacing.cardGap / 2,
-                                                  leading: 0, bottom: Theme.Spacing.cardGap / 2, trailing: 0))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                    }
-
-                    ForEach(viewModel.groupSections) { section in
-                        if hasCustomGroups {
-                            groupHeader(section)
-                        }
-                        if !section.group.isCollapsed {
-                            ForEach(section.intakes, id: \.nutrient.persistentModelID) { entry in
-                                nutrientRow(entry)
-                            }
-                        }
-                    }
+                switch TodayLayout.of(width: width, isAccessibilitySize: dynamicTypeSize.isAccessibilitySize) {
+                // iPhone, and the largest text sizes on any width (one column, LAYOUT.md): the list, for its swipe
+                // actions.
+                case .list: compactList(remindersShown: remindersShown)
+                case .columns: columnsLayout(remindersShown: remindersShown)
+                case .sideColumn: sideColumnLayout(remindersShown: remindersShown)
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
             }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .background(Theme.surfaceGround)
         .toolbar {
             // Free / PRO (#101), on the leading side; the profile avatar keeps the trailing one. Left out at
@@ -415,6 +326,225 @@ struct TodayView: View {
     }
 
     /// 16pt side margins and a 10pt gap between cards.
+    // MARK: - Layouts
+
+    private func compactList(remindersShown: Bool) -> some View {
+        List {
+            dayScoreCard(remindersShown: remindersShown)
+                .listRowInsets(EdgeInsets(top: 8, leading: Theme.Spacing.screenMargin,
+                                          bottom: Theme.Spacing.cardGap / 2, trailing: Theme.Spacing.screenMargin))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+
+            Group { todayCards }
+                .listRowInsets(cardRowInsets)
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+
+            if !stacksToShow.isEmpty {
+                stacksRow(.row, margin: Theme.Spacing.screenMargin)
+                    .listRowInsets(EdgeInsets(top: Theme.Spacing.sectionTop - Theme.Spacing.cardGap / 2,
+                                              leading: 0, bottom: Theme.Spacing.cardGap / 2, trailing: 0))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+
+            ForEach(viewModel.groupSections) { section in
+                if hasCustomGroups {
+                    groupHeader(section)
+                        .listRowInsets(EdgeInsets(top: Theme.Spacing.sectionTop - Theme.Spacing.cardGap / 2,
+                                                  leading: Theme.Spacing.screenMargin, bottom: 0,
+                                                  trailing: Theme.Spacing.screenMargin))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+                if !section.group.isCollapsed {
+                    ForEach(section.intakes, id: \.nutrient.persistentModelID) { entry in
+                        nutrientCard(entry, inGrid: false)
+                            .listRowInsets(cardRowInsets)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                Button {
+                                    nutrientToLog = entry.nutrient
+                                } label: {
+                                    Label("Add Exact Amount", systemImage: "number")
+                                }
+                                .tint(.blue)
+                            }
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button {
+                                    edit(entry.nutrient)
+                                } label: {
+                                    Label("Edit Nutrient", systemImage: "pencil")
+                                }
+                                .tint(.orange)
+                            }
+                    }
+                }
+            }
+        }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+    }
+
+    // Regular and wide widths (docs/design/large-screens/LAYOUT.md, #152). A grid has no swipe actions: the card's
+    // context menu (long press, or a secondary click) has the same ones, and VoiceOver gets "Edit Nutrient" on the
+    // card; tapping it opens the log sheet as on iPhone.
+
+    /// The score, cards and stacks in a 360 pt side column that stays in view while the nutrients scroll;
+    /// everything capped at 1120 pt and centred, with at least 40 pt margins.
+    private func sideColumnLayout(remindersShown: Bool) -> some View {
+        HStack(alignment: .top, spacing: 24) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
+                    sideColumn(remindersShown: remindersShown)
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 24)
+            }
+            .scrollIndicators(.hidden)
+            .frame(width: TodayLayout.sideColumnWidth)
+            ScrollView {
+                groupsGrid(gutter: 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 24)
+            }
+        }
+        .frame(maxWidth: TodayLayout.maxContentWidth)
+        .padding(.horizontal, WidthClass.wide.minimumMargin)
+        .frame(maxWidth: .infinity)
+    }
+
+    /// Everything in one scroll: the score, cards and stack tiles across both columns, then the groups.
+    private func columnsLayout(remindersShown: Bool) -> some View {
+        let gutter: CGFloat = widthClass == .wide ? 20 : 16
+        return ScrollView {
+            VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
+                dayScoreCard(remindersShown: remindersShown)
+                todayCards
+                if !stacksToShow.isEmpty {
+                    stacksRow(.tiles, margin: 0, gutter: gutter)
+                        .padding(.top, Theme.Spacing.sectionTop - Theme.Spacing.cardGap)
+                }
+                groupsGrid(gutter: gutter)
+            }
+            .padding(.horizontal, widthClass.minimumMargin)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+        }
+    }
+
+    @ViewBuilder
+    private func sideColumn(remindersShown: Bool) -> some View {
+        dayScoreCard(remindersShown: remindersShown)
+        todayCards
+        if !stacksToShow.isEmpty {
+            stacksRow(.list, margin: 0)
+                .padding(.top, Theme.Spacing.sectionTop - Theme.Spacing.cardGap)
+        }
+    }
+
+    /// The groups, each a header across both columns and its cards two to a row, in reading order.
+    private func groupsGrid(gutter: CGFloat) -> some View {
+        let columns = [GridItem(.flexible(), spacing: gutter, alignment: .top),
+                       GridItem(.flexible(), spacing: gutter, alignment: .top)]
+        return VStack(alignment: .leading, spacing: Theme.Spacing.cardGap) {
+            ForEach(viewModel.groupSections) { section in
+                if hasCustomGroups {
+                    groupHeader(section)
+                        .padding(.top, Theme.Spacing.sectionTop - Theme.Spacing.cardGap)
+                }
+                if !section.group.isCollapsed {
+                    LazyVGrid(columns: columns, spacing: Theme.Spacing.cardGap) {
+                        ForEach(section.intakes, id: \.nutrient.persistentModelID) { entry in
+                            nutrientCard(entry, inGrid: true)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Pieces
+
+    /// The day-score card, re-evaluated every minute so a reminder drops off once its time passes.
+    private func dayScoreCard(remindersShown: Bool) -> some View {
+        TimelineView(.everyMinute) { timeline in
+            DayScoreCard(
+                score: viewModel.dayScore,
+                streak: preferences.streaksEnabled ? streak?.current : nil,
+                nextReminder: remindersShown ? viewModel.nextReminder(after: timeline.date) : nil
+            )
+        }
+    }
+
+    /// The cards under the day score: the weekly recap, Apple Health insights, a banner, the stack suggestion.
+    @ViewBuilder
+    private var todayCards: some View {
+        if let weekRecap {
+            RecapTodayCard(recap: weekRecap, onOpen: { showRecap = true }, onDismiss: {
+                dismissedRecapWeek = weekRecap.weekStart.timeIntervalSince1970
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                    self.weekRecap = nil
+                }
+            })
+        }
+
+        if let healthCard = visibleHealthStatus {
+            HealthInsightsTodayCard(status: healthCard, onSeeWhere: {
+                seeHealthInsights(healthCard)
+            }, onDismiss: {
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                    hideHealthCard(healthCard)
+                }
+            })
+        }
+
+        if showBanner {
+            NotificationBannerView(
+                onEnable: { enableReminder() },
+                onDismiss: { dismissBanner() }
+            )
+        } else if showSyncBanner {
+            SyncBannerView(variant: syncBannerVariant) {
+                dismissSyncBanner()
+            }
+        }
+
+        if stacksToShow.isEmpty, StackLogging.suggestsStack(
+            nutrientCount: viewModel.groupSections.reduce(0) { $0 + $1.intakes.count },
+            stackCount: stacks.count, hidden: hidesStackSuggestion) {
+            StackSuggestionCard(
+                onMake: {
+                    newStackName = ""
+                    showNewStack = true
+                },
+                onHide: {
+                    withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                        hidesStackSuggestion = true
+                    }
+                }
+            )
+        }
+    }
+
+    private func stacksRow(_ layout: StacksRow.Layout, margin: CGFloat, gutter: CGFloat = 16) -> some View {
+        StacksRow(
+            stacks: stacksToShow,
+            layout: layout,
+            horizontalMargin: margin,
+            tileGutter: gutter,
+            onLog: { stackToLog = $0 },
+            onEdit: { NotificationRouter.shared.showsStacks = true }
+        )
+    }
+
+    private func edit(_ nutrient: Nutrient) {
+        editDraft.populate(from: nutrient)
+        nutrientToEdit = nutrient
+    }
+
     private var cardRowInsets: EdgeInsets {
         EdgeInsets(top: Theme.Spacing.cardGap / 2, leading: Theme.Spacing.screenMargin,
                    bottom: Theme.Spacing.cardGap / 2, trailing: Theme.Spacing.screenMargin)
@@ -433,10 +563,6 @@ struct TodayView: View {
                 }
             }
         )
-        .listRowInsets(EdgeInsets(top: Theme.Spacing.sectionTop - Theme.Spacing.cardGap / 2,
-                                  leading: Theme.Spacing.screenMargin, bottom: 0, trailing: Theme.Spacing.screenMargin))
-        .listRowSeparator(.hidden)
-        .listRowBackground(Color.clear)
     }
 
     /// Today's supply hint (nutrx Pro): low or out only, so a card's height never changes otherwise.
@@ -447,7 +573,7 @@ struct TodayView: View {
                                        compactText: SupplyText.compactHint(status), isOut: status.level == .out)
     }
 
-    private func nutrientRow(_ entry: TodayViewModel.NutrientIntake) -> some View {
+    private func nutrientCard(_ entry: TodayViewModel.NutrientIntake, inGrid: Bool) -> some View {
         NutrientCard(
             nutrient: entry.nutrient,
             currentIntake: entry.total,
@@ -468,11 +594,10 @@ struct TodayView: View {
             },
             supply: supplyHint(for: entry.nutrient),
             onRefill: { nutrientToRefill = entry.nutrient },
-            isLastDay: NutrientCourse.isLastDay(entry.nutrient.endDate, on: .now)
+            isLastDay: NutrientCourse.isLastDay(entry.nutrient.endDate, on: .now),
+            // In the list the swipe action covers it; the grid has none.
+            onEdit: inGrid ? { edit(entry.nutrient) } : nil
         )
-        .listRowInsets(cardRowInsets)
-        .listRowSeparator(.hidden)
-        .listRowBackground(Color.clear)
         .contextMenu {
             Button {
                 nutrientToLog = entry.nutrient
@@ -481,8 +606,7 @@ struct TodayView: View {
             }
 
             Button {
-                editDraft.populate(from: entry.nutrient)
-                nutrientToEdit = entry.nutrient
+                edit(entry.nutrient)
             } label: {
                 Label("Edit Nutrient", systemImage: "pencil")
             }
@@ -492,23 +616,6 @@ struct TodayView: View {
             } label: {
                 Label("Move to Group", systemImage: "folder")
             }
-        }
-        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button {
-                nutrientToLog = entry.nutrient
-            } label: {
-                Label("Add Exact Amount", systemImage: "number")
-            }
-            .tint(.blue)
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button {
-                editDraft.populate(from: entry.nutrient)
-                nutrientToEdit = entry.nutrient
-            } label: {
-                Label("Edit Nutrient", systemImage: "pencil")
-            }
-            .tint(.orange)
         }
     }
 
