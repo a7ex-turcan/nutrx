@@ -91,6 +91,20 @@ Released on the App Store on 18 Oct 2026 (build 63, phased release; tag `v2.2`).
 | VoiceOver in Settings (Groups +, About) | ✅ Shipped (v2.2, #120) |
 | App Store release | ✅ Shipped (v2.2, 18 Oct 2026) |
 
+### v2.2.1 — Fixes ✅
+
+Released on the App Store on 21 Oct 2026 (build 128, phased release; tag `v2.2.1`).
+
+| Fix | Status |
+|---|---|
+| New reminders show straight away; no duplicate times | ✅ Shipped (v2.2.1, #163) |
+| My Nutrients at large text sizes | ✅ Shipped (v2.2.1, #108) |
+| VoiceOver on the paywall while purchasing / loading | ✅ Shipped (v2.2.1, #94) |
+| "Discard changes?" in the nutrient form | ✅ Shipped (v2.2.1, #74) |
+| Disabled Add / Save look disabled in dark mode | ✅ Shipped (v2.2.1, #73) |
+| Next reminder and notification banner refresh right away | ✅ Shipped (v2.2.1, #44, #45) |
+| Courses listed on the Pro screens | ✅ Shipped (v2.2.1, #147) |
+
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
 ---
