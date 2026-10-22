@@ -37,8 +37,10 @@ LOCALE = "en-US"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASC = os.path.join(ROOT, "Tools", "asc")
 
-# Version states where the version's metadata and build can still change.
-EDITABLE_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED", "INVALID_BINARY"}
+# Version states this script submits from: not submitted yet, or taken back out of review by the developer.
+EDITABLE_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED"}
+# A version App Review rejected: its submission waits in UNRESOLVED_ISSUES for a reply, which this doesn't cover.
+REJECTED_STATES = {"REJECTED", "METADATA_REJECTED", "INVALID_BINARY"}
 # Review submission states that block a new submission.
 BUSY_SUBMISSION_STATES = {"WAITING_FOR_REVIEW", "IN_REVIEW", "UNRESOLVED_ISSUES", "CANCELING", "COMPLETING"}
 
@@ -122,8 +124,11 @@ def item_version_id(item):
 def read_text(path):
     if path is None:
         return None
-    with open(path) as file:
-        return file.read().strip()
+    try:
+        with open(path, encoding="utf-8") as file:
+            return file.read().strip()
+    except OSError as error:
+        raise Stop(f"Can't read {path}: {error.strerror}.")
 
 
 def main():
@@ -164,10 +169,20 @@ def main():
     versions = get(f"/v1/apps/{APP_ID}/appStoreVersions?filter[versionString]={args.version}"
                    f"&filter[platform]=IOS&limit=1")["data"]
     version = versions[0] if versions else None
+    if version and version["attributes"]["appStoreState"] in REJECTED_STATES:
+        raise Stop(f"Version {args.version} is {version['attributes']['appStoreState']}. Resubmitting after a rejection "
+                   "isn't covered: reply in App Store Connect's Resolution Center and resubmit there.")
     if version and version["attributes"]["appStoreState"] not in EDITABLE_STATES:
         raise Stop(f"Version {args.version} is {version['attributes']['appStoreState']}: it can't be changed now.")
+    # Releases are always manual: an existing version (made in the web UI, say) keeps its own release type.
+    if version and version["attributes"]["releaseType"] != "MANUAL":
+        raise Stop(f"Version {args.version} has release type {version['attributes']['releaseType']}, so it would go "
+                   "live on approval. Set it to manual release in App Store Connect first.")
 
-    submissions = get(f"/v1/reviewSubmissions?filter[app]={APP_ID}&filter[platform]=IOS&limit=20")["data"]
+    # Only open submissions (a draft or one in review), so finished ones never push them off the page.
+    open_states = ",".join(sorted(BUSY_SUBMISSION_STATES | {"READY_FOR_REVIEW"}))
+    submissions = get(f"/v1/reviewSubmissions?filter[app]={APP_ID}&filter[platform]=IOS"
+                      f"&filter[state]={open_states}&limit=200")["data"]
     busy = [s for s in submissions if s["attributes"]["state"] in BUSY_SUBMISSION_STATES]
     if busy:
         raise Stop(f"A review submission is already {busy[0]['attributes']['state']} ({busy[0]['id']}). "
@@ -177,7 +192,7 @@ def main():
     # 1. The version.
     print("1. Version")
     if version:
-        run.done(f"{args.version} exists ({version['attributes']['appStoreState']})")
+        run.done(f"{args.version} exists ({version['attributes']['appStoreState']}, manual release)")
     else:
         data = run.write("create the version", "post", "/v1/appStoreVersions", {"data": {
             "type": "appStoreVersions",
