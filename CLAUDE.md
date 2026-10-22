@@ -887,7 +887,7 @@ Every item here has an issue, so GitHub issues are the one list of what's left (
 
 **Later, outside the Pro plan:** streak freeze (#125) and a shareable streak card (#126) (on-device AI only, no third-party LLM).
 
-**Deferred:** Localisation (#129), iPad-specific layout (#130)
+**Deferred:** Localisation (#129). Large screens (#130) ship in 2.3; what's left of them is in its open `large-screens` issues.
 
 **Last release:** 2.2.1 on 2026-10-21 (build 128, tag `v2.2.1`, phased release; website updated).
 

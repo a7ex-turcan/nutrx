@@ -4,7 +4,7 @@
 `nutrx/` contains the main iOS app. Keep feature code under `nutrx/Features/<Feature>/Views` and `ViewModels`, shared UI in `nutrx/Shared/Components`, services in `nutrx/Shared/Services`, persistence helpers in `nutrx/Shared/Persistence`, and SwiftData models in `nutrx/Models`. `nutrx/nutrxApp.swift`, `nutrx/ContentView.swift`, and `App/MainTabView.swift` bootstrap the app shell. `NutrxWidgets/` contains the widget extension. New files under `nutrx/` are auto-discovered by Xcode, so avoid manual `.pbxproj` edits.
 
 ## Build, Test, and Development Commands
-Use Xcode 26.3+ for local development.
+Use Xcode 27.1+ for local development (the iOS 27.1 SDK, for the iPhone Duo's inner display).
 
 - `open nutrx.xcodeproj` opens the project in Xcode.
 - `xcodebuild -scheme nutrx -configuration Debug -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO` performs a CLI build without signing.
