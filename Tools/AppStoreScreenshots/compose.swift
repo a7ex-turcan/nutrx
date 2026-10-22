@@ -4,7 +4,8 @@
 //   swift Tools/AppStoreScreenshots/compose.swift <panels.json> <raw dir> <output dir>
 //
 // panels.json: { "panels": [ { "output", "device": "iphone" | "ipad" | "ipadLandscape" | "duoOuter" |
-// "duoInner" | "watch", "raw", "line1", "line2", "style": "forest" | "light" } ] }. Raw paths are relative to <raw dir>. Dependency-free (AppKit / Core Graphics).
+// "duoInner" | "watch", "raw", "line1", "line2", "style": "forest" | "light" } ] }.
+// Raw paths are relative to <raw dir>. Dependency-free (AppKit / Core Graphics).
 
 import AppKit
 
