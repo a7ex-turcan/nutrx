@@ -14,7 +14,7 @@ nutrx lets you define your own nutrients and track them daily. No preset lists, 
 
 ## Building
 
-Open `nutrx.xcodeproj` in Xcode 26.3+ and run, or build from the command line:
+Open `nutrx.xcodeproj` in Xcode 27.1+ and run, or build from the command line:
 
 ```bash
 xcodebuild -scheme nutrx -configuration Debug -destination 'generic/platform=iOS' build
