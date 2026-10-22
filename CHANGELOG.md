@@ -16,6 +16,7 @@ All notable changes to nutrx are documented in this file.
 - **History on iPad** — The calendar, your streak and recent days stay in a sidebar, and the day you pick opens beside them.
 - **My Nutrients on iPad** — Your nutrients stay in a sidebar and the one you pick shows its stats beside them; on a wide screen the weekday pattern and Supply sit side by side.
 - **Today on iPad** — Nutrient cards sit in two columns and stacks become tiles. On a wide screen, the day score and your stacks stay in a column on the left while you log; logging a stack opens a centred sheet.
+- **iPhone Duo** — Unfolded, nutrx uses the inner screen: Today in two columns, and My Nutrients and History with a sidebar. Folded, it's the iPhone layout you know.
 
 ### Fixes
 - **Analytics charts stay readable** — The goal label sits beside the chart instead of on top of the bars; at large text sizes it moves above the chart, dates no longer run into each other, and the weekday pattern shows its percentages and title in full.

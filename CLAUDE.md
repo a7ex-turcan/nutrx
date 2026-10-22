@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **UI Framework**: SwiftUI
 - **iOS Deployment Target**: 26.0
 - **watchOS Deployment Target**: 11.0
-- **Built with**: Xcode 26.3
+- **Built with**: Xcode 27.1 (the iOS 27.1 SDK, for the iPhone Duo's inner display)
 
 **Xcode targets:**
 - `nutrx` — iOS/iPadOS app (`nutrx-labs.nutrx`)
