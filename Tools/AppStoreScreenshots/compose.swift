@@ -3,12 +3,14 @@
 //
 //   swift Tools/AppStoreScreenshots/compose.swift <panels.json> <raw dir> <output dir>
 //
-// panels.json: { "panels": [ { "output", "device": "iphone" | "ipad" | "watch", "raw", "line1", "line2",
-// "style": "forest" | "light" } ] }. Raw paths are relative to <raw dir>. Dependency-free (AppKit / Core Graphics).
+// panels.json: { "panels": [ { "output", "device": "iphone" | "ipad" | "ipadLandscape" | "duoOuter" |
+// "duoInner" | "watch", "raw", "line1", "line2", "style": "forest" | "light" } ] }. Raw paths are relative to <raw dir>. Dependency-free (AppKit / Core Graphics).
 
 import AppKit
 
-enum Device: String, Decodable { case iphone, ipad, watch }
+/// `ipadLandscape` is the iPad 13" slot in landscape (2752 × 2064); `duoOuter` and `duoInner` are the iPhone Duo's
+/// two slots: the outer display in portrait (1398 × 2034) and the inner display unfolded, in landscape (2853 × 2007).
+enum Device: String, Decodable { case iphone, ipad, ipadLandscape, duoOuter, duoInner, watch }
 enum Style: String, Decodable { case forest, light }
 
 /// A typo in panels.json ("iPhone", "dark") fails the decode instead of falling back to a default.
@@ -39,6 +41,17 @@ struct Layout {
         case .ipad:
             return Layout(canvas: CGSize(width: 2064, height: 2752), headlineTop: 170, fontSize: 118,
                           deviceWidth: 1860, deviceTop: 540, cornerRatio: 0.028, bezel: 40, island: false)
+        case .ipadLandscape:
+            // Headline above, the landscape iPad below, sized to the height that's left.
+            return Layout(canvas: CGSize(width: 2752, height: 2064), headlineTop: 110, fontSize: 108,
+                          deviceWidth: 1960, deviceTop: 440, cornerRatio: 0.026, bezel: 38, island: false)
+        case .duoOuter:
+            return Layout(canvas: CGSize(width: 1398, height: 2034), headlineTop: 120, fontSize: 86,
+                          deviceWidth: 1020, deviceTop: 420, cornerRatio: 0.11, bezel: 22, island: false)
+        case .duoInner:
+            // Unfolded, in landscape, like an open book.
+            return Layout(canvas: CGSize(width: 2853, height: 2007), headlineTop: 105, fontSize: 104,
+                          deviceWidth: 2080, deviceTop: 420, cornerRatio: 0.03, bezel: 30, island: false)
         case .watch:
             // Watch art on the iPhone canvas: the capture is small, so it's drawn large in a watch case.
             return Layout(canvas: CGSize(width: 1320, height: 2868), headlineTop: 190, fontSize: 104,
@@ -73,7 +86,7 @@ func drawFill(_ image: NSImage, in rect: CGRect, anchorBottom: Bool = false) {
                respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high])
 }
 
-func render(_ panel: Panel, rawDir: URL, outDir: URL, background: NSImage) throws {
+func render(_ panel: Panel, rawDir: URL, outDir: URL, background: NSImage, wideBackground: NSImage) throws {
     let layout = Layout.forDevice(panel.device)
     guard let shot = NSImage(contentsOf: rawDir.appendingPathComponent(panel.raw)) else {
         throw NSError(domain: "compose", code: 1, userInfo: [NSLocalizedDescriptionKey: "missing \(panel.raw)"])
@@ -101,7 +114,8 @@ func render(_ panel: Panel, rawDir: URL, outDir: URL, background: NSImage) throw
                   options: [])
     } else {
         forest.setFill(); canvas.fill()
-        drawFill(background, in: canvas, anchorBottom: true)
+        // Landscape canvases use the wide art, so it isn't scaled up from the portrait one.
+        drawFill(canvas.width > canvas.height ? wideBackground : background, in: canvas, anchorBottom: true)
     }
 
     // Headline: two centred lines, the second in green.
@@ -184,9 +198,11 @@ let rawDir = URL(fileURLWithPath: args[2]), outDir = URL(fileURLWithPath: args[3
 try FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
 let backgroundURL = configURL.deletingLastPathComponent().appendingPathComponent("background-forest.jpg")
 guard let background = NSImage(contentsOf: backgroundURL) else { print("missing \(backgroundURL.path)"); exit(1) }
+let wideURL = configURL.deletingLastPathComponent().appendingPathComponent("background-forest-wide.jpg")
+guard let wideBackground = NSImage(contentsOf: wideURL) else { print("missing \(wideURL.path)"); exit(1) }
 var failed = false
 for panel in config.panels {
-    do { try render(panel, rawDir: rawDir, outDir: outDir, background: background) }
+    do { try render(panel, rawDir: rawDir, outDir: outDir, background: background, wideBackground: wideBackground) }
     catch { print("✗ \(panel.output): \(error.localizedDescription)"); failed = true }
 }
 exit(failed ? 1 : 0)
