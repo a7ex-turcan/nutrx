@@ -13,6 +13,9 @@ struct PaywallView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.widthClass) private var widthClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// StoreKit's purchase with this sheet's UI context, so the confirmation shows over the paywall: Apple's advice
+    /// for SwiftUI, rather than `Product.purchase()` choosing a window itself (#170).
+    @Environment(\.purchase) private var purchase
 
     @State private var selected: ProAccess.Plan = .yearly
     @State private var trialEligible = false
@@ -447,7 +450,7 @@ struct PaywallView: View {
         Task {
             defer { purchasing = false }
             do {
-                switch try await proAccess.purchase(product) {
+                switch await proAccess.complete(try await purchase(product)) {
                 case .purchased:
                     withAnimation(.unlessReduceMotion(reduceMotion, .default)) { welcomed = true }
                 case .pending:

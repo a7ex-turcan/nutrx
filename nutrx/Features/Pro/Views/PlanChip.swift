@@ -3,11 +3,15 @@ import SwiftUI
 /// The plan chip on the leading side of Today's bar (#101): "Free" (opens the paywall) or "PRO" (opens "Enjoy nutrx
 /// Pro"). Nothing until the first entitlement check, so someone who paid never sees "Free" flash by. Today leaves it
 /// out at accessibility text sizes (Pro is still in Settings).
+///
+/// The chip only asks for its sheets: Today owns them (`planChipSheets`), like the profile menu and History's
+/// "Your data" menu do. Hung from the chip, inside a toolbar item, a sheet's state lived in that item, so a rebuilt
+/// item would close it: the suspected cause of the paywall closing on a first purchase tap (#170).
 struct PlanChip: View {
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.colorScheme) private var colorScheme
-    @State private var showPaywall = false
-    @State private var showEnjoy = false
+    @Binding var showPaywall: Bool
+    @Binding var showEnjoy: Bool
 
     var body: some View {
         if let proAccess, ProAccess.isStoreVisible, proAccess.hasCheckedEntitlements {
@@ -31,15 +35,21 @@ struct PlanChip: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(ProText.planChipAccessibilityLabel(isPro: isPro))
-            .proPaywall(isPresented: $showPaywall)
-            .sheet(isPresented: $showEnjoy) {
+        }
+    }
+}
+
+extension View {
+    /// The plan chip's paywall and "Enjoy nutrx Pro" sheets, attached outside the toolbar (see `PlanChip`).
+    func planChipSheets(showPaywall: Binding<Bool>, showEnjoy: Binding<Bool>) -> some View {
+        proPaywall(isPresented: showPaywall)
+            .sheet(isPresented: showEnjoy) {
                 NavigationStack {
                     EnjoyProView()
                 }
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
-        }
     }
 }
 
