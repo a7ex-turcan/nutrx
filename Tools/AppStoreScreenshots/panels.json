@@ -12,6 +12,15 @@
     {"output": "iphone-10-pro.png", "device": "iphone", "raw": "iphone/10-paywall.png", "line1": "A little more,", "line2": "if you want it.", "style": "forest"},
     {"output": "ipad-01-today.png", "device": "ipad", "raw": "ipad/01-today.png", "line1": "Track what you take.", "line2": "Nothing else.", "style": "forest"},
     {"output": "ipad-02-analytics.png", "device": "ipad", "raw": "ipad/02-analytics-30.png", "line1": "Spot the days", "line2": "you tend to miss.", "style": "forest"},
-    {"output": "ipad-03-history.png", "device": "ipad", "raw": "ipad/03-history.png", "line1": "Build a streak", "line2": "that sticks.", "style": "forest"}
+    {"output": "ipad-03-history.png", "device": "ipad", "raw": "ipad/03-history.png", "line1": "Build a streak", "line2": "that sticks.", "style": "forest"},
+    {"output": "ipad-landscape-01-today.png", "device": "ipadLandscape", "raw": "ipad/ipad-1-today.png", "line1": "Track what you take.", "line2": "Nothing else.", "style": "forest"},
+    {"output": "ipad-landscape-02-nutrients.png", "device": "ipadLandscape", "raw": "ipad/ipad-2-nutrients.png", "line1": "Spot the days", "line2": "you tend to miss.", "style": "forest"},
+    {"output": "ipad-landscape-03-history.png", "device": "ipadLandscape", "raw": "ipad/ipad-3-history.png", "line1": "Build a streak", "line2": "that sticks.", "style": "forest"},
+    {"output": "duo-inner-01-today.png", "device": "duoInner", "raw": "duo/duo-inner-1-today.png", "line1": "Track what you take.", "line2": "Nothing else.", "style": "forest"},
+    {"output": "duo-inner-02-nutrients.png", "device": "duoInner", "raw": "duo/duo-inner-2-nutrients.png", "line1": "Spot the days", "line2": "you tend to miss.", "style": "forest"},
+    {"output": "duo-inner-03-history.png", "device": "duoInner", "raw": "duo/duo-inner-3-history.png", "line1": "Build a streak", "line2": "that sticks.", "style": "forest"},
+    {"output": "duo-outer-01-today.png", "device": "duoOuter", "raw": "duo/duo-outer-1-today.png", "line1": "Track what you take.", "line2": "Nothing else.", "style": "forest"},
+    {"output": "duo-outer-02-log.png", "device": "duoOuter", "raw": "duo/duo-outer-2-log.png", "line1": "Log exact amounts", "line2": "in seconds.", "style": "forest"},
+    {"output": "duo-outer-03-analytics.png", "device": "duoOuter", "raw": "duo/duo-outer-3-analytics.png", "line1": "Spot the days", "line2": "you tend to miss.", "style": "forest"}
   ]
 }

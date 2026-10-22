@@ -110,7 +110,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "BFE61EB901964DE89738FA46"
             BuildableName = "NutrxWatchWidgets.appex"
-            BlueprintName = "NutrxWatchWidgets"
             ReferencedContainer = "container:nutrx.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
