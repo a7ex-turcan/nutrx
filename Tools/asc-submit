@@ -1,0 +1,295 @@
+#!/usr/bin/env python3
+"""Submit an App Store version for review through Tools/asc (#149).
+
+Usage:
+  Tools/asc-submit <version> --build <number> --whats-new <file> [--notes <file>] [--description <file>]
+                   [--phased | --no-phased] [--apply]
+
+Without --apply it only reads (GET) and prints the plan: what's already done and each write it would make. With
+--apply it makes those writes one at a time, printing each call and its HTTP status, and stops at the first failure.
+Every step checks App Store Connect first and skips what's already done, so running it again resumes.
+
+Steps:
+  1. create the version (manual release) if it doesn't exist
+  2. set What's New (and the description, if given) for en-US
+  3. attach the build
+  4. set the review notes, if given
+  5. turn on phased release (--phased), or leave it off (--no-phased)
+  6. open a review submission, or reuse an open draft
+  7. add the version to it
+  8. submit
+
+Before any write it checks that the build is VALID, that the version can still be edited and that no other review
+submission is waiting for or in review. Writes need the user's go-ahead for that release (CLAUDE.md, App Store
+Connect API rules). First-time in-app purchases still go into the review draft from the web UI first.
+
+ASC_KEY_ID and ASC_ISSUER_ID come from the environment, or from .claude/settings.local.json's env when unset.
+"""
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+
+APP_ID = "6760843478"
+LOCALE = "en-US"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ASC = os.path.join(ROOT, "Tools", "asc")
+
+# Version states where the version's metadata and build can still change.
+EDITABLE_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED", "REJECTED", "METADATA_REJECTED", "INVALID_BINARY"}
+# Review submission states that block a new submission.
+BUSY_SUBMISSION_STATES = {"WAITING_FOR_REVIEW", "IN_REVIEW", "UNRESOLVED_ISSUES", "CANCELING", "COMPLETING"}
+
+
+class Stop(Exception):
+    """Ends the run with a message (and exit code 1)."""
+
+
+def load_env():
+    if os.environ.get("ASC_KEY_ID") and os.environ.get("ASC_ISSUER_ID"):
+        return
+    path = os.path.join(ROOT, ".claude", "settings.local.json")
+    try:
+        env = json.load(open(path)).get("env", {})
+    except (OSError, ValueError):
+        env = {}
+    for key, value in env.items():
+        if key.startswith("ASC_") and not os.environ.get(key):
+            os.environ[key] = str(value)
+
+
+def asc(method, path, body=None):
+    """Runs Tools/asc and returns (status, json or None). Never prints the response body."""
+    result = subprocess.run(
+        [ASC, method, path] + (["-"] if body is not None else []),
+        input=json.dumps(body) if body is not None else None,
+        capture_output=True, text=True,
+    )
+    status = None
+    for line in result.stderr.splitlines():
+        if line.startswith("HTTP "):
+            status = int(line.split()[1])
+    try:
+        data = json.loads(result.stdout) if result.stdout.strip() else None
+    except ValueError:
+        data = None
+    if status is None:
+        raise Stop(f"Tools/asc failed for {method.upper()} {path}:\n{result.stderr.strip()}")
+    return status, data
+
+
+def get(path):
+    status, data = asc("get", path)
+    if not 200 <= status < 300:
+        raise Stop(f"GET {path} → HTTP {status}\n{errors(data)}")
+    return data
+
+
+def errors(data):
+    if not data or "errors" not in data:
+        return ""
+    return "\n".join(f"  {e.get('title', '')}: {e.get('detail', '')}" for e in data["errors"])
+
+
+class Run:
+    def __init__(self, apply):
+        self.apply = apply
+        self.writes = 0
+
+    def done(self, message):
+        print(f"  ✓ {message}")
+
+    def write(self, label, method, path, body):
+        """One write: printed as planned in a dry run, made and reported with --apply. Returns the response data."""
+        self.writes += 1
+        if not self.apply:
+            print(f"  → would {method.upper()} {path}  ({label})")
+            return None
+        status, data = asc(method, path, body)
+        print(f"  → {method.upper()} {path}  ({label}): HTTP {status}")
+        if not 200 <= status < 300:
+            raise Stop(f"Stopped at: {label}\n{errors(data)}\nFix it and run the same command again to resume.")
+        return data
+
+
+def item_version_id(item):
+    """The App Store version a review submission item holds, if any."""
+    return (((item.get("relationships") or {}).get("appStoreVersion") or {}).get("data") or {}).get("id")
+
+
+def read_text(path):
+    if path is None:
+        return None
+    with open(path) as file:
+        return file.read().strip()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Submit an App Store version for review (dry run by default).")
+    parser.add_argument("version", help="the App Store version, e.g. 2.3.1")
+    parser.add_argument("--build", required=True, help="the build number, e.g. 149")
+    parser.add_argument("--whats-new", required=True, help="file with the en-US What's New text")
+    parser.add_argument("--notes", help="file with the App Review notes")
+    parser.add_argument("--description", help="file with a new en-US description")
+    phased = parser.add_mutually_exclusive_group(required=True)
+    phased.add_argument("--phased", dest="phased", action="store_true", help="release in phases over 7 days")
+    phased.add_argument("--no-phased", dest="phased", action="store_false", help="release to everyone at once")
+    parser.add_argument("--apply", action="store_true", help="make the writes (otherwise only print the plan)")
+    args = parser.parse_args()
+
+    whats_new = read_text(args.whats_new)
+    notes = read_text(args.notes)
+    description = read_text(args.description)
+    if not whats_new:
+        raise Stop("What's New is empty.")
+
+    load_env()
+    run = Run(args.apply)
+    print(f"{'Submitting' if args.apply else 'Plan for'} nutrx {args.version} (build {args.build})"
+          f"{'' if args.apply else ' — dry run, nothing is written'}")
+
+    # Checks before any write.
+    print("Checks")
+    builds = get(f"/v1/builds?filter[app]={APP_ID}&filter[version]={args.build}"
+                 f"&filter[preReleaseVersion.version]={args.version}&limit=1")["data"]
+    if not builds:
+        raise Stop(f"No build {args.build} for version {args.version} in App Store Connect.")
+    build = builds[0]
+    if build["attributes"]["processingState"] != "VALID":
+        raise Stop(f"Build {args.build} is {build['attributes']['processingState']}, not VALID yet.")
+    run.done(f"build {args.build} is VALID")
+
+    versions = get(f"/v1/apps/{APP_ID}/appStoreVersions?filter[versionString]={args.version}"
+                   f"&filter[platform]=IOS&limit=1")["data"]
+    version = versions[0] if versions else None
+    if version and version["attributes"]["appStoreState"] not in EDITABLE_STATES:
+        raise Stop(f"Version {args.version} is {version['attributes']['appStoreState']}: it can't be changed now.")
+
+    submissions = get(f"/v1/reviewSubmissions?filter[app]={APP_ID}&filter[platform]=IOS&limit=20")["data"]
+    busy = [s for s in submissions if s["attributes"]["state"] in BUSY_SUBMISSION_STATES]
+    if busy:
+        raise Stop(f"A review submission is already {busy[0]['attributes']['state']} ({busy[0]['id']}). "
+                   "Wait for it, or cancel it in App Store Connect.")
+    run.done("no review submission is waiting or in review")
+
+    # 1. The version.
+    print("1. Version")
+    if version:
+        run.done(f"{args.version} exists ({version['attributes']['appStoreState']})")
+    else:
+        data = run.write("create the version", "post", "/v1/appStoreVersions", {"data": {
+            "type": "appStoreVersions",
+            "attributes": {"versionString": args.version, "platform": "IOS", "releaseType": "MANUAL"},
+            "relationships": {"app": {"data": {"type": "apps", "id": APP_ID}}},
+        }})
+        version = data["data"] if data else None
+
+    # 2. What's New (and description).
+    print("2. What's New")
+    if version is None:
+        run.write("set What's New", "patch", "/v1/appStoreVersionLocalizations/<new>", None)
+    else:
+        localizations = get(f"/v1/appStoreVersions/{version['id']}/appStoreVersionLocalizations")["data"]
+        localization = next((l for l in localizations if l["attributes"]["locale"] == LOCALE), None)
+        if localization is None:
+            raise Stop(f"Version {args.version} has no {LOCALE} localization.")
+        changes = {}
+        if (localization["attributes"].get("whatsNew") or "").strip() != whats_new:
+            changes["whatsNew"] = whats_new
+        if description and (localization["attributes"].get("description") or "").strip() != description:
+            changes["description"] = description
+        if changes:
+            run.write("set " + " and ".join("What's New" if k == "whatsNew" else k for k in changes), "patch",
+                      f"/v1/appStoreVersionLocalizations/{localization['id']}", {"data": {
+                          "type": "appStoreVersionLocalizations", "id": localization["id"], "attributes": changes}})
+        else:
+            run.done("already set")
+
+    # 3. The build.
+    print("3. Build")
+    attached = get(f"/v1/appStoreVersions/{version['id']}/build")["data"] if version else None
+    if attached and attached["id"] == build["id"]:
+        run.done(f"build {args.build} is attached")
+    else:
+        run.write(f"attach build {args.build}", "patch",
+                  f"/v1/appStoreVersions/{version['id'] if version else '<new>'}/relationships/build",
+                  {"data": {"type": "builds", "id": build["id"]}})
+
+    # 4. Review notes.
+    print("4. Review notes")
+    if notes is None:
+        run.done("left as they are (no --notes)")
+    elif version is None:
+        run.write("set the review notes", "patch", "/v1/appStoreReviewDetails/<new>", None)
+    else:
+        detail = get(f"/v1/appStoreVersions/{version['id']}/appStoreReviewDetail")["data"]
+        if detail is None:
+            run.write("create the review details", "post", "/v1/appStoreReviewDetails", {"data": {
+                "type": "appStoreReviewDetails", "attributes": {"notes": notes},
+                "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version["id"]}}}}})
+        elif (detail["attributes"].get("notes") or "").strip() != notes:
+            run.write("set the review notes", "patch", f"/v1/appStoreReviewDetails/{detail['id']}", {"data": {
+                "type": "appStoreReviewDetails", "id": detail["id"], "attributes": {"notes": notes}}})
+        else:
+            run.done("already set")
+
+    # 5. Phased release.
+    print("5. Phased release")
+    phased_release = get(f"/v1/appStoreVersions/{version['id']}/appStoreVersionPhasedRelease")["data"] \
+        if version else None
+    if args.phased and phased_release:
+        run.done(f"on ({phased_release['attributes']['phasedReleaseState']})")
+    elif args.phased:
+        run.write("turn on phased release", "post", "/v1/appStoreVersionPhasedReleases", {"data": {
+            "type": "appStoreVersionPhasedReleases", "attributes": {"phasedReleaseState": "INACTIVE"},
+            "relationships": {"appStoreVersion": {"data": {
+                "type": "appStoreVersions", "id": version["id"] if version else "<new>"}}}}})
+    elif phased_release:
+        # Turning it off is a DELETE, which needs the user's explicit instruction naming it.
+        raise Stop(f"Phased release is on for {args.version} ({phased_release['id']}) but --no-phased was given. "
+                   "Turn it off in App Store Connect, or run with --phased.")
+    else:
+        run.done("off")
+
+    # 6.–8. The review submission.
+    print("6. Review submission")
+    draft = next((s for s in submissions if s["attributes"]["state"] == "READY_FOR_REVIEW"), None)
+    if draft:
+        run.done(f"reusing the open draft {draft['id']}")
+    else:
+        data = run.write("open a review submission", "post", "/v1/reviewSubmissions", {"data": {
+            "type": "reviewSubmissions", "attributes": {"platform": "IOS"},
+            "relationships": {"app": {"data": {"type": "apps", "id": APP_ID}}}}})
+        draft = data["data"] if data else None
+
+    print("7. Version in the submission")
+    items = get(f"/v1/reviewSubmissions/{draft['id']}/items?include=appStoreVersion")["data"] if draft else []
+    if version and any(item_version_id(i) == version["id"] for i in items):
+        run.done("already added")
+    else:
+        run.write(f"add {args.version} to the submission", "post", "/v1/reviewSubmissionItems", {"data": {
+            "type": "reviewSubmissionItems",
+            "relationships": {
+                "reviewSubmission": {"data": {"type": "reviewSubmissions", "id": draft["id"] if draft else "<new>"}},
+                "appStoreVersion": {"data": {"type": "appStoreVersions", "id": version["id"] if version else "<new>"}},
+            }}})
+
+    print("8. Submit")
+    data = run.write("submit for review", "patch", f"/v1/reviewSubmissions/{draft['id'] if draft else '<new>'}",
+                     {"data": {"type": "reviewSubmissions", "id": draft["id"] if draft else "<new>",
+                               "attributes": {"submitted": True}}})
+    if data:
+        print(f"Submitted: {data['data']['attributes']['state']}")
+    elif not args.apply:
+        print(f"{run.writes} write(s) to make. Run again with --apply once the user has said go for this release.")
+
+
+if __name__ == "__main__":
+    sys.stdout.reconfigure(line_buffering=True)  # so the plan prints before an error on stderr
+    try:
+        main()
+    except Stop as stop:
+        print(f"✗ {stop}", file=sys.stderr)
+        sys.exit(1)
