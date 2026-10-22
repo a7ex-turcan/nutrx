@@ -22,6 +22,7 @@ Update the three living documentation files — `CHANGELOG.md`, `ROADMAP.md`, an
 ### 2. Update CHANGELOG.md
 
 - If bumping the version, insert a new `## vX.Y — YYYY-MM-DD` section above the previous release. Use today's date.
+- The post-release bump (step 1) is different: it adds no section for the new version. It only dates the version that just shipped (its `## Unreleased` heading becomes `## vX.Y — YYYY-MM-DD`), adds a fresh empty `## Unreleased` above it, and new entries go there until the next release is cut.
 - Group changes under `### Features`, `### Improvements`, and/or `### Fixes` as appropriate. Only include headings that have entries.
 - Each entry is a single bullet: **bold short label** — one-sentence description.
 - Keep wording concise and user-facing (describe *what changed for the user*, not implementation details).
