@@ -891,7 +891,7 @@ Every item here has an issue, so GitHub issues are the one list of what's left (
 
 **Last release:** 2.2.1 on 2026-10-21 (build 128, tag `v2.2.1`, phased release; website updated).
 
-**Bump the version as soon as a release ships.** Xcode Cloud's Default workflow archives and uploads every push to `main`, and App Store Connect refuses a build whose version has already shipped ("ITMS-90186: Invalid Pre-Release Train … closed", "ITMS-90062"), which fails the run and emails the user (builds 145 and 146 after 2.2.1). So the bookkeeping PR after a release (dated changelog, roadmap, Last release, website) also moves `MARKETING_VERSION` to the next patch (2.3 → 2.3.1), which is renamed if the next release becomes a minor. The App Store version itself is only created when that release is cut. The workflow cancels a running build when a new commit lands on `main`, so don't merge while a TestFlight build is in progress.
+**Bump the version as soon as a release ships.** Xcode Cloud's Default workflow archives and uploads every push to `main`, and App Store Connect refuses a build whose version has already shipped ("ITMS-90186: Invalid Pre-Release Train … closed", "ITMS-90062"), which fails the run and emails the user (builds 145 and 146 after 2.2.1). So the bookkeeping PR after a release (dated changelog, roadmap, Last release, website) also moves `MARKETING_VERSION` to the next patch (2.3 → 2.3.1; moved to 2.4 instead if the next release turns out to be a minor). The App Store version itself is only created when that release is cut. The workflow cancels a running build when a new commit lands on `main`, so don't merge while a TestFlight build is in progress.
 
 ---
 
