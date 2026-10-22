@@ -4,9 +4,9 @@ import SwiftUI
 /// Pro"). Nothing until the first entitlement check, so someone who paid never sees "Free" flash by. Today leaves it
 /// out at accessibility text sizes (Pro is still in Settings).
 ///
-/// The chip only asks for its sheets: Today owns them (`planChipSheets`), like the profile menu's. Hung from the chip,
-/// inside a toolbar item, they closed whenever the bar rebuilt its items, as when the text size changed, and once on
-/// the first purchase tap (#170).
+/// The chip only asks for its sheets: Today owns them (`planChipSheets`), like the profile menu and History's
+/// "Your data" menu do. Hung from the chip, inside a toolbar item, a sheet's state lived in that item, so a rebuilt
+/// item would close it: the suspected cause of the paywall closing on a first purchase tap (#170).
 struct PlanChip: View {
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.colorScheme) private var colorScheme

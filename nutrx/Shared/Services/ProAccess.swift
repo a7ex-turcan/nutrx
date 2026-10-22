@@ -116,9 +116,16 @@ final class ProAccess {
         case failed
     }
 
-    /// Buys a product. A verified transaction is finished and unlocks Pro straight away.
+    /// Buys a product with StoreKit's own call, which picks a window for the confirmation sheet itself (the tests use
+    /// this). The paywall buys through SwiftUI's `purchase` action instead, which shows it over the paywall (#170),
+    /// and hands the result to `complete(_:)`.
     func purchase(_ product: Product) async throws -> PurchaseOutcome {
-        switch try await product.purchase() {
+        await complete(try await product.purchase())
+    }
+
+    /// What a purchase's result means for Pro. A verified transaction is finished and unlocks Pro straight away.
+    func complete(_ result: Product.PurchaseResult) async -> PurchaseOutcome {
+        switch result {
         case .success(.verified(let transaction)):
             await transaction.finish()
             await refreshEntitlement()
