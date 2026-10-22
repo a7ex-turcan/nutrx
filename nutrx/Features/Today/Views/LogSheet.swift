@@ -121,7 +121,8 @@ struct LogSheet: View {
         }
         // On iPhone half height first, then full. From regular widths a centred form sheet (LAYOUT.md: about 540 pt
         // wide): at the medium detent the iPad cut off "Logged today" (#151). Sizing doesn't change an iPhone sheet.
-        .presentationDetents(widthClass == .compact ? [.medium, .large] : [.large])
+        // Half height is taller where it would cut off the Log button (the folded iPhone Duo, #212).
+        .presentationDetents(widthClass == .compact ? [.custom(HalfThroughLogButton.self), .large] : [.large])
         .presentationSizing(.form)
         .presentationDragIndicator(widthClass == .compact ? .visible : .hidden)  // nothing to resize in a form sheet
         .presentationBackground(Theme.surfaceCard)
@@ -136,16 +137,23 @@ struct LogSheet: View {
                 quickAmountChips
                 noteField
                 logButton
+                    // Its bottom edge in the content, plus a margin: how tall the half-height detent must be.
+                    .onGeometryChange(for: CGFloat.self) { $0.frame(in: .named(Self.contentSpace)).maxY } action: {
+                        HalfThroughLogButton.heightThroughButton = $0 + 16
+                    }
                 loggedToday
                     .padding(.top, 10)
             }
             .padding(.horizontal, 20)
             .padding(.top, 24)
             .padding(.bottom, 20)
+            .coordinateSpace(.named(Self.contentSpace))
         }
         .scrollDismissesKeyboard(.interactively)
         .background(Theme.surfaceCard)
     }
+
+    private static let contentSpace = "logSheetContent"
 
     private var header: some View {
         HStack(spacing: 14) {
@@ -415,6 +423,19 @@ struct LogSheet: View {
 
     private func setAmount(_ value: Double) {
         amountText = value.formattedAmount(maxFractionDigits: Self.precision)
+    }
+}
+
+/// Half the screen, like `.medium`, or taller when that would cut off the Log button: on the folded iPhone Duo
+/// (678 pt tall) half height ended above it (#212).
+private struct HalfThroughLogButton: CustomPresentationDetent {
+    /// How tall the sheet must be to show the Log button (a detent's height leaves out the home indicator's inset),
+    /// set by `LogSheet` from its layout; 0 until measured. A detent's context reads the presenting view's
+    /// environment, not the sheet's, so the sheet hands it over here.
+    static var heightThroughButton: CGFloat = 0
+
+    static func height(in context: Context) -> CGFloat? {
+        min(max(context.maxDetentValue / 2, heightThroughButton), context.maxDetentValue)
     }
 }
 
