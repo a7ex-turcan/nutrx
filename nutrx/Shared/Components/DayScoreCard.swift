@@ -8,6 +8,9 @@ struct DayScoreCard: View {
     var streak: Int? = nil
     /// Next reminder later today, if any.
     var nextReminder: UpcomingReminder? = nil
+    /// Today's collapsing day score (#243) draws the ring and the card itself, and fades this text over them.
+    var showsRing = true
+    var showsBackground = true
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -17,9 +20,15 @@ struct DayScoreCard: View {
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16))
             : AnyLayout(HStackLayout(spacing: 20))
 
-        layout {
-            SegmentedDayRing(met: score.met, total: score.total)
-                .frame(width: 116, height: 116)
+        let card = layout {
+            Group {
+                if showsRing {
+                    SegmentedDayRing(met: score.met, total: score.total)
+                } else {
+                    Color.clear
+                }
+            }
+            .frame(width: 116, height: 116)
 
             VStack(alignment: .leading, spacing: 12) {
                 Text(score.title)
@@ -46,7 +55,14 @@ struct DayScoreCard: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle(fill: Theme.forest, cornerRadius: Theme.Radius.hero)
+
+        Group {
+            if showsBackground {
+                card.cardStyle(fill: Theme.forest, cornerRadius: Theme.Radius.hero)
+            } else {
+                card
+            }
+        }
         .accessibilityElement(children: .combine)
     }
 

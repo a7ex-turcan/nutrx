@@ -11,6 +11,7 @@ All notable changes to nutrx are documented in this file.
 - **Courses reopen the way you set them** — A course set "for 10 days" reopens in For days with the days left, instead of switching to Until a date.
 
 ### Improvements
+- **Your day score stays in view** — Scroll down Today and the green day-score card tucks itself under the title: its ring unrolls into a slim bar with a segment per goal, and the score and your streak stay at the top while you log. Scroll back up and it rolls back into the ring.
 - **Suggest a feature** — A new row in Settings opens an email to the nutrx team with your app and iOS version filled in. nutrx doesn't track what you do in it, so this is the best way to tell us what you'd like next.
 
 ### Fixes
