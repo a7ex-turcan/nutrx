@@ -55,7 +55,7 @@ Decided with the user on 2026-10-23:
 
 ## 6. Build phases (one PR each, in order)
 
-1. **The rule.** `supplyPrice`, `SupplyCost` and its wording, with tests. `Tools/CloudKitSchema/fields.txt` and the development schema with `cktool`. **The production schema needs `CD_supplyPrice` before this merges**, because every merge to `main` uploads a TestFlight build.
+1. **The rule.** `supplyPrice`, `SupplyCost` and its wording, with tests. `Tools/CloudKitSchema/fields.txt` and the development schema with `cktool`. **The production schema needs `CD_supplyPrice` before this merges**, because every merge to `main` uploads a TestFlight build. It was deployed to production on 2026-10-24.
 2. **Prices and costs.** The Supply sheet's price field and its sentence on `SupplyCost`'s daily amount, the Supply card's line, My Nutrients' total, a stack's line.
 3. **Add to list, and shipping.** The Supply card's button, the total line's share, the paywall's Supply subtitle, a 2.5 What's New entry, and the docs (CLAUDE.md, CHANGELOG, ROADMAP).
 
