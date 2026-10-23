@@ -13,6 +13,8 @@ struct DurationSheet: View {
     @AppStorage(Self.lastModeKey) private var lastMode = ""
 
     static let lastModeKey = "nutrx.courseDurationMode"
+    /// The most For days goes to; a later last day can only be set as a date.
+    static let maxDays = 365
 
     enum Mode: String, Hashable, CaseIterable {
         case ongoing, days, date
@@ -56,7 +58,7 @@ struct DurationSheet: View {
                     .listRowBackground(Theme.surfaceCard)
                 case .days:
                     Section {
-                        Stepper(value: $days, in: 1...365) {
+                        Stepper(value: $days, in: 1...Self.maxDays) {
                             Text(days == 1 ? "1 day" : "\(days) days")
                                 .monospacedDigit()
                         }
@@ -96,9 +98,10 @@ struct DurationSheet: View {
                 // An existing course opens with both its days left and its last day filled in, on the mode last
                 // chosen; one that's already over opens as ongoing.
                 if let endDate = draft.endDate, !NutrientCourse.hasEnded(endDate, by: .now) {
-                    mode = Self.reopeningMode(lastChosen: lastMode)
+                    let dayCount = NutrientCourse.dayCount(from: today, to: endDate)
+                    mode = Self.reopeningMode(lastChosen: lastMode, dayCount: dayCount)
                     untilDate = endDate
-                    days = NutrientCourse.dayCount(from: today, to: endDate)
+                    days = min(dayCount, Self.maxDays)
                 }
             }
         }
@@ -107,8 +110,10 @@ struct DurationSheet: View {
     }
 
     /// How an existing course reopens: the way it was last set on this device, For days unless that was a date.
-    /// Only the last day is stored, so "for 5 days" used to come back as "until" that date (#188).
-    static func reopeningMode(lastChosen: String) -> Mode {
-        Mode(rawValue: lastChosen) == .date ? .date : .days
+    /// Only the last day is stored, so "for 5 days" used to come back as "until" that date (#188). The mode is per
+    /// device, not per course, so a course with more days left than the stepper reaches opens on its date.
+    static func reopeningMode(lastChosen: String, dayCount: Int) -> Mode {
+        if dayCount > maxDays { return .date }
+        return Mode(rawValue: lastChosen) == .date ? .date : .days
     }
 }
