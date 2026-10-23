@@ -173,7 +173,7 @@ struct ReportPageView: View {
             .frame(height: ReportLayout.summaryHeaderHeight, alignment: .bottom)
             ForEach(rows, id: \.self) { row in
                 let section = report.sections[row]
-                summaryRow(section.name, text.goal(section), text.average(section), text.percent(section.hitRate),
+                summaryRow(section.name, text.goal(section), text.average(section), text.summaryRate(section),
                            isHeader: false)
                     .frame(height: ReportLayout.summaryRowHeight - 0.5)
                 Rectangle().fill(Ink.rule).frame(height: 0.5)
