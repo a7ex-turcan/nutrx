@@ -36,6 +36,37 @@ enum SupplyText {
         }
     }
 
+    // MARK: Costs (#134)
+
+    /// An amount in the user's currency: whole from 10, with the currency's own minor units under it ("$38",
+    /// "$3.60", "¥480").
+    static func money(_ amount: Double, locale: Locale = .current) -> String {
+        let code = locale.currency?.identifier ?? "USD"
+        let style = Decimal.FormatStyle.Currency(code: code, locale: locale)
+        // Judged after rounding to cents, so 9.996 shows as "$10" like the amounts from 10, not "$10.00".
+        return Decimal(amount).formatted((amount * 100).rounded() < 1000 ? style : style.precision(.fractionLength(0)))
+    }
+
+    /// The Supply card: "About $4.20 a month".
+    static func monthlyCost(_ amount: Double, locale: Locale = .current) -> String {
+        "About \(money(amount, locale: locale)) a month"
+    }
+
+    /// The end of My Nutrients: "About $38 a month for 5 nutrients", "· 2 without a price" when some have none.
+    static func totalCost(_ total: SupplyCost.Total, locale: Locale = .current) -> String {
+        let count = total.priced == 1 ? "1 nutrient" : "\(total.priced) nutrients"
+        return withoutPrice("About \(money(total.monthly, locale: locale)) a month for \(count)", total)
+    }
+
+    /// A stack's detail: "This stack costs about $12 a month", "· 1 without a price" when some have none.
+    static func stackCost(_ total: SupplyCost.Total, locale: Locale = .current) -> String {
+        withoutPrice("This stack costs about \(money(total.monthly, locale: locale)) a month", total)
+    }
+
+    private static func withoutPrice(_ line: String, _ total: SupplyCost.Total) -> String {
+        total.unpriced > 0 ? "\(line) · \(total.unpriced) without a price" : line
+    }
+
     /// "About 6 days left", "About 1 day left", "Runs out today".
     static func daysLeftPhrase(_ days: Int) -> String {
         switch days {

@@ -33,6 +33,7 @@ CD_Nutrient CD_scheduleRaw
 CD_Nutrient CD_servingAmount
 CD_Nutrient CD_sortOrder
 CD_Nutrient CD_step
+CD_Nutrient CD_supplyPrice
 CD_Nutrient CD_supplyRefilledAt
 CD_Nutrient CD_supplyServings
 CD_Nutrient CD_symbolName
