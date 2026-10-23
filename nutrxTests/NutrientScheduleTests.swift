@@ -700,6 +700,12 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertEqual(text.summaryRate(oneWeek), "—")
         XCTAssertTrue(text.goal(section).hasSuffix(", 2 times a week"), text.goal(section))
         XCTAssertTrue(text.goalLine(section).hasPrefix("Goal: at least"), text.goalLine(section))
+        // Its box and caption say which days count (#257): the first 2 met days of each week, not every logged one.
+        XCTAssertEqual(section.countedDays, 7)
+        XCTAssertEqual(ReportText.chartCaption(section.goalType, hasUpperBound: false, weeklyTimes: 2),
+                       "Counted days: each week's first 2 days that met the goal. Dashed line: goal.")
+        XCTAssertEqual(ReportText.chartCaption(.minimum, hasUpperBound: false, weeklyTimes: 1),
+                       "Counted days: each week's first day that met the goal. Dashed line: goal.")
     }
 
     /// Every daily goal met but the weekly one short: not "every goal", and the weekly line says so.

@@ -222,13 +222,20 @@ struct ReportPageView: View {
                     statBox("Hit rate", text.percent(section.hitRate))
                 }
                 statBox("Average", text.average(section))
-                statBox("Days logged", "\(section.daysLogged)")
+                // Weekly, only each week's first N met days count and show in the chart; every logged day would read
+                // 50 beside 24 bars (#257).
+                if section.weeks != nil {
+                    statBox("Days counted", "\(section.countedDays)")
+                } else {
+                    statBox("Days logged", "\(section.daysLogged)")
+                }
             }
             .frame(height: 48)
             Spacer().frame(height: 18)
             ReportBarChart(section: section, labels: text.axisLabels(), width: contentWidth)
             Spacer().frame(height: 4)
-            Text(ReportText.chartCaption(section.goalType, hasUpperBound: section.upperBound != nil))
+            Text(ReportText.chartCaption(section.goalType, hasUpperBound: section.upperBound != nil,
+                                         weeklyTimes: section.weeklyTimes))
                 .font(.system(size: 8.5))
                 .foregroundStyle(Ink.secondary)
                 .lineLimit(1)

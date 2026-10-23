@@ -12,8 +12,13 @@ struct ReportText {
     static let summaryTitle = "Summary by nutrient"
 
     /// Under a section's chart, in the words of its goal.
-    static func chartCaption(_ goalType: GoalType, hasUpperBound: Bool) -> String {
-        switch goalType {
+    static func chartCaption(_ goalType: GoalType, hasUpperBound: Bool, weeklyTimes: Int? = nil) -> String {
+        // A weekly schedule (#132) draws only the days that count: each week's first N met days (#257).
+        if let weeklyTimes {
+            let days = weeklyTimes == 1 ? "day" : "\(weeklyTimes) days"
+            return "Counted days: each week's first \(days) that met the goal. Dashed line: goal."
+        }
+        return switch goalType {
         case .maximum: "Daily totals. Dark bars stayed within the limit; light bars went over. Dashed line: limit."
         case .range where hasUpperBound: "Daily totals. Dark bars were in range; light bars weren't. Dashed lines: range."
         default: "Daily totals. Dark bars met the goal; light bars didn't. Dashed line: goal."
