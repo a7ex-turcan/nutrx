@@ -111,7 +111,12 @@ struct StacksView: View {
                         stackRow(stack)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityAction(named: "Log \(stack.name)") { log(stack) }
+                    .accessibilityActions {
+                        // Nothing to log on a day when all its nutrients are off (#132).
+                        if !StackLogging.dueEntries(of: stack).isEmpty {
+                            Button("Log \(stack.name)") { log(stack) }
+                        }
+                    }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             stackToDelete = stack
@@ -149,10 +154,18 @@ struct StacksView: View {
                     .font(.subheadline)
                     .foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
-                // Under the names, so they get the row's width.
+                // Under the names, so they get the row's width. On a day when all its nutrients are off (#132), a
+                // note instead of a Log that would log nothing.
                 if !nutrients.isEmpty {
-                    logButton(stack)
-                        .padding(.top, 2)
+                    if StackLogging.dueEntries(of: stack).isEmpty {
+                        Text("Nothing due today")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Theme.textSecondary)
+                            .padding(.top, 2)
+                    } else {
+                        logButton(stack)
+                            .padding(.top, 2)
+                    }
                 }
             }
             Spacer(minLength: 8)

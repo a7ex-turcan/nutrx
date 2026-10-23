@@ -41,12 +41,12 @@ struct MediumWidgetView: View {
                 Image(systemName: "leaf")
                     .font(.title2)
                     .foregroundStyle(Theme.green)
-                Text("Add a nutrient in nutrx")
+                Text(entry.nothingDueToday ? "Nothing due today" : "Add a nutrient in nutrx")
                     .font(.subheadline)
                     .foregroundStyle(Theme.textSecondary)
                     .multilineTextAlignment(.center)
             }
-            .widgetURL(URL(string: "nutrx://nutrients"))
+            .widgetURL(URL(string: entry.nothingDueToday ? "nutrx://today" : "nutrx://nutrients"))
         } else {
             VStack(alignment: .leading, spacing: family == .systemSmall ? 14 : 6) {
                 if family == .systemLarge {

@@ -71,7 +71,8 @@ final class NutrientAnalyticsViewModel {
         let logged = loggedDays(daysBack: days, now: now, calendar: calendar)
         let health = await HealthReader.recentDays(HealthTrends.windowDays, now: now, calendar: calendar)
         healthState = HealthTrends.state(totals: totals, loggedDays: logged, health: health, goal: goal,
-                                         createdAt: nutrient.createdAt, today: now, calendar: calendar)
+                                         createdAt: nutrient.createdAt, schedule: nutrient.schedule(calendar: calendar),
+                                         today: now, calendar: calendar)
     }
 
     /// Days with anything logged (any nutrient), so a day nutrx wasn't used doesn't pair as 0.

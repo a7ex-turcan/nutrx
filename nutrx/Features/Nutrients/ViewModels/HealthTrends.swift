@@ -88,15 +88,18 @@ enum HealthTrends {
     ///   - totals: the nutrient's totals per day (start of day); a missing day is 0.
     ///   - loggedDays: days with anything logged in nutrx, so a day the app wasn't used doesn't read as 0.
     ///   - health: Apple Health per day (start of day).
+    ///   - schedule: which days it's due (#132); only dose days pair.
     static func state(totals: [Date: Double], loggedDays: Set<Date>, health: [Date: HealthDay], goal: AnalyticsGoal,
-                      createdAt: Date, today: Date, calendar: Calendar = .current) -> State {
+                      createdAt: Date, schedule: NutrientSchedule = NutrientSchedule(), today: Date,
+                      calendar: Calendar = .current) -> State {
         let startOfToday = calendar.startOfDay(for: today)
         let firstTracked = calendar.startOfDay(for: createdAt)
         let window = (1...windowDays).compactMap { calendar.date(byAdding: .day, value: -$0, to: startOfToday) }
         guard window.contains(where: { health[$0]?.hasData == true }) else { return .noHealthData }
 
         let paired = window.filter { day in
-            day >= firstTracked && loggedDays.contains(day) && health[day]?.hasData == true
+            day >= firstTracked && schedule.isCountedDay(day, calendar: calendar) && loggedDays.contains(day)
+                && health[day]?.hasData == true
         }
         guard paired.count >= minimumPairedDays else { return .notEnoughData(pairedDays: paired.count) }
 

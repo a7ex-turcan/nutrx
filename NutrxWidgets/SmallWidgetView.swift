@@ -37,7 +37,7 @@ struct SmallWidgetView: View {
             Spacer(minLength: 6)
 
             if entry.totalCount == 0 {
-                Text("Add a nutrient to start tracking.")
+                Text(entry.nothingDueToday ? "Nothing due today." : "Add a nutrient to start tracking.")
                     .font(.subheadline)
                     .foregroundStyle(Theme.onForestSecondary)
             } else {
@@ -78,7 +78,7 @@ struct SmallWidgetView: View {
                 .foregroundStyle(Theme.onForestSecondary)
                 .lineLimit(1)
         }
-        .widgetURL(URL(string: entry.totalCount == 0 ? "nutrx://nutrients" : "nutrx://today"))
+        .widgetURL(URL(string: entry.totalCount == 0 && !entry.nothingDueToday ? "nutrx://nutrients" : "nutrx://today"))
     }
 }
 

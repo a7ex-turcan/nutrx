@@ -51,9 +51,10 @@ final class WatchTodayViewModel {
             sortBy: [SortDescriptor(\Nutrient.sortOrder)]
         )
         guard let fetched = try? context.fetch(nutrientDescriptor) else { return }
-        // As on Today: a nutrient whose course has ended (#99) is gone from the Watch.
-        let nutrients = fetched.filter { $0.isRunning(on: startOfDay) }
-        hasNutrients = !nutrients.isEmpty
+        // As on Today: a nutrient whose course has ended (#99), or that isn't due today (#132), isn't on the Watch.
+        let nutrients = fetched.filter { $0.isDue(on: startOfDay) }
+        // Any running at all: a day with every nutrient off (#132) reads "Nothing to track today", not "Add a nutrient".
+        hasNutrients = fetched.contains { $0.isRunning(on: startOfDay) }
 
         // Fetch groups
         let groupDescriptor = FetchDescriptor<NutrientGroup>(sortBy: [SortDescriptor(\NutrientGroup.sortOrder)])

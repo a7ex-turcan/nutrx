@@ -260,6 +260,17 @@ nonisolated struct NutrientSchedule: Equatable, Sendable {
         weeklyTimes(on: day, calendar: calendar) == nil && isDoseDay(day, calendar: calendar)
     }
 
+    /// The first dose day after `day`, up to a year ahead (Today's Not today line).
+    func nextDoseDay(after day: Date, calendar: Calendar = .current) -> Date? {
+        var date = calendar.startOfDay(for: day)
+        for _ in 0..<366 {
+            guard let next = calendar.date(byAdding: .day, value: 1, to: date) else { return nil }
+            date = next
+            if isDoseDay(date, calendar: calendar) { return date }
+        }
+        return nil
+    }
+
     /// The weekly count in effect on `day`, or nil when it isn't under a weekly schedule.
     func weeklyTimes(on day: Date, calendar: Calendar = .current) -> Int? {
         if case .weekly(let times) = kind(on: day, calendar: calendar) { return times }
@@ -386,6 +397,13 @@ extension Nutrient {
     func counts(on day: Date, calendar: Calendar = .current) -> Bool {
         NutrientCourse.includes(endDate, gaps: courseGaps(calendar: calendar), day: day, calendar: calendar)
             && schedule(calendar: calendar).isCountedDay(day, calendar: calendar)
+    }
+
+    /// The next day it's due after `day`, or nil when its course is over first (Today's Not today line).
+    func nextDueDay(after day: Date, calendar: Calendar = .current) -> Date? {
+        guard let next = schedule(calendar: calendar).nextDoseDay(after: day, calendar: calendar),
+              !hasEnded(by: next, calendar: calendar) else { return nil }
+        return next
     }
 
     /// On Today's list (and the widgets', the Watch's and stacks') on `day`: running and due. `weekDone` is whether a

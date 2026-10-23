@@ -57,7 +57,7 @@ struct StackEntityQuery: EntityStringQuery {
     /// The stacks Today shows: those with something to log. An empty one is still found by id (and then says so).
     @MainActor
     static func loggableStacks(in context: ModelContext) -> [LogStack] {
-        stacks(in: context).filter { !StackLogging.activeEntries(of: $0).isEmpty }
+        stacks(in: context).filter { !StackLogging.dueEntries(of: $0).isEmpty }
     }
 
     /// Names containing what was typed or said, ignoring case and accents; names that start with it come first.

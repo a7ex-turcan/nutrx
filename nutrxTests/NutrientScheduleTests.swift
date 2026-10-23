@@ -323,4 +323,96 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertEqual(occurrences.prefix(4).map(\.fireDate),
                        [day(10, 19, hour: 9), day(10, 21, hour: 9), day(10, 23, hour: 9), day(10, 26, hour: 9)])
     }
+
+    // MARK: Lists (phase 2b): Today, stacks, Siri
+
+    /// A nutrient taken only on tomorrow's weekday is off today: in Not today, out of stacks, still found by Siri.
+    func testTodayStacksAndSiriOnAnOffDay() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
+        context.insert(NutrientGroup(name: "General", sortOrder: Int.max, isSystem: true))  // Today's sections need it
+        let weekly = Nutrient(name: "Vitamin D", unit: "IU", step: 50000, dailyTarget: 50000, sortOrder: 0)
+        weekly.scheduleRaw = NutrientSchedule()
+            .setting(.weekdays([cal.component(.weekday, from: tomorrow)]), from: today, calendar: cal)
+            .encode(calendar: cal)
+        let daily = Nutrient(name: "Magnesium", unit: "mg", step: 200, dailyTarget: 200, sortOrder: 1)
+        context.insert(weekly)
+        context.insert(daily)
+        let stack = LogStack(name: "Morning", sortOrder: 0)
+        context.insert(stack)
+        _ = StackLogging.add(weekly, to: stack, context: context)
+        _ = StackLogging.add(daily, to: stack, context: context)
+        try context.save()
+
+        let viewModel = TodayViewModel()
+        viewModel.refresh(context: context)
+        XCTAssertEqual(viewModel.groupSections.flatMap { $0.intakes.map(\.nutrient.name) }, ["Magnesium"])
+        XCTAssertEqual(viewModel.notToday.map(\.nutrient.name), ["Vitamin D"])
+        XCTAssertEqual(viewModel.notToday.first?.nextDue, tomorrow)
+        XCTAssertEqual(viewModel.dayScore.total, 1, "an off-day nutrient isn't in the day score")
+        XCTAssertTrue(viewModel.hasRunningNutrients)
+
+        XCTAssertEqual(StackLogging.dueEntries(of: stack).compactMap(\.nutrient?.name), ["Magnesium"], "logging")
+        XCTAssertEqual(StackLogging.activeEntries(of: stack).compactMap(\.nutrient?.name), ["Vitamin D", "Magnesium"],
+                       "the stack editor and its picker still see it, so it can't be added twice")
+        XCTAssertEqual(StackLogging.summary(of: stack), "Vitamin D, Magnesium")
+        let logged = StackLogging.log(stack, context: context)
+        XCTAssertEqual(logged.records.compactMap(\.nutrient?.name), ["Magnesium"])
+        StackLogging.undo(logged, of: stack, context: context)
+        let sundays = LogStack(name: "Sunday", sortOrder: 1)
+        context.insert(sundays)
+        _ = StackLogging.add(weekly, to: sundays, context: context)
+        XCTAssertEqual(StackAccessibility.label(for: sundays, done: false), "Sunday: Vitamin D. Nothing due today.",
+                       "VoiceOver hears why there's no Log")
+        XCTAssertEqual(StackAccessibility.label(for: stack, done: true), "Morning: Vitamin D, Magnesium. Logged today.")
+        XCTAssertEqual(NutrientEntityQuery.activeNutrients(in: context).map(\.name), ["Vitamin D", "Magnesium"],
+                       "Siri still finds it")
+
+        // Logged anyway: kept, shown in the log sheet's total, not counted.
+        viewModel.addCustomAmount(50000, to: weekly, context: context)
+        XCTAssertEqual(viewModel.total(for: weekly), 50000)
+        XCTAssertEqual(viewModel.dayScore.total, 1)
+    }
+
+    /// Every nutrient off today: Today keeps its layout (not the empty state) and the score says so.
+    func testADayWithNothingDue() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        context.insert(NutrientGroup(name: "General", sortOrder: Int.max, isSystem: true))
+        let offToday = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 1000, sortOrder: 0)
+        offToday.scheduleRaw = NutrientSchedule()
+            .setting(.cycle(on: 1, off: 1, start: cal.date(byAdding: .day, value: 1, to: today)!), from: today,
+                     calendar: cal)
+            .encode(calendar: cal)
+        context.insert(offToday)
+        try context.save()
+
+        let viewModel = TodayViewModel()
+        viewModel.refresh(context: context)
+        XCTAssertTrue(viewModel.groupSections.isEmpty)
+        XCTAssertTrue(viewModel.hasRunningNutrients)
+        XCTAssertEqual(viewModel.dayScore.title, "Nothing due today")
+    }
+
+    /// Off on its last day's next dose: its course is over before then.
+    func testNextDueStopsAtTheCourse() {
+        let nutrient = Nutrient(name: "Iron", unit: "mg", step: 18, dailyTarget: 18, sortOrder: 0)
+        nutrient.scheduleRaw = "20261019=days:2"
+        XCTAssertEqual(nutrient.nextDueDay(after: day(10, 21), calendar: calendar), day(10, 26))
+        nutrient.endDate = day(10, 24)
+        XCTAssertNil(nutrient.nextDueDay(after: day(10, 21), calendar: calendar))
+    }
+
+    func testNotTodayWording() {
+        let text = ScheduleText(calendar: calendar, locale: Locale(identifier: "en_GB"))
+        XCTAssertEqual(text.next(day(10, 24), today: day(10, 23)), "Next: tomorrow")
+        XCTAssertEqual(text.next(day(10, 25), today: day(10, 23)), "Next: Sunday")
+        XCTAssertEqual(text.next(day(11, 2), today: day(10, 23)), "Next: Mon 2 Nov")
+        XCTAssertEqual(text.next(nil, today: day(10, 23)), "Course ends first")
+    }
 }

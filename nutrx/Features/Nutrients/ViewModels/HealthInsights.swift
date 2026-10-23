@@ -109,7 +109,9 @@ enum HealthInsights {
             NutrientState(id: nutrient.id, name: nutrient.name,
                           state: HealthTrends.state(totals: totals[nutrient.id] ?? [:], loggedDays: loggedDays,
                                                     health: health, goal: AnalyticsGoal(nutrient: nutrient),
-                                                    createdAt: nutrient.createdAt, today: now, calendar: calendar))
+                                                    createdAt: nutrient.createdAt,
+                                                    schedule: nutrient.schedule(calendar: calendar), today: now,
+                                                    calendar: calendar))
         }
         return status(states)
     }

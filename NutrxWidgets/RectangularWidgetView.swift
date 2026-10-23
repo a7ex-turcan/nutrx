@@ -58,7 +58,7 @@ struct RectangularWidgetView: View {
                 Text("nutrx")
                     .font(.headline)
                     .widgetAccentable()
-                Text("Add a nutrient to start")
+                Text(entry.nothingDueToday ? "Nothing due today" : "Add a nutrient to start")
                     .font(.subheadline)
             }
         }

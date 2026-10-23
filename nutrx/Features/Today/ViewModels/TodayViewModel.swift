@@ -25,6 +25,23 @@ final class TodayViewModel {
     private(set) var supplyLogs: [PersistentIdentifier: [SupplySchedule.Log]] = [:]
     private(set) var groupSections: [GroupSection] = []
 
+    /// A running nutrient that isn't due today (schedules, #132), for Today's collapsed Not today section.
+    struct NotTodayItem: Identifiable {
+        let nutrient: Nutrient
+        /// Anything logged today anyway; it's kept, but doesn't count.
+        var total: Double
+        /// The next day it's due; nil when its course is over first.
+        let nextDue: Date?
+
+        var id: PersistentIdentifier { nutrient.persistentModelID }
+    }
+
+    /// Running but off today, in Today's order (groups, then within each group).
+    private(set) var notToday: [NotTodayItem] = []
+
+    /// Anything running at all, due today or not: Today's empty state is only for when there's nothing.
+    var hasRunningNutrients: Bool { !groupSections.isEmpty || !notToday.isEmpty }
+
     /// Met vs. total across every nutrient shown today (collapsed groups included).
     var dayScore: DayScore {
         DayScore(progresses: groupSections.flatMap(\.intakes).map(\.progress))
@@ -42,9 +59,11 @@ final class TodayViewModel {
         return UpcomingReminder.next(after: now, among: candidates)
     }
 
-    /// Today's total for a nutrient, as shown on its card (0 for one that isn't on Today).
+    /// Today's total for a nutrient, as shown on its card or in Not today (0 for one that isn't on Today).
     func total(for nutrient: Nutrient) -> Double {
-        nutrientIntakes.first { $0.nutrient.persistentModelID == nutrient.persistentModelID }?.total ?? 0
+        let id = nutrient.persistentModelID
+        return nutrientIntakes.first { $0.nutrient.persistentModelID == id }?.total
+            ?? notToday.first { $0.id == id }?.total ?? 0
     }
 
     /// Logs a stack (with any amounts changed for this time) and does a + tap's follow-ups. Returns what was logged
@@ -52,7 +71,7 @@ final class TodayViewModel {
     @discardableResult
     func logStack(_ stack: LogStack, amounts: [PersistentIdentifier: Double],
                   context: ModelContext) -> (logged: StackLogging.Logged, reachedGoal: Bool) {
-        let reachedGoal = StackLogging.activeEntries(of: stack).contains { entry in
+        let reachedGoal = StackLogging.dueEntries(of: stack).contains { entry in
             guard let nutrient = entry.nutrient else { return false }
             let amount = amounts[entry.persistentModelID] ?? entry.amount
             return GoalProgress(nutrient: nutrient, current: total(for: nutrient)).reachesGoal(adding: amount)
@@ -104,13 +123,15 @@ final class TodayViewModel {
         let startOfDay = Calendar.current.startOfDay(for: .now)
         let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay)!
 
-        // Fetch non-deleted nutrients, without those whose course has ended (#99).
+        // Fetch non-deleted nutrients, without those whose course has ended (#99). Those not due today (#132) go to
+        // Not today.
         let nutrientDescriptor = FetchDescriptor<Nutrient>(
             predicate: #Predicate { !$0.isRemoved },
             sortBy: [SortDescriptor(\Nutrient.sortOrder)]
         )
         guard let fetched = try? context.fetch(nutrientDescriptor) else { return }
-        let nutrients = fetched.filter { $0.isRunning(on: startOfDay) }
+        let running = fetched.filter { $0.isRunning(on: startOfDay) }
+        let nutrients = running.filter { $0.isDue(on: startOfDay) }
 
         // Fetch all groups
         let groupDescriptor = FetchDescriptor<NutrientGroup>(
@@ -171,6 +192,19 @@ final class TodayViewModel {
             guard let intakes = sectionsByGroupID[group.persistentModelID], !intakes.isEmpty else { return nil }
             return GroupSection(id: group.persistentModelID, group: group, intakes: intakes)
         }
+
+        // Not today, in the same order: by group, then within it
+        let groupOrder = Dictionary(allGroups.enumerated().map { ($1.persistentModelID, $0) },
+                                    uniquingKeysWith: { first, _ in first })
+        func groupIndex(_ nutrient: Nutrient) -> Int {
+            (nutrient.group ?? generalGroup).flatMap { groupOrder[$0.persistentModelID] } ?? Int.max
+        }
+        notToday = running.filter { !$0.isDue(on: startOfDay) }
+            .sorted {
+                (groupIndex($0), $0.groupSortOrder, $0.sortOrder) < (groupIndex($1), $1.groupSortOrder, $1.sortOrder)
+            }
+            .map { NotTodayItem(nutrient: $0, total: totalsByID[$0.persistentModelID] ?? 0,
+                                nextDue: $0.nextDueDay(after: startOfDay)) }
     }
 
     func increment(_ nutrient: Nutrient, context: ModelContext) {
@@ -235,6 +269,11 @@ final class TodayViewModel {
         let id = nutrient.persistentModelID
         if supplyLogs[id] != nil {
             supplyLogs[id]?.append(SupplySchedule.Log(date: date, amount: delta))
+        }
+
+        // Not today: an off-day log is kept, so the log sheet shows it
+        if let idx = notToday.firstIndex(where: { $0.id == id }) {
+            notToday[idx].total += delta
         }
 
         // Update flat list

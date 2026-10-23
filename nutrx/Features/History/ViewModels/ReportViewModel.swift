@@ -144,7 +144,8 @@ final class ReportViewModel {
         for nutrient in log.nutrients {
             let goal = AnalyticsGoal(goalType: nutrient.goalType, target: nutrient.target, upperBound: nutrient.upperBound)
             let state = HealthTrends.state(totals: totals[nutrient.id] ?? [:], loggedDays: loggedDays, health: health,
-                                           goal: goal, createdAt: nutrient.createdAt, today: now, calendar: calendar)
+                                           goal: goal, createdAt: nutrient.createdAt, schedule: nutrient.schedule,
+                                           today: now, calendar: calendar)
             guard case .findings(let findings) = state else { continue }
             let words = HealthText(nutrientName: names[nutrient.id] ?? "", unit: units[nutrient.id] ?? "", goal: goal)
             result[nutrient.id] = findings.map(words.sentence)

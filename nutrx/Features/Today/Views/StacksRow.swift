@@ -120,7 +120,7 @@ private struct SingleStackCard: View {
 
     var body: some View {
         let done = StackLogging.isLoggedToday(stack)
-        let count = StackLogging.activeEntries(of: stack).count
+        let count = StackLogging.dueEntries(of: stack).count
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
@@ -191,7 +191,7 @@ private struct StackTiles: View {
     let stack: LogStack
 
     var body: some View {
-        let nutrients = StackLogging.activeEntries(of: stack).compactMap(\.nutrient)
+        let nutrients = StackLogging.dueEntries(of: stack).compactMap(\.nutrient)
         HStack(spacing: 6) {
             ForEach(nutrients.prefix(5), id: \.persistentModelID) { nutrient in
                 NutrientIconTile(nutrient: nutrient, size: 24)
@@ -268,9 +268,12 @@ private struct StackDoneBadge: View {
 }
 
 enum StackAccessibility {
-    /// "Morning: Vitamin D, Omega-3, Magnesium. Logged today."
+    /// "Morning: Vitamin D, Omega-3, Magnesium. Logged today.", or "… Nothing due today." when every nutrient in it is
+    /// off today (schedules, #132), which the Stacks tab shows in place of its Log button.
     static func label(for stack: LogStack, done: Bool) -> String {
-        "\(stack.name): \(StackLogging.summary(of: stack))." + (done ? " Logged today." : "")
+        let nothingDue = !StackLogging.activeEntries(of: stack).isEmpty && StackLogging.dueEntries(of: stack).isEmpty
+        let status = nothingDue ? " Nothing due today." : (done ? " Logged today." : "")
+        return "\(stack.name): \(StackLogging.summary(of: stack))." + status
     }
 }
 

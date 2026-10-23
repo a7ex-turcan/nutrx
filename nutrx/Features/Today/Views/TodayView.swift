@@ -53,6 +53,8 @@ struct TodayView: View {
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
     @State private var viewModel = TodayViewModel()
     @State private var nutrientToLog: Nutrient?
+    /// Whether the Not today section is open (schedules, #132); per device, collapsed by default.
+    @AppStorage("nutrx.showsNotToday") private var showsNotToday = false
     @State private var nutrientToEdit: Nutrient?
     @State private var nutrientToMove: Nutrient?
     @State private var editDraft = NutrientDraft()
@@ -75,7 +77,7 @@ struct TodayView: View {
 
     /// Stacks with something to log; an empty one only shows in the Stacks tab.
     private var stacksToShow: [LogStack] {
-        stacks.filter { !StackLogging.activeEntries(of: $0).isEmpty }
+        stacks.filter { !StackLogging.dueEntries(of: $0).isEmpty }
     }
 
     private var hasCustomGroups: Bool {
@@ -146,7 +148,9 @@ struct TodayView: View {
         // (#45).
         let remindersShown = notificationsAllowed
         Group {
-            if viewModel.groupSections.isEmpty {
+            // Only when nothing is running at all: a day with every nutrient off (#132) still shows Today and its
+            // Not today section.
+            if !viewModel.hasRunningNutrients {
                 emptyState
             } else {
                 switch layout {
@@ -441,6 +445,16 @@ struct TodayView: View {
                     }
                 }
             }
+
+            if !viewModel.notToday.isEmpty {
+                // Last on Today: room below it, so it doesn't sit against the tab bar at the bottom.
+                notTodaySection
+                    .listRowInsets(EdgeInsets(top: Theme.Spacing.sectionTop - Theme.Spacing.cardGap / 2,
+                                              leading: Theme.Spacing.screenMargin, bottom: Theme.Spacing.sectionTop,
+                                              trailing: Theme.Spacing.screenMargin))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -527,7 +541,18 @@ struct TodayView: View {
                     }
                 }
             }
+            if !viewModel.notToday.isEmpty {
+                notTodaySection
+                    .padding(.top, Theme.Spacing.sectionTop - Theme.Spacing.cardGap)
+            }
         }
+    }
+
+    /// Running nutrients that aren't due today (#132), after the groups; tapping one logs it anyway.
+    private var notTodaySection: some View {
+        NotTodaySection(items: viewModel.notToday, isExpanded: showsNotToday, onToggle: {
+            withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) { showsNotToday.toggle() }
+        }, onLog: { nutrientToLog = $0 })
     }
 
     // MARK: - Pieces

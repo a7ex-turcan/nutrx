@@ -28,6 +28,7 @@ struct nutrxApp: App {
         if ScreenshotDemoData.isRequested {
             ScreenshotDemoData.replaceStore(in: modelContainer.mainContext)
         }
+        ScheduleDebug.apply(to: modelContainer.mainContext)  // until the Schedule sheet exists (#132)
         #endif
     }
 
