@@ -27,6 +27,8 @@ final class NutrientDraft {
     var pendingStacks: [StackLogging.Choice] = []
     /// The last day of a set course (nutrx Pro, #99); nil = ongoing.
     var endDate: Date?
+    /// The schedule in effect today (nutrx Pro, #132). Saving sets it from today on, so earlier days keep theirs.
+    var scheduleKind: NutrientSchedule.Kind = .everyDay
     /// A scanned label's ingredient rows ("Also on this label"), and the ones already added from it.
     var labelIngredients: [LabelIngredient] = []
     var addedFromLabel: [String] = []
@@ -67,12 +69,14 @@ final class NutrientDraft {
         let pendingReminderTimes: [Date]
         let pendingStacks: [StackLogging.Choice]
         let endDate: Date?
+        let scheduleKind: NutrientSchedule.Kind
     }
 
     var snapshot: Snapshot {
         Snapshot(name: name, unit: unit, step: step, dailyTarget: dailyTarget, notes: notes, upperBound: upperBound,
                  supplyServings: supplyServings, goalType: goalType, tint: tint, symbolName: symbolName,
-                 pendingReminderTimes: pendingReminderTimes, pendingStacks: pendingStacks, endDate: endDate)
+                 pendingReminderTimes: pendingReminderTimes, pendingStacks: pendingStacks, endDate: endDate,
+                 scheduleKind: scheduleKind)
     }
 
     var isValid: Bool {
@@ -117,6 +121,7 @@ final class NutrientDraft {
         servingForm = nil
         pendingStacks = []
         endDate = nil
+        scheduleKind = .everyDay
         labelIngredients = []
         addedFromLabel = []
         labelIngredientName = nil
@@ -133,6 +138,7 @@ final class NutrientDraft {
         tint = nutrient.tint
         symbolName = nutrient.symbolName
         endDate = nutrient.endDate
+        scheduleKind = nutrient.schedule().kind(on: .now)
     }
 
     /// Adds a reminder time for a not-yet-saved nutrient, keeping the list sorted by time of day.

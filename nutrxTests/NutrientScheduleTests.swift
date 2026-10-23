@@ -415,4 +415,78 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertEqual(text.next(day(11, 2), today: day(10, 23)), "Next: Mon 2 Nov")
         XCTAssertEqual(text.next(nil, today: day(10, 23)), "Course ends first")
     }
+
+    // MARK: Setting a schedule (phase 3): the row, the sheet's footer, the draft
+
+    func testSummary() {
+        let text = ScheduleText(calendar: calendar, locale: Locale(identifier: "en_GB"))
+        XCTAssertEqual(text.summary(.everyDay), "Every day")
+        XCTAssertEqual(text.summary(.weekdays([2, 4, 6])), "Mon, Wed, Fri")
+        XCTAssertEqual(text.summary(.weekdays([2, 3, 4, 5, 6])), "Weekdays")
+        XCTAssertEqual(text.summary(.weekdays([1, 7])), "Weekends")
+        XCTAssertEqual(text.summary(.weekdays([1])), "Sundays")
+        XCTAssertEqual(text.summary(.weekdays(Set(1...7))), "Every day")
+        XCTAssertEqual(text.summary(.cycle(on: 1, off: 1, start: day(10, 19))), "Every other day")
+        XCTAssertEqual(text.summary(.cycle(on: 1, off: 2, start: day(10, 19))), "Every 3 days")
+        XCTAssertEqual(text.summary(.cycle(on: 5, off: 2, start: day(10, 19))), "5 days on, 2 off")
+        XCTAssertEqual(text.summary(.cycle(on: 21, off: 7, start: day(10, 19))), "3 weeks on, 1 off")
+        XCTAssertEqual(text.summary(.cycle(on: 7, off: 7, start: day(10, 19))), "1 week on, 1 off")
+        XCTAssertEqual(text.summary(.weekly(times: 1)), "Once a week")
+        XCTAssertEqual(text.summary(.weekly(times: 3)), "3 times a week")
+    }
+
+    /// Weekdays in the locale's order: Sunday first unless the calendar starts the week on Monday.
+    func testWeekdaysInTheLocalesOrder() {
+        var mondayFirst = calendar
+        mondayFirst.firstWeekday = 2
+        XCTAssertEqual(ScheduleText(calendar: mondayFirst).ordered([1, 2, 7]), [2, 7, 1])
+        XCTAssertEqual(ScheduleText(calendar: calendar).ordered([7, 2, 1]), [1, 2, 7])
+        XCTAssertEqual(ScheduleText(calendar: mondayFirst, locale: Locale(identifier: "en_GB"))
+                        .summary(.weekdays([1, 2])), "Mon, Sun")
+    }
+
+    func testUpcoming() {
+        let text = ScheduleText(calendar: calendar, locale: Locale(identifier: "en_GB"))
+        XCTAssertEqual(text.upcoming(.weekdays([1]), today: day(10, 23)), "Next: Sun 25 Oct, then Sun 1 Nov.")
+        XCTAssertEqual(text.upcoming(.weekdays([6, 1]), today: day(10, 23)), "Today, then Sun 25 Oct.")
+        XCTAssertEqual(text.upcoming(.cycle(on: 1, off: 1, start: day(10, 24)), today: day(10, 23)),
+                       "Next: Sat 24 Oct, then Mon 26 Oct.")
+    }
+
+    /// Adding a nutrient with a schedule sets it from today; editing it later keeps the days before.
+    func testTheDraftSetsTheScheduleFromToday() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        let draft = NutrientDraft()
+        draft.name = "Iron"
+        draft.unit = "mg"
+        draft.step = "18"
+        draft.dailyTarget = "18"
+        draft.scheduleKind = .weekdays([2, 4, 6])
+        let iron = try XCTUnwrap(draft.insertNutrient(into: context, group: nil, sortOrder: 0))
+        XCTAssertEqual(iron.schedule().pieces, [NutrientSchedule.Piece(from: today, kind: .weekdays([2, 4, 6]))])
+
+        let plain = NutrientDraft()
+        plain.name = "Zinc"
+        plain.unit = "mg"
+        plain.step = "10"
+        plain.dailyTarget = "10"
+        XCTAssertEqual(plain.insertNutrient(into: context, group: nil, sortOrder: 1)?.scheduleRaw, "",
+                       "every day stores nothing")
+
+        // An earlier schedule stays for the days it covered.
+        let lastWeek = cal.date(byAdding: .day, value: -7, to: today)!
+        iron.scheduleRaw = NutrientSchedule().setting(.weekdays([1]), from: lastWeek, calendar: cal).encode(calendar: cal)
+        let edit = NutrientDraft()
+        edit.populate(from: iron)
+        XCTAssertEqual(edit.scheduleKind, .weekdays([1]))
+        let opened = edit.snapshot
+        edit.scheduleKind = .everyDay
+        XCTAssertNotEqual(edit.snapshot, opened, "a changed schedule is an unsaved change")
+        edit.apply(to: iron)
+        XCTAssertEqual(iron.schedule().pieces.map(\.kind), [.weekdays([1]), .everyDay])
+        XCTAssertEqual(iron.schedule().kind(on: lastWeek), .weekdays([1]))
+    }
 }

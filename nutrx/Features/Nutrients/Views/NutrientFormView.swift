@@ -27,6 +27,7 @@ struct NutrientFormView: View {
     @State private var showRemindersSheet = false
     @State private var showSupply = false
     @State private var showDuration = false
+    @State private var showSchedule = false
     @State private var showPendingReminders = false
     @State private var showGroupChooser = false
     @State private var showNewGroupAlert = false
@@ -268,6 +269,17 @@ struct NutrientFormView: View {
                 }
                 .buttonStyle(.plain)
                 .sheet(isPresented: $showDuration) { DurationSheet(draft: draft) }
+            }
+
+            // Schedule (nutrx Pro, #132): which days it's taken on. Debug builds only until it ships.
+            if ProAccess.isStoreVisible, ScheduleSheet.isOffered {
+                Rectangle().fill(Theme.lineHairline).frame(height: 1)
+                ProGatedButton(action: { showSchedule = true }) { showsBadge in
+                    settingsRow("Schedule", value: showsBadge ? "" : ScheduleText().summary(draft.scheduleKind),
+                                badge: showsBadge)
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showSchedule) { ScheduleSheet(draft: draft) }
             }
 
             // Supply (nutrx Pro): a saved nutrient only, since it reads the nutrient's own log.

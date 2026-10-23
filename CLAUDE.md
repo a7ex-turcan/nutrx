@@ -195,6 +195,7 @@ nutrx/
 │   │   │   ├── NutrientRemindersSheet.swift     # Per-nutrient dose reminder management.
 │   │   │   ├── SupplySheet.swift                # Supply (Pro): servings, each serving, remind me, sentence, Refilled today.
 │   │   │   ├── DurationSheet.swift              # Duration (Pro, #99): Ongoing / For days / Until a date → the draft's last day.
+│   │   │   ├── ScheduleSheet.swift              # Schedule (Pro, #132): Every day / On certain days / Every few days / On and off.
 │   │   │   ├── SupplyCard.swift                 # Analytics Supply card: free teaser / Set up / days left, gauge, Refilled.
 │   │   │   ├── HealthTrendsCard.swift           # Analytics "With Apple Health" (Pro): findings with two bars, or the state.
 │   │   │   ├── ScanLabelEntry.swift             # Scan a label (Pro): entry card + reading note + divider; ScanReviewBanner.
@@ -218,7 +219,7 @@ nutrx/
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       ├── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │       ├── CourseText.swift                 # Courses (Pro, #99): "Until Fri 24 Oct · 5 days", "Last day today", "Ended 24 Oct".
-│   │       └── ScheduleText.swift               # Schedules (Pro, #132): "Next: tomorrow / Sunday / Mon 2 Nov" for Not today.
+│   │       └── ScheduleText.swift               # Schedules (Pro, #132): the row's summary, the sheet's next days, Not today's "Next: Sunday".
 │   │
 │   ├── History/                 # Tab 4 — read-only log of past days.
 │   │   ├── Views/
@@ -905,7 +906,12 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **Today:** `TodayViewModel.notToday` (`NotTodayItem`: running, not due, Today's order, today's total, `nextDue` from `Nutrient.nextDueDay`) feeds `NotTodaySection`. That's a collapsed "NOT TODAY" header with a count (`@AppStorage("nutrx.showsNotToday")`), then one card of rows: tile, name and `ScheduleText.next` ("Next: tomorrow", "Next: Sunday", "Next: Mon 2 Nov", "Course ends first"). It sits after the groups in the list and in the grid. A row opens the log sheet; an off-day log is kept (`total(for:)` and `updateTotal` include Not today) but doesn't count.
   - Today's empty state is only for no running nutrients (`hasRunningNutrients`). With everything off, the day score reads "Nothing due today" (`DayScore.title` with no goals) and the Watch reads "Nothing to track today".
   - **Debug:** until the sheet exists, `ScheduleDebug` (DEBUG only) sets schedules by name at launch: `xcrun simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.schedules -dict "Vitamin D" "days:1"`, then relaunch. Use "daily" to go back.
-- Still to come: the Schedule sheet (phase 3), times a week (phase 4), shipping (phase 5).
+- **Phase 3 (setting one):** `NutrientDraft.scheduleKind` holds the kind in effect today.
+  - **Saving:** `populate` reads it, and `insertNutrient` / `apply` write it with `setting(_:from: .now)`, so a change applies from today on and earlier days keep theirs. Every day stores "". The draft's `Snapshot` includes it, so a change asks "Discard changes?".
+  - **The form:** a **Schedule** row after Duration (`ProGatedButton`, `ScheduleText.summary`: "Every day", "Mon, Wed, Fri", "Weekdays", "Sundays", "Every other day", "Every 3 days", "5 days on, 2 off", "3 weeks on, 1 off") opens `ScheduleSheet`.
+  - **The sheet:** full height, with Every day / On certain days / Every few days / On and off as a checkmark list. The controls are weekday toggles in the locale's order (`ScheduleText.ordered`), which become a list of full names at accessibility sizes, where the short ones broke mid-word; "Every N days" (2–30) and a Starting date; or Days / Weeks with on and off steppers (up to 60 days, or 8 weeks) and a Starting date. The footer is `ScheduleText.upcoming`: "Today, then Sun 25 Oct." or "Next: …, then …". Done is off with no weekday picked.
+  - **Debug only until phase 5:** the row shows only in Debug builds (`ScheduleSheet.isOffered`), because merges reach TestFlight. Times a week joins the sheet in phase 4, and `ProFeature.schedules` arrives in phase 5.
+- Still to come: times a week (phase 4) and shipping (phase 5).
 
 ### nutrx Pro: Report for your doctor (phase 8)
 
