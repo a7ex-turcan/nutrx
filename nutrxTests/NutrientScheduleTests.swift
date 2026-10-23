@@ -845,6 +845,17 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertEqual(week, NutrientSchedule.WeekProgress(met: 2, times: 3), "Monday and Tuesday; not Iron's Wednesday")
         XCTAssertEqual(magnesium.weekProgress(before: day(10, 20), calendar: calendar)?.met, 1, "before Tuesday: Monday")
         XCTAssertNil(other.weekProgress(including: day(10, 21), calendar: calendar), "not under a weekly schedule")
+
+        // Not in any store: the week comes from the relationship instead.
+        let loose = Nutrient(name: "Zinc", unit: "mg", step: 10, dailyTarget: 10, sortOrder: 2)
+        loose.createdAt = day(1, 1)
+        loose.scheduleRaw = magnesium.scheduleRaw
+        loose.intakeRecords = [day(10, 18, hour: 9), day(10, 19, hour: 9), day(10, 21, hour: 9)].map {
+            IntakeRecord(nutrient: loose, amount: 10, date: $0)
+        }
+        XCTAssertNil(loose.modelContext)
+        XCTAssertEqual(loose.weekProgress(including: day(10, 21), calendar: calendar),
+                       NutrientSchedule.WeekProgress(met: 2, times: 3), "Monday and Wednesday; Sunday is last week")
     }
 
     /// A week whose count is reached has no more reminders that week; the next week's are there.
