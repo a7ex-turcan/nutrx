@@ -133,14 +133,15 @@ struct LogSheet: View {
         var isFillToGoal = false
     }
 
-    /// ½× / 1× / 2× step, plus "Fill to goal" when there's a target left to reach.
+    /// ½× / 1× / 2× step, plus "Fill to goal" when there's a target left to reach, and it's due today: from Not
+    /// today a log won't count toward the goal, which the sheet says (#256).
     private var quickAmounts: [QuickAmount] {
         let step = nutrient.step
         var chips = [0.5, 1, 2].map { factor in
             QuickAmount(id: "\(factor)x", label: (step * factor).formattedAmount(maxFractionDigits: Self.precision),
                         value: step * factor)
         }
-        if let remaining = progress.amountToGoal {
+        if notDueNote == nil, let remaining = progress.amountToGoal {
             chips.append(QuickAmount(id: "fill", label: "Fill to goal", value: remaining, isFillToGoal: true))
         }
         return chips
