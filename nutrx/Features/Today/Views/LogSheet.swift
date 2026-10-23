@@ -9,6 +9,8 @@ struct LogSheet: View {
     let onLog: (_ amount: Double, _ note: String?) -> Void
     /// Deletes one of today's entries.
     let onDelete: (IntakeRecord) -> Void
+    /// Opened from Not today (#132): a line saying the log won't count today (#247).
+    let notDueNote: String?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
@@ -32,8 +34,10 @@ struct LogSheet: View {
 
     private enum Field { case amount, note }
 
-    init(nutrient: Nutrient, onLog: @escaping (Double, String?) -> Void, onDelete: @escaping (IntakeRecord) -> Void) {
+    init(nutrient: Nutrient, notDueNote: String? = nil, onLog: @escaping (Double, String?) -> Void,
+         onDelete: @escaping (IntakeRecord) -> Void) {
         self.nutrient = nutrient
+        self.notDueNote = notDueNote
         self.onLog = onLog
         self.onDelete = onDelete
         _amountText = State(initialValue: nutrient.step.formattedAmount(maxFractionDigits: Self.precision))
@@ -172,7 +176,13 @@ struct LogSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
-                        .padding(.bottom, 8)
+                        .padding(.bottom, notDueNote == nil ? 8 : 0)
+                    if let notDueNote {
+                        Label(notDueNote, systemImage: "calendar")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                     amountStepper
                     quickAmountChips
                     noteField
@@ -543,12 +553,13 @@ private struct HalfThroughLogButton: CustomPresentationDetent {
 // MARK: - Previews
 
 private struct LogSheetPreview: View {
+    var notDueNote: String?
     @Query(filter: #Predicate<Nutrient> { $0.name == "Vitamin D" }) private var nutrients: [Nutrient]
 
     // Rendered inline: preview snapshots don't capture presented sheets.
     var body: some View {
         if let nutrient = nutrients.first {
-            LogSheet(nutrient: nutrient, onLog: { _, _ in }, onDelete: { _ in })
+            LogSheet(nutrient: nutrient, notDueNote: notDueNote, onLog: { _, _ in }, onDelete: { _ in })
                 .background(Theme.surfaceCard)
         }
     }
@@ -569,4 +580,9 @@ private struct LogSheetPreview: View {
     LogSheetPreview()
         .modelContainer(previewContainer)
         .environment(\.dynamicTypeSize, .accessibility3)
+}
+
+#Preview("Not due today") {
+    LogSheetPreview(notDueNote: "Not due today, so this won't count toward your goal. Next: Sunday.")
+        .modelContainer(previewContainer)
 }
