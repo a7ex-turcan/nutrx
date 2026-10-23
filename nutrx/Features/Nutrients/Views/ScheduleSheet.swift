@@ -5,15 +5,6 @@ import SwiftUI
 struct ScheduleSheet: View {
     @Bindable var draft: NutrientDraft
 
-    /// Offered in Debug builds while schedules are being built; phase 5 turns it on for everyone.
-    static var isOffered: Bool {
-        #if DEBUG
-        true
-        #else
-        false
-        #endif
-    }
-
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var option: Option = .everyDay

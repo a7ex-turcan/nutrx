@@ -109,6 +109,15 @@ final class ProTextTests: XCTestCase {
         XCTAssertNil(ProFeature.courses.appleIntelligenceName, "courses don't use the on-device model")
     }
 
+    /// Schedules (#132) ship in 2.4, last in the list.
+    func testSchedulesIsListed() {
+        XCTAssertTrue(ProFeature.listed.contains(.schedules))
+        XCTAssertEqual(ProFeature.allCases.last, .schedules)
+        XCTAssertEqual(ProFeature.schedules.title, "Schedules")
+        XCTAssertEqual(ProFeature.schedules.subtitle, "Take something on set days")
+        XCTAssertNil(ProFeature.schedules.appleIntelligenceName, "schedules don't use the on-device model")
+    }
+
     func testPrimaryButtonIsLabelledWhilePurchasing() {
         XCTAssertEqual(ProText.primaryAccessibilityLabel(plan: .yearly, trialEligible: true, purchasing: false),
                        "Start free week")
@@ -123,7 +132,7 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.welcome([.supply, .scan]),
                        "Supply and label scanning are on. Nothing you already use has changed.")
         XCTAssertEqual(ProText.welcome(ProFeature.allCases),
-                       "Supply, label scanning, weekly recaps, Apple Health trends, doctor reports and courses are on. Nothing you already use has changed.")
+                       "Supply, label scanning, weekly recaps, Apple Health trends, doctor reports, courses and schedules are on. Nothing you already use has changed.")
     }
 
     func testPlanChip() {

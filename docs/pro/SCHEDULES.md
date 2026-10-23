@@ -1,6 +1,6 @@
 # Schedules — spec (nutrx Pro, #132)
 
-A nutrient can follow a schedule instead of every day: Mon / Wed / Fri, every other day, 5 days on and 2 off, or 3 times a week. Off days never read as missed. Planned for 2.4.
+A nutrient can follow a schedule instead of every day: Mon / Wed / Fri, every other day, 5 days on and 2 off, or 3 times a week. Off days never read as missed. Built for 2.4 (phases 1–5: PRs #231–#238 and the shipping PR).
 
 Decided with the user on 2026-10-23: all four kinds below, off days in a collapsed **Not today** section on Today, and screens built from existing patterns (no designer mockups). This document is the spec to build from; the build phases are at the end.
 

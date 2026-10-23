@@ -1,6 +1,7 @@
 import Foundation
 
-/// What nutrx Pro adds (docs/pro/PLAN.md, D5 order, then courses from 2.2), as the paywall and the Pro screen list them.
+/// What nutrx Pro adds (docs/pro/PLAN.md, D5 order, then courses from 2.2 and schedules from 2.4), as the paywall and the
+/// Pro screen list them.
 enum ProFeature: String, CaseIterable, Identifiable {
     case supply
     case scan
@@ -8,6 +9,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
     case health
     case report
     case courses
+    case schedules
 
     var id: Self { self }
 
@@ -19,6 +21,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .health: "Trends with Apple Health"
         case .report: "A report for your doctor"
         case .courses: "Courses"
+        case .schedules: "Schedules"
         }
     }
 
@@ -35,6 +38,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .health: "Intake against sleep and workouts"
         case .report: "A PDF of any period"
         case .courses: "Take something for a set time"
+        case .schedules: "Take something on set days"
         }
     }
 
@@ -47,6 +51,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .health: "Health trends"
         case .report: "doctor reports"
         case .courses: "courses"
+        case .schedules: "schedules"
         }
     }
 
@@ -59,6 +64,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .health: "Apple Health trends"
         case .report: "doctor reports"
         case .courses: "courses"
+        case .schedules: "schedules"
         }
     }
 
@@ -67,7 +73,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         switch self {
         case .scan: "label scanning"
         case .recap: "recaps"
-        case .supply, .health, .report, .courses: nil
+        case .supply, .health, .report, .courses, .schedules: nil
         }
     }
 
@@ -79,6 +85,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .health: "heart"
         case .report: "doc.text"
         case .courses: "hourglass"
+        case .schedules: "calendar.badge.clock"
         }
     }
 
@@ -90,10 +97,12 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .health: .coral
         case .report: .blue
         case .courses: .green
+        case .schedules: .pink
         }
     }
 
-    /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, and courses since 2.2: all six).
+    /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, courses since 2.2 and
+    /// schedules since 2.4: all seven).
     var isShipped: Bool {
         true
     }
