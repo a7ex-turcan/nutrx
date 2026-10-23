@@ -27,11 +27,15 @@ Limits: weekdays need at least one day; every few days is 2–30; on and off is 
 - `isDoseDay(_ day:)` for fixed kinds; every day for **Every day**.
 - For weekly: `weekProgress(metDays:in week:)` → "1 of 3 this week", and whether the week is done.
 - Weeks run **Monday to Sunday**, whatever the locale's first weekday, the same as the weekly recap.
-- Combined with courses in one helper, `Nutrient.counts(on:)`: a day counts when the course includes it (`NutrientCourse.includes`) **and** the schedule makes it a dose day. Every place that reads `NutrientCourse.includes` today (11 files: Today, History, streaks, analytics, the weekday pattern, reminders, stacks, Health insights, the widgets, the Watch list and the complications) moves to it.
+- Courses reach the app through two entry points today, and schedules join each of them differently:
+  - **Counting a day:** `NutrientCourse.includes`, read by `HistoryLog`, `StreakService`, `AnalyticsSummary`, `WeekdayPattern` and `ReminderSchedule`. These move to one helper, `Nutrient.counts(on:)`: a day counts when the course includes it **and** the schedule makes it a dose day (for weekly, see below).
+  - **Being on the list:** `Nutrient.isRunning(on:)` (not removed, not ended), read by `TodayViewModel`, `StackLogging`, `HealthInsights`, the widgets' `Provider`, `WatchTodayViewModel` and `NutrxComplication`. **`isRunning` stays schedule-free**, because Siri (`NutrientEntityQuery`) and anything else that must still see every nutrient go by it. The callers that show or log *today's* list also check a new `Nutrient.isDue(on:)`: running, and a dose day (fixed kinds) or a week not yet done (weekly). Today splits its running nutrients into due ones and **Not today**. The widgets, the Watch, the complications and stacks only take due ones.
 
 **Fixed kinds:** a dose day is exactly a day for a daily nutrient. An off day is like a day before `createdAt`: not counted anywhere, never missed, no reminders.
 
-**Weekly:** a day counts **only when the goal was met that day**. It then adds a met goal to the day's score, History and the streak. A day it isn't met isn't a miss, so a weekly nutrient never breaks a daily streak or turns a calendar day amber. Whether the week's count was reached shows where weeks are the unit: analytics ("3 of 4 weeks"), the weekly recap and the report. A week that falls short does **not** break the daily streak: the streak stays a daily idea.
+**Weekly:** a day counts **only when the goal was met that day, and only for the first N met days of its week**. Such a day adds a met goal to the day's score, History and the streak. A day it isn't met isn't a miss, so a weekly nutrient never breaks a daily streak or turns a calendar day amber. Once the count is reached, more met days that week don't count: the nutrient is in Not today, and those logs show under "Also logged". Whether the week's count was reached shows where weeks are the unit: analytics ("3 of 4 weeks"), the weekly recap and the report. A week that falls short does **not** break the daily streak: the streak stays a daily idea.
+
+**Partial weeks:** a week the nutrient doesn't cover on all seven days isn't judged. That's a week where it was created, the weekly schedule was set or a course started, ended or restarted. Today still shows it ("0 of 3 this week") and moves it to Not today once the count is reached. But that week isn't in "3 of 4 weeks", in the recap's weekly line or in the report's weeks met, so a schedule set on a Thursday can't produce a missed week.
 
 ## 3. Changing a schedule doesn't rewrite History
 
@@ -44,7 +48,7 @@ Stored as a short list of `(from day, schedule)` pieces in one field, newest las
 | Place | Fixed kinds (weekdays, cycles) | Weekly |
 |---|---|---|
 | **Today** | On dose days, a normal card. On off days, in **Not today**. | A normal card each day until the week is done, with "1 of 3 this week" on its status line. The day it's done it stays, Done; from the next day it's in **Not today** until Monday. |
-| **Day score** | Counts on dose days. | Counts on a day only once met that day. |
+| **Day score** | Counts on dose days. | Counts on a day only once met that day (one of the week's first N). Until then the card is on Today but outside the ring and "N to go"; its status line reads "1 of 3 this week", so the ring doesn't look like it forgot a goal. Meeting it adds a met segment (3/5 → 4/6). |
 | **History, streaks** | Dose days only. | Met days only, as a met goal. |
 | **Analytics** | Hit rate over dose days. The weekday heatmap only shows weekdays that have dose days; a weekday with none is blank, not 0 %. | Hit rate as weeks: "3 of 4 weeks". The bars stay daily. No weekday heatmap or weakest-day line: there are no set days. |
 | **Weekly recap** | Dose days in the week ("You hit Vitamin D on 3 of 3 days"). | "Vitamin D: 3 of 3 this week". |
@@ -60,7 +64,7 @@ Stored as a short list of `(from day, schedule)` pieces in one field, newest las
 
 ## 5. Today: Not today
 
-A collapsed section at the end of Today, after the groups, like My Nutrients' **Finished**. Its header is "NOT TODAY" with a count and a chevron; its rows have an icon tile, the name and when it's next: "Next: Sun", "Next: tomorrow", "Done this week · back Mon". Tapping a row opens the log sheet, to log anyway. It's collapsed by default, its open state is kept per device (`@AppStorage`), and it's hidden when empty. It isn't shown in the column layouts' side column; on large screens it follows the last group.
+A collapsed section at the end of Today, after the groups, like My Nutrients' **Finished**. It holds running nutrients that aren't due today (`isDue` false). Its header is "NOT TODAY" with a count and a chevron; its rows have an icon tile, the name and when it's next: "Next: Sun", "Next: tomorrow", "Done this week · back Mon". Tapping a row opens the log sheet, to log anyway. It's collapsed by default, its open state is kept per device (`@AppStorage`), and it's hidden when empty. It isn't shown in the column layouts' side column; on large screens it follows the last group.
 
 ## 6. Setting a schedule
 
@@ -79,7 +83,7 @@ A collapsed section at the end of Today, after the groups, like My Nutrients' **
 
 ## 7. Data
 
-- `Nutrient.scheduleRaw: String = ""`. Empty means every day; otherwise the pieces of §3, for example `20261023=days:1,4,6` or `20261023=cycle:5:2;20261101=week:3`. Weekdays use `Calendar` numbers (1 = Sunday).
+- `Nutrient.scheduleRaw: String = ""`. Empty means every day; otherwise the pieces of §3, for example `20261023=days:2,4,6` (Mon, Wed, Fri) or `20261023=cycle:5:2;20261101=week:3`. Weekdays use `Calendar` numbers (1 = Sunday, 2 = Monday).
 - It's a CloudKit-safe scalar with a default. **Its field (`CD_scheduleRaw`) must be in the production CloudKit schema before the first TestFlight build with it:**
   - Development is imported with `cktool`, as for courses.
   - Production is the user's Console deploy.
@@ -92,8 +96,8 @@ Everything runs on the device. There's no advice on what or when to take: the us
 
 ## 9. Build phases (one PR each, in order)
 
-1. **The rule.** `NutrientSchedule`: kinds, encode/decode with history, dose days, week progress. Also `Nutrient.scheduleRaw`, `Nutrient.counts(on:)`, the CloudKit fields file and tests. Development schema with `cktool`; ask the user for the production deploy.
-2. **Fixed kinds everywhere.** Every reader of `NutrientCourse.includes` moves to `counts(on:)`, plus the Not today section, the heatmap blanks and the recap wording. With a debug-only way to set a schedule, it can be tested before the sheet exists.
+1. **The rule.** `NutrientSchedule`: kinds, encode/decode with history, dose days, week progress and partial weeks. Also `Nutrient.scheduleRaw`, `Nutrient.counts(on:)`, `Nutrient.isDue(on:)`, the CloudKit fields file and tests. Development schema with `cktool`; ask the user for the production deploy.
+2. **Fixed kinds everywhere.** The five `NutrientCourse.includes` readers move to `counts(on:)`, and the six list readers add `isDue(on:)` (`isRunning` and Siri stay as they are). Plus the Not today section, the heatmap blanks and the recap wording. With a debug-only way to set a schedule, it can be tested before the sheet exists.
 3. **The Schedule sheet and form row.** Also `ScheduleText` and `ProFeature.schedules`, still not `isShipped`.
 4. **Times a week.** The Today status line, week counting in analytics, the recap and the report, and reminders until the week is done.
 5. **Ship.** `isShipped`, the What's New entry for 2.4, docs (CLAUDE.md, CHANGELOG, ROADMAP), and screenshots in the PRs. The production schema must already be deployed.
