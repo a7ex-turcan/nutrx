@@ -9,8 +9,11 @@ struct ScheduleText {
     /// Today's collapsed section of running nutrients that aren't due today.
     static let notTodayTitle = "Not today"
 
-    /// A Not today row for a weekly schedule whose count is reached (weeks run Monday to Sunday).
-    static let doneThisWeek = "Done this week · back Monday"
+    /// A Not today row for a weekly schedule whose count is reached (weeks run Monday to Sunday): back Monday, or
+    /// "course ends first" when its course is over before then (`nextDue` nil).
+    static func doneThisWeek(nextDue: Date?) -> String {
+        nextDue == nil ? "Done this week · course ends first" : "Done this week · back Monday"
+    }
 
     /// A weekly nutrient's card on Today: "2 of 3 this week".
     static func weekLine(_ week: NutrientSchedule.WeekProgress) -> String {

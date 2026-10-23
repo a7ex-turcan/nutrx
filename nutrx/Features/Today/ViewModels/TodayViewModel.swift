@@ -227,10 +227,10 @@ final class TodayViewModel {
             }
             .map { nutrient in
                 let isWeekDone = nutrient.weekProgress(before: startOfDay)?.isDone == true
-                // A done week is back on Monday; otherwise the next dose day.
+                // A done week is back on Monday, unless its course is over by then; otherwise the next dose day.
                 let nextDue = isWeekDone
-                    ? Calendar.current.date(byAdding: .day, value: 7,
-                                            to: NutrientSchedule.weekStart(of: startOfDay))
+                    ? Calendar.current.date(byAdding: .day, value: 7, to: NutrientSchedule.weekStart(of: startOfDay))
+                        .flatMap { nutrient.hasEnded(by: $0) ? nil : $0 }
                     : nutrient.nextDueDay(after: startOfDay)
                 return NotTodayItem(nutrient: nutrient, total: totalsByID[nutrient.persistentModelID] ?? 0,
                                     nextDue: nextDue, isWeekDone: isWeekDone)

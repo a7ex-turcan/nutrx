@@ -781,6 +781,16 @@ final class NutrientScheduleTests: XCTestCase {
         let item = try XCTUnwrap(viewModel.notToday.first)
         XCTAssertTrue(item.isWeekDone)
         XCTAssertEqual(item.nextDue, cal.date(byAdding: .day, value: 7, to: NutrientSchedule.weekStart(of: today, calendar: cal)))
+        XCTAssertEqual(ScheduleText.doneThisWeek(nextDue: item.nextDue), "Done this week · back Monday")
+
+        // A course whose last day is today is over before Monday.
+        vitaminD.endDate = today
+        try context.save()
+        viewModel.refresh(context: context)
+        let ending = try XCTUnwrap(viewModel.notToday.first)
+        XCTAssertTrue(ending.isWeekDone)
+        XCTAssertNil(ending.nextDue)
+        XCTAssertEqual(ScheduleText.doneThisWeek(nextDue: ending.nextDue), "Done this week · course ends first")
     }
 
     /// A week whose count is reached has no more reminders that week; the next week's are there.
