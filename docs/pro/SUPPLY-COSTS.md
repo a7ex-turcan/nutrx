@@ -21,27 +21,27 @@ Decided with the user on 2026-10-23:
 
 - **A nutrient:** price ÷ bottle amount × daily use × 365 ÷ 12.
   - **Daily use** is supply's own estimate (`SupplyStatus.dailyUse`: the last 14 days' total over the days since the first log in them, once there are at least 3), so a schedule is already in it.
-  - **Without that estimate**, it's the goal (the target, or a range's lower bound) times the share of days that are dose days: weekdays n/7, a cycle on/(on + off), times a week n/7, every day 1. That's the same "at your goal of …" fallback as the Supply sheet's sentence.
+  - **Without that estimate**, it's the goal (the target, or a range's lower bound) times the share of days that are dose days, from the schedule piece in effect today: weekdays n/7, a cycle on/(on + off), times a week n/7, every day 1. The Supply sheet's "at your goal of …" sentence uses the plain target today (`SupplySheet.sentence`); phase 2 moves it onto this daily amount, so the sheet's "about 60 days" and the card's cost agree.
   - **No cost** when there's no price, no supply set, or no use to go on (no history and an "at most" goal).
 - **Totals** add up the nutrients that have a cost and are running: not removed, and their course not ended. They also count those without a price, so the line can say so.
 - **Wording**, in `SupplyText`:
-  - "About $4 a month"; under 10 in the currency, with cents ("About $3.60 a month").
-  - All nutrients: "About $38 a month for 5 nutrients", and "· 2 without a price" when some have supply set but no price.
+  - "About $4 a month". Under 10 in the currency, it uses the currency's own minor units ("About $3.60 a month", "About ¥480 a month"); from 10, whole amounts.
+  - All nutrients: "About $38 a month for 5 nutrients".
   - A stack: "This stack costs about $12 a month".
+  - Either adds "· 2 without a price" when some of its nutrients have supply set but no price.
   - Amounts follow the user's locale.
 
 ## 3. Where it shows
 
 - **The Supply card** (a nutrient's analytics): the cost under the days left, "About $4 a month". It isn't shown when there's no cost.
-- **My Nutrients:** one line at the end of the list, under New group, for Pro users with at least one price set: "About $38 a month for 5 nutrients". It's hidden in Select mode.
-- **A stack's detail:** a line under its nutrients, "This stack costs about $12 a month". That's the sum of the monthly costs of the stack's running nutrients with a price, at each one's own usual use, not the stack's amounts, which are per log. It shows "Not counted: 2 without a price" when some have none.
+- **My Nutrients:** one line at the end of the list, under New group, for Pro users, once at least one nutrient has a cost: "About $38 a month for 5 nutrients". A priced "at most" nutrient with no history has no cost yet, so it doesn't bring the line. It's hidden in Select mode. The running-low share (§4) shows on that line, or on its own when there's no cost to show.
+- **A stack's detail:** a line under its nutrients, "This stack costs about $12 a month · 1 without a price". That's the sum of the monthly costs of the stack's running nutrients with a cost, at each one's own usual use, not the stack's amounts, which are per log. **Stacks are free, so free users see nothing here**: no line and no PRO chip. The stack screen stays as it is for them.
 
 ## 4. Add to list
 
-- **On the Supply card,** when the level is low or out: an **Add to list** button (`square.and.arrow.up`) beside Refilled. It opens the system share sheet with one line of text:
-  - "Vitamin D: 120 × 1,000 IU", or "Vitamin D" when there's no serving size.
-  - Picking Reminders adds it there. The text is plain, so Notes, Messages or Mail work too.
-- **On My Nutrients' total line,** when anything is low or out: "2 running low · Add to list" shares one line per nutrient, the same text, in Today's order.
+- **On the Supply card,** when the level is low or out: an **Add to list** button (`square.and.arrow.up`) beside Refilled. It opens the system share sheet with that nutrient's line (below). Picking Reminders adds it there. The text is plain, so Notes, Messages or Mail work too.
+- **On My Nutrients,** when anything is low or out: "2 running low · Add to list" shares one line per nutrient, the same text, in Today's order. It sits on the total line, or on its own for a Pro user who tracks supply without prices.
+- **The text:** "Vitamin D: 120 × 1,000 IU", the bottle's servings and each serving (`effectiveServingAmount`, so there's always one). It's just "Vitamin D" when the nutrient has no unit, where "120 × 1" would read oddly.
 - **The refill notification** keeps its actions (Refilled, Remind me tomorrow). Tapping it already opens the nutrient's Supply card, where Add to list is.
 - Nothing is stored and no permission is asked. The share sheet is `ShareLink` (no completion needed).
 
@@ -51,11 +51,12 @@ Decided with the user on 2026-10-23:
 - No advice on what or how much to take, and no prices fetched, compared or suggested.
 - Nothing free becomes Pro. Supply is already Pro, and costs and Add to list are part of it.
 - The paywall's Supply row can say so: "Know when a bottle runs out, and what it costs".
+- **If Pro lapses:** prices stay stored, like the rest of the supply setup. The cost lines and Add to list hide with the rest of Supply: the Supply card goes back to its free teaser, and My Nutrients and stacks show nothing.
 
 ## 6. Build phases (one PR each, in order)
 
 1. **The rule.** `supplyPrice`, `SupplyCost` and its wording, with tests. `Tools/CloudKitSchema/fields.txt` and the development schema with `cktool`. **The production schema needs `CD_supplyPrice` before this merges**, because every merge to `main` uploads a TestFlight build.
-2. **Prices and costs.** The Supply sheet's price field, the Supply card's line, My Nutrients' total, a stack's line.
+2. **Prices and costs.** The Supply sheet's price field and its sentence on `SupplyCost`'s daily amount, the Supply card's line, My Nutrients' total, a stack's line.
 3. **Add to list, and shipping.** The Supply card's button, the total line's share, the paywall's Supply subtitle, a 2.5 What's New entry, and the docs (CLAUDE.md, CHANGELOG, ROADMAP).
 
 Each phase comes with simulator checks and screenshots in its PR, as usual.
