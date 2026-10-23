@@ -434,6 +434,19 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertEqual(text.next(nil, today: day(10, 23)), "Course ends first")
     }
 
+    /// The log sheet's line when logging from Not today (#247).
+    func testNotDueNote() {
+        let text = ScheduleText(calendar: calendar, locale: Locale(identifier: "en_GB"))
+        XCTAssertEqual(text.notDueNote(nextDue: day(10, 25), isWeekDone: false, today: day(10, 23)),
+                       "Not due today, so this won't count toward your goal. Next: Sunday.")
+        XCTAssertEqual(text.notDueNote(nextDue: nil, isWeekDone: false, today: day(10, 23)),
+                       "Not due again before its course ends, so this won't count toward your goal.")
+        XCTAssertEqual(text.notDueNote(nextDue: day(10, 26), isWeekDone: true, today: day(10, 23)),
+                       "Done this week, so this won't count toward your goal. Back Monday.")
+        XCTAssertEqual(text.notDueNote(nextDue: nil, isWeekDone: true, today: day(10, 23)),
+                       "Done this week, so this won't count toward your goal.")
+    }
+
     // MARK: Setting a schedule (phase 3): the row, the sheet's footer, the draft
 
     func testSummary() {

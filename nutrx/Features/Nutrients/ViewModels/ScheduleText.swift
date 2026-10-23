@@ -94,6 +94,16 @@ struct ScheduleText {
         return date.formatted(style)
     }
 
+    /// The log sheet's line for a nutrient in Not today: what's logged is kept but doesn't count (#247).
+    func notDueNote(nextDue: Date?, isWeekDone: Bool, today: Date) -> String {
+        let doesntCount = "so this won't count toward your goal"
+        if isWeekDone {
+            return nextDue == nil ? "Done this week, \(doesntCount)." : "Done this week, \(doesntCount). Back Monday."
+        }
+        guard nextDue != nil else { return "Not due again before its course ends, \(doesntCount)." }
+        return "Not due today, \(doesntCount). \(next(nextDue, today: today))."
+    }
+
     /// A Not today row: "Next: tomorrow", "Next: Sunday" within the week, "Next: Mon 2 Nov" after that, or
     /// "Course ends first" when its course is over before its next day.
     func next(_ nextDue: Date?, today: Date) -> String {

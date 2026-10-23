@@ -269,6 +269,7 @@ struct TodayView: View {
         .sheet(item: $nutrientToLog) { nutrient in
             LogSheet(
                 nutrient: nutrient,
+                notDueNote: notDueNote(for: nutrient),
                 onLog: { amount, note in
                     withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.2))) {
                         viewModel.addCustomAmount(amount, to: nutrient, note: note, context: modelContext)
@@ -560,6 +561,13 @@ struct TodayView: View {
                 notTodaySection
                     .padding(.top, Theme.Spacing.sectionTop - Theme.Spacing.cardGap)
             }
+        }
+    }
+
+    /// For a nutrient in Not today, the log sheet's line saying the log won't count today (#247).
+    private func notDueNote(for nutrient: Nutrient) -> String? {
+        viewModel.notToday.first { $0.id == nutrient.persistentModelID }.map {
+            ScheduleText().notDueNote(nextDue: $0.nextDue, isWeekDone: $0.isWeekDone, today: .now)
         }
     }
 
