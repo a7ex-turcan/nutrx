@@ -38,9 +38,9 @@ enum ProText {
         case .monthly: ["Monthly", "\(price) a month"]
         case .lifetime: ["Lifetime", "\(price) once"]
         }
-        // Each part held together with no-break spaces, so a line only breaks at a dot: at xLarge on an iPhone SE
-        // it read "… · 1" / "week free".
-        return parts.map { $0.replacingOccurrences(of: " ", with: "\u{00A0}") }.joined(separator: " · ")
+        // Each part held together with no-break spaces, and each dot kept on the line it ends, so a line only breaks
+        // after a dot: at xLarge on an iPhone SE it read "… · 1" / "week free".
+        return parts.map { $0.replacingOccurrences(of: " ", with: "\u{00A0}") }.joined(separator: "\u{00A0}· ")
     }
 
     /// "Supply, label scanning, weekly recaps, Apple Health trends, doctor reports and courses are on. Nothing you

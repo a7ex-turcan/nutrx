@@ -24,11 +24,11 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(summary(.lifetime, "$29.99"), "Lifetime · $29.99 once")
     }
 
-    /// A line breaks only at a dot, never inside "1 week free" or "14,99 € a year".
+    /// A line breaks only after a dot, never before one or inside "1 week free" or "14,99 € a year".
     func testPlanSummaryBreaksOnlyBetweenParts() {
         let text = ProText.planSummary(plan: .yearly, price: "14,99 €", trialEligible: true)
-        XCTAssertEqual(text.components(separatedBy: " · ").count, 3)
-        XCTAssertFalse(text.replacingOccurrences(of: " · ", with: "").contains(" "))
+        XCTAssertEqual(text.components(separatedBy: "\u{00A0}· ").count, 3)
+        XCTAssertEqual(text.filter { $0 == " " }.count, 2, "the only breakable spaces are the two after the dots")
     }
 
     func testTermsSayWhatsChargedAndHowToCancel() {
