@@ -40,6 +40,9 @@ final class Nutrient {
     var supplyRefilledAt: Date? = nil
     /// Remind when this many days are left.
     var refillReminderDays: Int = 7
+    /// What one bottle (the supply above) costs, in the user's currency; nil = no price (#134,
+    /// docs/pro/SUPPLY-COSTS.md). Only the number is stored: no currency, no conversion.
+    var supplyPrice: Double? = nil
 
     /// The last day of a set course (nutrx Pro, #99), at the start of that day; nil = ongoing. From the next day the
     /// nutrient is off Today, its reminders stop, and History, streaks and analytics count it only up to here.
