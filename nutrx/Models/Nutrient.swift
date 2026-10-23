@@ -435,7 +435,7 @@ extension Nutrient {
               let end = calendar.date(byAdding: .day, value: throughDay ? 1 : 0, to: start) else { return nil }
         let monday = NutrientSchedule.weekStart(of: start, calendar: calendar)
         var totals: [Date: Double] = [:]
-        for record in intakeRecords ?? [] where record.date >= monday && record.date < end {
+        for record in records(from: monday, to: end) {
             totals[calendar.startOfDay(for: record.date), default: 0] += record.amount
         }
         let gaps = courseGaps(calendar: calendar)
@@ -444,6 +444,19 @@ extension Nutrient {
                 && NutrientCourse.includes(endDate, gaps: gaps, day: date, calendar: calendar) ? date : nil
         }
         return schedule.weekProgress(on: start, metDays: metDays, calendar: calendar)
+    }
+
+    /// Its records from `start` up to `end`, fetched by date when it's in a store, so reading one week doesn't load
+    /// years of history (#249: a Today refresh, the widgets, the Watch and stacks all ask); otherwise the relationship.
+    private func records(from start: Date, to end: Date) -> [IntakeRecord] {
+        if let modelContext {
+            let id = self.id
+            let descriptor = FetchDescriptor<IntakeRecord>(predicate: #Predicate {
+                $0.nutrient?.id == id && $0.date >= start && $0.date < end
+            })
+            if let records = try? modelContext.fetch(descriptor) { return records }
+        }
+        return (intakeRecords ?? []).filter { $0.date >= start && $0.date < end }
     }
 
     /// On Today's list (and the widgets', the Watch's and stacks') on `day`: running and due. A weekly schedule

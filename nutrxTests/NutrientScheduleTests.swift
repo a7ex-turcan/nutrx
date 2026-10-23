@@ -817,6 +817,36 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertEqual(ScheduleText.doneThisWeek(nextDue: ending.nextDue), "Done this week · course ends first")
     }
 
+    /// The week is fetched by date from the store (#249): only this nutrient's records in that week count, however
+    /// long its history.
+    func testWeekProgressReadsOnlyItsOwnWeek() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let magnesium = Nutrient(name: "Magnesium", unit: "mg", step: 400, dailyTarget: 400, sortOrder: 0)
+        magnesium.createdAt = day(1, 1)
+        magnesium.scheduleRaw = NutrientSchedule().setting(.weekly(times: 3), from: day(1, 1), calendar: calendar)
+            .encode(calendar: calendar)
+        let other = Nutrient(name: "Iron", unit: "mg", step: 400, dailyTarget: 400, sortOrder: 1)
+        context.insert(magnesium)
+        context.insert(other)
+        // Most of a year of earlier logs, then Monday and Tuesday this week; the Sunday before is last week.
+        var date = day(1, 5, hour: 9)
+        while date < day(10, 18) {
+            context.insert(IntakeRecord(nutrient: magnesium, amount: 400, date: date))
+            date = calendar.date(byAdding: .day, value: 1, to: date)!
+        }
+        context.insert(IntakeRecord(nutrient: magnesium, amount: 400, date: day(10, 18, hour: 9)))
+        context.insert(IntakeRecord(nutrient: magnesium, amount: 400, date: day(10, 19, hour: 9)))
+        context.insert(IntakeRecord(nutrient: magnesium, amount: 400, date: day(10, 20, hour: 9)))
+        context.insert(IntakeRecord(nutrient: other, amount: 400, date: day(10, 21, hour: 9)))
+        try context.save()
+
+        let week = try XCTUnwrap(magnesium.weekProgress(including: day(10, 21), calendar: calendar))
+        XCTAssertEqual(week, NutrientSchedule.WeekProgress(met: 2, times: 3), "Monday and Tuesday; not Iron's Wednesday")
+        XCTAssertEqual(magnesium.weekProgress(before: day(10, 20), calendar: calendar)?.met, 1, "before Tuesday: Monday")
+        XCTAssertNil(other.weekProgress(including: day(10, 21), calendar: calendar), "not under a weekly schedule")
+    }
+
     /// A week whose count is reached has no more reminders that week; the next week's are there.
     func testRemindersStopForTheRestOfADoneWeek() {
         let plan = ReminderSchedule.Plan(nutrientID: UUID(), times: [.init(hour: 9, minute: 0)], loggedToday: true,
