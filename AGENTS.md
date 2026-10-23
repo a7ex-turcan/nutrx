@@ -8,7 +8,7 @@ Use Xcode 27.1+ for local development (the iOS 27.1 SDK, for the iPhone Duo's in
 
 - `open nutrx.xcodeproj` opens the project in Xcode.
 - `xcodebuild -scheme nutrx -configuration Debug -destination 'generic/platform=iOS' build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO` performs a CLI build without signing.
-- `xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 17'` runs the `nutrxTests` unit tests.
+- `xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=nutrx Duo' -parallel-testing-enabled NO` runs the `nutrxTests` unit tests, serially, on nutrx's own Duo simulator (see CLAUDE.md › Simulators for which simulator does what).
 
 ## Coding Style & Naming Conventions
 Follow SwiftUI and Swift 5 conventions: 4-space indentation, one top-level type per file, `UpperCamelCase` for types, and `lowerCamelCase` for properties and methods. Use `async`/`await`; avoid Combine unless required. The project defaults to `@MainActor` and enables strict concurrency checking, so keep cross-actor access explicit. Put business logic in view models or services, not SwiftUI view bodies.
