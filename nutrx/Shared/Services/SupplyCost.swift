@@ -37,18 +37,17 @@ enum SupplyCost {
         let unpriced: Int
     }
 
-    /// The total for nutrients' monthly costs (nil: supply set, no cost), or nil when none has one.
-    static func total(_ costs: [Double?]) -> Total? {
-        let priced = costs.compactMap { $0 }
-        guard !priced.isEmpty else { return nil }
-        return Total(monthly: priced.reduce(0, +), priced: priced.count, unpriced: costs.count - priced.count)
+    /// The total of some monthly costs, with how many nutrients have supply but no price; nil without a cost.
+    static func total(_ costs: [Double], unpriced: Int) -> Total? {
+        guard !costs.isEmpty else { return nil }
+        return Total(monthly: costs.reduce(0, +), priced: costs.count, unpriced: unpriced)
     }
 }
 
 extension Nutrient {
     /// What its supply costs a month at its usual use (or its goal on dose days), if it has supply and a price.
     func monthlySupplyCost(now: Date = .now, calendar: Calendar = .current) -> Double? {
-        guard supplyPrice != nil, let status = supplyStatus(now: now) else { return nil }
+        guard supplyPrice != nil, let status = supplyStatus(now: now, calendar: calendar) else { return nil }
         let share = SupplyCost.doseShare(schedule(calendar: calendar).kind(on: now, calendar: calendar))
         let use = SupplyCost.dailyUse(estimate: status.dailyUse, goalType: goalType, target: dailyTarget,
                                       doseShare: share)
@@ -58,9 +57,11 @@ extension Nutrient {
 
 extension SupplyCost {
     /// The monthly total of the nutrients that have supply set and are running (not removed, course not ended); nil
-    /// when none of them has a cost. Those with supply but no price count as `unpriced`.
+    /// when none of them has a cost. Those with supply but no price count as `unpriced`; a priced one with no cost yet
+    /// (an "at most" goal before there's history) isn't counted either way.
     static func total(of nutrients: [Nutrient], now: Date = .now, calendar: Calendar = .current) -> Total? {
-        total(nutrients.filter { $0.isRunning(on: now, calendar: calendar) && $0.supplySetup != nil }
-            .map { $0.monthlySupplyCost(now: now, calendar: calendar) })
+        let withSupply = nutrients.filter { $0.isRunning(on: now, calendar: calendar) && $0.supplySetup != nil }
+        return total(withSupply.compactMap { $0.monthlySupplyCost(now: now, calendar: calendar) },
+                     unpriced: withSupply.filter { $0.supplyPrice == nil }.count)
     }
 }

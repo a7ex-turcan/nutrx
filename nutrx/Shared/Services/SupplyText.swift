@@ -43,7 +43,8 @@ enum SupplyText {
     static func money(_ amount: Double, locale: Locale = .current) -> String {
         let code = locale.currency?.identifier ?? "USD"
         let style = Decimal.FormatStyle.Currency(code: code, locale: locale)
-        return Decimal(amount).formatted(amount < 10 ? style : style.precision(.fractionLength(0)))
+        // Judged after rounding to cents, so 9.996 shows as "$10" like the amounts from 10, not "$10.00".
+        return Decimal(amount).formatted((amount * 100).rounded() < 1000 ? style : style.precision(.fractionLength(0)))
     }
 
     /// The Supply card: "About $4.20 a month".

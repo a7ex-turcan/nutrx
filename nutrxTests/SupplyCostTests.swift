@@ -33,14 +33,14 @@ final class SupplyCostTests: XCTestCase {
     }
 
     func testTotals() {
-        XCTAssertEqual(SupplyCost.total([4, nil, 6, nil]), SupplyCost.Total(monthly: 10, priced: 2, unpriced: 2))
-        XCTAssertNil(SupplyCost.total([nil, nil]), "no prices, no line")
-        XCTAssertNil(SupplyCost.total([]))
+        XCTAssertEqual(SupplyCost.total([4, 6], unpriced: 2), SupplyCost.Total(monthly: 10, priced: 2, unpriced: 2))
+        XCTAssertNil(SupplyCost.total([], unpriced: 2), "no costs, no line")
     }
 
     func testWording() {
         XCTAssertEqual(SupplyText.money(38.4, locale: enUS), "$38")
         XCTAssertEqual(SupplyText.money(3.6, locale: enUS), "$3.60")
+        XCTAssertEqual(SupplyText.money(9.996, locale: enUS), "$10", "rounds to 10, so it's shown whole")
         XCTAssertEqual(SupplyText.monthlyCost(6.08, locale: enUS), "About $6.08 a month")
         XCTAssertEqual(SupplyText.totalCost(.init(monthly: 38.2, priced: 5, unpriced: 0), locale: enUS),
                        "About $38 a month for 5 nutrients")
@@ -79,7 +79,13 @@ final class SupplyCostTests: XCTestCase {
         ended.supplyPrice = 9
         ended.endDate = calendar.date(byAdding: .day, value: -3, to: calendar.startOfDay(for: now))
         let noSupply = Nutrient(name: "Water", unit: "L", step: 0.5, dailyTarget: 2.5, sortOrder: 3)
-        [vitaminD, omega, ended, noSupply].forEach(context.insert)
+        // Priced, but an "at most" goal with no history: no cost yet, and not "without a price" either.
+        let caffeine = Nutrient(name: "Caffeine", unit: "mg", step: 100, dailyTarget: 400, sortOrder: 4)
+        caffeine.goalTypeRaw = GoalType.maximum.rawValue
+        caffeine.supplyServings = 50
+        caffeine.supplyRefilledAt = vitaminD.supplyRefilledAt
+        caffeine.supplyPrice = 8
+        [vitaminD, omega, ended, noSupply, caffeine].forEach(context.insert)
         try context.save()
 
         // No history: Vitamin D at its goal, 2,000 IU a day of a 120,000 IU bottle.
@@ -87,9 +93,10 @@ final class SupplyCostTests: XCTestCase {
         XCTAssertEqual(cost, 12.0 / 60 * 365 / 12, accuracy: 1e-6)
         XCTAssertNil(omega.monthlySupplyCost(now: now), "no price")
 
-        let total = try XCTUnwrap(SupplyCost.total(of: [vitaminD, omega, ended, noSupply], now: now))
-        XCTAssertEqual(total.priced, 1, "Iron's course has ended; Water has no supply")
-        XCTAssertEqual(total.unpriced, 1, "Omega-3")
+        XCTAssertNil(caffeine.monthlySupplyCost(now: now))
+        let total = try XCTUnwrap(SupplyCost.total(of: [vitaminD, omega, ended, noSupply, caffeine], now: now))
+        XCTAssertEqual(total.priced, 1, "Iron's course has ended; Water has no supply; Caffeine has no cost yet")
+        XCTAssertEqual(total.unpriced, 1, "Omega-3 only: Caffeine has a price")
         XCTAssertEqual(total.monthly, cost, accuracy: 1e-9)
     }
 }

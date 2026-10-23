@@ -129,10 +129,10 @@ extension Nutrient {
     }
 
     /// The supply status from this nutrient's own records, if supply is set.
-    func supplyStatus(now: Date = .now) -> SupplySchedule.Status? {
+    func supplyStatus(now: Date = .now, calendar: Calendar = .current) -> SupplySchedule.Status? {
         guard let setup = supplySetup else { return nil }
         let logs = (intakeRecords ?? []).map { SupplySchedule.Log(date: $0.date, amount: $0.amount) }
-        return SupplySchedule.status(setup: setup, logs: logs, now: now)
+        return SupplySchedule.status(setup: setup, logs: logs, now: now, calendar: calendar)
     }
 
     /// "Refilled": the count starts again from a full bottle.
