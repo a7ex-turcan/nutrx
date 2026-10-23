@@ -258,12 +258,21 @@ def main():
 
     try:
         build = archive_and_upload(version, number, archive, steps)
-        finish(build, number, tag, commit, what_to_test, args.testers, steps)
+        try:
+            finish(build, number, tag, commit, what_to_test, args.testers, steps)
+        except Stop as stop:
+            remaining = "; ".join(steps[3:6])
+            raise Stop(f"{stop}\nBuild {number} is uploaded and VALID: finish steps 4 to 6 by hand ({remaining}).")
     finally:
         print(f"7. {steps[6]}")
-        churned = [path for path in git("diff", "--name-only", "--", "*.xcscheme").splitlines() if "Watch" in path]
-        if churned:
-            git("checkout", "--", *churned)
+        # Reported, not raised: a stop already on its way out is the one that matters.
+        try:
+            churned = [path for path in git("diff", "--name-only", "--", "*.xcscheme").splitlines()
+                       if "Watch" in path]
+            if churned:
+                git("checkout", "--", *churned)
+        except Stop as stop:
+            print(f"  ! Couldn't put the Watch schemes back: {stop}", file=sys.stderr)
     print(f"Done: nutrx {version} ({number}) is on TestFlight, tagged {tag}.")
 
 
