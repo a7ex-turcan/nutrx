@@ -28,7 +28,14 @@ struct DoctorReport: Equatable {
         /// Apple Health trend sentences, when the report includes them.
         var trends: [String] = []
 
-        var hitRate: Double? { countedDays > 0 ? Double(metDays) / Double(countedDays) : nil }
+        /// Under a weekly schedule (#132): the whole weeks in the period and how many reached their count. The section
+        /// then shows "Weeks met" instead of a day-by-day hit rate, which would always read 100 %.
+        var weeks: AnalyticsWeeks? = nil
+
+        var hitRate: Double? {
+            if let weeks { return weeks.total > 0 ? Double(weeks.met) / Double(weeks.total) : nil }
+            return countedDays > 0 ? Double(metDays) / Double(countedDays) : nil
+        }
     }
 
     struct Note: Equatable {
@@ -101,10 +108,14 @@ struct DoctorReport: Equatable {
                 if goal.isMet { met += 1 }
                 days.append(Day(date: result.date, total: goal.total, isMet: goal.isMet))
             }
-            return Section(id: id, name: names[id] ?? "", unit: units[id] ?? "", goalType: nutrient.goalType,
-                           target: nutrient.target, upperBound: nutrient.upperBound, days: days,
-                           countedDays: counted, metDays: met, daysLogged: daysLogged,
-                           average: counted > 0 ? sum / Double(counted) : nil)
+            var section = Section(id: id, name: names[id] ?? "", unit: units[id] ?? "", goalType: nutrient.goalType,
+                                  target: nutrient.target, upperBound: nutrient.upperBound, days: days,
+                                  countedDays: counted, metDays: met, daysLogged: daysLogged,
+                                  average: counted > 0 ? sum / Double(counted) : nil)
+            if nutrient.schedule.weeklyTimes(on: last, calendar: calendar) != nil {
+                section.weeks = weeks(of: id, from: first, through: last, log: log)
+            }
+            return section
         }
 
         let counted = sections.reduce(0) { $0 + $1.countedDays }
@@ -115,7 +126,10 @@ struct DoctorReport: Equatable {
         var longest = 0, run = 0
         for result in results {
             let goals = result.goals.filter { includedSet.contains($0.nutrientID) }
-            if result.hasEntries, !goals.isEmpty, goals.allSatisfy(\.isMet) {
+            // No included goal counted that day (a rest day, a weekly one's off day, #132): neither breaks nor extends
+            // the run.
+            if goals.isEmpty { continue }
+            if result.hasEntries, goals.allSatisfy(\.isMet) {
                 run += 1
                 longest = max(longest, run)
             } else {
@@ -140,5 +154,25 @@ struct DoctorReport: Equatable {
         let end = calendar.date(byAdding: .day, value: -1, to: startOfToday)!
         let start = calendar.date(byAdding: .day, value: -days, to: startOfToday)!
         return (start, end)
+    }
+}
+
+extension DoctorReport {
+    /// A weekly nutrient's whole weeks in the period (Monday to Sunday, both inside it), judged as in analytics.
+    static func weeks(of nutrientID: UUID, from first: Date, through last: Date, log: HistoryLog) -> AnalyticsWeeks {
+        let calendar = log.calendar
+        var monday = NutrientSchedule.weekStart(of: first, calendar: calendar)
+        if monday < first, let next = calendar.date(byAdding: .day, value: 7, to: monday) { monday = next }
+        var met = 0
+        var total = 0
+        while let sunday = calendar.date(byAdding: .day, value: 6, to: monday), sunday <= last {
+            if let result = log.weekResult(of: nutrientID, weekStarting: monday) {
+                total += 1
+                if result.isDone { met += 1 }
+            }
+            guard let next = calendar.date(byAdding: .day, value: 7, to: monday) else { break }
+            monday = next
+        }
+        return AnalyticsWeeks(met: met, total: total)
     }
 }

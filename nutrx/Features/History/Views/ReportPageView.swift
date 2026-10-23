@@ -215,7 +215,12 @@ struct ReportPageView: View {
             .frame(height: 26)
             Spacer().frame(height: 8)
             HStack(spacing: 9) {
-                statBox("Hit rate", text.percent(section.hitRate))
+                // A weekly schedule (#132) is judged by the week.
+                if let weeks = section.weeks {
+                    statBox("Weeks met", text.weeksMet(weeks))
+                } else {
+                    statBox("Hit rate", text.percent(section.hitRate))
+                }
                 statBox("Average", text.average(section))
                 statBox("Days logged", "\(section.daysLogged)")
             }

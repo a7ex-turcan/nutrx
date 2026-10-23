@@ -914,7 +914,10 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
 - **Phase 4a (counting times a week):** a weekly nutrient counts on a day only once met, among its week's first N (`NutrientSchedule.weeklyCountedDays`, `hasWeekly`).
   - **History and streaks:** `HistoryLog` (`weeklyCounted`, built in `init` from the totals, skipping excluded days and days outside the course) and `StreakService` add those days to the due nutrients. An unmet or extra day is a rest day, so a weekly nutrient never breaks a streak.
   - **Analytics:** a day is tracked when counted; `AnalyticsSummary.weeks` (`AnalyticsWeeks`) judges the weeks that **ended** in the period (Sunday in it, before today) and were wholly under the weekly schedule and the course. So 7 days judges last week, and the hit rate reads "60 %, 3 of 5 weeks" (`AnalyticsStat`). There's no weekday heatmap under a weekly schedule.
-- Still to come: the recap and report for times a week (4b), Today, the lists, reminders and the sheet option (4c), and shipping (phase 5).
+- **Phase 4b (the recap and the report):** `HistoryLog.weekResult(of:weekStarting:through:)` is a weekly nutrient's week (counted days, its count). It's nil for a week that isn't wholly under the weekly schedule and the course, so partial weeks aren't judged.
+  - **The recap:** nutrients weekly on any day of the week stay in the goal totals (their counted days) but out of `nutrients`, so they're never steadiest, slipped or "every day" (a day-by-day rate would read 100 %). `WeeklyRecap.weekly` (`WeeklyGoal`) gives each judged one a sentence: "Vitamin D: 2 of 3 this week.", or "… so far this week." while Sunday isn't in yet (`isWeekOver`). Their numbers are in `factNumbers`.
+  - **The report:** a section under a weekly schedule on the period's last day gets `weeks` (`DoctorReport.weeks`: whole Monday–Sunday weeks inside the period). Its box reads "Weeks met" with "3 of 4" (`ReportText.weeksMet`), and `hitRate` (the summary table) is the share of weeks. The longest run of full days steps over rest days.
+- Still to come: Today, the lists, reminders and the sheet option (4c), and shipping (phase 5).
 
 ### nutrx Pro: Report for your doctor (phase 8)
 
