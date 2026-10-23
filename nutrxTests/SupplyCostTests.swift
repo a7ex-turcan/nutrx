@@ -59,6 +59,16 @@ final class SupplyCostTests: XCTestCase {
                        "3,60 €")
     }
 
+    /// Add to list's text (#134).
+    func testListLines() {
+        XCTAssertEqual(SupplyText.listLine(name: "Vitamin D", servings: 120, servingAmount: 1000, unit: "IU", locale: enUS),
+                       "Vitamin D: 120 × 1,000 IU")
+        XCTAssertEqual(SupplyText.listLine(name: "Creatine", servings: 60, servingAmount: 5, unit: "", locale: enUS),
+                       "Creatine", "no unit: just the name")
+        XCTAssertEqual(SupplyText.runningLowShare(2), "2 running low · Add to list")
+        XCTAssertEqual(SupplyText.runningLowTitle(1), "1 running low")
+    }
+
     /// From a nutrient: its own logs' daily use, or its goal on dose days without history; only running nutrients
     /// with supply count toward a total.
     func testNutrientsCostAndTotal() throws {
@@ -98,5 +108,11 @@ final class SupplyCostTests: XCTestCase {
         XCTAssertEqual(total.priced, 1, "Iron's course has ended; Water has no supply; Caffeine has no cost yet")
         XCTAssertEqual(total.unpriced, 1, "Omega-3 only: Caffeine has a price")
         XCTAssertEqual(total.monthly, cost, accuracy: 1e-9)
+
+        // Running low: Iron's course has ended, so it isn't on the list even with its bottle nearly gone.
+        XCTAssertEqual(vitaminD.supplyListLine?.hasPrefix("Vitamin D: 120 × "), true)
+        XCTAssertNil(noSupply.supplyListLine)
+        XCTAssertFalse(vitaminD.isRunningLow(now: now), "no history yet: not low")
+        XCTAssertFalse(ended.isRunningLow(now: now))
     }
 }

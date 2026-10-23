@@ -55,6 +55,21 @@ extension Nutrient {
     }
 }
 
+extension Nutrient {
+    /// What Add to list shares for this bottle (#134), if supply is set.
+    var supplyListLine: String? {
+        guard let setup = supplySetup else { return nil }
+        return SupplyText.listLine(name: name, servings: setup.servings, servingAmount: setup.servingAmount, unit: unit)
+    }
+
+    /// Running, with supply set, and low or out: on My Nutrients' "running low" share (#134).
+    func isRunningLow(now: Date = .now, calendar: Calendar = .current) -> Bool {
+        guard isRunning(on: now, calendar: calendar), let level = supplyStatus(now: now, calendar: calendar)?.level
+        else { return false }
+        return level == .low || level == .out
+    }
+}
+
 extension SupplyCost {
     /// The monthly total of the nutrients that have supply set and are running (not removed, course not ended); nil
     /// when none of them has a cost. Those with supply but no price count as `unpriced`; a priced one with no cost yet

@@ -37,6 +37,11 @@ nonisolated struct WhatsNew: Equatable {
             Item(title: "Suggest a feature", subtitle: "Tell us what you'd like next, from Settings.",
                  symbolName: "lightbulb", tint: .teal),
         ]),
+        WhatsNew(version: "2.5", items: [
+            Item(title: "What your supply costs",
+                 subtitle: "Add a price per bottle to see what it costs a month, and add what's running low to Reminders.",
+                 symbolName: "creditcard", tint: .amber, isPro: true),
+        ]),
     ]
 
     /// The card to show, if any: the release `appVersion` belongs to (its first two numbers), with only the items
