@@ -747,11 +747,13 @@ final class NutrientScheduleTests: XCTestCase {
         viewModel.refresh(context: context)
         let card = try XCTUnwrap(viewModel.groupSections.flatMap(\.intakes).first { $0.nutrient.name == "Iron" })
         XCTAssertEqual(card.weekly, NutrientSchedule.WeekProgress(met: 0, times: 2))
+        XCTAssertFalse(card.isGoalToday, "the group chips count through this too")
         XCTAssertEqual(viewModel.dayScore.total, 1, "not a goal of the day until it's met")
 
         viewModel.addCustomAmount(18, to: iron, context: context)
         let logged = try XCTUnwrap(viewModel.groupSections.flatMap(\.intakes).first { $0.nutrient.name == "Iron" })
         XCTAssertEqual(logged.weekly, NutrientSchedule.WeekProgress(met: 1, times: 2))
+        XCTAssertTrue(logged.isGoalToday)
         XCTAssertEqual(viewModel.dayScore.total, 2)
         XCTAssertEqual(viewModel.dayScore.met, 1)
     }

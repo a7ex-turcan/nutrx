@@ -664,7 +664,8 @@ struct TodayView: View {
     }
 
     private func groupHeader(_ section: TodayViewModel.GroupSection) -> some View {
-        let score = DayScore(progresses: section.intakes.map(\.progress))
+        // As in the day score: an unmet weekly nutrient (#132) isn't a goal of the day.
+        let score = DayScore(progresses: section.intakes.filter(\.isGoalToday).map(\.progress))
         return GroupHeader(
             name: section.group.name,
             met: score.met,

@@ -32,6 +32,8 @@ final class DayScoreTests: XCTestCase {
     func testNoGoalsIsNothingDueToday() {
         let score = DayScore(met: 0, total: 0)
         XCTAssertEqual(score.title, "Nothing due today")
+        // Only weekly nutrients on Today, none met yet (#132): they're shown, but no goal of the day yet.
+        XCTAssertEqual(DayScore(met: 0, total: 0, weeklyShown: 1).title, "Only weekly goals today")
         XCTAssertEqual(score.remaining, 0)
     }
 

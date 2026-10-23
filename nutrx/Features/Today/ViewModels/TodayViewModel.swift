@@ -14,6 +14,10 @@ final class TodayViewModel {
 
         var progress: GoalProgress { GoalProgress(nutrient: nutrient, current: total) }
 
+        /// A goal of the day: a weekly one (#132) only once it's met today. The day score and the group chips both
+        /// count through this, so they can't disagree.
+        var isGoalToday: Bool { weekBefore == nil || progress.countsAsMet }
+
         /// "2 of 3 this week", today included once its goal is met.
         var weekly: NutrientSchedule.WeekProgress? {
             weekBefore.map { week in
@@ -57,9 +61,9 @@ final class TodayViewModel {
     /// Met vs. total across every nutrient shown today (collapsed groups included). A weekly one (#132) counts only
     /// once met today: until then it's on Today but not a goal of the day.
     var dayScore: DayScore {
-        DayScore(progresses: groupSections.flatMap(\.intakes)
-            .filter { $0.weekBefore == nil || $0.progress.countsAsMet }
-            .map(\.progress))
+        let intakes = groupSections.flatMap(\.intakes)
+        return DayScore(progresses: intakes.filter(\.isGoalToday).map(\.progress),
+                        weeklyShown: intakes.filter { !$0.isGoalToday }.count)
     }
 
     /// The next reminder still to come today: a shown nutrient's reminder, unless that nutrient is already
@@ -146,7 +150,9 @@ final class TodayViewModel {
         )
         guard let fetched = try? context.fetch(nutrientDescriptor) else { return }
         let running = fetched.filter { $0.isRunning(on: startOfDay) }
+        // Decided once per refresh: a weekly schedule reads its week from its logs.
         let nutrients = running.filter { $0.isDue(on: startOfDay) }
+        let dueIDs = Set(nutrients.map(\.persistentModelID))
 
         // Fetch all groups
         let groupDescriptor = FetchDescriptor<NutrientGroup>(
@@ -215,13 +221,20 @@ final class TodayViewModel {
         func groupIndex(_ nutrient: Nutrient) -> Int {
             (nutrient.group ?? generalGroup).flatMap { groupOrder[$0.persistentModelID] } ?? Int.max
         }
-        notToday = running.filter { !$0.isDue(on: startOfDay) }
+        notToday = running.filter { !dueIDs.contains($0.persistentModelID) }
             .sorted {
                 (groupIndex($0), $0.groupSortOrder, $0.sortOrder) < (groupIndex($1), $1.groupSortOrder, $1.sortOrder)
             }
-            .map { NotTodayItem(nutrient: $0, total: totalsByID[$0.persistentModelID] ?? 0,
-                                nextDue: $0.nextDueDay(after: startOfDay),
-                                isWeekDone: $0.weekProgress(before: startOfDay)?.isDone == true) }
+            .map { nutrient in
+                let isWeekDone = nutrient.weekProgress(before: startOfDay)?.isDone == true
+                // A done week is back on Monday; otherwise the next dose day.
+                let nextDue = isWeekDone
+                    ? Calendar.current.date(byAdding: .day, value: 7,
+                                            to: NutrientSchedule.weekStart(of: startOfDay))
+                    : nutrient.nextDueDay(after: startOfDay)
+                return NotTodayItem(nutrient: nutrient, total: totalsByID[nutrient.persistentModelID] ?? 0,
+                                    nextDue: nextDue, isWeekDone: isWeekDone)
+            }
     }
 
     func increment(_ nutrient: Nutrient, context: ModelContext) {
