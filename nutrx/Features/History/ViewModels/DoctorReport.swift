@@ -31,6 +31,8 @@ struct DoctorReport: Equatable {
         /// Under a weekly schedule (#132): the whole weeks in the period and how many reached their count. The section
         /// then shows "Weeks met" instead of a day-by-day hit rate, which would always read 100 %.
         var weeks: AnalyticsWeeks? = nil
+        /// That schedule's count: the goal reads "…, 3 times a week" (#248).
+        var weeklyTimes: Int? = nil
 
         var hitRate: Double? {
             if let weeks { return weeks.total > 0 ? Double(weeks.met) / Double(weeks.total) : nil }
@@ -112,8 +114,9 @@ struct DoctorReport: Equatable {
                                   target: nutrient.target, upperBound: nutrient.upperBound, days: days,
                                   countedDays: counted, metDays: met, daysLogged: daysLogged,
                                   average: counted > 0 ? sum / Double(counted) : nil)
-            if nutrient.schedule.weeklyTimes(on: last, calendar: calendar) != nil {
+            if let times = nutrient.schedule.weeklyTimes(on: last, calendar: calendar) {
                 section.weeks = weeks(of: id, from: first, through: last, log: log)
+                section.weeklyTimes = times
             }
             return section
         }

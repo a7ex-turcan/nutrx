@@ -47,11 +47,18 @@ struct ReportText {
         weeks.total > 0 ? "\(weeks.met) of \(weeks.total)" : "—"
     }
 
+    /// The summary table's rate: "81%", or for a weekly section "3 of 4 weeks", so it isn't read as days (#248).
+    func summaryRate(_ section: DoctorReport.Section) -> String {
+        guard let weeks = section.weeks else { return percent(section.hitRate) }
+        guard weeks.total > 0 else { return "—" }
+        return "\(weeksMet(weeks)) \(weeks.total == 1 ? "week" : "weeks")"
+    }
+
     var longestStreak: String { report.longestStreak == 1 ? "1 day" : "\(report.longestStreak) days" }
 
-    /// "At least 4,000 IU", "At most 400 mg", "Between 120–160 g".
+    /// "At least 4,000 IU", "At most 400 mg", "Between 120–160 g"; a weekly one adds ", 3 times a week" (#248).
     func goal(_ section: DoctorReport.Section) -> String {
-        switch section.goalType {
+        let goal = switch section.goalType {
         case .minimum: "At least \(amount(section.target, section.unit))"
         case .maximum: "At most \(amount(section.target, section.unit))"
         case .range:
@@ -61,6 +68,8 @@ struct ReportText {
                 "At least \(amount(section.target, section.unit))"
             }
         }
+        guard let times = section.weeklyTimes else { return goal }
+        return goal + (times == 1 ? ", once a week" : ", \(times) times a week")
     }
 
     func average(_ section: DoctorReport.Section) -> String {

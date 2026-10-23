@@ -689,6 +689,17 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertEqual(section.hitRate, 0.75)
         XCTAssertEqual(ReportText(report: report).weeksMet(AnalyticsWeeks(met: 3, total: 4)), "3 of 4")
         XCTAssertEqual(report.longestStreak, 7, "every counted day met; the rest days in between don't end the run")
+        // The cover's summary table says it's weeks, and the goal says how often (#248).
+        let text = ReportText(report: report)
+        XCTAssertEqual(section.weeklyTimes, 2)
+        XCTAssertEqual(text.summaryRate(section), "3 of 4 weeks")
+        var oneWeek = section
+        oneWeek.weeks = AnalyticsWeeks(met: 0, total: 1)
+        XCTAssertEqual(text.summaryRate(oneWeek), "0 of 1 week")
+        oneWeek.weeks = AnalyticsWeeks(met: 0, total: 0)
+        XCTAssertEqual(text.summaryRate(oneWeek), "—")
+        XCTAssertTrue(text.goal(section).hasSuffix(", 2 times a week"), text.goal(section))
+        XCTAssertTrue(text.goalLine(section).hasPrefix("Goal: at least"), text.goalLine(section))
     }
 
     /// Every daily goal met but the weekly one short: not "every goal", and the weekly line says so.
