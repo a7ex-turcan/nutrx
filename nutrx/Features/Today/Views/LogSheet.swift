@@ -24,6 +24,11 @@ struct LogSheet: View {
     /// nothing covers Log, and it stays under the note.
     @State private var keyboardShown = false
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize: CGFloat = 52
+    /// The sheet's width, the unit's width and the amount's width at `amountFontSize`, so the amount can shrink to
+    /// leave the unit whole (#242).
+    @State private var sheetWidth: CGFloat = 0
+    @State private var unitWidth: CGFloat = 0
+    @State private var amountTextWidth: CGFloat = 0
 
     private enum Field { case amount, note }
 
@@ -63,6 +68,20 @@ struct LogSheet: View {
         let size = min(amountSize, 62)
         let characters = max(amountText.count, 1)
         return characters > 6 ? size * max(6 / CGFloat(characters), 0.5) : size
+    }
+
+    /// `amountFontSize`, smaller when the amount and its unit don't both fit between − and +: at xxxLarge on an
+    /// iPhone SE the unit was squeezed to a sliver ("IU" read "IL", #242). The amount is measured off-screen at
+    /// `amountFontSize`, never at this size, so the measuring can't feed back into itself.
+    private var fittedAmountFontSize: CGFloat {
+        let size = amountFontSize
+        // Between − and +, from the sheet's width (not the row's, which an amount too wide would have widened):
+        // the content's 20 pt margins, the stepper's 12 pt padding, the two 48 pt buttons and their 8 pt spacing.
+        // The text field draws a little wider than its text.
+        let amountRowWidth = sheetWidth - 2 * 20 - 2 * 12 - 2 * 48 - 2 * 8
+        let room = amountRowWidth - unitWidth - 6 - 4
+        guard amountTextWidth > 0, room > 0, amountTextWidth > room else { return size }
+        return max(size * room / amountTextWidth, size * 0.4)
     }
 
     private var amountLabel: String {
@@ -159,7 +178,8 @@ struct LogSheet: View {
                 .coordinateSpace(.named(Self.contentSpace))
                 .id(Self.topID)
             }
-            .scrollDismissesKeyboard(.interactively)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { sheetWidth = $0 }
+        .scrollDismissesKeyboard(.interactively)
             // While typing, Log sits on the keyboard's bar instead, and the field being typed in scrolls into view
             // above it: in the content it ended up under the bar and its Done button on an iPhone SE (#221).
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -257,7 +277,7 @@ struct LogSheet: View {
                     TextField("0", text: $amountText)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .amount)
-                        .font(.system(size: amountFontSize, weight: .bold, design: .rounded))
+                        .font(.system(size: fittedAmountFontSize, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .multilineTextAlignment(.trailing)
                         .fixedSize()
@@ -266,9 +286,20 @@ struct LogSheet: View {
                     Text(nutrient.unit)
                         .font(.system(.title3, design: .rounded, weight: .semibold))
                         .foregroundStyle(Theme.textSecondary)
+                        .fixedSize()
+                        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { unitWidth = $0 }
                 }
                 .lineLimit(1)
                 .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+                .background {
+                    Text(amountText.isEmpty ? "0" : amountText)
+                        .font(.system(size: amountFontSize, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .lineLimit(1)
+                        .fixedSize()
+                        .hidden()
+                        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { amountTextWidth = $0 }
+                }
             }
             .frame(maxWidth: .infinity)
 
