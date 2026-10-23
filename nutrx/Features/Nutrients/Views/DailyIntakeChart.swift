@@ -210,24 +210,42 @@ struct DailyIntakeChart: View {
         }
     }
 
+    /// Noon, the middle of a day's bar: an axis mark there, with labels centred on their marks, sits under its day.
+    private func noon(_ date: Date) -> Date {
+        Calendar.current.date(byAdding: .hour, value: 12, to: Calendar.current.startOfDay(for: date)) ?? date
+    }
+
+    /// The days that get a date on 30 and 90 days: every 7th and every 30th (half as many at accessibility sizes,
+    /// where weekly ones ran into each other), starting half that in, so a date centred on its day never hangs past
+    /// either end of the chart.
+    private var labelledDays: [Date] {
+        let every = days.count <= 30 ? (dynamicTypeSize.isAccessibilitySize ? 14 : 7)
+            : (dynamicTypeSize.isAccessibilitySize ? 45 : 30)
+        return stride(from: every / 2, to: days.count, by: every).map { noon(days[$0].date) }
+    }
+
+    /// Marks at noon with the `.aligned` preset, which centres each label on its mark, so it sits under its own day.
+    /// `AxisValueLabel(centered: true)` centres a label between its mark and the next labelled one, so on 30 / 90 days
+    /// each date sat 3 / about 15 days late (#95). `anchor: .top` is given explicitly: left to its default, Charts
+    /// logs "Custom UnitPoint values are not supported in AxisValueLabel's anchor property".
     @AxisContentBuilder
     private var xAxis: some AxisContent {
         if isWeek {
-            AxisMarks(values: days.map(\.date)) { value in
-                AxisValueLabel(centered: true) {
+            AxisMarks(preset: .aligned, values: days.map { noon($0.date) }) { value in
+                AxisValueLabel(anchor: .top) {
                     if let date = value.as(Date.self) {
                         let isToday = Calendar.current.isDateInToday(date)
-                        Text(isToday ? "Today" : date.formatted(.dateTime.weekday(.narrow)))
+                        // At accessibility sizes "Today" ran past the card and pushed out Thursday's letter.
+                        Text(isToday && !dynamicTypeSize.isAccessibilitySize ? "Today"
+                             : date.formatted(.dateTime.weekday(.narrow)))
                             .font(.caption.weight(isToday ? .bold : .semibold))
                             .foregroundStyle(isToday ? Theme.textPrimary : Theme.textSecondary)
                     }
                 }
             }
         } else {
-            // Half as many dates at accessibility sizes, where weekly ones ran into each other.
-            let large = dynamicTypeSize.isAccessibilitySize
-            AxisMarks(values: .stride(by: .day, count: days.count <= 30 ? (large ? 14 : 7) : (large ? 45 : 30))) { _ in
-                AxisValueLabel(format: .dateTime.day().month(.abbreviated), centered: true)
+            AxisMarks(preset: .aligned, values: labelledDays) { _ in
+                AxisValueLabel(format: .dateTime.day().month(.abbreviated), anchor: .top)
                     .foregroundStyle(Theme.textSecondary)
             }
         }

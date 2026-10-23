@@ -13,6 +13,7 @@ All notable changes to nutrx are documented in this file.
 - **Suggest a feature** — A new row in Settings opens an email to the nutrx team with your app and iOS version filled in. nutrx doesn't track what you do in it, so this is the best way to tell us what you'd like next.
 
 ### Fixes
+- **Chart dates under the right day** — On a nutrient's 30- and 90-day charts, each date now sits under its own day. Before, it sat halfway to the next date: 3 days late on 30 days, and about two weeks late on 90. At the largest text sizes the 7-day chart shows every weekday, with today's letter in bold.
 - **Log button in view on shorter screens** — On the iPhone SE and the folded iPhone Duo, the log sheet opens tall enough to show the Log button, so you no longer have to drag it up first.
 
 ## v2.3 — 2026-10-23
