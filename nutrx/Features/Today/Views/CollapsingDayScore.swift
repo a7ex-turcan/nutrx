@@ -8,6 +8,10 @@ final class DayScoreCardTracker {
     var cardFrame: CGRect?
     /// On screen, where the card's top stops: just under the navigation bar.
     var pinTop: CGFloat?
+    /// Goes up when the collapsed bar is tapped; Today scrolls back to the card (#246).
+    private(set) var scrollBackRequests = 0
+
+    func requestScrollBack() { scrollBackRequests += 1 }
 
     /// The card's top has reached the pin, so the collapsing copy draws it from here on.
     var isCollapsing: Bool {
@@ -60,8 +64,11 @@ struct CollapsingDayScoreOverlay: View {
                                        cardHeight: card.height, visibleHeight: height)
                         .frame(width: card.width)
                         .offset(x: card.minX - origin.x, y: Self.topMargin)
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityHint("Scrolls back to the day score")
+                        .accessibilityAction { tracker.requestScrollBack() }
                     if height <= CollapsingDayScore.barHeight {
-                        TouchBlocker()
+                        TouchBlocker(onTap: tracker.requestScrollBack)
                             .frame(width: geo.size.width, height: Self.topMargin + height)
                     }
                 }
@@ -78,10 +85,31 @@ struct CollapsingDayScoreOverlay: View {
 }
 
 /// Takes the touches under the slim bar. A SwiftUI overlay alone doesn't keep them from a list row's buttons
-/// underneath, which live in the row's own hosting view: a tap on the bar pressed a hidden +.
+/// underneath, which live in the row's own hosting view: a tap on the bar pressed a hidden +. A tap on it scrolls
+/// Today back to the card (#246).
 private struct TouchBlocker: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIView { UIView() }
-    func updateUIView(_ uiView: UIView, context: Context) {}
+    let onTap: () -> Void
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        view.addGestureRecognizer(UITapGestureRecognizer(target: context.coordinator,
+                                                         action: #selector(Coordinator.tapped)))
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        context.coordinator.onTap = onTap
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(onTap: onTap) }
+
+    final class Coordinator: NSObject {
+        var onTap: () -> Void
+
+        init(onTap: @escaping () -> Void) { self.onTap = onTap }
+
+        @objc func tapped() { onTap() }
+    }
 }
 
 /// The day-score card part way to the slim bar: `visibleHeight` of its `cardHeight` showing, down to the 44 pt bar.
@@ -174,6 +202,8 @@ struct CollapsingDayScore: View {
         .cardStyle(fill: Theme.forest, cornerRadius: cornerRadius(progress))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
+        // What shows, not the card's full height that the fading words still take up behind the clip.
+        .contentShape(.accessibility, RoundedRectangle(cornerRadius: cornerRadius(progress), style: .continuous))
     }
 
     private func cornerRadius(_ progress: Double) -> CGFloat {

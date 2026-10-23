@@ -393,6 +393,13 @@ struct TodayView: View {
                         settledLayout = layout
                     }
                 }
+                // A tap on the collapsed day score brings the card back (#246). In the columns the card's 8 pt top
+                // margin is the content's padding, so that scrolls to the content's top; in the list it's the row's.
+                .onChange(of: scoreCardTracker.scrollBackRequests) {
+                    withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.35))) {
+                        proxy.scrollTo(layout == .columns ? Self.columnsTopID : Self.scoreCardID, anchor: .top)
+                    }
+                }
         }
     }
 
@@ -526,6 +533,8 @@ struct TodayView: View {
             .padding(.horizontal, ownClass.minimumMargin)
             .padding(.top, 8)
             .padding(.bottom, 24)
+            // The very top, margin included, for scrolling back to the day score (#246).
+            .background(alignment: .top) { Color.clear.frame(height: 1).id(Self.columnsTopID) }
         }
     }
 
@@ -590,7 +599,11 @@ struct TodayView: View {
             )
         }
         .tracksDayScoreCard(scoreCardTracker, isActive: collapsesScoreCard)
+        .id(Self.scoreCardID)
     }
+
+    private static let scoreCardID = "dayScoreCard"
+    private static let columnsTopID = "columnsTop"
 
     /// The list and the columns collapse the day-score card as they scroll; the side column keeps it in view.
     private var collapsesScoreCard: Bool {
