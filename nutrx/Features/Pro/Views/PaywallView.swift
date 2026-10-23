@@ -277,23 +277,13 @@ struct PaywallView: View {
                     .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .padding(.top, large ? 6 : 0)
                     VStack(alignment: .leading, spacing: large ? 6 : 2) {
-                        let titleRow = large ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
-                                             : AnyLayout(HStackLayout(spacing: 8))
-                        titleRow {
-                            Text(ProText.planTitle(plan))
-                                .font(.headline)
-                                .foregroundStyle(Theme.textPrimary)
-                            if plan == .yearly && trialEligible {
-                                Text("1 WEEK FREE")
-                                    .font(.caption2.weight(.bold))
-                                    .foregroundStyle(Theme.textGreenInk)
-                                    .padding(.horizontal, 7)
-                                    .padding(.vertical, 3)
-                                    .background(Theme.green.opacity(0.16),
-                                                in: RoundedRectangle(cornerRadius: Theme.Radius.tag, style: .continuous))
-                                    // On its own line it keeps its width; beside the name it can still give way.
-                                    .fixedSize(horizontal: large, vertical: false)
+                        // The badge sits beside the name when both fit whole, and under it otherwise (always at
+                        // accessibility sizes): squeezed beside it, it broke over two lines at xxLarge on an iPhone SE.
+                        ViewThatFits(in: .horizontal) {
+                            if !large {
+                                HStack(spacing: 8) { planTitle(plan) }
                             }
+                            VStack(alignment: .leading, spacing: 6) { planTitle(plan) }
                         }
                         Text(ProText.planSubtitle(plan, monthlyEquivalent: plan == .yearly
                                                   ? ProText.monthlyEquivalent(ofYearly: product.price, format: product.priceFormatStyle)
@@ -325,6 +315,24 @@ struct PaywallView: View {
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
+        }
+    }
+
+    /// A plan's name, and "1 WEEK FREE" while the trial applies; the caller puts them side by side or stacked.
+    @ViewBuilder
+    private func planTitle(_ plan: ProAccess.Plan) -> some View {
+        Text(ProText.planTitle(plan))
+            .font(.headline)
+            .foregroundStyle(Theme.textPrimary)
+        if plan == .yearly && trialEligible {
+            Text("1 WEEK FREE")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(Theme.textGreenInk)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Theme.green.opacity(0.16),
+                            in: RoundedRectangle(cornerRadius: Theme.Radius.tag, style: .continuous))
+                .fixedSize()
         }
     }
 
