@@ -235,7 +235,7 @@ struct DailyIntakeChart: View {
                 AxisValueLabel(anchor: .top) {
                     if let date = value.as(Date.self) {
                         let isToday = Calendar.current.isDateInToday(date)
-                        // At accessibility sizes "Today" ran past the card and pushed out Thursday's letter.
+                        // At accessibility sizes "Today" ran past the card and pushed out the letter before it.
                         Text(isToday && !dynamicTypeSize.isAccessibilitySize ? "Today"
                              : date.formatted(.dateTime.weekday(.narrow)))
                             .font(.caption.weight(isToday ? .bold : .semibold))
@@ -279,6 +279,8 @@ private struct DailyIntakeChartPreview: View {
 #Preview("Range, 7 days") {
     DailyIntakeChartPreview(days: 7, goal: AnalyticsGoal(goalType: .range, target: 3000, upperBound: 4500))
 }
+#Preview("90 days") { DailyIntakeChartPreview(days: 90) }
+#Preview("7 days, largest text") { DailyIntakeChartPreview(days: 7).dynamicTypeSize(.accessibility5) }
 #Preview("30 days, largest text") { DailyIntakeChartPreview(days: 30).dynamicTypeSize(.accessibility5) }
 #Preview("Range, largest text") {
     DailyIntakeChartPreview(days: 30, goal: AnalyticsGoal(goalType: .range, target: 3000, upperBound: 10000))
