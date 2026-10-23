@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### Improvements
+- **Suggest a feature** — A new row in Settings opens an email to the nutrx team with your app and iOS version filled in. nutrx doesn't track what you do in it, so this is the best way to tell us what you'd like next.
+
 ### Fixes
 - **Log button in view on shorter screens** — On the iPhone SE and the folded iPhone Duo, the log sheet opens tall enough to show the Log button, so you no longer have to drag it up first.
 

@@ -246,7 +246,7 @@ nutrx/
 │   │
 │   ├── Settings/
 │   │   ├── Views/
-│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Apple Health; Rate nutrx, About) with values, privacy footer.
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Apple Health; Rate nutrx, Suggest a feature, About) with values, privacy footer.
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
@@ -254,7 +254,8 @@ nutrx/
 │   │   │   ├── AppleHealthSettingsView.swift # Settings → Apple Health (Pro): switch, what's read (data found?), privacy, Disconnect.
 │   │   │   └── ProSettingsCard.swift        # Settings' nutrx Pro card (free: Learn more → paywall; Pro: status → ProStatusView).
 │   │   └── ViewModels/
-│   │       └── SettingsSummary.swift        # Row values: "On", "Noon check-in", "No account", group count, profile title.
+│   │       ├── SettingsSummary.swift        # Row values: "On", "Noon check-in", "No account", group count, profile title.
+│   │       └── FeatureSuggestion.swift      # Suggest a feature: the mailto draft to support@nutrx-labs.com with the versions (#142).
 │   │
 │   ├── Pro/                     # nutrx Pro (hidden until phase 4; see nutrx Pro: StoreKit).
 │   │   ├── Views/
@@ -280,7 +281,7 @@ nutrx/
     │   └── Colors.xcassets                 # Named colour sets (Any/Dark) for every token and tint. Shared with widget + Watch targets.
     ├── Extensions/
     │   ├── Animation+ReduceMotion.swift    # Animation.unlessReduceMotion(_:_:) — nil when the passed Reduce Motion flag is on.
-    │   ├── Bundle+AppVersion.swift         # CFBundleShortVersionString helper for ReviewService.
+    │   ├── Bundle+AppVersion.swift         # Version and build number (ReviewService, Suggest a feature).
     │   ├── Date+Calendar.swift
     │   └── Double+Formatting.swift
     ├── Components/
@@ -666,6 +667,8 @@ Daily streak tracking, opt-in via `UserPreferences.streaksEnabled` (default `tru
 Uses `SKStoreReviewController` — no custom UI. Triggered after intake actions when any condition is met: streak hits 3/7/14 days, or total intake count crosses 30. Guards: once per app version, 90-day cooldown, account age ≥ 3 days, never on cold launch. Implemented in `ReviewService`.
 
 **Settings → Rate nutrx** doesn't use the system prompt (iOS shows it at most three times a year and never in TestFlight, so a tap could do nothing). It opens the App Store's review page, `ReviewService.writeReviewURL` (`https://apps.apple.com/app/id6760843478?action=write-review`; app ID from App Store Connect), and records the prompt so the automatic one doesn't also ask for this version.
+
+**Settings → Suggest a feature** (#142), under Rate nutrx: nutrx has no analytics, so this and reviews are how we hear what people want. It opens a mail to `support@nutrx-labs.com` (the address on the website's support and privacy pages) with the subject "nutrx feature idea" and, under room to write, "nutrx 2.3.1 (152) · iOS 27.0 · iPhone" (`FeatureSuggestion.mailURL`, tested in `FeatureSuggestionTests`). Nothing leaves the device unless the user sends it. When nothing handles `mailto:` (no mail app; the simulator has no Mail), an alert gives the address with Copy Address.
 
 ---
 
