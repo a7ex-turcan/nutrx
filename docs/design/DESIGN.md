@@ -280,7 +280,7 @@ Sheet with Cancel / title / Add (prominent). Live preview row, Name + Unit, "Loo
 
 ### 5.9 Settings — `11-settings.png`
 `Features/Settings/Views/SettingsView.swift`
-Profile card at top (avatar initial in forest circle, name, "Edit profile" → Profile sheet). Rows with Settings-style coloured icon tiles (white SF Symbol on solid colour, 32pt, radius 9): iCloud Sync (blue), Notifications (coral), Streaks (green), Groups (indigo); second group: Rate nutrx (amber), About (grey). Footer: lock symbol + "Private by design. No accounts, no servers, no tracking. Your data lives on your devices and your iCloud."
+Profile card at top (avatar initial in forest circle, name, "Edit profile" → Profile sheet). Rows with Settings-style coloured icon tiles (white SF Symbol on solid colour, 32pt, radius 9): iCloud Sync (blue), Notifications (coral), Streaks (green), Groups (indigo); second group: Rate nutrx (amber), Suggest a feature (teal lightbulb, #142), About (grey). Footer: lock symbol + "Private by design. No accounts, no servers, no tracking. Your data lives on your devices and your iCloud."
 
 ### 5.10 Widgets — `12-widgets.png`
 `NutrxWidgets/…`

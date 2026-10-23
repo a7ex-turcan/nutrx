@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// Settings sheet (DESIGN.md §5.9): profile card, then rows with Settings-style icon tiles — iCloud Sync,
-/// Notifications, Streaks, Groups; Apple Health (Pro); Rate nutrx, About — and the privacy footer.
+/// Notifications, Streaks, Groups; Apple Health (Pro); Rate nutrx, Suggest a feature, About — and the privacy footer.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -20,6 +20,7 @@ struct SettingsView: View {
     @State private var notificationsAllowed = false
     @AppStorage(RecapSchedule.enabledKey) private var weeklyRecapEnabled = true
     @State private var showProStatus = false
+    @State private var showNoMailApp = false
 
     @State private var showProfile = false
     /// Decoded once per photo change, not on every body pass.
@@ -113,25 +114,21 @@ struct SettingsView: View {
             }
 
             Section {
-                Button {
+                outboundRow("Rate nutrx", symbol: "star", color: Theme.SettingsTile.amber,
+                            hint: "Opens the App Store to write a review") {
                     // The App Store's review page, not the system prompt: iOS shows that at most three times a
                     // year (never in TestFlight), so a tap here often did nothing.
                     openURL(ReviewService.writeReviewURL)
                     // The user chose to rate, so ReviewService won't also prompt them for this version.
                     ReviewService.recordPrompt(context: modelContext)
-                } label: {
-                    HStack {
-                        row("Rate nutrx", symbol: "star", color: Theme.SettingsTile.amber, value: nil)
-                        // Leaves the app, so an outbound arrow rather than a navigation chevron.
-                        Image(systemName: "arrow.up.right")
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                            .accessibilityHidden(true)  // the hint says where it goes
-                    }
-                    .contentShape(Rectangle())  // the whole row, not just the icon and title
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint("Opens the App Store to write a review")
+                outboundRow("Suggest a feature", symbol: "lightbulb", color: Theme.SettingsTile.teal,
+                            hint: "Opens an email to the nutrx team") {
+                    // Nothing handles mailto: without a mail app (or in the simulator), so say where to write.
+                    openURL(FeatureSuggestion.mailURL) { accepted in
+                        if !accepted { showNoMailApp = true }
+                    }
+                }
                 NavigationLink {
                     AboutView()
                         .navigationTitle("About")
@@ -162,6 +159,13 @@ struct SettingsView: View {
             NavigationStack {
                 ProfileView()
             }
+        }
+        .alert("No mail app", isPresented: $showNoMailApp) {
+            Button("Copy Address") { UIPasteboard.general.string = FeatureSuggestion.address }
+            Button("OK", role: .cancel) {}
+        } message: {
+            // The address on its own line: after "to" it broke at its hyphen.
+            Text("Send your idea to\n\(FeatureSuggestion.address)")
         }
         .onChange(of: profile?.profileImageData, initial: true) { _, data in
             profileImage = data.flatMap(UIImage.init(data:))
@@ -226,6 +230,23 @@ struct SettingsView: View {
         }
         .frame(minHeight: Theme.minTouchTarget)
         .accessibilityElement(children: .combine)
+    }
+
+    /// A row that leaves the app (Rate nutrx, Suggest a feature): an outbound arrow rather than a navigation chevron.
+    private func outboundRow(_ title: String, symbol: String, color: Color, hint: String,
+                             action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                row(title, symbol: symbol, color: color, value: nil)
+                Image(systemName: "arrow.up.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)  // the hint says where it goes
+            }
+            .contentShape(Rectangle())  // the whole row, not just the icon and title
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint(hint)
     }
 
     private var privacyFooter: some View {
