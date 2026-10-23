@@ -74,14 +74,31 @@ struct LogSheet: View {
     /// iPhone SE the unit was squeezed to a sliver ("IU" read "IL", #242). The amount is measured off-screen at
     /// `amountFontSize`, never at this size, so the measuring can't feed back into itself.
     private var fittedAmountFontSize: CGFloat {
-        let size = amountFontSize
-        // Between − and +, from the sheet's width (not the row's, which an amount too wide would have widened):
-        // the content's 20 pt margins, the stepper's 12 pt padding, the two 48 pt buttons and their 8 pt spacing.
+        // Between − and +, from the sheet's width (not the row's, which an amount too wide would have widened).
+        let rowWidth = sheetWidth - 2 * Self.contentMargin - 2 * Stepper.padding - 2 * Stepper.buttonSize
+            - 2 * Stepper.spacing
         // The text field draws a little wider than its text.
-        let amountRowWidth = sheetWidth - 2 * 20 - 2 * 12 - 2 * 48 - 2 * 8
-        let room = amountRowWidth - unitWidth - 6 - 4
-        guard amountTextWidth > 0, room > 0, amountTextWidth > room else { return size }
-        return max(size * room / amountTextWidth, size * 0.4)
+        let room = rowWidth - unitWidth - Stepper.unitSpacing - 4
+        return Self.fittedAmountSize(base: amountFontSize, textWidth: amountTextWidth, room: room)
+    }
+
+    /// `base`, or smaller in proportion when text `textWidth` wide at `base` doesn't fit in `room`; never below 40%.
+    /// Nothing measured yet, or no room at all: `base`.
+    static func fittedAmountSize(base: CGFloat, textWidth: CGFloat, room: CGFloat) -> CGFloat {
+        guard textWidth > 0, room > 0, textWidth > room else { return base }
+        return max(base * room / textWidth, base * 0.4)
+    }
+
+    /// The sheet content's side margin.
+    private static let contentMargin: CGFloat = 20
+
+    /// The amount stepper's measures, shared by its layout and `fittedAmountFontSize`.
+    private enum Stepper {
+        static let padding: CGFloat = 12
+        static let buttonSize: CGFloat = 48
+        static let spacing: CGFloat = 8
+        /// Between the amount and its unit.
+        static let unitSpacing: CGFloat = 6
     }
 
     private var amountLabel: String {
@@ -172,20 +189,20 @@ struct LogSheet: View {
                     loggedToday
                         .padding(.top, 10)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Self.contentMargin)
                 .padding(.top, 24)
                 .padding(.bottom, 20)
                 .coordinateSpace(.named(Self.contentSpace))
                 .id(Self.topID)
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { sheetWidth = $0 }
-        .scrollDismissesKeyboard(.interactively)
+            .scrollDismissesKeyboard(.interactively)
             // While typing, Log sits on the keyboard's bar instead, and the field being typed in scrolls into view
             // above it: in the content it ended up under the bar and its Done button on an iPhone SE (#221).
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if pinsLog {
                     logButton
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, Self.contentMargin)
                         .padding(.vertical, 8)
                         // Down through the keyboard's bar too, so the content doesn't show around its Done button.
                         .background { Theme.surfaceCard.ignoresSafeArea(.all, edges: .bottom) }
@@ -260,7 +277,7 @@ struct LogSheet: View {
     }
 
     private var amountStepper: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: Stepper.spacing) {
             stepButton(systemName: "minus", label: "Decrease amount") {
                 setAmount(max(0, (amount ?? 0) - nutrient.step))
             }
@@ -273,7 +290,7 @@ struct LogSheet: View {
                     .tracking(0.6)
                     .foregroundStyle(Theme.textSecondary)
 
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: Stepper.unitSpacing) {
                     TextField("0", text: $amountText)
                         .keyboardType(.decimalPad)
                         .focused($focusedField, equals: .amount)
@@ -308,7 +325,7 @@ struct LogSheet: View {
             }
         }
         .padding(.vertical, 18)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, Stepper.padding)
         .background(Theme.surfaceGround, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
     }
 
@@ -320,7 +337,7 @@ struct LogSheet: View {
             Image(systemName: systemName)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Theme.textPrimary)
-                .frame(width: 48, height: 48)
+                .frame(width: Stepper.buttonSize, height: Stepper.buttonSize)
                 .background(Theme.surfaceCard, in: Circle())
                 .shadow(color: Theme.textPrimary.opacity(0.08), radius: 1, y: 1)
         }
