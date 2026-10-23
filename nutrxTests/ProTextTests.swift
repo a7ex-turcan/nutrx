@@ -14,11 +14,21 @@ final class ProTextTests: XCTestCase {
     }
 
     func testPlanSummaryNamesThePlanAndPrice() {
-        XCTAssertEqual(ProText.planSummary(plan: .yearly, price: "$14.99", trialEligible: true),
-                       "Yearly · $14.99 a year · 1 week free")
-        XCTAssertEqual(ProText.planSummary(plan: .yearly, price: "$14.99", trialEligible: false), "Yearly · $14.99 a year")
-        XCTAssertEqual(ProText.planSummary(plan: .monthly, price: "$1.99", trialEligible: true), "Monthly · $1.99 a month")
-        XCTAssertEqual(ProText.planSummary(plan: .lifetime, price: "$29.99", trialEligible: true), "Lifetime · $29.99 once")
+        func summary(_ plan: ProAccess.Plan, _ price: String, trial: Bool = true) -> String {
+            ProText.planSummary(plan: plan, price: price, trialEligible: trial)
+                .replacingOccurrences(of: "\u{00A0}", with: " ")
+        }
+        XCTAssertEqual(summary(.yearly, "$14.99"), "Yearly · $14.99 a year · 1 week free")
+        XCTAssertEqual(summary(.yearly, "$14.99", trial: false), "Yearly · $14.99 a year")
+        XCTAssertEqual(summary(.monthly, "$1.99"), "Monthly · $1.99 a month")
+        XCTAssertEqual(summary(.lifetime, "$29.99"), "Lifetime · $29.99 once")
+    }
+
+    /// A line breaks only after a dot, never before one or inside "1 week free" or "14,99 € a year".
+    func testPlanSummaryBreaksOnlyBetweenParts() {
+        let text = ProText.planSummary(plan: .yearly, price: "14,99 €", trialEligible: true)
+        XCTAssertEqual(text.components(separatedBy: "\u{00A0}· ").count, 3)
+        XCTAssertEqual(text.filter { $0 == " " }.count, 2, "the only breakable spaces are the two after the dots")
     }
 
     func testTermsSayWhatsChargedAndHowToCancel() {
