@@ -875,7 +875,7 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **Pieces:** each kind is a `Piece(from:kind:)`, in effect from its day, and `setting(_:from:)` adds one, so a change never rewrites the days before. Days before the first piece are every day.
   - **Rule:** `isDoseDay`, plus the weekly helpers `weeklyCountedDays` (the first N met days of a Monday-to-Sunday week count), `weekProgress` and `isWholeWeekly` (partial weeks aren't judged).
   - **Stored form:** `Nutrient.scheduleRaw` holds "20261023=days:2,4,6;20261030=week:3". Days are `yyyyMMdd`, shared with the course gaps through `StoredDay`, so a time zone change never moves them.
-  - **On the nutrient:** `counts(on:)` (course and dose day: the daily counting rule) and `isDue(on:weekDone:)` (running and due: Today's list).
+  - **On the nutrient:** `counts(on:)` (course and a fixed-kind dose day: the daily counting rule; never under a weekly schedule, where the caller adds the met days from `weeklyCountedDays`, so an unmet weekly day can't read as a miss) and `isDue(on:weekDone:)` (running and due: Today's list). `WeeklyRecap.weekStart` calls `NutrientSchedule.weekStart`, so recap weeks and schedule weeks are the same.
   - **`isRunning` stays schedule-free,** so Siri still sees every nutrient.
   - **CloudKit:** the field `CD_scheduleRaw` is in the development schema (2026-10-23). Production needs the user's Console deploy before any TestFlight build with it.
 - Nothing reads it yet: phase 2 moves the counting and list readers over.

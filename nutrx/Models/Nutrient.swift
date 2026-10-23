@@ -247,7 +247,8 @@ nonisolated struct NutrientSchedule: Equatable, Sendable {
         case .weekdays(let weekdays):
             return weekdays.contains(calendar.component(.weekday, from: start))
         case .cycle(let on, let off, let cycleStart):
-            guard start >= cycleStart,
+            // A cycle built in code isn't checked like a decoded one; never divide by zero.
+            guard on > 0, off >= 0, start >= cycleStart,
                   let offset = calendar.dateComponents([.day], from: cycleStart, to: start).day else { return false }
             return offset % (on + off) < on
         }
@@ -373,11 +374,14 @@ extension Nutrient {
     }
 
     /// Counted on `day` by the daily rules (History, streaks, analytics, reminders): its course includes the day and
-    /// its schedule makes it a dose day. Under a weekly schedule a day counts only once met, among the week's first
-    /// few (`NutrientSchedule.weeklyCountedDays`); that needs the met days, which only the caller has.
+    /// its schedule makes it a dose day. Never under a weekly schedule: there a day counts only once met, among the
+    /// week's first few (`NutrientSchedule.weeklyCountedDays`), which needs the met days only the caller has. So the
+    /// safe default is "not counted", and an unmet weekly day never reads as a miss.
     func counts(on day: Date, calendar: Calendar = .current) -> Bool {
-        NutrientCourse.includes(endDate, gaps: courseGaps(calendar: calendar), day: day, calendar: calendar)
-            && schedule(calendar: calendar).isDoseDay(day, calendar: calendar)
+        let schedule = self.schedule(calendar: calendar)
+        return NutrientCourse.includes(endDate, gaps: courseGaps(calendar: calendar), day: day, calendar: calendar)
+            && schedule.weeklyTimes(on: day, calendar: calendar) == nil
+            && schedule.isDoseDay(day, calendar: calendar)
     }
 
     /// On Today's list (and the widgets', the Watch's and stacks') on `day`: running and due. `weekDone` is whether a

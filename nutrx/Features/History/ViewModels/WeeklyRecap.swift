@@ -210,9 +210,8 @@ struct WeeklyRecap: Equatable {
 
     /// Recap weeks run Monday to Sunday whatever the locale's first weekday, so the recap lands on Sunday evening.
     static func weekStart(containing date: Date, calendar: Calendar) -> Date {
-        var monday = calendar
-        monday.firstWeekday = 2
-        return monday.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)
+        // The same weeks as weekly schedules (#132), so the two can't drift apart.
+        NutrientSchedule.weekStart(of: date, calendar: calendar)
     }
 
     /// When a week's recap is ready: its Sunday at 18:00.

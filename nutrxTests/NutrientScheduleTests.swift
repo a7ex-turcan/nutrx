@@ -189,6 +189,22 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertTrue(nutrient.counts(on: day(10, 26), calendar: calendar))
     }
 
+    /// Under a weekly schedule no day counts by the daily rule; the caller adds the met ones (`weeklyCountedDays`).
+    func testCountsLeavesWeeklyDaysToTheCaller() {
+        let nutrient = Nutrient(name: "Vitamin D", unit: "IU", step: 50000, dailyTarget: 50000, sortOrder: 0)
+        nutrient.scheduleRaw = "20261021=week:1"
+        XCTAssertTrue(nutrient.counts(on: day(10, 20), calendar: calendar), "every day before the schedule")
+        XCTAssertFalse(nutrient.counts(on: day(10, 21), calendar: calendar))
+        XCTAssertTrue(nutrient.isDue(on: day(10, 21), calendar: calendar), "but due on Today until the week is done")
+    }
+
+    /// A cycle built in code with no days at all is never due, rather than dividing by zero.
+    func testAnEmptyCycleIsNeverDue() {
+        let empty = NutrientSchedule().setting(.cycle(on: 0, off: 0, start: day(10, 19)), from: day(10, 19),
+                                               calendar: calendar)
+        XCTAssertFalse(empty.isDoseDay(day(10, 20), calendar: calendar))
+    }
+
     func testIsDue() {
         let nutrient = Nutrient(name: "Magnesium", unit: "mg", step: 100, dailyTarget: 200, sortOrder: 0)
         nutrient.scheduleRaw = "20261019=days:1"
