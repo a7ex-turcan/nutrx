@@ -20,6 +20,9 @@ struct LogSheet: View {
     @State private var tappedChipID: String? = "1x"
     @State private var note = ""
     @FocusState private var focusedField: Field?
+    /// The on-screen keyboard is up, so Log moves above it (#221). Focus alone isn't enough: with a hardware keyboard
+    /// nothing covers Log, and it stays under the note.
+    @State private var keyboardShown = false
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize: CGFloat = 52
 
     private enum Field { case amount, note }
@@ -138,7 +141,7 @@ struct LogSheet: View {
                     quickAmountChips
                     noteField
                         .id(Field.note)
-                    if focusedField == nil {
+                    if !pinsLog {
                         logButton
                             // Its bottom edge in the content, plus a margin: how tall the half-height detent must be.
                             .onGeometryChange(for: CGFloat.self) {
@@ -160,7 +163,7 @@ struct LogSheet: View {
             // While typing, Log sits on the keyboard's bar instead, and the field being typed in scrolls into view
             // above it: in the content it ended up under the bar and its Done button on an iPhone SE (#221).
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                if focusedField != nil {
+                if pinsLog {
                     logButton
                         .padding(.horizontal, 20)
                         .padding(.vertical, 8)
@@ -174,6 +177,12 @@ struct LogSheet: View {
             // shows down to Log (the scroll stayed where typing left it, cutting off the name at the largest sizes).
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
                 if focusedField == .note { scroll(proxy, to: Field.note, anchor: .bottom) }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                keyboardShown = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                keyboardShown = false
             }
             .task(id: focusedField) {
                 do { try await Task.sleep(for: .milliseconds(350)) } catch { return }
@@ -189,6 +198,9 @@ struct LogSheet: View {
 
     private static let contentSpace = "logSheetContent"
     private static let topID = "logSheetTop"
+
+    /// Log sits above the keyboard rather than under the note.
+    private var pinsLog: Bool { focusedField != nil && keyboardShown }
 
     private func scroll(_ proxy: ScrollViewProxy, to id: some Hashable, anchor: UnitPoint) {
         withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
