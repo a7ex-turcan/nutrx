@@ -271,8 +271,8 @@ struct NutrientFormView: View {
                 .sheet(isPresented: $showDuration) { DurationSheet(draft: draft) }
             }
 
-            // Schedule (nutrx Pro, #132): which days it's taken on. Debug builds only until it ships.
-            if ProAccess.isStoreVisible, ScheduleSheet.isOffered {
+            // Schedule (nutrx Pro, #132): which days it's taken on.
+            if ProAccess.isStoreVisible {
                 Rectangle().fill(Theme.lineHairline).frame(height: 1)
                 ProGatedButton(action: { showSchedule = true }) { showsBadge in
                     settingsRow("Schedule", value: showsBadge ? "" : ScheduleText().summary(draft.scheduleKind),

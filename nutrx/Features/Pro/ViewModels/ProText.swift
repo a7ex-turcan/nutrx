@@ -80,7 +80,7 @@ enum ProText {
         switch feature {
         case .scan: ScanText.paywallNote(reading, device: device)
         case .recap: reading.mentionsAppleIntelligence ? "Simpler wording on this \(device)" : nil
-        case .supply, .health, .report, .courses: nil
+        case .supply, .health, .report, .courses, .schedules: nil
         }
     }
 

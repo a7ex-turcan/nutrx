@@ -31,6 +31,12 @@ nonisolated struct WhatsNew: Equatable {
             Item(title: "Last day of a course", subtitle: "Today says when a course ends, so it's no surprise.",
                  symbolName: "hourglass", tint: .green, isPro: true),
         ]),
+        WhatsNew(version: "2.4", items: [
+            Item(title: "Schedules", subtitle: "Take something on set days, every few days, on and off, or a few times a week.",
+                 symbolName: "calendar.badge.clock", tint: .pink, isPro: true),
+            Item(title: "Suggest a feature", subtitle: "Tell us what you'd like next, from Settings.",
+                 symbolName: "lightbulb", tint: .teal),
+        ]),
     ]
 
     /// The card to show, if any: the release `appVersion` belongs to (its first two numbers), with only the items

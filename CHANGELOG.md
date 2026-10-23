@@ -7,6 +7,7 @@ All notable changes to nutrx are documented in this file.
 ## Unreleased
 
 ### nutrx Pro
+- **Schedules** — A nutrient can follow a schedule instead of every day: set weekdays (Mon, Wed, Fri), every few days, on and off (5 days on, 2 off; 3 weeks on, 1 off), or any few days a week. On a day it's not due, it moves to a collapsed **Not today** section on Today with the next day it's due, its reminders stay quiet, and the day never counts as missed: not in History, streaks, analytics, the weekly recap or the doctor report. A few times a week shows "2 of 3 this week" on its card, counts the week rather than each day, and leaves Today once the week is done until Monday. A change to a schedule applies from today, so past days keep theirs. The widgets, the Watch and stacks follow the same days.
 - **Courses reopen the way you set them** — A course set "for 10 days" reopens in For days with the days left, instead of switching to Until a date.
 
 ### Improvements

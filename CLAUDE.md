@@ -276,7 +276,7 @@ nutrx/
 │   │   │   ├── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
 │   │   │   └── PlanChip.swift               # Today's Free / PRO chip and the "Enjoy nutrx Pro" sheet (#101).
 │   │   └── ViewModels/
-│   │       ├── ProFeature.swift             # The six Pro features (courses since 2.2); `listed` = shipped ones only.
+│   │       ├── ProFeature.swift             # The seven Pro features (courses since 2.2, schedules since 2.4); `listed` = shipped ones only.
 │   │       └── ProText.swift                # Paywall / status copy (pure).
 │   │
 │   └── Profile/
@@ -728,7 +728,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 ## Monetisation
 
 - Free with no ads. **nutrx Pro** is an optional subscription (or lifetime purchase) that only *adds* things around tracking. Nothing that's free today becomes Pro.
-- **What Pro is:** $1.99 a month, $14.99 a year with a one-week free trial, or $29.99 once (`docs/pro/PLAN.md`, agreed 2026-10-14; designer prompts in `docs/pro/DESIGN-PROMPTS.md`). Five features built for 2.1: supply & refills, label scanning, weekly recap, Apple Health trends and the report for your doctor; courses came in 2.2 (their sections follow). Everything in 2.0 stays free, and so do stacks, Siri logging and export.
+- **What Pro is:** $1.99 a month, $14.99 a year with a one-week free trial, or $29.99 once (`docs/pro/PLAN.md`, agreed 2026-10-14; designer prompts in `docs/pro/DESIGN-PROMPTS.md`). Five features built for 2.1: supply & refills, label scanning, weekly recap, Apple Health trends and the report for your doctor; courses came in 2.2 and schedules in 2.4 (their sections follow). Everything in 2.0 stays free, and so do stacks, Siri logging and export.
 - **Rules that stay:** StoreKit 2 verifies on the device; no receipt or entitlement leaves it or goes into SwiftData, iCloud or UserDefaults; AI runs on the device only (Foundation Models), with a non-AI path or a clear "needs Apple Intelligence" mark (label scanning and recaps have a non-AI path), and nothing is charged for what the device can't run; Health data is read live and never stored. A Pro entry point is a `ProGatedButton` (PRO chip + paywall), never a lock or a wall, and nothing free may become Pro: check this in every PR.
 - **Launched** with 2.1 on 2026-10-16 (tag `v2.1`, build 59): the three products were approved with the version, and the store listing, review notes and website carry the Pro section and the "everything else stays free" line. First-time products can't be attached by the public API: they go into the review draft from the web UI (each product and the subscription group), then the version is added and submitted by API.
 - The old "no paywall / StoreKit / AI before MVP 4" guardrail is retired.
@@ -754,7 +754,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - Below xLarge the button, terms and links are pinned at the bottom. From xLarge (#189), and on large widths at any size (`widthClass != .compact`: the iPad sheet, a landscape iPhone; #205), only the button is, with `ProText.planSummary` above it ("Yearly · $14.99 a year · 1 week free", "Plans ⌃", which scrolls to the plans) and a hairline on top; the terms and links scroll after the plans. At accessibility sizes the button scrolls with the content.
   - The paywall never claims a store it can't reach, and never says nothing was charged.
   - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
-- **`ProFeature`**: the Pro features with titles, symbols and tints (six since courses, #147). A new Pro feature gets a case here, or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2).
+- **`ProFeature`**: the Pro features with titles, symbols and tints (seven since schedules, #132). A new Pro feature gets a case here, or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2, schedules since 2.4).
 - **Settings:** `ProSettingsCard` sits under the profile card, only when `isStoreVisible` is true.
   - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Supply and label scan" now, a plain list for two or three, and "… and more" only from four) with **Learn more**, which opens the paywall.
   - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.
@@ -882,7 +882,7 @@ A nutrient taken for a set time ("for 5 days", "until 24 Oct").
 - **Paywall:** listed as `ProFeature.courses` ("Courses", "Take something for a set time", green `hourglass`), so the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line include it (#147).
 - **Today on the last day** (#128): the card's third line reads "2,000 IU to go · ⌛ Last day" (`NutrientCard.isLastDay`, `NutrientCourse.isLastDay`, `CourseText.lastDay`), sharing the line like the supply hint, so the card's height doesn't change; if both don't fit the hint stays, and at accessibility sizes they wrap. It takes a low-supply hint's place that day; "Out of supply · Refilled?" still wins.
 
-### nutrx Pro: Schedules (#132, building for 2.4)
+### nutrx Pro: Schedules (#132, 2.4)
 
 The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycles and times a week, a collapsed **Not today** section on Today, and five build phases.
 - **Phase 1 (the rule):** `NutrientSchedule` sits in `Nutrient.swift` next to `NutrientCourse`, so the widgets and the Watch have it. It's pure and tested in `NutrientScheduleTests`.
@@ -892,7 +892,7 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **Stored form:** `Nutrient.scheduleRaw` holds "20261023=days:2,4,6;20261030=week:3". Days are `yyyyMMdd`, shared with the course gaps through `StoredDay`, so a time zone change never moves them.
   - **On the nutrient:** `counts(on:)` (course and a fixed-kind dose day: the daily counting rule; never under a weekly schedule, where the callers add the met days from `weeklyCountedDays` (phase 4a), so an unmet weekly day can't read as a miss) and `isDue(on:)` (running and due: Today's list; a weekly one until its week's count is reached, phase 4c). `WeeklyRecap.weekStart` calls `NutrientSchedule.weekStart`, so recap weeks and schedule weeks are the same.
   - **`isRunning` stays schedule-free,** so Siri still sees every nutrient.
-  - **CloudKit:** the field `CD_scheduleRaw` is in the development schema (2026-10-23). Production needs the user's Console deploy before any TestFlight build with it.
+  - **CloudKit:** the field `CD_scheduleRaw` is in the development and production schemas (both 2026-10-23).
 - **Phase 2a (counting):** off days don't count anywhere a day is judged.
   - `HistoryNutrient.schedule`, `AnalyticsSummary` / `WeekdayPattern` `schedule:` and `ReminderSchedule.Plan.schedule` all use `NutrientSchedule.isCountedDay` (a fixed-kind dose day; never under weekly). Reminders use `isDoseDay`, so a weekly schedule reminds every day.
   - **Rest days:** a day with nothing due is `HistoryDay.isRest`, which covers every nutrient off its schedule, past its course or not created yet. It's **not** a day whose nutrients were all excluded.
@@ -910,7 +910,6 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **Saving:** `populate` reads it, and `insertNutrient` / `apply` write it with `setting(_:from: .now)`, so a change applies from today on and earlier days keep theirs. Every day stores "". The draft's `Snapshot` includes it, so a change asks "Discard changes?".
   - **The form:** a **Schedule** row after Duration (`ProGatedButton`, `ScheduleText.summary`: "Every day", "Mon, Wed, Fri", "Weekdays", "Sundays", "Every other day", "Every 3 days", "5 days on, 2 off", "3 weeks on, 1 off") opens `ScheduleSheet`.
   - **The sheet:** full height, with Every day / On certain days / Every few days / On and off as a checkmark list. The controls are weekday toggles in the locale's order (`ScheduleText.ordered`), which become a list of full names at accessibility sizes, where the short ones broke mid-word; "Every N days" (2–30) and a Starting date; or Days / Weeks with on and off steppers (up to 60 days, or 8 weeks) and a Starting date. The footer is `ScheduleText.upcoming`: "Today, then Sun 25 Oct." or "Next: …, then …". Done is off with no weekday picked.
-  - **Debug only until phase 5:** the row shows only in Debug builds (`ScheduleSheet.isOffered`), because merges reach TestFlight. Times a week joins the sheet in phase 4, and `ProFeature.schedules` arrives in phase 5.
 - **Phase 4a (counting times a week):** a weekly nutrient counts on a day only once met, among its week's first N (`NutrientSchedule.weeklyCountedDays`, `hasWeekly`).
   - **History and streaks:** `HistoryLog` (`weeklyCounted`, built in `init` from the totals, skipping excluded days and days outside the course) and `StreakService` add those days to the due nutrients. An unmet or extra day is a rest day, so a weekly nutrient never breaks a streak.
   - **Analytics:** a day is tracked when counted; `AnalyticsSummary.weeks` (`AnalyticsWeeks`) judges the weeks that **ended** in the period (Sunday in it, before today) and were wholly under the weekly schedule and the course. So 7 days judges last week, and the hit rate reads "60 %, 3 of 5 weeks" (`AnalyticsStat`). There's no weekday heatmap under a weekly schedule.
@@ -922,7 +921,7 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **Today:** `NutrientIntake.weekBefore` (the week before today) and `weekly` (today added once met) give the card's third line, "2 of 3 this week" (`NutrientCard.weekly`, the first of the line's hints, `ScheduleText.weekLine`). `dayScore` leaves a weekly nutrient out until it's met today. Not today shows a done week as "Done this week · back Monday" (`NotTodayItem.isWeekDone`), or "… · course ends first" when its course is over before Monday (`nextDue` nil).
   - **Reminders:** `ReminderSchedule.Plan.doneWeekStart`, set when the count is reached with today's logs, drops the rest of that week; the next week's stay.
   - **The sheet:** a **Times a week** option (1–6, "Any 3 days a week, Monday to Sunday."). It's greyed out with a footnote unless the goal is "At least". `NutrientDraft.scheduleError` blocks Save if the goal changes afterwards, and its message shows under the Schedule row.
-- Still to come: shipping (phase 5): `ScheduleSheet.isOffered` for everyone, `ProFeature.schedules`, What's New, docs.
+- **Phase 5 (shipping):** the Schedule row is in every build (it was Debug-only through phase 4, since merges reach TestFlight). `ProFeature.schedules` ("Schedules", "Take something on set days", pink `calendar.badge.clock`) puts it on the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line, and 2.4's What's New card has it with Suggest a feature.
 
 ### nutrx Pro: Report for your doctor (phase 8)
 
