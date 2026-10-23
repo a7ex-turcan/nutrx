@@ -33,7 +33,9 @@ struct RecapText {
     var summary: String {
         var sentences: [String] = []
         let everyDay = recap.nutrients.filter { $0.daysMet == $0.daysCounted }
-        if recap.goalsCounted > 0, recap.goalsMet == recap.goalsCounted {
+        // A weekly goal (#132) is only counted on its met days, so a week it fell short isn't "every goal".
+        if recap.goalsCounted > 0, recap.goalsMet == recap.goalsCounted,
+           recap.weekly.allSatisfy({ $0.met >= $0.times }) {
             // Every counted day with goals was a full day.
             switch recap.fullDays {
             case 1: sentences.append("You met every goal on the one day counted.")
@@ -202,9 +204,9 @@ struct RecapText {
         }
         if let streak = recap.streak { numbers.formUnion([streak.now, streak.previous]) }
         if let miss = recap.weakestWeekday { numbers.formUnion([miss.missed, miss.weeks]) }
-        // Numbers inside names ("Vitamin B12", "Omega-3").
-        for week in recap.nutrients {
-            numbers.formUnion(week.name.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) })
+        // Numbers inside names ("Vitamin B12", "Omega-3"), weekly ones' too.
+        for name in recap.nutrients.map(\.name) + recap.weekly.map(\.name) {
+            numbers.formUnion(name.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) })
         }
         return numbers
     }

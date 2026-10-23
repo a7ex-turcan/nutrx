@@ -640,7 +640,7 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertFalse(RecapText(recap).summary.contains("Vitamin D:"))
     }
 
-    func testTheReportShowsWeeksMet() {
+    func testTheReportShowsWeeksMet() throws {
         let weeklyID = UUID()
         let nutrient = HistoryNutrient(id: weeklyID, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(9, 1),
                                        isRemoved: false, schedule: schedule("20260901=week:2"))
@@ -653,10 +653,52 @@ final class NutrientScheduleTests: XCTestCase {
                              today: day(10, 26), calendar: calendar)
         let report = DoctorReport.build(log: log, names: [weeklyID: "Vitamin D"], units: [weeklyID: "IU"],
                                         start: day(9, 28), end: day(10, 25))
-        let section = try? XCTUnwrap(report.sections.first)
-        XCTAssertEqual(section?.weeks, AnalyticsWeeks(met: 3, total: 4))
-        XCTAssertEqual(section?.hitRate, 0.75)
+        let section = try XCTUnwrap(report.sections.first)
+        XCTAssertEqual(section.weeks, AnalyticsWeeks(met: 3, total: 4))
+        XCTAssertEqual(section.hitRate, 0.75)
         XCTAssertEqual(ReportText(report: report).weeksMet(AnalyticsWeeks(met: 3, total: 4)), "3 of 4")
         XCTAssertEqual(report.longestStreak, 7, "every counted day met; the rest days in between don't end the run")
+    }
+
+    /// Every daily goal met but the weekly one short: not "every goal", and the weekly line says so.
+    func testTheRecapIsntPerfectWhenAWeeklyGoalFellShort() {
+        let weeklyID = UUID(), dailyID = UUID()
+        let log = HistoryLog(
+            nutrients: [
+                HistoryNutrient(id: weeklyID, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(10, 1),
+                                isRemoved: false, schedule: schedule("20261001=week:3")),
+                HistoryNutrient(id: dailyID, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(10, 1),
+                                isRemoved: false),
+            ],
+            totals: Dictionary(uniqueKeysWithValues: (19...25).map { date in
+                (day(10, date), date == 20 ? [dailyID: 1, weeklyID: 1] : [dailyID: 1])
+            }),
+            today: day(10, 26), calendar: calendar)
+        let recap = WeeklyRecap.build(log: log, names: [weeklyID: "Omega-3", dailyID: "Magnesium"], week: day(10, 19),
+                                      streaksEnabled: false)
+        let summary = RecapText(recap).summary
+        XCTAssertFalse(summary.contains("every goal"), summary)
+        XCTAssertTrue(summary.contains("Omega-3: 1 of 3 this week."), summary)
+        XCTAssertTrue(RecapText(recap).factNumbers.contains(3), "the 3 in Omega-3 (and its count)")
+    }
+
+    /// The report's longest run with only the weekly nutrient included: a daily one left out doesn't end the run on
+    /// the weekly one's off days.
+    func testTheReportsRunStepsOverDaysTheIncludedNutrientsDontCount() {
+        let weeklyID = UUID(), dailyID = UUID()
+        let log = HistoryLog(
+            nutrients: [
+                HistoryNutrient(id: weeklyID, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(9, 1),
+                                isRemoved: false, schedule: schedule("20260901=week:2")),
+                HistoryNutrient(id: dailyID, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(9, 1),
+                                isRemoved: false),
+            ],
+            totals: Dictionary(uniqueKeysWithValues: (12...25).map { date in
+                (day(10, date), [12, 14, 19, 21].contains(date) ? [dailyID: 1, weeklyID: 1] : [dailyID: 1])
+            }),
+            today: day(10, 26), calendar: calendar)
+        let report = DoctorReport.build(log: log, names: [weeklyID: "Iron"], units: [weeklyID: "mg"],
+                                        start: day(10, 12), end: day(10, 25), nutrientIDs: [weeklyID])
+        XCTAssertEqual(report.longestStreak, 4, "its four counted days, all met")
     }
 }

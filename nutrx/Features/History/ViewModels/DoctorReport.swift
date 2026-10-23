@@ -125,9 +125,11 @@ struct DoctorReport: Equatable {
         let includedSet = Set(included)
         var longest = 0, run = 0
         for result in results {
-            if result.isRest { continue }  // nothing due (#132): neither breaks nor extends the run
             let goals = result.goals.filter { includedSet.contains($0.nutrientID) }
-            if result.hasEntries, !goals.isEmpty, goals.allSatisfy(\.isMet) {
+            // No included goal counted that day (a rest day, a weekly one's off day, #132): neither breaks nor extends
+            // the run.
+            if goals.isEmpty { continue }
+            if result.hasEntries, goals.allSatisfy(\.isMet) {
                 run += 1
                 longest = max(longest, run)
             } else {
