@@ -16,6 +16,7 @@ All notable changes to nutrx are documented in this file.
 ### Fixes
 - **Chart dates under the right day** — On a nutrient's 30- and 90-day charts, each date now sits under its own day. Before, it sat halfway to the next date: 3 days late on 30 days, and about two weeks late on 90. At the largest text sizes the 7-day chart shows every weekday, with today's letter in bold.
 - **The paywall at larger text sizes** — The plan line above the button no longer splits "1 week free" across two lines, and the "1 WEEK FREE" badge moves under "Yearly" instead of breaking in two.
+- **Log while typing a note** — In the log sheet, the Log button now sits just above the keyboard while you type a note or an amount, instead of hiding behind the keyboard's Done bar on smaller iPhones. When the keyboard goes, the sheet scrolls back to the top.
 - **Log button in view on shorter screens** — On the iPhone SE and the folded iPhone Duo, the log sheet opens tall enough to show the Log button, so you no longer have to drag it up first.
 
 ## v2.3 — 2026-10-23
