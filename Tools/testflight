@@ -50,7 +50,11 @@ PROCESSING_TIMEOUT = 45 * 60
 
 # App Store states in which a version no longer takes new builds.
 RELEASED_STATES = {"READY_FOR_SALE", "PROCESSING_FOR_APP_STORE", "PENDING_APPLE_RELEASE", "PENDING_DEVELOPER_RELEASE",
-                   "REPLACED_WITH_NEW_VERSION", "REMOVED_FROM_SALE"}
+                   "ACCEPTED", "REPLACED_WITH_NEW_VERSION", "REMOVED_FROM_SALE", "DEVELOPER_REMOVED_FROM_SALE"}
+# Folders Xcode compiles everything in (PBXFileSystemSynchronizedRootGroup), so an untracked file there would ship.
+TARGET_FOLDERS = ["nutrx", "nutrx Watch App", "NutrxWidgets", "NutrxWatchWidgets"]
+# Failed checks in a row while waiting for processing before it gives up.
+POLL_RETRIES = 5
 
 
 class Stop(Exception):
@@ -189,6 +193,10 @@ def main():
     print("Checks")
     if git("status", "--porcelain", "--untracked-files=no"):
         raise Stop("The working tree has changes to tracked files. Commit or stash them first.")
+    untracked = git("status", "--porcelain", "--untracked-files=all", "--", *TARGET_FOLDERS)
+    if untracked:
+        raise Stop("Untracked files in the app's folders would be compiled into the build:\n"
+                   f"{untracked}\nCommit, move or delete them first.")
     run(["git", "fetch", "-q", "origin", "main"], quiet=True)
     if git("rev-parse", "HEAD") != git("rev-parse", "origin/main"):
         raise Stop(f"HEAD isn't origin/main (on {git('rev-parse', '--abbrev-ref', 'HEAD')}). Check out main and pull.")
@@ -248,6 +256,19 @@ def main():
         print("Dry run: nothing was built, uploaded, written or tagged. Add --apply to do it.")
         return
 
+    try:
+        build = archive_and_upload(version, number, archive, steps)
+        finish(build, number, tag, commit, what_to_test, args.testers, steps)
+    finally:
+        print(f"7. {steps[6]}")
+        churned = [path for path in git("diff", "--name-only", "--", "*.xcscheme").splitlines() if "Watch" in path]
+        if churned:
+            git("checkout", "--", *churned)
+    print(f"Done: nutrx {version} ({number}) is on TestFlight, tagged {tag}.")
+
+
+def archive_and_upload(version, number, archive, steps):
+    """Steps 1 to 3. Returns the processed build."""
     print(f"1. {steps[0]}")
     run(["xcodebuild", "archive", "-scheme", "nutrx", "-configuration", "Release", "-destination",
          "generic/platform=iOS", "-archivePath", archive, f"CURRENT_PROJECT_VERSION={number}", "-quiet",
@@ -257,27 +278,49 @@ def main():
     with tempfile.TemporaryDirectory() as folder:
         options = os.path.join(folder, "ExportOptions.plist")
         with open(options, "wb") as file:
+            # Keep the build number given: Xcode would otherwise renumber it, and the wait and the tag would follow
+            # a number that never shows up.
             plistlib.dump({"method": "app-store-connect", "destination": "upload", "signingStyle": "automatic",
-                           "teamID": TEAM_ID}, file)
+                           "teamID": TEAM_ID, "manageAppVersionAndBuildNumber": False}, file)
         run(["xcodebuild", "-exportArchive", "-archivePath", archive, "-exportOptionsPlist", options,
              "-exportPath", os.path.join(folder, "export"), "-quiet", *auth_flags()])
 
     print(f"3. {steps[2]}")
-    started = time.time()
+    try:
+        return wait_until_valid(version, number)
+    except Stop as stop:
+        remaining = "; ".join(steps[3:6])
+        raise Stop(f"{stop}\nBuild {number} is uploaded: once it's VALID, do steps 4 to 6 by hand ({remaining}).")
+
+
+def wait_until_valid(version, number):
+    started, failures = time.time(), 0
     while True:
-        build = find_build(version, number)
+        try:
+            build = find_build(version, number)
+            failures = 0
+        except Stop as stop:
+            # A passing hiccup shouldn't end a wait that comes after the upload.
+            failures += 1
+            if failures >= POLL_RETRIES:
+                raise
+            print(f"  … couldn't check ({str(stop).splitlines()[0]}), trying again")
+            time.sleep(30)
+            continue
         state = build["attributes"]["processingState"] if build else "not in App Store Connect yet"
         if state == "VALID":
             print("  ✓ VALID")
-            break
+            return build
         if state in {"FAILED", "INVALID"}:
             raise Stop(f"App Store Connect marked build {number} {state}.")
         if time.time() - started > PROCESSING_TIMEOUT:
-            raise Stop(f"Build {number} is still {state} after {PROCESSING_TIMEOUT // 60} minutes. Run Tools/asc to "
-                       "check, then finish the remaining steps by hand.")
+            raise Stop(f"Build {number} is still {state} after {PROCESSING_TIMEOUT // 60} minutes.")
         print(f"  … {state}")
         time.sleep(30)
 
+
+def finish(build, number, tag, commit, what_to_test, testers, steps):
+    """Steps 4 to 6."""
     print(f"4. {steps[3]}")
     if what_to_test:
         localizations = get(f"/v1/builds/{build['id']}/betaBuildLocalizations")["data"]
@@ -291,19 +334,13 @@ def main():
                 "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}})
 
     print(f"5. {steps[4]}")
-    if args.testers:
+    if testers:
         write("internal testers", "post", f"/v1/betaGroups/{INTERNAL_GROUP}/relationships/builds",
               {"data": [{"type": "builds", "id": build["id"]}]})
 
     print(f"6. {steps[5]}")
     git("tag", tag, commit)
     git("push", "-q", "origin", tag)
-
-    print(f"7. {steps[6]}")
-    churned = [path for path in git("diff", "--name-only", "--", "*.xcscheme").splitlines() if "Watch" in path]
-    if churned:
-        git("checkout", "--", *churned)
-    print(f"Done: nutrx {version} ({number}) is on TestFlight, tagged {tag}.")
 
 
 if __name__ == "__main__":
