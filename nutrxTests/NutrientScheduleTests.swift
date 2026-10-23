@@ -693,6 +693,11 @@ final class NutrientScheduleTests: XCTestCase {
         let text = ReportText(report: report)
         XCTAssertEqual(section.weeklyTimes, 2)
         XCTAssertEqual(text.summaryRate(section), "3 of 4 weeks")
+        var oneWeek = section
+        oneWeek.weeks = AnalyticsWeeks(met: 0, total: 1)
+        XCTAssertEqual(text.summaryRate(oneWeek), "0 of 1 week")
+        oneWeek.weeks = AnalyticsWeeks(met: 0, total: 0)
+        XCTAssertEqual(text.summaryRate(oneWeek), "—")
         XCTAssertTrue(text.goal(section).hasSuffix(", 2 times a week"), text.goal(section))
         XCTAssertTrue(text.goalLine(section).hasPrefix("Goal: at least"), text.goalLine(section))
     }

@@ -50,7 +50,8 @@ struct ReportText {
     /// The summary table's rate: "81%", or for a weekly section "3 of 4 weeks", so it isn't read as days (#248).
     func summaryRate(_ section: DoctorReport.Section) -> String {
         guard let weeks = section.weeks else { return percent(section.hitRate) }
-        return weeks.total > 0 ? "\(weeksMet(weeks)) weeks" : "—"
+        guard weeks.total > 0 else { return "—" }
+        return "\(weeksMet(weeks)) \(weeks.total == 1 ? "week" : "weeks")"
     }
 
     var longestStreak: String { report.longestStreak == 1 ? "1 day" : "\(report.longestStreak) days" }
