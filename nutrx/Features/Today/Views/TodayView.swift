@@ -19,6 +19,8 @@ struct TodayView: View {
     @State private var visibleCardIDs: Set<PersistentIdentifier> = []
     @State private var anchorID: PersistentIdentifier?
     @State private var settledLayout: TodayLayout?
+    /// Where the day-score card is as Today scrolls, for its collapsing copy (#243).
+    @State private var scoreCardTracker = DayScoreCardTracker()
 
     /// Until Today has measured itself, a guess from the window's class, so an iPad's first frame doesn't build the
     /// iPhone list and then swap it for the grid.
@@ -160,6 +162,15 @@ struct TodayView: View {
                 case .columns: keepsAnchor(.columns) { columnsLayout(remindersShown: remindersShown) }
                 case .sideColumn: sideColumnLayout(remindersShown: remindersShown)
                 }
+            }
+        }
+        // Once the day-score card reaches the navigation bar, it pins there and collapses into a slim bar as Today
+        // scrolls on (#243). Not beside the side column, which keeps the card in view.
+        .overlay {
+            if collapsesScoreCard {
+                CollapsingDayScoreOverlay(tracker: scoreCardTracker, score: viewModel.dayScore,
+                                          streak: preferences.streaksEnabled ? streak?.current : nil,
+                                          nextReminder: remindersShown ? viewModel.nextReminder(after: .now) : nil)
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { measuredWidth = $0 }
@@ -566,6 +577,12 @@ struct TodayView: View {
                 nextReminder: remindersShown ? viewModel.nextReminder(after: timeline.date) : nil
             )
         }
+        .tracksDayScoreCard(scoreCardTracker, isActive: collapsesScoreCard)
+    }
+
+    /// The list and the columns collapse the day-score card as they scroll; the side column keeps it in view.
+    private var collapsesScoreCard: Bool {
+        viewModel.hasRunningNutrients && layout != .sideColumn
     }
 
     /// This release's "What's new" card, unless it was closed here or onboarding ran on this release (#148). In Debug
