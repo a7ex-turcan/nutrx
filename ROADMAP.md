@@ -105,18 +105,6 @@ Released on the App Store on 21 Oct 2026 (build 128, phased release; tag `v2.2.1
 | Next reminder and notification banner refresh right away | ✅ Shipped (v2.2.1, #44, #45) |
 | Courses listed on the Pro screens | ✅ Shipped (v2.2.1, #147) |
 
-### v2.4 — Schedules
-
-Building (version 2.4).
-
-| Feature | Status |
-|---|---|
-| Schedules: set weekdays, every few days, on and off, times a week (Pro) | ✅ Built (v2.4, #132) |
-| Suggest a feature, from Settings | ✅ Built (v2.4, #142) |
-| Courses reopen in the mode they were set in (Pro) | ✅ Built (v2.4, #188) |
-| Chart dates under their own day | ✅ Built (v2.4, #95) |
-| Log button in view on shorter screens | ✅ Built (v2.4, #212) |
-
 ### v2.3 — Large screens ✅
 
 Released on the App Store on 23 Oct 2026 (build 148, phased release; tag `v2.3`).
@@ -139,6 +127,18 @@ Released on the App Store on 23 Oct 2026 (build 148, phased release; tag `v2.3`)
 | Supply hints shorten to fit | ✅ Shipped (v2.3, #185) |
 | Paywall: plans in view at large sizes and on iPad | ✅ Shipped (v2.3, #161, #189, #205) |
 | App Store screenshots: iPhone Duo and iPad landscape | ✅ Shipped (v2.3, #211) |
+
+### v2.4 — Schedules
+
+Building (version 2.4).
+
+| Feature | Status |
+|---|---|
+| Schedules: set weekdays, every few days, on and off, times a week (Pro) | ✅ Built (v2.4, #132) |
+| Suggest a feature, from Settings | ✅ Built (v2.4, #142) |
+| Courses reopen in the mode they were set in (Pro) | ✅ Built (v2.4, #188) |
+| Chart dates under their own day | ✅ Built (v2.4, #95) |
+| Log button in view on shorter screens | ✅ Built (v2.4, #212) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
