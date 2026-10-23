@@ -1,0 +1,364 @@
+#!/usr/bin/env python3
+"""Archive nutrx on this Mac and send it to TestFlight, for when Xcode Cloud can't (#144).
+
+Usage:
+  Tools/testflight [--build <number>] [--what-to-test <file>] [--testers] [--apply]
+
+Without --apply it only checks and prints the plan: nothing is built, uploaded, written or tagged. With --apply it
+runs the steps in order, printing each one, and stops at the first failure.
+
+Checks (read only):
+  - the working tree has no changes to tracked files, and HEAD is origin/main;
+  - the production CloudKit schema has every field the models need (Tools/check-cloudkit-schema);
+  - the version (MARKETING_VERSION) isn't live yet, since App Store Connect refuses builds for a released version;
+  - the build number is above every build in App Store Connect. By default it's the next one up, and the plan warns
+    when it's at or past Xcode Cloud's run counter, because Xcode Cloud stamps its builds with its run number and
+    would then fail to upload until its runs pass this build.
+
+Steps (--apply):
+  1. archive with CURRENT_PROJECT_VERSION=<build> (cloud signing with the team key, passed by path, never read);
+  2. export with destination upload, which sends it to App Store Connect;
+  3. wait until App Store Connect has processed it (VALID);
+  4. set What to Test (en-US), if --what-to-test is given;
+  5. add it to the internal group, if --testers is given;
+  6. tag v<version>-b<build> and push the tag;
+  7. put back the Watch schemes the archive rewrites.
+
+Uploads and App Store Connect writes need the user's go-ahead for that build (CLAUDE.md, App Store Connect API
+rules). It never prints the key or the App Store Connect IDs. ASC_KEY_ID and ASC_ISSUER_ID come from the
+environment, or from .claude/settings.local.json's env when unset; ASC_KEY_PATH overrides the key's location.
+"""
+
+import argparse
+import datetime
+import json
+import os
+import plistlib
+import subprocess
+import sys
+import tempfile
+import time
+
+APP_ID = "6760843478"
+TEAM_ID = "6396A6L9J3"
+LOCALE = "en-US"
+XCODE_CLOUD_WORKFLOW = "9773FA53-E997-458A-8D4C-3336DEA244B0"
+INTERNAL_GROUP = "33b62a8d-c72a-4316-b1e2-86e21daafadd"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ASC = os.path.join(ROOT, "Tools", "asc")
+PROCESSING_TIMEOUT = 45 * 60
+
+# App Store states in which a version no longer takes new builds.
+RELEASED_STATES = {"READY_FOR_SALE", "PROCESSING_FOR_APP_STORE", "PENDING_APPLE_RELEASE", "PENDING_DEVELOPER_RELEASE",
+                   "ACCEPTED", "REPLACED_WITH_NEW_VERSION", "REMOVED_FROM_SALE", "DEVELOPER_REMOVED_FROM_SALE"}
+# Folders Xcode compiles everything in (PBXFileSystemSynchronizedRootGroup), so an untracked file there would ship.
+TARGET_FOLDERS = ["nutrx", "nutrx Watch App", "NutrxWidgets", "NutrxWatchWidgets"]
+# Failed checks in a row while waiting for processing before it gives up.
+POLL_RETRIES = 5
+
+
+class Stop(Exception):
+    """Ends the run with a message (and exit code 1)."""
+
+
+# MARK: - App Store Connect, as in Tools/asc-submit
+
+def load_env():
+    if os.environ.get("ASC_KEY_ID") and os.environ.get("ASC_ISSUER_ID"):
+        return
+    path = os.path.join(ROOT, ".claude", "settings.local.json")
+    try:
+        env = json.load(open(path)).get("env", {})
+    except (OSError, ValueError):
+        env = {}
+    for key, value in env.items():
+        if key.startswith("ASC_") and not os.environ.get(key):
+            os.environ[key] = str(value)
+
+
+def asc(method, path, body=None):
+    """Runs Tools/asc and returns (status, json or None). Never prints the response body."""
+    result = subprocess.run(
+        [ASC, method, path] + (["-"] if body is not None else []),
+        input=json.dumps(body) if body is not None else None,
+        capture_output=True, text=True,
+    )
+    status = None
+    for line in result.stderr.splitlines():
+        if line.startswith("HTTP "):
+            status = int(line.split()[1])
+    try:
+        data = json.loads(result.stdout) if result.stdout.strip() else None
+    except ValueError:
+        data = None
+    if status is None:
+        raise Stop(f"Tools/asc failed for {method.upper()} {path}:\n{result.stderr.strip()}")
+    return status, data
+
+
+def get(path):
+    status, data = asc("get", path)
+    if not 200 <= status < 300:
+        raise Stop(f"GET {path} → HTTP {status}\n{errors(data)}")
+    return data
+
+
+def write(label, method, path, body):
+    status, data = asc(method, path, body)
+    print(f"  → {method.upper()} {path}  ({label}): HTTP {status}")
+    if not 200 <= status < 300:
+        raise Stop(f"Stopped at: {label}\n{errors(data)}")
+    return data
+
+
+def errors(data):
+    if not data or "errors" not in data:
+        return ""
+    return "\n".join(f"  {e.get('title', '')}: {e.get('detail', '')}" for e in data["errors"])
+
+
+# MARK: - Local
+
+def run(command, *, quiet=False, check=True):
+    """Runs a command from the repo root; its output streams unless quiet. Returns stdout when quiet."""
+    result = subprocess.run(command, cwd=ROOT, text=True, capture_output=quiet)
+    if check and result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip() if quiet else ""
+        raise Stop(f"Failed: {' '.join(command[:3])} …\n{detail}".rstrip())
+    return result.stdout if quiet else None
+
+
+def git(*args):
+    return run(["git", *args], quiet=True).strip()
+
+
+def marketing_version():
+    output = run(["xcodebuild", "-project", "nutrx.xcodeproj", "-target", "nutrx", "-configuration", "Release",
+                  "-showBuildSettings", "-json"], quiet=True)
+    try:
+        return json.loads(output)[0]["buildSettings"]["MARKETING_VERSION"]
+    except (ValueError, LookupError):
+        raise Stop("Couldn't read MARKETING_VERSION from the nutrx target.")
+
+
+def key_path():
+    path = os.environ.get("ASC_KEY_PATH") or os.path.expanduser(
+        f"~/.appstoreconnect/private_keys/AuthKey_{os.environ.get('ASC_KEY_ID', '')}.p8")
+    if not os.path.isfile(path):
+        raise Stop("The App Store Connect key isn't where it should be (~/.appstoreconnect/private_keys/, or "
+                   "ASC_KEY_PATH).")
+    return path
+
+
+def auth_flags():
+    """xcodebuild's flags for the team key. Built here, never printed."""
+    return ["-allowProvisioningUpdates", "-authenticationKeyPath", key_path(),
+            "-authenticationKeyID", os.environ["ASC_KEY_ID"], "-authenticationKeyIssuerID", os.environ["ASC_ISSUER_ID"]]
+
+
+def build_number(build):
+    try:
+        return int(build["attributes"]["version"])
+    except (KeyError, ValueError):
+        return 0
+
+
+def find_build(version, number):
+    builds = get(f"/v1/builds?filter[app]={APP_ID}&filter[version]={number}"
+                 f"&filter[preReleaseVersion.version]={version}&limit=1")["data"]
+    return builds[0] if builds else None
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Archive nutrx and send it to TestFlight (a plan unless --apply).")
+    parser.add_argument("--build", type=int, help="the build number (default: the next one up in App Store Connect)")
+    parser.add_argument("--what-to-test", help="file with the en-US What to Test text")
+    parser.add_argument("--testers", action="store_true", help="add the build to the internal tester group")
+    parser.add_argument("--apply", action="store_true", help="build, upload, write and tag (otherwise only plan)")
+    args = parser.parse_args()
+
+    what_to_test = None
+    if args.what_to_test:
+        try:
+            what_to_test = open(args.what_to_test, encoding="utf-8").read().strip()
+        except OSError as error:
+            raise Stop(f"Can't read {args.what_to_test}: {error.strerror}.")
+        if not what_to_test:
+            raise Stop("What to Test is empty.")
+
+    load_env()
+    if not (os.environ.get("ASC_KEY_ID") and os.environ.get("ASC_ISSUER_ID")):
+        raise Stop("ASC_KEY_ID and ASC_ISSUER_ID aren't set (environment or .claude/settings.local.json).")
+
+    print("Checks")
+    if git("status", "--porcelain", "--untracked-files=no"):
+        raise Stop("The working tree has changes to tracked files. Commit or stash them first.")
+    untracked = git("status", "--porcelain", "--untracked-files=all", "--", *TARGET_FOLDERS)
+    if untracked:
+        raise Stop("Untracked files in the app's folders would be compiled into the build:\n"
+                   f"{untracked}\nCommit, move or delete them first.")
+    run(["git", "fetch", "-q", "origin", "main"], quiet=True)
+    if git("rev-parse", "HEAD") != git("rev-parse", "origin/main"):
+        raise Stop(f"HEAD isn't origin/main (on {git('rev-parse', '--abbrev-ref', 'HEAD')}). Check out main and pull.")
+    commit = git("rev-parse", "--short", "HEAD")
+    print(f"  ✓ clean, at origin/main ({commit})")
+
+    schema = subprocess.run([os.path.join(ROOT, "Tools", "check-cloudkit-schema")], cwd=ROOT, text=True,
+                            capture_output=True)
+    if schema.returncode != 0:
+        raise Stop(f"{(schema.stdout + schema.stderr).strip()}\nTestFlight builds use the production schema: deploy "
+                   "the fields in the CloudKit Console first.")
+    print(f"  ✓ {schema.stdout.strip()}")
+
+    version = marketing_version()
+    store = get(f"/v1/apps/{APP_ID}/appStoreVersions?filter[versionString]={version}&filter[platform]=IOS&limit=1")
+    state = store["data"][0]["attributes"]["appStoreState"] if store["data"] else None
+    if state in RELEASED_STATES:
+        raise Stop(f"Version {version} is {state}: App Store Connect takes no more builds for it. Bump "
+                   "MARKETING_VERSION in a PR first.")
+    print(f"  ✓ version {version} takes builds ({state or 'no App Store version yet'})")
+
+    recent = get(f"/v1/builds?filter[app]={APP_ID}&sort=-uploadedDate&limit=20")["data"]
+    highest = max((build_number(b) for b in recent), default=0)
+    number = args.build or highest + 1
+    if number <= highest:
+        raise Stop(f"Build {number} isn't above App Store Connect's highest, {highest}.")
+    print(f"  ✓ build {number} (App Store Connect's highest is {highest})")
+
+    runs = get(f"/v1/ciWorkflows/{XCODE_CLOUD_WORKFLOW}/buildRuns?limit=1&sort=-number")["data"]
+    if runs:
+        last_run = runs[0]["attributes"]
+        if last_run.get("executionProgress") != "COMPLETE":
+            print(f"  ! Xcode Cloud run {last_run['number']} is still going; it may upload a build of its own.")
+        if number > last_run["number"]:
+            print(f"  ! Xcode Cloud's next run is {last_run['number'] + 1}: its builds will fail to upload until its "
+                  f"runs pass {number}.")
+
+    tag = f"v{version}-b{number}"
+    if git("tag", "--list", tag):
+        raise Stop(f"Tag {tag} already exists.")
+
+    archive = os.path.expanduser(f"~/Library/Developer/Xcode/Archives/{datetime.date.today():%Y-%m-%d}/"
+                                 f"nutrx {version} ({number}).xcarchive")
+    steps = [
+        f"archive nutrx {version} ({number}) to {archive}",
+        "export with destination upload (sends it to App Store Connect)",
+        "wait until it's VALID",
+        f"set What to Test ({LOCALE})" if what_to_test else "leave What to Test empty (no --what-to-test)",
+        "add it to the internal tester group" if args.testers else "leave tester groups alone (no --testers)",
+        f"tag {tag} at {commit} and push the tag",
+        "put back the Watch schemes the archive rewrites",
+    ]
+    print("Plan" if not args.apply else "Steps")
+    if not args.apply:
+        for index, step in enumerate(steps, 1):
+            print(f"  {index}. {step}")
+        print("Dry run: nothing was built, uploaded, written or tagged. Add --apply to do it.")
+        return
+
+    try:
+        build = archive_and_upload(version, number, archive, steps)
+        try:
+            finish(build, number, tag, commit, what_to_test, args.testers, steps)
+        except Stop as stop:
+            remaining = "; ".join(steps[3:6])
+            raise Stop(f"{stop}\nBuild {number} is uploaded and VALID: finish steps 4 to 6 by hand ({remaining}).")
+    finally:
+        print(f"7. {steps[6]}")
+        # Reported, not raised: a stop already on its way out is the one that matters.
+        try:
+            churned = [path for path in git("diff", "--name-only", "--", "*.xcscheme").splitlines()
+                       if "Watch" in path]
+            if churned:
+                git("checkout", "--", *churned)
+        except Stop as stop:
+            print(f"  ! Couldn't put the Watch schemes back: {stop}", file=sys.stderr)
+    print(f"Done: nutrx {version} ({number}) is on TestFlight, tagged {tag}.")
+
+
+def archive_and_upload(version, number, archive, steps):
+    """Steps 1 to 3. Returns the processed build."""
+    print(f"1. {steps[0]}")
+    run(["xcodebuild", "archive", "-scheme", "nutrx", "-configuration", "Release", "-destination",
+         "generic/platform=iOS", "-archivePath", archive, f"CURRENT_PROJECT_VERSION={number}", "-quiet",
+         *auth_flags()])
+
+    print(f"2. {steps[1]}")
+    with tempfile.TemporaryDirectory() as folder:
+        options = os.path.join(folder, "ExportOptions.plist")
+        with open(options, "wb") as file:
+            # Keep the build number given: Xcode would otherwise renumber it, and the wait and the tag would follow
+            # a number that never shows up.
+            plistlib.dump({"method": "app-store-connect", "destination": "upload", "signingStyle": "automatic",
+                           "teamID": TEAM_ID, "manageAppVersionAndBuildNumber": False}, file)
+        run(["xcodebuild", "-exportArchive", "-archivePath", archive, "-exportOptionsPlist", options,
+             "-exportPath", os.path.join(folder, "export"), "-quiet", *auth_flags()])
+
+    print(f"3. {steps[2]}")
+    try:
+        return wait_until_valid(version, number)
+    except Stop as stop:
+        remaining = "; ".join(steps[3:6])
+        raise Stop(f"{stop}\nBuild {number} is uploaded: once it's VALID, do steps 4 to 6 by hand ({remaining}).")
+
+
+def wait_until_valid(version, number):
+    started, failures = time.time(), 0
+    while True:
+        try:
+            build = find_build(version, number)
+            failures = 0
+        except Stop as stop:
+            # A passing hiccup shouldn't end a wait that comes after the upload.
+            failures += 1
+            if failures >= POLL_RETRIES:
+                raise
+            print(f"  … couldn't check ({str(stop).splitlines()[0]}), trying again")
+            time.sleep(30)
+            continue
+        state = build["attributes"]["processingState"] if build else "not in App Store Connect yet"
+        if state == "VALID":
+            print("  ✓ VALID")
+            return build
+        if state in {"FAILED", "INVALID"}:
+            raise Stop(f"App Store Connect marked build {number} {state}.")
+        if time.time() - started > PROCESSING_TIMEOUT:
+            raise Stop(f"Build {number} is still {state} after {PROCESSING_TIMEOUT // 60} minutes.")
+        print(f"  … {state}")
+        time.sleep(30)
+
+
+def finish(build, number, tag, commit, what_to_test, testers, steps):
+    """Steps 4 to 6."""
+    print(f"4. {steps[3]}")
+    if what_to_test:
+        localizations = get(f"/v1/builds/{build['id']}/betaBuildLocalizations")["data"]
+        existing = next((item for item in localizations if item["attributes"].get("locale") == LOCALE), None)
+        if existing:
+            write("What to Test", "patch", f"/v1/betaBuildLocalizations/{existing['id']}", {"data": {
+                "type": "betaBuildLocalizations", "id": existing["id"], "attributes": {"whatsNew": what_to_test}}})
+        else:
+            write("What to Test", "post", "/v1/betaBuildLocalizations", {"data": {
+                "type": "betaBuildLocalizations", "attributes": {"locale": LOCALE, "whatsNew": what_to_test},
+                "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}})
+
+    print(f"5. {steps[4]}")
+    if testers:
+        write("internal testers", "post", f"/v1/betaGroups/{INTERNAL_GROUP}/relationships/builds",
+              {"data": [{"type": "builds", "id": build["id"]}]})
+
+    print(f"6. {steps[5]}")
+    git("tag", tag, commit)
+    git("push", "-q", "origin", tag)
+
+
+if __name__ == "__main__":
+    # Line by line, so the plan and a stop message come out in order when piped.
+    sys.stdout.reconfigure(line_buffering=True)
+    try:
+        main()
+    except Stop as stop:
+        print(f"Stopped: {stop}", file=sys.stderr)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(130)
