@@ -26,9 +26,6 @@ struct LogSheet: View {
     @State private var tappedChipID: String? = "1x"
     @State private var note = ""
     @FocusState private var focusedField: Field?
-    /// The on-screen keyboard is up, so Log moves above it (#221). Focus alone isn't enough: with a hardware keyboard
-    /// nothing covers Log, and it stays under the note.
-    @State private var keyboardShown = false
     @ScaledMetric(relativeTo: .largeTitle) private var amountSize: CGFloat = 52
     /// The sheet's width, the unit's width and the amount's width at `amountFontSize`, so the amount can shrink to
     /// leave the unit whole (#242).
@@ -230,12 +227,6 @@ struct LogSheet: View {
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidShowNotification)) { _ in
                 if focusedField == .note { scroll(proxy, to: Field.note, anchor: .bottom) }
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-                keyboardShown = true
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-                keyboardShown = false
-            }
             // While the amount is edited it has no grouping, so deleting a digit can't leave separators in the wrong
             // places ("1.000" → "1.00", which de reads as 1). Once the field is left it's grouped again, like the
             // chips and the Log button ("123456789" → "123,456,789", #258). One that doesn't parse stays as typed.
@@ -258,8 +249,9 @@ struct LogSheet: View {
     private static let contentSpace = "logSheetContent"
     private static let topID = "logSheetTop"
 
-    /// Log sits above the keyboard rather than under the note.
-    private var pinsLog: Bool { focusedField != nil && keyboardShown }
+    /// Log sits above the keyboard rather than under the note, whenever a field is focused: the keyboard's bar with
+    /// its Done shows even with a hardware keyboard, where no on-screen keyboard comes up, and it covered Log (#261).
+    private var pinsLog: Bool { focusedField != nil }
 
     private func scroll(_ proxy: ScrollViewProxy, to id: some Hashable, anchor: UnitPoint) {
         withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
