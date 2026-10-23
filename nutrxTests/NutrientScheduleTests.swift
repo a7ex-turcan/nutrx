@@ -362,6 +362,12 @@ final class NutrientScheduleTests: XCTestCase {
         let logged = StackLogging.log(stack, context: context)
         XCTAssertEqual(logged.records.compactMap(\.nutrient?.name), ["Magnesium"])
         StackLogging.undo(logged, of: stack, context: context)
+        let sundays = LogStack(name: "Sunday", sortOrder: 1)
+        context.insert(sundays)
+        _ = StackLogging.add(weekly, to: sundays, context: context)
+        XCTAssertEqual(StackAccessibility.label(for: sundays, done: false), "Sunday: Vitamin D. Nothing due today.",
+                       "VoiceOver hears why there's no Log")
+        XCTAssertEqual(StackAccessibility.label(for: stack, done: true), "Morning: Vitamin D, Magnesium. Logged today.")
         XCTAssertEqual(NutrientEntityQuery.activeNutrients(in: context).map(\.name), ["Vitamin D", "Magnesium"],
                        "Siri still finds it")
 

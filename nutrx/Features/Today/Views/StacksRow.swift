@@ -268,9 +268,12 @@ private struct StackDoneBadge: View {
 }
 
 enum StackAccessibility {
-    /// "Morning: Vitamin D, Omega-3, Magnesium. Logged today."
+    /// "Morning: Vitamin D, Omega-3, Magnesium. Logged today.", or "… Nothing due today." when every nutrient in it is
+    /// off today (schedules, #132), which the Stacks tab shows in place of its Log button.
     static func label(for stack: LogStack, done: Bool) -> String {
-        "\(stack.name): \(StackLogging.summary(of: stack))." + (done ? " Logged today." : "")
+        let nothingDue = !StackLogging.activeEntries(of: stack).isEmpty && StackLogging.dueEntries(of: stack).isEmpty
+        let status = nothingDue ? " Nothing due today." : (done ? " Logged today." : "")
+        return "\(stack.name): \(StackLogging.summary(of: stack))." + status
     }
 }
 
