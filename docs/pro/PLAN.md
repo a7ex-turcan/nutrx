@@ -155,6 +155,10 @@ These ship to everyone and carry the model changes we want before Pro.
   - the privacy policy covering Apple Health (read-only, never leaves the device, never in iCloud) and on-device AI.
 - **CLAUDE.md and AGENTS.md:** the "Monetisation" section rewritten from this plan. The "Do not build StoreKit / AI before MVP 4" guardrail is retired in both files, and AGENTS.md stops naming the Pre-Pro sprint as next. Do this at the start of phase 3, so its StoreKit work doesn't conflict with the guardrail.
 
+### After launch
+
+Pro features added after 2.1 have their own spec: courses in 2.2 (#99, in CLAUDE.md), and **schedules for 2.4 in [`SCHEDULES.md`](SCHEDULES.md)** (#132): set weekdays, every few days, on / off cycles and times a week.
+
 ---
 
 ## 4. Risks
