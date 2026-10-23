@@ -890,7 +890,7 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **Pieces:** each kind is a `Piece(from:kind:)`, in effect from its day, and `setting(_:from:)` adds one, so a change never rewrites the days before. Days before the first piece are every day.
   - **Rule:** `isDoseDay`, plus the weekly helpers `weeklyCountedDays` (the first N met days of a Monday-to-Sunday week count), `weekProgress` and `isWholeWeekly` (partial weeks aren't judged).
   - **Stored form:** `Nutrient.scheduleRaw` holds "20261023=days:2,4,6;20261030=week:3". Days are `yyyyMMdd`, shared with the course gaps through `StoredDay`, so a time zone change never moves them.
-  - **On the nutrient:** `counts(on:)` (course and a fixed-kind dose day: the daily counting rule; never under a weekly schedule, where the callers are to add the met days from `weeklyCountedDays` in phase 4 (until then a weekly-only setup is all rest days; it can't be set yet), so an unmet weekly day can't read as a miss) and `isDue(on:weekDone:)` (running and due: Today's list). `WeeklyRecap.weekStart` calls `NutrientSchedule.weekStart`, so recap weeks and schedule weeks are the same.
+  - **On the nutrient:** `counts(on:)` (course and a fixed-kind dose day: the daily counting rule; never under a weekly schedule, where the callers add the met days from `weeklyCountedDays` (phase 4a), so an unmet weekly day can't read as a miss) and `isDue(on:weekDone:)` (running and due: Today's list). `WeeklyRecap.weekStart` calls `NutrientSchedule.weekStart`, so recap weeks and schedule weeks are the same.
   - **`isRunning` stays schedule-free,** so Siri still sees every nutrient.
   - **CloudKit:** the field `CD_scheduleRaw` is in the development schema (2026-10-23). Production needs the user's Console deploy before any TestFlight build with it.
 - **Phase 2a (counting):** off days don't count anywhere a day is judged.
@@ -911,7 +911,10 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **The form:** a **Schedule** row after Duration (`ProGatedButton`, `ScheduleText.summary`: "Every day", "Mon, Wed, Fri", "Weekdays", "Sundays", "Every other day", "Every 3 days", "5 days on, 2 off", "3 weeks on, 1 off") opens `ScheduleSheet`.
   - **The sheet:** full height, with Every day / On certain days / Every few days / On and off as a checkmark list. The controls are weekday toggles in the locale's order (`ScheduleText.ordered`), which become a list of full names at accessibility sizes, where the short ones broke mid-word; "Every N days" (2–30) and a Starting date; or Days / Weeks with on and off steppers (up to 60 days, or 8 weeks) and a Starting date. The footer is `ScheduleText.upcoming`: "Today, then Sun 25 Oct." or "Next: …, then …". Done is off with no weekday picked.
   - **Debug only until phase 5:** the row shows only in Debug builds (`ScheduleSheet.isOffered`), because merges reach TestFlight. Times a week joins the sheet in phase 4, and `ProFeature.schedules` arrives in phase 5.
-- Still to come: times a week (phase 4) and shipping (phase 5).
+- **Phase 4a (counting times a week):** a weekly nutrient counts on a day only once met, among its week's first N (`NutrientSchedule.weeklyCountedDays`, `hasWeekly`).
+  - **History and streaks:** `HistoryLog` (`weeklyCounted`, built in `init` from the totals, skipping excluded days and days outside the course) and `StreakService` add those days to the due nutrients. An unmet or extra day is a rest day, so a weekly nutrient never breaks a streak.
+  - **Analytics:** a day is tracked when counted; `AnalyticsSummary.weeks` (`AnalyticsWeeks`) judges the weeks that **ended** in the period (Sunday in it, before today) and were wholly under the weekly schedule and the course. So 7 days judges last week, and the hit rate reads "60 %, 3 of 5 weeks" (`AnalyticsStat`). There's no weekday heatmap under a weekly schedule.
+- Still to come: the recap and report for times a week (4b), Today, the lists, reminders and the sheet option (4c), and shipping (phase 5).
 
 ### nutrx Pro: Report for your doctor (phase 8)
 

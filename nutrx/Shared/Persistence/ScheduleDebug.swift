@@ -5,6 +5,7 @@ import SwiftData
 /// DEBUG only, until the Schedule sheet exists (#132 phase 3): gives nutrients a schedule at launch, by name, from today.
 /// `xcrun simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.schedules -dict "Vitamin D" "days:1"`, then
 /// relaunch. Kinds as stored: "days:2,4,6" (1 = Sunday), "cycle:1:1:20261023", "week:3", or "daily" to go back.
+/// A value with "=" is the whole stored form instead, to start in the past: "20260901=week:3".
 enum ScheduleDebug {
     static let key = "nutrx.debug.schedules"
 
@@ -15,6 +16,10 @@ enum ScheduleDebug {
         let parts = calendar.dateComponents([.year, .month, .day], from: today)
         let stamp = String(format: "%04d%02d%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
         for nutrient in nutrients {
+            if let raw = wanted[nutrient.name], raw.contains("=") {
+                nutrient.scheduleRaw = NutrientSchedule.decode(raw, calendar: calendar).encode(calendar: calendar)
+                continue
+            }
             // Read through the stored form, so the debug value is checked like a synced one.
             guard let kindText = wanted[nutrient.name],
                   let kind = NutrientSchedule.decode("\(stamp)=\(kindText)", calendar: calendar).pieces.first?.kind
