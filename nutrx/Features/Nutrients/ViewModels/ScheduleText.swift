@@ -1,7 +1,7 @@
 import Foundation
 
 /// The words around schedules (nutrx Pro, #132, docs/pro/SCHEDULES.md): Today's Not today section for now, the
-/// form's Schedule row and sheet later. Pure, tested in `ScheduleTextTests`.
+/// form's Schedule row and sheet later. Pure, tested in `NutrientScheduleTests`.
 struct ScheduleText {
     var calendar: Calendar = .current
     var locale: Locale = .current

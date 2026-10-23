@@ -11,13 +11,19 @@ enum StackLogging {
         let date: Date
     }
 
-    /// The entries a stack logs, in order: those whose nutrient is on Today (deleted nutrients keep their entries for
-    /// history, and so do those whose course has ended, #99, but a stack skips them).
+    /// The entries a stack holds, in order: those whose nutrient is running (deleted nutrients keep their entries for
+    /// history, and so do those whose course has ended, #99, but a stack skips them). The stack editor, its nutrient
+    /// picker and the stack's summary read these, so a schedule's off day (#132) never hides an entry there.
     static func activeEntries(of stack: LogStack, now: Date = .now) -> [LogStackEntry] {
         (stack.entries ?? [])
-            // Only what's due today: an ended course (#99) or an off day of a schedule (#132) is skipped.
-            .filter { $0.nutrient?.isDue(on: now) ?? false }
+            .filter { $0.nutrient?.isRunning(on: now) ?? false }
             .sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    /// The entries a stack logs on `now`'s day: active ones whose nutrient is due then, so an off day of a schedule
+    /// (#132) is skipped. Logging, the log sheet, Today's stack cards and Siri read these.
+    static func dueEntries(of stack: LogStack, now: Date = .now) -> [LogStackEntry] {
+        activeEntries(of: stack, now: now).filter { $0.nutrient?.isDue(on: now) ?? false }
     }
 
     /// Logged on `now`'s calendar day, from any device.
@@ -39,7 +45,7 @@ enum StackLogging {
                     now: Date = .now) -> Logged {
         let previous = stack.lastLoggedAt
         var records: [IntakeRecord] = []
-        for entry in activeEntries(of: stack) {
+        for entry in dueEntries(of: stack, now: now) {
             guard let nutrient = entry.nutrient else { continue }
             let amount = amounts[entry.persistentModelID] ?? entry.amount
             guard amount > 0 else { continue }

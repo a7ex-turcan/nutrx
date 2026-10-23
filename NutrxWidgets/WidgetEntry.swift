@@ -30,6 +30,8 @@ struct NutrxWidgetEntry: TimelineEntry {
     let streaksEnabled: Bool
     /// The medium widget's "Running low: Vitamin D · 6 days" (nutrx Pro): the supply that runs out soonest.
     var runningLow: RunningLow? = nil
+    /// Nutrients are running but none is due today (schedules, #132): "Nothing due today", not "Add a nutrient".
+    var nothingDueToday = false
 
     struct RunningLow: Equatable {
         let name: String

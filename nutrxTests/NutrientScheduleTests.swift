@@ -355,7 +355,13 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertEqual(viewModel.dayScore.total, 1, "an off-day nutrient isn't in the day score")
         XCTAssertTrue(viewModel.hasRunningNutrients)
 
-        XCTAssertEqual(StackLogging.activeEntries(of: stack).compactMap(\.nutrient?.name), ["Magnesium"])
+        XCTAssertEqual(StackLogging.dueEntries(of: stack).compactMap(\.nutrient?.name), ["Magnesium"], "logging")
+        XCTAssertEqual(StackLogging.activeEntries(of: stack).compactMap(\.nutrient?.name), ["Vitamin D", "Magnesium"],
+                       "the stack editor and its picker still see it, so it can't be added twice")
+        XCTAssertEqual(StackLogging.summary(of: stack), "Vitamin D, Magnesium")
+        let logged = StackLogging.log(stack, context: context)
+        XCTAssertEqual(logged.records.compactMap(\.nutrient?.name), ["Magnesium"])
+        StackLogging.undo(logged, of: stack, context: context)
         XCTAssertEqual(NutrientEntityQuery.activeNutrients(in: context).map(\.name), ["Vitamin D", "Magnesium"],
                        "Siri still finds it")
 

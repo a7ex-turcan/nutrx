@@ -33,13 +33,13 @@ struct LogStackSheet: View {
         self.onLog = onLog
         self.onUndo = onUndo
         self.onEditStack = onEditStack
-        _detent = State(initialValue: StackLogging.activeEntries(of: stack).count > Self.rowsAtHalfHeight ? .large : .medium)
+        _detent = State(initialValue: StackLogging.dueEntries(of: stack).count > Self.rowsAtHalfHeight ? .large : .medium)
     }
 
     /// Whether every row puts its stepper under the name and total (from xLarge, #97) rather than beside them.
     private var rowsAreStacked: Bool { dynamicTypeSize >= .xLarge }
 
-    private var entries: [LogStackEntry] { StackLogging.activeEntries(of: stack) }
+    private var entries: [LogStackEntry] { StackLogging.dueEntries(of: stack) }
 
     /// Rows shown at the medium detent before the sheet opens full height instead.
     static let rowsAtHalfHeight = 3

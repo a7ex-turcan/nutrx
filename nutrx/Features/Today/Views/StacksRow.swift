@@ -120,7 +120,7 @@ private struct SingleStackCard: View {
 
     var body: some View {
         let done = StackLogging.isLoggedToday(stack)
-        let count = StackLogging.activeEntries(of: stack).count
+        let count = StackLogging.dueEntries(of: stack).count
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
@@ -191,7 +191,7 @@ private struct StackTiles: View {
     let stack: LogStack
 
     var body: some View {
-        let nutrients = StackLogging.activeEntries(of: stack).compactMap(\.nutrient)
+        let nutrients = StackLogging.dueEntries(of: stack).compactMap(\.nutrient)
         HStack(spacing: 6) {
             ForEach(nutrients.prefix(5), id: \.persistentModelID) { nutrient in
                 NutrientIconTile(nutrient: nutrient, size: 24)

@@ -77,7 +77,7 @@ struct TodayView: View {
 
     /// Stacks with something to log; an empty one only shows in the Stacks tab.
     private var stacksToShow: [LogStack] {
-        stacks.filter { !StackLogging.activeEntries(of: $0).isEmpty }
+        stacks.filter { !StackLogging.dueEntries(of: $0).isEmpty }
     }
 
     private var hasCustomGroups: Bool {

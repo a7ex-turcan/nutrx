@@ -71,7 +71,7 @@ final class TodayViewModel {
     @discardableResult
     func logStack(_ stack: LogStack, amounts: [PersistentIdentifier: Double],
                   context: ModelContext) -> (logged: StackLogging.Logged, reachedGoal: Bool) {
-        let reachedGoal = StackLogging.activeEntries(of: stack).contains { entry in
+        let reachedGoal = StackLogging.dueEntries(of: stack).contains { entry in
             guard let nutrient = entry.nutrient else { return false }
             let amount = amounts[entry.persistentModelID] ?? entry.amount
             return GoalProgress(nutrient: nutrient, current: total(for: nutrient)).reachesGoal(adding: amount)

@@ -62,7 +62,8 @@ struct NutrxTimelineProvider: TimelineProvider {
             predicate: #Predicate { !$0.isRemoved }
         )
         // As on Today: a nutrient whose course has ended (#99), or that isn't due today (#132), isn't in the widgets.
-        let nutrients = ((try? context.fetch(nutrientDescriptor)) ?? []).filter { $0.isDue(on: startOfDay) }
+        let running = ((try? context.fetch(nutrientDescriptor)) ?? []).filter { $0.isRunning(on: startOfDay) }
+        let nutrients = running.filter { $0.isDue(on: startOfDay) }
 
         // Fetch today's exclusions
         let exclusionDescriptor = FetchDescriptor<Exclusion>(
@@ -119,6 +120,7 @@ struct NutrxTimelineProvider: TimelineProvider {
         }
 
         return NutrxWidgetEntry(date: .now, nutrients: snapshots, isPlaceholder: false, currentStreak: streakResult.current,
-                                streaksEnabled: streaksEnabled, runningLow: runningLow)
+                                streaksEnabled: streaksEnabled, runningLow: runningLow,
+                                nothingDueToday: snapshots.isEmpty && !running.isEmpty)
     }
 }
