@@ -393,6 +393,12 @@ struct TodayView: View {
                         settledLayout = layout
                     }
                 }
+                // A tap on the collapsed day score brings the card back (#246).
+                .onChange(of: scoreCardTracker.scrollBackRequests) {
+                    withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.35))) {
+                        proxy.scrollTo(Self.scoreCardID, anchor: .top)
+                    }
+                }
         }
     }
 
@@ -590,7 +596,10 @@ struct TodayView: View {
             )
         }
         .tracksDayScoreCard(scoreCardTracker, isActive: collapsesScoreCard)
+        .id(Self.scoreCardID)
     }
+
+    private static let scoreCardID = "dayScoreCard"
 
     /// The list and the columns collapse the day-score card as they scroll; the side column keeps it in view.
     private var collapsesScoreCard: Bool {
