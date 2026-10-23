@@ -139,7 +139,7 @@ struct MonthCalendar: View {
         switch state {
         case .allMet: Theme.green
         case .someMet: Theme.green.opacity(0.25)
-        case .noneMet, .noEntries: .clear
+        case .noneMet, .noEntries, .rest: .clear
         }
     }
 
@@ -154,6 +154,7 @@ struct MonthCalendar: View {
         case .someMet: "Some goals met"
         case .noneMet: "No goals met"
         case .noEntries: "Nothing logged"
+        case .rest: "Nothing due"
         }
         return isToday ? "Today, \(status)" : status
     }

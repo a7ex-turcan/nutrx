@@ -10,6 +10,8 @@ enum DayCompletion: Equatable {
     case someMet
     /// Every goal that counted was met — the same days `StreakService` counts as streak days.
     case allMet
+    /// Something was logged on a rest day, when nothing was due (schedules, #132) — no fill, but it opens.
+    case rest
 }
 
 /// What History needs to know about a nutrient, independent of SwiftData.
@@ -24,6 +26,8 @@ struct HistoryNutrient: Identifiable, Equatable {
     var endDate: Date? = nil
     /// Days between a course's end and its restart; they don't count either.
     var courseGaps: [ClosedRange<Date>] = []
+    /// Which days it's due (#132); off days don't count.
+    var schedule = NutrientSchedule()
 }
 
 /// One past (or the current) day in History.
@@ -44,12 +48,16 @@ struct HistoryDay: Identifiable, Equatable {
     /// Logged that day but not counted (a nutrient since removed, or excluded that day), in display order.
     let otherLogged: [Goal]
     let hasEntries: Bool
+    /// Nothing was due that day: every nutrient off (schedules, #132) or past its course. Neither met nor missed, so
+    /// it neither breaks nor extends a streak. A day whose nutrients were all excluded isn't one.
+    var isRest = false
 
     var id: Date { date }
     var metCount: Int { goals.filter(\.isMet).count }
 
     var completion: DayCompletion {
         guard hasEntries else { return .noEntries }
+        if isRest { return .rest }
         let met = metCount
         if met == 0 { return .noneMet }
         return met == goals.count ? .allMet : .someMet
@@ -92,26 +100,31 @@ struct HistoryLog {
             return HistoryDay.Goal(nutrientID: nutrient.id, total: total, isMet: met)
         }
 
-        let counted = nutrients.filter { nutrient in
+        let due = nutrients.filter { nutrient in
             !nutrient.isRemoved && calendar.startOfDay(for: nutrient.createdAt) <= start
                 && NutrientCourse.includes(nutrient.endDate, gaps: nutrient.courseGaps, day: start,
                                            calendar: calendar)
-                && !excludedIDs.contains(nutrient.id)
+                && nutrient.schedule.isCountedDay(start, calendar: calendar)
         }
+        let counted = due.filter { !excludedIDs.contains($0.id) }
         let countedIDs = Set(counted.map(\.id))
         let others = nutrients.filter { dayTotals[$0.id] != nil && !countedIDs.contains($0.id) }
 
         return HistoryDay(date: start, goals: counted.map(goal), otherLogged: others.map(goal),
-                          hasEntries: !dayTotals.isEmpty)
+                          hasEntries: !dayTotals.isEmpty, isRest: due.isEmpty)
     }
 
-    /// The most recent completed days with something logged, newest first.
+    /// The most recent completed days with something logged, newest first. Rest days aren't results, so they're left
+    /// out (the calendar still opens them).
     func recentDays(limit: Int) -> [HistoryDay] {
         totals.keys
             .filter { $0 < today }
             .sorted(by: >)
-            .prefix(limit)
+            .lazy
             .map(day)
+            .filter { !$0.isRest }
+            .prefix(limit)
+            .map { $0 }
     }
 
     /// The nutrients with an entry on a day, even ones whose entries net to 0 (a log, then a decrement).

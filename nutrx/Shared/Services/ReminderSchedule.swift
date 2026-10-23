@@ -22,6 +22,9 @@ enum ReminderSchedule {
         let loggedToday: Bool
         /// The last day of a set course (#99): nothing after it.
         var lastDay: Date? = nil
+        /// Which days it's due (#132): nothing on off days. A weekly schedule is due every day until the week's
+        /// count is reached.
+        var schedule = NutrientSchedule()
     }
 
     /// One pending notification: its identifier and when it fires.
@@ -54,6 +57,7 @@ enum ReminderSchedule {
                 guard let day = calendar.date(byAdding: .day, value: offset, to: today) else { return [] }
                 if offset == 0 && plan.loggedToday { return [] }
                 if !NutrientCourse.includes(plan.lastDay, day: day, calendar: calendar) { return [] }
+                if !plan.schedule.isDoseDay(day, calendar: calendar) { return [] }
                 return plan.times.compactMap { time in
                     guard let fireDate = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0,
                                                        of: day),

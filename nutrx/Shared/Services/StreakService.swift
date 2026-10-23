@@ -8,7 +8,8 @@ struct StreakResult {
 
 enum StreakService {
     /// Computes current and best streak from IntakeRecord history.
-    /// A streak day is a completed past day where every active, non-excluded nutrient hit its target.
+    /// A streak day is a completed past day where every due, non-excluded nutrient hit its target. A rest day, with
+    /// nothing due (schedules, #132), is stepped over: it neither breaks nor extends the streak.
     @MainActor
     static func compute(context: ModelContext) -> StreakResult {
         let calendar = Calendar.current
@@ -58,74 +59,69 @@ enum StreakService {
         // Decoded once, not per day.
         let courseGaps = Dictionary(nutrients.map { ($0.persistentModelID, $0.courseGaps(calendar: calendar)) },
                                     uniquingKeysWith: { first, _ in first })
+        let schedules = Dictionary(nutrients.map { ($0.persistentModelID, $0.schedule(calendar: calendar)) },
+                                   uniquingKeysWith: { first, _ in first })
 
-        // Helper: check if a day is a streak day
-        func isDayStreakDay(_ day: Date) -> Bool {
-            // Active nutrients on this day: non-deleted, created on or before this day, course not over (#99)
-            let activeNutrients = nutrients.filter { nutrient in
+        /// A rest day had nothing due (every nutrient off its schedule, past its course or not created yet): it
+        /// neither breaks nor extends a streak (#132).
+        enum DayStatus { case rest, streak, broken }
+
+        func status(_ day: Date) -> DayStatus {
+            // Due on this day: non-deleted, created on or before it, course not over (#99), a dose day (#132)
+            let due = nutrients.filter { nutrient in
                 calendar.startOfDay(for: nutrient.createdAt) <= day
                     && NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[nutrient.persistentModelID] ?? [],
                                                day: day, calendar: calendar)
+                    && schedules[nutrient.persistentModelID]?.isCountedDay(day, calendar: calendar) ?? true
             }
+            guard !due.isEmpty else { return .rest }
 
-            guard !activeNutrients.isEmpty else { return false }
+            // Something was due and nothing was logged: broken
+            guard daysWithRecords.contains(day) else { return .broken }
 
-            // Remove excluded nutrients
-            let nonExcluded = activeNutrients.filter { nutrient in
+            // Remove excluded nutrients; if all were excluded, it isn't a streak day
+            let nonExcluded = due.filter { nutrient in
                 !exclusionSet.contains("\(day.timeIntervalSince1970)-\(nutrient.persistentModelID)")
             }
-
-            // If all nutrients were excluded, treat as not a streak day
-            guard !nonExcluded.isEmpty else { return false }
+            guard !nonExcluded.isEmpty else { return .broken }
 
             let dayTotals = intakeByDayNutrient[day] ?? [:]
 
             // Every non-excluded nutrient must meet its goal
-            return nonExcluded.allSatisfy { nutrient in
+            let allMet = nonExcluded.allSatisfy { nutrient in
                 let total = dayTotals[nutrient.persistentModelID] ?? 0
                 return GoalProgress(nutrient: nutrient, current: total).countsAsMet
             }
+            return allMet ? .streak : .broken
         }
 
-        // Walk backward from yesterday to compute current streak
-        var currentStreak = 0
-        var day = calendar.date(byAdding: .day, value: -1, to: today)!
-
-        // Find the earliest record date to know when to stop
+        // Walk backward from yesterday to compute current streak, stepping over rest days
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
         let earliestDay = daysWithRecords.min() ?? today
-
-        while day >= earliestDay {
-            // If no records exist for this day, streak is broken
-            guard daysWithRecords.contains(day) else { break }
-            guard isDayStreakDay(day) else { break }
-            currentStreak += 1
+        var currentStreak = 0
+        var day = yesterday
+        walk: while day >= earliestDay {
+            switch status(day) {
+            case .rest: break
+            case .streak: currentStreak += 1
+            case .broken: break walk
+            }
             day = calendar.date(byAdding: .day, value: -1, to: day)!
         }
 
-        // Compute best streak by scanning all days with records
-        let sortedDays = daysWithRecords.sorted()
+        // Best streak: every day from the first record to yesterday, rest days stepped over
         var bestStreak = 0
         var runningStreak = 0
-
-        for i in sortedDays.indices {
-            let d = sortedDays[i]
-            if isDayStreakDay(d) {
-                // Check if consecutive with previous day
-                if i > 0 {
-                    let prevDay = sortedDays[i - 1]
-                    let expected = calendar.date(byAdding: .day, value: 1, to: prevDay)!
-                    if d == expected && runningStreak > 0 {
-                        runningStreak += 1
-                    } else {
-                        runningStreak = 1
-                    }
-                } else {
-                    runningStreak = 1
-                }
+        day = earliestDay
+        while day <= yesterday {
+            switch status(day) {
+            case .rest: break
+            case .streak:
+                runningStreak += 1
                 bestStreak = max(bestStreak, runningStreak)
-            } else {
-                runningStreak = 0
+            case .broken: runningStreak = 0
             }
+            day = calendar.date(byAdding: .day, value: 1, to: day)!
         }
 
         return StreakResult(current: currentStreak, best: bestStreak)

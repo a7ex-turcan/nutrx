@@ -42,6 +42,8 @@ struct WeeklyRecap: Equatable {
     let lastDay: Date
     /// Monday to Sunday: every goal met that day (the hero ring's lit segments). Days not counted are false.
     let fullDayFlags: [Bool]
+    /// The week's days that aren't rest days (schedules, #132): the hero ring's segments. 7 without schedules.
+    var dayCount = 7
     let goalsMet: Int
     let goalsCounted: Int
     /// Counted days with anything logged.
@@ -97,7 +99,7 @@ struct WeeklyRecap: Equatable {
                 continue
             }
             let day = log.day(date)
-            flags.append(day.hasEntries && !day.goals.isEmpty && day.completion == .allMet)
+            flags.append(day.hasEntries && !day.goals.isEmpty && !day.isRest && day.completion == .allMet)
             if day.hasEntries { daysLogged += 1 }
             goalsCounted += day.goals.count
             // A day with nothing logged meets nothing, even an "at most" goal: not opening the app isn't a result.
@@ -127,7 +129,8 @@ struct WeeklyRecap: Equatable {
         let (steadiest, slipped, overLimit) = picks(weeks)
 
         return WeeklyRecap(
-            weekStart: weekStart, lastDay: lastDay, fullDayFlags: flags, goalsMet: goalsMet,
+            weekStart: weekStart, lastDay: lastDay, fullDayFlags: flags,
+            dayCount: weekDays.filter { !log.day($0).isRest }.count, goalsMet: goalsMet,
             goalsCounted: goalsCounted, daysLogged: daysLogged, daysLoggedSoFar: daysLoggedSoFar, nutrients: weeks,
             steadiest: steadiest,
             slipped: slipped, overLimit: overLimit,
@@ -193,14 +196,16 @@ struct WeeklyRecap: Equatable {
         return now == 0 && previous == 0 ? nil : StreakChange(now: now, previous: previous)
     }
 
-    /// Consecutive full days ending on `day` — the same days `StreakService` counts.
+    /// Consecutive full days ending on `day` — the same days `StreakService` counts, stepping over rest days.
     static func streak(log: HistoryLog, endingOn day: Date) -> Int {
         var count = 0
         var date = day
         while let first = log.firstDay, date >= first {
             let result = log.day(date)
-            guard result.hasEntries, !result.goals.isEmpty, result.completion == .allMet else { break }
-            count += 1
+            if !result.isRest {
+                guard result.hasEntries, !result.goals.isEmpty, result.completion == .allMet else { break }
+                count += 1
+            }
             date = log.calendar.date(byAdding: .day, value: -1, to: date)!
         }
         return count

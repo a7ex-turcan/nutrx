@@ -254,6 +254,12 @@ nonisolated struct NutrientSchedule: Equatable, Sendable {
         }
     }
 
+    /// A day the daily rules count (History, streaks, analytics): a dose day under every day or a fixed kind. Never
+    /// under a weekly schedule, where a day counts only once met (`weeklyCountedDays`), which the caller works out.
+    func isCountedDay(_ day: Date, calendar: Calendar = .current) -> Bool {
+        weeklyTimes(on: day, calendar: calendar) == nil && isDoseDay(day, calendar: calendar)
+    }
+
     /// The weekly count in effect on `day`, or nil when it isn't under a weekly schedule.
     func weeklyTimes(on day: Date, calendar: Calendar = .current) -> Int? {
         if case .weekly(let times) = kind(on: day, calendar: calendar) { return times }
@@ -378,10 +384,8 @@ extension Nutrient {
     /// week's first few (`NutrientSchedule.weeklyCountedDays`), which needs the met days only the caller has. So the
     /// safe default is "not counted", and an unmet weekly day never reads as a miss.
     func counts(on day: Date, calendar: Calendar = .current) -> Bool {
-        let schedule = self.schedule(calendar: calendar)
-        return NutrientCourse.includes(endDate, gaps: courseGaps(calendar: calendar), day: day, calendar: calendar)
-            && schedule.weeklyTimes(on: day, calendar: calendar) == nil
-            && schedule.isDoseDay(day, calendar: calendar)
+        NutrientCourse.includes(endDate, gaps: courseGaps(calendar: calendar), day: day, calendar: calendar)
+            && schedule(calendar: calendar).isCountedDay(day, calendar: calendar)
     }
 
     /// On Today's list (and the widgets', the Watch's and stacks') on `day`: running and due. `weekDone` is whether a

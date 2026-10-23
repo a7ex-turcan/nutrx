@@ -658,6 +658,8 @@ Daily streak tracking, opt-in via `UserPreferences.streaksEnabled` (default `tru
 - `.maximum` — total ≤ `dailyTarget`
 - `.range` — total ≥ `dailyTarget` AND total ≤ `upperBound`
 
+**Rest days (#132):** a day with nothing due (every nutrient off its schedule, past its course or not created yet) neither breaks nor extends the streak; the walk and the best-streak scan step over it. A day whose nutrients were all excluded still breaks it.
+
 **UI:** flame streak chip in Today's day-score card (when ≥ 1), summary card in History, streak labels in small/medium widgets. `StreakService.compute(context:) → StreakResult` runs on foreground and after intake actions.
 
 ---
@@ -878,7 +880,14 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **On the nutrient:** `counts(on:)` (course and a fixed-kind dose day: the daily counting rule; never under a weekly schedule, where the caller adds the met days from `weeklyCountedDays`, so an unmet weekly day can't read as a miss) and `isDue(on:weekDone:)` (running and due: Today's list). `WeeklyRecap.weekStart` calls `NutrientSchedule.weekStart`, so recap weeks and schedule weeks are the same.
   - **`isRunning` stays schedule-free,** so Siri still sees every nutrient.
   - **CloudKit:** the field `CD_scheduleRaw` is in the development schema (2026-10-23). Production needs the user's Console deploy before any TestFlight build with it.
-- Nothing reads it yet: phase 2 moves the counting and list readers over.
+- **Phase 2a (counting):** off days don't count anywhere a day is judged.
+  - `HistoryNutrient.schedule`, `AnalyticsSummary` / `WeekdayPattern` `schedule:` and `ReminderSchedule.Plan.schedule` all use `NutrientSchedule.isCountedDay` (a fixed-kind dose day; never under weekly). Reminders use `isDoseDay`, so a weekly schedule reminds every day.
+  - **Rest days:** a day with nothing due is `HistoryDay.isRest`, which covers every nutrient off its schedule, past its course or not created yet. It's **not** a day whose nutrients were all excluded.
+    - It neither breaks nor extends a streak. `StreakService` steps over it in the current walk and in the best-streak scan, which now goes day by day from the first record. The recap's `streak(log:endingOn:)` does the same.
+    - History: logged, it's `DayCompletion.rest` (plain, but it opens, with the logs under "Also logged"); unlogged, it's `.noEntries`. Recent days leave rest days out.
+  - **The recap ring** has `WeeklyRecap.dayCount` segments, the week's days that aren't rest days, so a Mon/Wed/Fri week reads "3/3" and "all 3 days".
+  - Tests are in `NutrientScheduleTests` (Counting).
+- Still to come: the list readers (phase 2b: Today's Not today, stacks, widgets, the Watch, Health), the sheet, times a week.
 
 ### nutrx Pro: Report for your doctor (phase 8)
 

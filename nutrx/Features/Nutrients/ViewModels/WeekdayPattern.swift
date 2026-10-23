@@ -23,8 +23,10 @@ struct WeekdayPattern: Equatable {
     /// Days of each rated weekday needed before we mention a weakest one.
     static let insightMinimumDays = 2
 
+    /// Off days (schedules, #132) aren't rated, so a weekday with no dose days has no rate and its square is blank.
     init(totals: [Date: Double], goal: AnalyticsGoal, createdAt: Date, endDate: Date? = nil,
-         courseGaps: [ClosedRange<Date>] = [], today: Date, calendar: Calendar = .current) {
+         courseGaps: [ClosedRange<Date>] = [], schedule: NutrientSchedule = NutrientSchedule(), today: Date,
+         calendar: Calendar = .current) {
         let startOfToday = calendar.startOfDay(for: today)
         let firstTracked = calendar.startOfDay(for: createdAt)
 
@@ -32,7 +34,8 @@ struct WeekdayPattern: Equatable {
         var counted: [Int: Int] = [:]
         for offset in 1...Self.windowDays {
             guard let date = calendar.date(byAdding: .day, value: -offset, to: startOfToday),
-                  date >= firstTracked, NutrientCourse.includes(endDate, gaps: courseGaps, day: date, calendar: calendar)
+                  date >= firstTracked, NutrientCourse.includes(endDate, gaps: courseGaps, day: date, calendar: calendar),
+                  schedule.isCountedDay(date, calendar: calendar)
             else { continue }
             let weekday = calendar.component(.weekday, from: date)
             counted[weekday, default: 0] += 1

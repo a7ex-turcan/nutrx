@@ -43,16 +43,18 @@ final class NutrientAnalyticsViewModel {
         let lookback = max(selectedPeriod.days, WeekdayPattern.windowDays + 1)
         let totals = dayTotals(daysBack: lookback, now: now, calendar: calendar)
         let courseGaps = nutrient.courseGaps(calendar: calendar)
+        let schedule = nutrient.schedule(calendar: calendar)
 
         let summary = AnalyticsSummary(dayCount: selectedPeriod.days, totals: totals, goal: goal,
                                        createdAt: nutrient.createdAt, endDate: nutrient.endDate,
-                                       courseGaps: courseGaps, today: now,
+                                       courseGaps: courseGaps, schedule: schedule, today: now,
                                        calendar: calendar)
         self.summary = summary
         stats = AnalyticsStat.triplet(for: summary, period: selectedPeriod, unit: nutrient.unit,
                                       goalType: nutrient.goalType, calendar: calendar)
         weekdayPattern = WeekdayPattern(totals: totals, goal: goal, createdAt: nutrient.createdAt,
-                                        endDate: nutrient.endDate, courseGaps: courseGaps, today: now,
+                                        endDate: nutrient.endDate, courseGaps: courseGaps, schedule: schedule,
+                                        today: now,
                                         calendar: calendar)
     }
 

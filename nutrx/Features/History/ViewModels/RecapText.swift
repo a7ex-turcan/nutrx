@@ -25,8 +25,8 @@ struct RecapText {
     /// "31 of 42 goals met".
     var headline: String { "\(recap.goalsMet) of \(recap.goalsCounted) \(GoalProgress.goals(recap.goalsCounted)) met" }
 
-    /// The ring's centre: "5/7" over "full days".
-    var ringValue: String { "\(recap.fullDays)/7" }
+    /// The ring's centre: "5/7" over "full days"; out of fewer days when some were rest days (schedules, #132).
+    var ringValue: String { "\(recap.fullDays)/\(recap.dayCount)" }
     let ringLabel = "full days"
 
     /// Three or four sentences: steadiest, slipped, over a limit, streak.
@@ -189,7 +189,8 @@ struct RecapText {
 
     /// Every number the recap's words may use, for checking a reworded summary.
     var factNumbers: Set<Int> {
-        var numbers: Set<Int> = [recap.goalsMet, recap.goalsCounted, recap.fullDays, recap.daysLogged, 7]
+        var numbers: Set<Int> = [recap.goalsMet, recap.goalsCounted, recap.fullDays, recap.daysLogged, 7,
+                                 recap.dayCount]
         numbers.insert(recap.nutrients.filter { $0.daysMet == $0.daysCounted }.count)
         for week in recap.nutrients {
             numbers.formUnion([week.daysMet, week.daysCounted, week.missedDays.count, week.overLimitDays.count])

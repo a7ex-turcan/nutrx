@@ -155,7 +155,8 @@ enum NotificationService {
                     ReminderSchedule.Time(hour: $0.timeComponents.hour, minute: $0.timeComponents.minute)
                 },
                 loggedToday: (totals[nutrient.persistentModelID] ?? 0) > 0,
-                lastDay: nutrient.endDate
+                lastDay: nutrient.endDate,
+                schedule: nutrient.schedule()
             )
         }
         let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }) { first, _ in first }
