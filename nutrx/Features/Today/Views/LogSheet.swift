@@ -12,6 +12,10 @@ struct LogSheet: View {
     /// Opened from Not today (#132): a line saying the log won't count today (#247).
     let notDueNote: String?
 
+    /// Due today, so a log counts toward the goal: what "Fill to goal" is for (#256). Today passes a note only for a
+    /// nutrient in Not today.
+    private var isDueToday: Bool { notDueNote == nil }
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -133,14 +137,15 @@ struct LogSheet: View {
         var isFillToGoal = false
     }
 
-    /// ½× / 1× / 2× step, plus "Fill to goal" when there's a target left to reach.
+    /// ½× / 1× / 2× step, plus "Fill to goal" when there's a target left to reach, and it's due today: from Not
+    /// today a log won't count toward the goal, which the sheet says (#256).
     private var quickAmounts: [QuickAmount] {
         let step = nutrient.step
         var chips = [0.5, 1, 2].map { factor in
             QuickAmount(id: "\(factor)x", label: (step * factor).formattedAmount(maxFractionDigits: Self.precision),
                         value: step * factor)
         }
-        if let remaining = progress.amountToGoal {
+        if isDueToday, let remaining = progress.amountToGoal {
             chips.append(QuickAmount(id: "fill", label: "Fill to goal", value: remaining, isFillToGoal: true))
         }
         return chips

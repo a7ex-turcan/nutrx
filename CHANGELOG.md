@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### Improvements
+- **No "Fill to goal" on a day off** — Logging a nutrient from **Not today** no longer offers to fill it to its goal, since that log won't count toward it.
+
 ## v2.4 — submitted for review 2026-10-23 (build 173)
 
 ### nutrx Pro
