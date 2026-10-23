@@ -85,7 +85,7 @@ A collapsed section at the end of Today, after the groups, like My Nutrients' **
 
 ## 7. Data
 
-- `Nutrient.scheduleRaw: String = ""`. Empty means every day; otherwise the pieces of §3, for example `20261023=days:2,4,6` (Mon, Wed, Fri) or `20261023=cycle:5:2;20261101=week:3`. Weekdays use `Calendar` numbers (1 = Sunday, 2 = Monday).
+- `Nutrient.scheduleRaw: String = ""`. Empty means every day; otherwise the pieces of §3, for example `20261023=days:2,4,6` (Mon, Wed, Fri) or `20261023=cycle:5:2:20261026;20261101=week:3` (5 on, 2 off from Mon 26 Oct, then 3 times a week from 1 Nov; a cycle carries its own start day). Weekdays use `Calendar` numbers (1 = Sunday, 2 = Monday).
 - It's a CloudKit-safe scalar with a default. **Its field (`CD_scheduleRaw`) must be in the production CloudKit schema before the first TestFlight build with it:**
   - Development is imported with `cktool`, as for courses.
   - Production is the user's Console deploy.
