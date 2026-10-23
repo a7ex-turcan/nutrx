@@ -164,7 +164,8 @@ struct SettingsView: View {
             Button("Copy Address") { UIPasteboard.general.string = FeatureSuggestion.address }
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Send your idea to \(FeatureSuggestion.address). We read every message.")
+            // The address on its own line: after "to" it broke at its hyphen.
+            Text("Send your idea to\n\(FeatureSuggestion.address)")
         }
         .onChange(of: profile?.profileImageData, initial: true) { _, data in
             profileImage = data.flatMap(UIImage.init(data:))

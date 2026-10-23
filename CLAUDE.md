@@ -668,7 +668,7 @@ Uses `SKStoreReviewController` — no custom UI. Triggered after intake actions 
 
 **Settings → Rate nutrx** doesn't use the system prompt (iOS shows it at most three times a year and never in TestFlight, so a tap could do nothing). It opens the App Store's review page, `ReviewService.writeReviewURL` (`https://apps.apple.com/app/id6760843478?action=write-review`; app ID from App Store Connect), and records the prompt so the automatic one doesn't also ask for this version.
 
-**Settings → Suggest a feature** (#142), under Rate nutrx: nutrx has no analytics, so this and reviews are how we hear what people want. It opens a mail to `support@nutrx-labs.com` (the address on the website's support and privacy pages) with the subject "nutrx feature idea" and, under room to write, "nutrx 2.3.1 (152) · iOS 27.0 · iPhone" (`FeatureSuggestion.mailURL`, tested in `FeatureSuggestionTests`). Nothing leaves the device unless the user sends it. When nothing handles `mailto:` (no mail app; the simulator has no Mail), an alert gives the address with Copy Address.
+**Settings → Suggest a feature** (#142), under Rate nutrx: nutrx has no analytics, so this and reviews are how we hear what people want. It opens a mail to `support@nutrx-labs.com` (the address on the website's support and privacy pages) with the subject "nutrx feature idea" and, under room to write, "nutrx 2.3.1 (152) · iOS 27.0 · iPhone" (`FeatureSuggestion.mailURL`, tested in `FeatureSuggestionTests`). Nothing leaves the device unless the user sends it. When nothing handles `mailto:` (no mail app; the simulator has no Mail), an alert gives the address (on its own line, or it broke at the hyphen) with Copy Address.
 
 ---
 
