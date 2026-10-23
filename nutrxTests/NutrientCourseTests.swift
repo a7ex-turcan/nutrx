@@ -155,4 +155,16 @@ final class NutrientCourseTests: XCTestCase {
         XCTAssertNil(rates[7] ?? nil, "Saturday was paused")
         XCTAssertNil(rates[1] ?? nil, "Sunday was paused")
     }
+
+    /// Only the last day is stored, so the Duration sheet reopens a course the way it was last set on this device:
+    /// "for 5 days" no longer comes back as "until" (#188).
+    func testDurationSheetReopensOnTheModeLastChosen() {
+        XCTAssertEqual(DurationSheet.reopeningMode(lastChosen: "days", dayCount: 3), .days)
+        XCTAssertEqual(DurationSheet.reopeningMode(lastChosen: "date", dayCount: 3), .date)
+        XCTAssertEqual(DurationSheet.reopeningMode(lastChosen: "", dayCount: 3), .days, "nothing chosen on this device yet")
+        XCTAssertEqual(DurationSheet.reopeningMode(lastChosen: "ongoing", dayCount: 3), .days, "a course is never ongoing")
+        XCTAssertEqual(DurationSheet.reopeningMode(lastChosen: "days", dayCount: 365), .days)
+        XCTAssertEqual(DurationSheet.reopeningMode(lastChosen: "days", dayCount: 366), .date,
+                       "past the stepper's 365 days only the date can show it")
+    }
 }

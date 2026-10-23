@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### nutrx Pro
+- **Courses reopen the way you set them** — A course set "for 10 days" reopens in For days with the days left, instead of switching to Until a date.
+
 ### Improvements
 - **Suggest a feature** — A new row in Settings opens an email to the nutrx team with your app and iOS version filled in. nutrx doesn't track what you do in it, so this is the best way to tell us what you'd like next.
 
