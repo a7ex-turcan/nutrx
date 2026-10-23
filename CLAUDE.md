@@ -33,9 +33,18 @@ xcodebuild -scheme nutrx -configuration Debug -destination 'generic/platform=iOS
 
 Run tests (the `nutrx` scheme's test action runs `nutrxTests`):
 ```bash
-xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=iPhone 17'
+xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=nutrx Duo' -parallel-testing-enabled NO
 ```
-If parallel runs stall ("Simulator device failed to launch" from the test clones, over and over), run serially with `-parallel-testing-enabled NO`, and never start two test runs on the same simulator.
+Runs are serial because parallel test clones stall ("Simulator device failed to launch", over and over). Never start two test runs on the same simulator.
+
+### Simulators
+
+- **Use nutrx's own simulators:** "nutrx iPhone 17" (iOS 27.0), "nutrx SE" (iPhone SE 3rd generation, iOS 27.0: 375 × 667 pt, the shortest screen) and "nutrx Duo" (iPhone Duo, iOS 27.1). Other sessions boot the stock ones ("iPhone 17", "iPhone Duo", the iPads), so don't install builds or run tests there. **The exception is App Store screenshots**, which need sizes nutrx has no simulator of its own for (the 6.9″ iPhone, the 13″ iPad, the 46mm Watch; see App Store screenshots): check first that nobody else is using that simulator, and that it's signed out of iCloud before `-screenshotDemoData`. None of nutrx's own has been signed into iCloud, so `-screenshotDemoData` is safe on them (checked 2026-10-23: each device's `data/Library/Accounts/Accounts3.sqlite` lists only the App Store and holiday calendar accounts).
+- **Runtimes:** the iOS 27.1 runtime only has the iPhone Duo; every other iPhone and the iPads run on iOS 27.0.
+- **Run the full suite on the nutrx Duo.** On iOS 27.0 iPhones, nutrx iPhone 17 included, the StoreKit tests (`ProAccessTests`) time out and read the trial as "7 days" instead of "1 week"; on the Duo they pass (#223). Other test classes run fine on nutrx iPhone 17, so it's good for a quick single-class run.
+- **Pro** only works in runs started from Xcode (the scheme's StoreKit config). After `simctl launch`, Pro screens show the paywall. Uninstalling resets the test purchases.
+- **The Duo:** folding, the inner display and its screenshots are covered under App Store screenshots (iPhone Duo and iPad landscape).
+- **Console:** some framework messages, such as Swift Charts' warnings, go to stdout, not the unified log. Read them in an Xcode run's console or with `xcrun simctl launch --console-pty`; `log stream` misses them (#95).
 
 ## App Store Connect API
 
