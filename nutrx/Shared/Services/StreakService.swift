@@ -73,7 +73,8 @@ enum StreakService {
                 guard let total = totals[id], GoalProgress(nutrient: nutrient, current: total).countsAsMet,
                       !exclusionSet.contains("\(day.timeIntervalSince1970)-\(id)"),
                       calendar.startOfDay(for: nutrient.createdAt) <= day,
-                      NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[id] ?? [], day: day, calendar: calendar)
+                      NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[id] ?? [],
+                                              day: day, calendar: calendar)
                 else { return nil }
                 return day
             }
