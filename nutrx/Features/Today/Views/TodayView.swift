@@ -168,9 +168,13 @@ struct TodayView: View {
         // scrolls on (#243). Not beside the side column, which keeps the card in view.
         .overlay {
             if collapsesScoreCard {
-                CollapsingDayScoreOverlay(tracker: scoreCardTracker, score: viewModel.dayScore,
-                                          streak: preferences.streaksEnabled ? streak?.current : nil,
-                                          nextReminder: remindersShown ? viewModel.nextReminder(after: .now) : nil)
+                // On the card's minute timeline, so the copy drops a passed reminder when the card does.
+                TimelineView(.everyMinute) { timeline in
+                    CollapsingDayScoreOverlay(tracker: scoreCardTracker, score: viewModel.dayScore,
+                                              streak: preferences.streaksEnabled ? streak?.current : nil,
+                                              nextReminder: remindersShown
+                                                  ? viewModel.nextReminder(after: timeline.date) : nil)
+                }
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { measuredWidth = $0 }

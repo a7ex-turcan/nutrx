@@ -65,7 +65,7 @@ struct SegmentedDayRing: View {
             .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: metCount)
             .overlay {
                 if showsLabel {
-                    centreLabel(side: side, innerDiameter: side - 2 * inset - 2 * width)
+                    centreLabel(side: side, innerDiameter: Self.innerDiameter(side: side, lineWidth: width))
                 }
             }
             .frame(width: side, height: side)
@@ -85,6 +85,11 @@ struct SegmentedDayRing: View {
         return (0..<total).map { index in
             (from: Double(index) * share + endPadding, to: Double(index + 1) * share - endPadding)
         }
+    }
+
+    /// Inside the stroke, where the centre label goes: the side less the inset and the stroke on each side.
+    static func innerDiameter(side: CGFloat, lineWidth: CGFloat) -> CGFloat {
+        side - 2 * (side * 8 / 116) - 2 * lineWidth
     }
 
     private func centreLabel(side: CGFloat, innerDiameter: CGFloat) -> some View {
@@ -108,6 +113,9 @@ struct SegmentedDayRing: View {
         var onScoreFrame: ((CGRect) -> Void)? = nil
 
         private static let space = "centreLabel"
+
+        /// The label's square, inside the ring.
+        static func size(innerDiameter: CGFloat) -> CGFloat { innerDiameter * 0.85 }
 
         var body: some View {
             let primary = style == .onForest ? Theme.onForestPrimary : Theme.textPrimary
@@ -135,7 +143,7 @@ struct SegmentedDayRing: View {
             }
             .lineLimit(1)
             .dynamicTypeSize(...DynamicTypeSize.accessibility2)
-            .frame(width: innerDiameter * 0.85, height: innerDiameter * 0.85)
+            .frame(width: Self.size(innerDiameter: innerDiameter), height: Self.size(innerDiameter: innerDiameter))
             .coordinateSpace(.named(Self.space))
         }
     }

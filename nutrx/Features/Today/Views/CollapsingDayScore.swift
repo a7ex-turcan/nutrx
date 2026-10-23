@@ -60,13 +60,28 @@ struct CollapsingDayScoreOverlay: View {
                                        cardHeight: card.height, visibleHeight: height)
                         .frame(width: card.width)
                         .offset(x: card.minX - origin.x, y: Self.topMargin)
+                    if height <= CollapsingDayScore.barHeight {
+                        TouchBlocker()
+                            .frame(width: geo.size.width, height: Self.topMargin + height)
+                    }
                 }
+                // While it's collapsing, all that's under it is the hidden card itself, so a drag that starts on it
+                // scrolls Today. Once it's the bar, other cards are under it, and it keeps the touches so a tap
+                // can't press a hidden − or +.
+                .allowsHitTesting(height <= CollapsingDayScore.barHeight)
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY + Self.topMargin } action: {
             tracker.pinTop = $0
         }
     }
+}
+
+/// Takes the touches under the slim bar. A SwiftUI overlay alone doesn't keep them from a list row's buttons
+/// underneath, which live in the row's own hosting view: a tap on the bar pressed a hidden +.
+private struct TouchBlocker: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView { UIView() }
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 /// The day-score card part way to the slim bar: `visibleHeight` of its `cardHeight` showing, down to the 44 pt bar.
@@ -198,13 +213,11 @@ struct CollapsingDayScore: View {
     /// The ring's "3/6": rises and shrinks onto the bar's, at its size, fading as the bar's comes in.
     private func ringLabel(progress: Double) -> some View {
         let ring = DayScoreMorph.cardRing
-        let side: CGFloat = 116
-        let inner = side - 2 * (side * 8 / 116) - 2 * ring.lineWidth
         // It waits until the ring has rolled out of its way, and has landed by the time the bar's takes over.
         let stage = DayScoreMorph.stage(progress, from: 0.2, to: 0.9)
         let move = reduceMotion ? 0 : CGFloat(stage * stage * (3 - 2 * stage))
         // The score sits above the label's middle while the caption is under it; it's the score that has to land.
-        let labelSide = inner * 0.85
+        let labelSide = SegmentedDayRing.CentreLabel.size(innerDiameter: Self.ringInnerDiameter)
         let scoreOffset = ringScoreFrame.map { CGPoint(x: $0.midX - labelSide / 2, y: $0.midY - labelSide / 2) }
             ?? .zero
         let endScale = ringScoreFrame.map { $0.width > 0 ? barLabelWidth / $0.width : 0.5 } ?? 0.5
@@ -220,15 +233,18 @@ struct CollapsingDayScore: View {
             .allowsHitTesting(false)
     }
 
+    /// The card's ring is 116 pt.
+    private static let ringSide: CGFloat = 116
+    private static let ringInnerDiameter = SegmentedDayRing.innerDiameter(side: ringSide,
+                                                                          lineWidth: DayScoreMorph.cardRing.lineWidth)
+
     /// The ring's label as `SegmentedDayRing` lays it out in the card.
     private func ringLabelLayout(captionOpacity: Double = 1,
                                  onScoreFrame: ((CGRect) -> Void)? = nil) -> SegmentedDayRing.CentreLabel {
-        let ring = DayScoreMorph.cardRing
-        let side: CGFloat = 116
-        return SegmentedDayRing.CentreLabel(met: score.met, total: score.total,
-                                            caption: "\(GoalProgress.goals(score.total)) met", side: side,
-                                            innerDiameter: side - 2 * (side * 8 / 116) - 2 * ring.lineWidth,
-                                            captionOpacity: captionOpacity, onScoreFrame: onScoreFrame)
+        SegmentedDayRing.CentreLabel(met: score.met, total: score.total,
+                                     caption: "\(GoalProgress.goals(score.total)) met", side: Self.ringSide,
+                                     innerDiameter: Self.ringInnerDiameter,
+                                     captionOpacity: captionOpacity, onScoreFrame: onScoreFrame)
     }
 
     /// The bar's "3/6", coloured like the ring's.
