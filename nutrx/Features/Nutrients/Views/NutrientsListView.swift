@@ -803,7 +803,8 @@ struct NutrientsListView: View {
     private func refreshCostTotal() {
         let isPro = proAccess?.isPro == true
         costTotal = isPro ? SupplyCost.total(of: nutrients) : nil
-        runningLow = isPro ? nutrients.filter { $0.isRunningLow() } : []
+        // In the list's order (group, then within it), which isn't `nutrients`' own.
+        runningLow = isPro ? groupedSections.flatMap(\.nutrients).filter { $0.isRunningLow() } : []
     }
 
     private var newGroupButton: some View {
