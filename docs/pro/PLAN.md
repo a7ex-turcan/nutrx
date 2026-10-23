@@ -157,7 +157,7 @@ These ship to everyone and carry the model changes we want before Pro.
 
 ### After launch
 
-Pro features added after 2.1 have their own spec: courses in 2.2 (#99, in CLAUDE.md), and **schedules for 2.4 in [`SCHEDULES.md`](SCHEDULES.md)** (#132): set weekdays, every few days, on / off cycles and times a week.
+Pro features added after 2.1 have their own spec: courses in 2.2 (#99, in CLAUDE.md), and **schedules for 2.4 in [`SCHEDULES.md`](SCHEDULES.md)** (#132): set weekdays, every few days, on / off cycles and times a week. **Supply costs and Add to list for 2.5 are in [`SUPPLY-COSTS.md`](SUPPLY-COSTS.md)** (#134).
 
 ---
 
