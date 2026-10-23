@@ -867,6 +867,19 @@ A nutrient taken for a set time ("for 5 days", "until 24 Oct").
 - **Paywall:** listed as `ProFeature.courses` ("Courses", "Take something for a set time", green `hourglass`), so the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line include it (#147).
 - **Today on the last day** (#128): the card's third line reads "2,000 IU to go · ⌛ Last day" (`NutrientCard.isLastDay`, `NutrientCourse.isLastDay`, `CourseText.lastDay`), sharing the line like the supply hint, so the card's height doesn't change; if both don't fit the hint stays, and at accessibility sizes they wrap. It takes a low-supply hint's place that day; "Out of supply · Refilled?" still wins.
 
+### nutrx Pro: Schedules (#132, building for 2.4)
+
+The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycles and times a week, a collapsed **Not today** section on Today, and five build phases.
+- **Phase 1 (the rule):** `NutrientSchedule` sits in `Nutrient.swift` next to `NutrientCourse`, so the widgets and the Watch have it. It's pure and tested in `NutrientScheduleTests`.
+  - **Kinds:** `.everyDay`, `.weekdays(Set<Int>)` (1 = Sunday), `.cycle(on:off:start:)` (every N days is 1 on, N − 1 off; not due before its start) and `.weekly(times:)`.
+  - **Pieces:** each kind is a `Piece(from:kind:)`, in effect from its day, and `setting(_:from:)` adds one, so a change never rewrites the days before. Days before the first piece are every day.
+  - **Rule:** `isDoseDay`, plus the weekly helpers `weeklyCountedDays` (the first N met days of a Monday-to-Sunday week count), `weekProgress` and `isWholeWeekly` (partial weeks aren't judged).
+  - **Stored form:** `Nutrient.scheduleRaw` holds "20261023=days:2,4,6;20261030=week:3". Days are `yyyyMMdd`, shared with the course gaps through `StoredDay`, so a time zone change never moves them.
+  - **On the nutrient:** `counts(on:)` (course and a fixed-kind dose day: the daily counting rule; never under a weekly schedule, where the caller adds the met days from `weeklyCountedDays`, so an unmet weekly day can't read as a miss) and `isDue(on:weekDone:)` (running and due: Today's list). `WeeklyRecap.weekStart` calls `NutrientSchedule.weekStart`, so recap weeks and schedule weeks are the same.
+  - **`isRunning` stays schedule-free,** so Siri still sees every nutrient.
+  - **CloudKit:** the field `CD_scheduleRaw` is in the development schema (2026-10-23). Production needs the user's Console deploy before any TestFlight build with it.
+- Nothing reads it yet: phase 2 moves the counting and list readers over.
+
 ### nutrx Pro: Report for your doctor (phase 8)
 
 Mockups: `docs/pro/design/7-doctor-report/`.
@@ -962,6 +975,7 @@ User-defined nutrient to track.
 | `refillReminderDays` | `Int = 7` | Supply: remind when this many days are left |
 | `endDate` | `Date? = nil` | Courses (Pro, #99): the last day of a set course (start of day); nil = ongoing. Written through `setCourse(endDate:)` |
 | `courseGapsRaw` | `String = ""` | Courses: days between an end and a restart, "yyyyMMdd-yyyyMMdd" pairs, comma-separated; read via `courseGaps(calendar:)` |
+| `scheduleRaw` | `String = ""` | Schedules (Pro, #132): "yyyyMMdd=kind" pieces, ";"-separated, each in effect from its day; "" = every day. Read via `schedule(calendar:)` (`NutrientSchedule`) |
 
 **Relationships:** → many `IntakeRecord`? (cascade), → many `Exclusion`? (cascade), → many `NutrientReminder`? (cascade), → one `NutrientGroup?` (nullify)
 
