@@ -680,6 +680,11 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertFalse(summary.contains("every goal"), summary)
         XCTAssertTrue(summary.contains("Omega-3: 1 of 3 this week."), summary)
         XCTAssertTrue(RecapText(recap).factNumbers.contains(3), "the 3 in Omega-3 (and its count)")
+
+        // A number that's only in a weekly nutrient's name: B12, twice a week.
+        let b12 = WeeklyRecap.build(log: log, names: [weeklyID: "Vitamin B12", dailyID: "Magnesium"], week: day(10, 19),
+                                    streaksEnabled: false)
+        XCTAssertTrue(RecapText(b12).factNumbers.contains(12))
     }
 
     /// The report's longest run with only the weekly nutrient included: a daily one left out doesn't end the run on
