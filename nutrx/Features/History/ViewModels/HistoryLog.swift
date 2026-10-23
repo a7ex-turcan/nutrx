@@ -130,6 +130,22 @@ struct HistoryLog {
                           hasEntries: !dayTotals.isEmpty, isRest: due.isEmpty)
     }
 
+    /// A weekly schedule's week (#132): its counted days through `through`, and its count. Nil when the nutrient isn't
+    /// weekly that week, or the week isn't wholly under the schedule and the nutrient's course, since a partial week
+    /// isn't judged.
+    func weekResult(of nutrientID: UUID, weekStarting monday: Date, through: Date? = nil) -> NutrientSchedule.WeekProgress? {
+        guard let nutrient = nutrients.first(where: { $0.id == nutrientID }), !nutrient.isRemoved,
+              nutrient.schedule.isWholeWeekly(weekStarting: monday, calendar: calendar),
+              let times = nutrient.schedule.weeklyTimes(on: monday, calendar: calendar),
+              calendar.startOfDay(for: nutrient.createdAt) <= monday else { return nil }
+        let week = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: monday) }
+        guard week.allSatisfy({ NutrientCourse.includes(nutrient.endDate, gaps: nutrient.courseGaps, day: $0,
+                                                        calendar: calendar) }) else { return nil }
+        let last = through.map { calendar.startOfDay(for: $0) } ?? week[6]
+        let met = week.filter { $0 <= last && weeklyCounted[nutrientID]?.contains($0) == true }.count
+        return NutrientSchedule.WeekProgress(met: met, times: times)
+    }
+
     /// The most recent completed days with something logged, newest first. Rest days aren't results, so they're left
     /// out (the calendar still opens them).
     func recentDays(limit: Int) -> [HistoryDay] {

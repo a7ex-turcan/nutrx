@@ -42,6 +42,11 @@ struct ReportText {
         rate.map { "\(Int(($0 * 100).rounded()))%" } ?? "—"
     }
 
+    /// A weekly section's box (#132): "3 of 4", or "—" without a whole week in the period.
+    func weeksMet(_ weeks: AnalyticsWeeks) -> String {
+        weeks.total > 0 ? "\(weeks.met) of \(weeks.total)" : "—"
+    }
+
     var longestStreak: String { report.longestStreak == 1 ? "1 day" : "\(report.longestStreak) days" }
 
     /// "At least 4,000 IU", "At most 400 mg", "Between 120–160 g".

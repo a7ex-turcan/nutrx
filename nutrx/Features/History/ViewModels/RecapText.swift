@@ -57,6 +57,10 @@ struct RecapText {
             let limit = over.goalType == .range ? "its range" : "your limit"
             sentences.append("\(over.name) went over \(limit) \(when(over.overLimitDays)).")
         }
+        // Times a week (#132): judged by the week, not day by day.
+        for goal in recap.weekly {
+            sentences.append("\(goal.name): \(goal.met) of \(goal.times) \(recap.isWeekOver ? "this week" : "so far this week").")
+        }
         if let streak = recap.streak, streak.now > 0 {
             sentences.append("Your streak stood at \(days(streak.now)).")
         }
@@ -192,6 +196,7 @@ struct RecapText {
         var numbers: Set<Int> = [recap.goalsMet, recap.goalsCounted, recap.fullDays, recap.daysLogged, 7,
                                  recap.dayCount]
         numbers.insert(recap.nutrients.filter { $0.daysMet == $0.daysCounted }.count)
+        for goal in recap.weekly { numbers.formUnion([goal.met, goal.times]) }
         for week in recap.nutrients {
             numbers.formUnion([week.daysMet, week.daysCounted, week.missedDays.count, week.overLimitDays.count])
         }

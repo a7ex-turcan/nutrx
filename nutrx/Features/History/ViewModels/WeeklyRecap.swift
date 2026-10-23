@@ -20,6 +20,15 @@ struct WeeklyRecap: Equatable {
         var hitRate: Double { daysCounted > 0 ? Double(daysMet) / Double(daysCounted) : 0 }
     }
 
+    /// A nutrient taken a number of times a week (schedules, #132): how many of its days counted this week, judged
+    /// only for a week wholly under that schedule.
+    struct WeeklyGoal: Equatable {
+        let id: UUID
+        let name: String
+        let met: Int
+        let times: Int
+    }
+
     /// The weekday missed most over the last four weeks ("Sunday · 3 of the last 4 weeks").
     struct WeekdayMiss: Equatable {
         /// `Calendar` weekday, 1 = Sunday … 7 = Saturday.
@@ -59,6 +68,11 @@ struct WeeklyRecap: Equatable {
     let weakestWeekday: WeekdayMiss?
     /// nil with streaks turned off, or when there's no streak either week.
     let streak: StreakChange?
+    /// Nutrients taken a number of times a week (#132), in display order. They're in the goal totals on the days
+    /// they counted, but not in `nutrients` (a day-by-day hit rate would read 100 %, so no steadiest or slipped).
+    var weekly: [WeeklyGoal] = []
+    /// Whether the recap covers the whole week, Sunday included (it's built from Sunday evening, before Sunday ends).
+    var isWeekOver = true
 
     var fullDays: Int { fullDayFlags.filter { $0 }.count }
     /// Something to sum up: a goal counted and something was logged.
@@ -91,6 +105,10 @@ struct WeeklyRecap: Equatable {
         var missed: [UUID: [Date]] = [:]
         var over: [UUID: [Date]] = [:]
         let byID = Dictionary(log.nutrients.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        // Under a weekly schedule on any day this week (#132): counted only on met days, so judged by the week.
+        let weeklyIDs = Set(log.nutrients.filter { nutrient in
+            weekDays.contains { nutrient.schedule.weeklyTimes(on: $0, calendar: calendar) != nil }
+        }.map(\.id))
 
         let daysLoggedSoFar = weekDays.filter { $0 <= log.today && log.day($0).hasEntries }.count
         for date in weekDays {
@@ -103,7 +121,8 @@ struct WeeklyRecap: Equatable {
             if day.hasEntries { daysLogged += 1 }
             goalsCounted += day.goals.count
             // A day with nothing logged meets nothing, even an "at most" goal: not opening the app isn't a result.
-            for goal in day.goals {
+            goalsMet += day.goals.filter { weeklyIDs.contains($0.nutrientID) && $0.isMet }.count
+            for goal in day.goals where !weeklyIDs.contains(goal.nutrientID) {
                 counted[goal.nutrientID, default: 0] += 1
                 if day.hasEntries && goal.isMet {
                     met[goal.nutrientID, default: 0] += 1
@@ -117,6 +136,12 @@ struct WeeklyRecap: Equatable {
                     over[goal.nutrientID, default: []].append(date)
                 }
             }
+        }
+
+        let weekly = log.nutrients.compactMap { nutrient -> WeeklyGoal? in
+            guard weeklyIDs.contains(nutrient.id),
+                  let result = log.weekResult(of: nutrient.id, weekStarting: weekStart, through: lastDay) else { return nil }
+            return WeeklyGoal(id: nutrient.id, name: names[nutrient.id] ?? "", met: result.met, times: result.times)
         }
 
         let weeks = log.nutrients.compactMap { nutrient -> NutrientWeek? in
@@ -135,7 +160,8 @@ struct WeeklyRecap: Equatable {
             steadiest: steadiest,
             slipped: slipped, overLimit: overLimit,
             weakestWeekday: lastDay >= weekStart ? weakestWeekday(log: log, through: lastDay) : nil,
-            streak: streaksEnabled ? streakChange(log: log, weekStart: weekStart, sunday: sunday) : nil
+            streak: streaksEnabled ? streakChange(log: log, weekStart: weekStart, sunday: sunday) : nil,
+            weekly: weekly, isWeekOver: lastDay >= sunday
         )
     }
 
