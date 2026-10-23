@@ -52,6 +52,12 @@ struct ReportText {
         weeks.total > 0 ? "\(weeks.met) of \(weeks.total)" : "—"
     }
 
+    /// A section's third box: "Days logged", or for a weekly one "Days counted", the days its chart draws (every
+    /// logged day read 50 beside 24 bars, #257). Keyed like `chartCaption`, so the two agree.
+    func daysBox(_ section: DoctorReport.Section) -> (title: String, value: String) {
+        section.weeklyTimes == nil ? ("Days logged", "\(section.daysLogged)") : ("Days counted", "\(section.countedDays)")
+    }
+
     /// The summary table's rate: "81%", or for a weekly section "3 of 4 weeks", so it isn't read as days (#248).
     func summaryRate(_ section: DoctorReport.Section) -> String {
         guard let weeks = section.weeks else { return percent(section.hitRate) }

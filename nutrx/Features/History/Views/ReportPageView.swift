@@ -222,13 +222,8 @@ struct ReportPageView: View {
                     statBox("Hit rate", text.percent(section.hitRate))
                 }
                 statBox("Average", text.average(section))
-                // Weekly, only each week's first N met days count and show in the chart; every logged day would read
-                // 50 beside 24 bars (#257).
-                if section.weeks != nil {
-                    statBox("Days counted", "\(section.countedDays)")
-                } else {
-                    statBox("Days logged", "\(section.daysLogged)")
-                }
+                let days = text.daysBox(section)
+                statBox(days.title, days.value)
             }
             .frame(height: 48)
             Spacer().frame(height: 18)
