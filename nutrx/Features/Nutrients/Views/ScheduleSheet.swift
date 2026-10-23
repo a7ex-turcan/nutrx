@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Which days a nutrient is taken on (nutrx Pro, #132, docs/pro/SCHEDULES.md §6): every day, on certain weekdays,
-/// every few days, or on and off. Writes the kind to the draft; the form's Save or Add applies it from today on.
+/// every few days, on and off, or a number of times a week (any days; "At least" goals only). Writes the kind to the draft; the form's Save or Add applies it from today on.
 struct ScheduleSheet: View {
     @Bindable var draft: NutrientDraft
 
@@ -23,16 +23,14 @@ struct ScheduleSheet: View {
     @State private var daysOff = 2
     @State private var inWeeks = false
     @State private var start = Date.now
-    /// A weekly schedule (#132 phase 4) has no option here yet: it opens as Every day and Done keeps it, unless an
-    /// option is picked.
-    @State private var keepsLoadedKind = false
+    @State private var timesAWeek = 3
 
     private let text = ScheduleText()
     private var calendar: Calendar { .current }
     private var today: Date { calendar.startOfDay(for: .now) }
 
     enum Option: Hashable, CaseIterable {
-        case everyDay, weekdays, everyFewDays, onAndOff
+        case everyDay, weekdays, everyFewDays, onAndOff, timesAWeek
 
         var title: String {
             switch self {
@@ -40,6 +38,7 @@ struct ScheduleSheet: View {
             case .weekdays: "On certain days"
             case .everyFewDays: "Every few days"
             case .onAndOff: "On and off"
+            case .timesAWeek: "Times a week"
             }
         }
     }
@@ -58,21 +57,27 @@ struct ScheduleSheet: View {
         case .onAndOff:
             let unit = inWeeks ? 7 : 1
             return .cycle(on: daysOn * unit, off: daysOff * unit, start: first)
+        case .timesAWeek:
+            return .weekly(times: timesAWeek)
         }
     }
+
+    /// Times a week counts met days, which only makes sense for "At least" goals: a limit isn't something to meet a
+    /// number of times.
+    private var weeklyAllowed: Bool { draft.goalType == .minimum }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
                     ForEach(Option.allCases, id: \.self) { choice in
+                        let unavailable = choice == .timesAWeek && !weeklyAllowed
                         Button {
                             option = choice
-                            keepsLoadedKind = false
                         } label: {
                             HStack {
                                 Text(choice.title)
-                                    .foregroundStyle(Theme.textPrimary)
+                                    .foregroundStyle(unavailable ? Theme.textSecondary : Theme.textPrimary)
                                 Spacer()
                                 if option == choice {
                                     // A real selection, so a checkmark symbol is right here (CLAUDE.md, accessibility).
@@ -84,7 +89,12 @@ struct ScheduleSheet: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .disabled(unavailable)
                         .accessibilityAddTraits(option == choice ? .isSelected : [])
+                    }
+                } footer: {
+                    if !weeklyAllowed {
+                        Text("Times a week works with an At least goal.")
                     }
                 }
                 .listRowBackground(Theme.surfaceCard)
@@ -103,7 +113,7 @@ struct ScheduleSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
-                        if !keepsLoadedKind, let kind { draft.scheduleKind = kind }
+                        if let kind { draft.scheduleKind = kind }
                         dismiss()
                     }
                     .fontWeight(.semibold)
@@ -142,6 +152,15 @@ struct ScheduleSheet: View {
                         .monospacedDigit()
                 }
                 startPicker
+            } footer: {
+                footer(nil)
+            }
+            .listRowBackground(Theme.surfaceCard)
+        case .timesAWeek:
+            Section {
+                Stepper(value: $timesAWeek, in: NutrientSchedule.timesAWeek) {
+                    Text(text.summary(.weekly(times: timesAWeek))).monospacedDigit()
+                }
             } footer: {
                 footer(nil)
             }
@@ -258,9 +277,9 @@ struct ScheduleSheet: View {
         switch draft.scheduleKind {
         case .everyDay:
             option = .everyDay
-        case .weekly:
-            option = .everyDay
-            keepsLoadedKind = true
+        case .weekly(let times):
+            option = .timesAWeek
+            timesAWeek = times
         case .weekdays(let days):
             option = .weekdays
             weekdays = days

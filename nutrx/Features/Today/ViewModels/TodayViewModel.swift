@@ -9,8 +9,18 @@ final class TodayViewModel {
         /// Raw sum of today's records — can dip below 0 if an entry was deleted while a decrement remains.
         /// Display goes through `progress`, which floors at 0.
         let total: Double
+        /// Under a weekly schedule (#132): the week's counted days before today, and its count.
+        var weekBefore: NutrientSchedule.WeekProgress? = nil
 
         var progress: GoalProgress { GoalProgress(nutrient: nutrient, current: total) }
+
+        /// "2 of 3 this week", today included once its goal is met.
+        var weekly: NutrientSchedule.WeekProgress? {
+            weekBefore.map { week in
+                NutrientSchedule.WeekProgress(met: min(week.times, week.met + (progress.countsAsMet ? 1 : 0)),
+                                              times: week.times)
+            }
+        }
     }
 
     struct GroupSection: Identifiable {
@@ -32,6 +42,8 @@ final class TodayViewModel {
         var total: Double
         /// The next day it's due; nil when its course is over first.
         let nextDue: Date?
+        /// A weekly schedule whose count was reached this week: due again on Monday.
+        var isWeekDone = false
 
         var id: PersistentIdentifier { nutrient.persistentModelID }
     }
@@ -42,9 +54,12 @@ final class TodayViewModel {
     /// Anything running at all, due today or not: Today's empty state is only for when there's nothing.
     var hasRunningNutrients: Bool { !groupSections.isEmpty || !notToday.isEmpty }
 
-    /// Met vs. total across every nutrient shown today (collapsed groups included).
+    /// Met vs. total across every nutrient shown today (collapsed groups included). A weekly one (#132) counts only
+    /// once met today: until then it's on Today but not a goal of the day.
     var dayScore: DayScore {
-        DayScore(progresses: groupSections.flatMap(\.intakes).map(\.progress))
+        DayScore(progresses: groupSections.flatMap(\.intakes)
+            .filter { $0.weekBefore == nil || $0.progress.countsAsMet }
+            .map(\.progress))
     }
 
     /// The next reminder still to come today: a shown nutrient's reminder, unless that nutrient is already
@@ -174,7 +189,8 @@ final class TodayViewModel {
             let groupID = (nutrient.group ?? generalGroup)?.persistentModelID ?? generalGroup?.persistentModelID
             guard let gid = groupID else { continue }
             let total = totalsByID[nutrient.persistentModelID] ?? 0
-            sectionsByGroupID[gid, default: []].append(NutrientIntake(nutrient: nutrient, total: total))
+            sectionsByGroupID[gid, default: []].append(NutrientIntake(nutrient: nutrient, total: total,
+                                                                      weekBefore: nutrient.weekProgress(before: startOfDay)))
         }
 
         // Sort intakes within each group by groupSortOrder, then sortOrder as tiebreaker
@@ -204,7 +220,8 @@ final class TodayViewModel {
                 (groupIndex($0), $0.groupSortOrder, $0.sortOrder) < (groupIndex($1), $1.groupSortOrder, $1.sortOrder)
             }
             .map { NotTodayItem(nutrient: $0, total: totalsByID[$0.persistentModelID] ?? 0,
-                                nextDue: $0.nextDueDay(after: startOfDay)) }
+                                nextDue: $0.nextDueDay(after: startOfDay),
+                                isWeekDone: $0.weekProgress(before: startOfDay)?.isDone == true) }
     }
 
     func increment(_ nutrient: Nutrient, context: ModelContext) {
@@ -286,7 +303,8 @@ final class TodayViewModel {
         for sIdx in groupSections.indices {
             if let iIdx = groupSections[sIdx].intakes.firstIndex(where: { $0.nutrient.persistentModelID == id }) {
                 let old = groupSections[sIdx].intakes[iIdx]
-                groupSections[sIdx].intakes[iIdx] = NutrientIntake(nutrient: old.nutrient, total: old.total + delta)
+                groupSections[sIdx].intakes[iIdx] = NutrientIntake(nutrient: old.nutrient, total: old.total + delta,
+                                                                   weekBefore: old.weekBefore)
                 return
             }
         }

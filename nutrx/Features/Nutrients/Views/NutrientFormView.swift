@@ -280,6 +280,14 @@ struct NutrientFormView: View {
                 }
                 .buttonStyle(.plain)
                 .sheet(isPresented: $showSchedule) { ScheduleSheet(draft: draft) }
+                // Times a week with a goal it doesn't fit (the goal changed after): Save waits for one to change.
+                if let error = draft.scheduleError {
+                    Text(error)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.textAmberInk)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.bottom, 8)
+                }
             }
 
             // Supply (nutrx Pro): a saved nutrient only, since it reads the nutrient's own log.

@@ -708,6 +708,7 @@ struct TodayView: View {
             supply: supplyHint(for: entry.nutrient),
             onRefill: { nutrientToRefill = entry.nutrient },
             isLastDay: NutrientCourse.isLastDay(entry.nutrient.endDate, on: .now),
+            weekly: entry.weekly,
             // In the list the swipe action covers it; the grid has none.
             onEdit: inGrid ? { edit(entry.nutrient) } : nil
         )

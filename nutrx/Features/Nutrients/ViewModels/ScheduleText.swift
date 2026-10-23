@@ -9,6 +9,14 @@ struct ScheduleText {
     /// Today's collapsed section of running nutrients that aren't due today.
     static let notTodayTitle = "Not today"
 
+    /// A Not today row for a weekly schedule whose count is reached (weeks run Monday to Sunday).
+    static let doneThisWeek = "Done this week · back Monday"
+
+    /// A weekly nutrient's card on Today: "2 of 3 this week".
+    static func weekLine(_ week: NutrientSchedule.WeekProgress) -> String {
+        "\(week.met) of \(week.times) this week"
+    }
+
     /// The form's Schedule row: "Every day", "Mon, Wed, Fri", "Weekdays", "Sundays", "Every other day",
     /// "Every 3 days", "5 days on, 2 off", "3 weeks on, 1 off", "3 times a week".
     func summary(_ kind: NutrientSchedule.Kind) -> String {
@@ -40,6 +48,9 @@ struct ScheduleText {
     /// The sheet's footer: the next two days it's due from today: "Today, then Wed 28 Oct." or
     /// "Next: Sun 25 Oct, then Sun 1 Nov."
     func upcoming(_ kind: NutrientSchedule.Kind, today: Date) -> String {
+        if case .weekly(let times) = kind {
+            return "Any \(times == 1 ? "one day" : "\(times) days") a week, Monday to Sunday."
+        }
         let start = calendar.startOfDay(for: today)
         let schedule = NutrientSchedule().setting(kind, from: start, calendar: calendar)
         var days: [Date] = []

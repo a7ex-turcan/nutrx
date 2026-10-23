@@ -58,7 +58,7 @@ struct NotTodaySection: View {
     }
 
     private func row(_ item: TodayViewModel.NotTodayItem) -> some View {
-        let next = ScheduleText().next(item.nextDue, today: .now)
+        let next = item.isWeekDone ? ScheduleText.doneThisWeek : ScheduleText().next(item.nextDue, today: .now)
         return Button { onLog(item.nutrient) } label: {
             HStack(spacing: 12) {
                 NutrientIconTile(tint: item.nutrient.tint, symbolName: item.nutrient.symbolName, size: 36)

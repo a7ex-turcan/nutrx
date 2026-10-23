@@ -917,7 +917,12 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
 - **Phase 4b (the recap and the report):** `HistoryLog.weekResult(of:weekStarting:through:)` is a weekly nutrient's week (counted days, its count). It's nil for a week that isn't wholly under the weekly schedule and the course, so partial weeks aren't judged.
   - **The recap:** nutrients weekly on any day of the week stay in the goal totals (their counted days) but out of `nutrients`, so they're never steadiest, slipped or "every day" (a day-by-day rate would read 100 %). `WeeklyRecap.weekly` (`WeeklyGoal`) gives each judged one a sentence: "Vitamin D: 2 of 3 this week.", or "… so far this week." while Sunday isn't in yet (`isWeekOver`). Their numbers are in `factNumbers`.
   - **The report:** a section under a weekly schedule on the period's last day gets `weeks` (`DoctorReport.weeks`: whole Monday–Sunday weeks inside the period). Its box reads "Weeks met" with "3 of 4" (`ReportText.weeksMet`), and `hitRate` (the summary table) is the share of weeks. The longest run of full days steps over rest days.
-- Still to come: Today, the lists, reminders and the sheet option (4c), and shipping (phase 5).
+- **Phase 4c (times a week on Today and in the lists):** `Nutrient.weekProgress(before:)` / `weekProgress(including:)` read a weekly nutrient's week from its own logs (met days in its course, the first N counted).
+  - **`isDue`:** it decides by itself (no `weekDone` parameter any more): a week whose count was reached **before** today isn't due again until Monday, and the day it's reached it stays, as Done. So Today, stacks, the widgets, the Watch and the complications agree with no extra plumbing. `nextDueDay` is next Monday for a done week.
+  - **Today:** `NutrientIntake.weekBefore` (the week before today) and `weekly` (today added once met) give the card's third line, "2 of 3 this week" (`NutrientCard.weekly`, the first of the line's hints, `ScheduleText.weekLine`). `dayScore` leaves a weekly nutrient out until it's met today. Not today shows a done week as "Done this week · back Monday" (`NotTodayItem.isWeekDone`).
+  - **Reminders:** `ReminderSchedule.Plan.doneWeekStart`, set when the count is reached with today's logs, drops the rest of that week; the next week's stay.
+  - **The sheet:** a **Times a week** option (1–6, "Any 3 days a week, Monday to Sunday."). It's greyed out with a footnote unless the goal is "At least". `NutrientDraft.scheduleError` blocks Save if the goal changes afterwards, and its message shows under the Schedule row.
+- Still to come: shipping (phase 5): `ScheduleSheet.isOffered` for everyone, `ProFeature.schedules`, What's New, docs.
 
 ### nutrx Pro: Report for your doctor (phase 8)
 

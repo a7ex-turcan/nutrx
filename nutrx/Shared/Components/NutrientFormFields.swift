@@ -79,8 +79,17 @@ final class NutrientDraft {
                  scheduleKind: scheduleKind)
     }
 
+    /// Shown under the Schedule row when times a week (#132) meets a goal it doesn't fit.
+    var scheduleError: String? {
+        if case .weekly = scheduleKind, goalType != .minimum {
+            return "Times a week works with an At least goal. Change the goal or the schedule."
+        }
+        return nil
+    }
+
     var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty
+        scheduleError == nil
+            && !name.trimmingCharacters(in: .whitespaces).isEmpty
             && !unit.trimmingCharacters(in: .whitespaces).isEmpty
             && (step.parsedDouble ?? 0) > 0
             && (dailyTarget.parsedDouble ?? 0) > 0
