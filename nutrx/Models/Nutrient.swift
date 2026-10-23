@@ -271,6 +271,11 @@ nonisolated struct NutrientSchedule: Equatable, Sendable {
         return nil
     }
 
+    /// Any piece is a weekly schedule: the callers then work out its counted days (`weeklyCountedDays`).
+    var hasWeekly: Bool {
+        pieces.contains { if case .weekly = $0.kind { true } else { false } }
+    }
+
     /// The weekly count in effect on `day`, or nil when it isn't under a weekly schedule.
     func weeklyTimes(on day: Date, calendar: Calendar = .current) -> Int? {
         if case .weekly(let times) = kind(on: day, calendar: calendar) { return times }

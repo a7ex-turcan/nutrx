@@ -52,10 +52,10 @@ final class NutrientAnalyticsViewModel {
         self.summary = summary
         stats = AnalyticsStat.triplet(for: summary, period: selectedPeriod, unit: nutrient.unit,
                                       goalType: nutrient.goalType, calendar: calendar)
-        weekdayPattern = WeekdayPattern(totals: totals, goal: goal, createdAt: nutrient.createdAt,
-                                        endDate: nutrient.endDate, courseGaps: courseGaps, schedule: schedule,
-                                        today: now,
-                                        calendar: calendar)
+        // Under a weekly schedule (#132) there are no set days, so no weekday pattern (or weakest-day line).
+        weekdayPattern = schedule.weeklyTimes(on: now, calendar: calendar) != nil ? nil
+            : WeekdayPattern(totals: totals, goal: goal, createdAt: nutrient.createdAt, endDate: nutrient.endDate,
+                             courseGaps: courseGaps, schedule: schedule, today: now, calendar: calendar)
     }
 
     /// Reads Apple Health (live, never stored) and pairs it with the last four weeks of this nutrient.
