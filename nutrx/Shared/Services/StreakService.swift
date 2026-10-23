@@ -67,9 +67,14 @@ enum StreakService {
         for nutrient in nutrients {
             let id = nutrient.persistentModelID
             guard let schedule = schedules[id], schedule.hasWeekly else { continue }
+            // As in HistoryLog: only days it was tracked (created, in its course), so a met day in a course gap
+            // doesn't take a slot.
             let metDays = intakeByDayNutrient.compactMap { day, totals -> Date? in
                 guard let total = totals[id], GoalProgress(nutrient: nutrient, current: total).countsAsMet,
-                      !exclusionSet.contains("\(day.timeIntervalSince1970)-\(id)") else { return nil }
+                      !exclusionSet.contains("\(day.timeIntervalSince1970)-\(id)"),
+                      calendar.startOfDay(for: nutrient.createdAt) <= day,
+                      NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[id] ?? [], day: day, calendar: calendar)
+                else { return nil }
                 return day
             }
             weeklyCounted[id] = schedule.weeklyCountedDays(metDays, calendar: calendar)

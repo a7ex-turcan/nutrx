@@ -549,9 +549,55 @@ final class NutrientScheduleTests: XCTestCase {
                                             calendar: calendar, locale: Locale(identifier: "en_GB"))[0]
         XCTAssertEqual(hitRate.value, "60")
         XCTAssertEqual(hitRate.caption, "3 of 5 weeks")
+        XCTAssertLessThan(summary.average ?? 1, 1, "a daily average over every covered day, not just met ones")
 
         // A daily nutrient keeps its hit rate by days.
         XCTAssertNil(AnalyticsSummary(dayCount: 30, totals: [:], goal: goal, createdAt: day(9, 1), today: day(10, 26),
                                       calendar: calendar).weeks)
+    }
+
+    /// The analytics screen loads the days before the period back to its first week's Monday, so a week met on Monday
+    /// and Tuesday isn't read as missed when the period starts later that week.
+    func testAnalyticsLoadTheFirstWeeksEarlierDays() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        func daysAgo(_ n: Int) -> Date { cal.date(byAdding: .day, value: -n, to: today)! }
+        let iron = Nutrient(name: "Iron", unit: "mg", step: 18, dailyTarget: 18, sortOrder: 0)
+        iron.createdAt = daysAgo(70)
+        iron.scheduleRaw = NutrientSchedule().setting(.weekly(times: 2), from: daysAgo(70), calendar: cal)
+            .encode(calendar: cal)
+        context.insert(iron)
+        for n in 1...60 where [2, 3].contains(cal.component(.weekday, from: daysAgo(n))) {  // Mondays, Tuesdays
+            context.insert(IntakeRecord(nutrient: iron, amount: 18, date: daysAgo(n).addingTimeInterval(9 * 3600)))
+        }
+        try context.save()
+        let viewModel = NutrientAnalyticsViewModel(nutrient: iron, modelContext: context)
+        viewModel.selectedPeriod = .month
+        let weeks = try XCTUnwrap(viewModel.summary?.weeks)
+        XCTAssertGreaterThanOrEqual(weeks.total, 4)
+        XCTAssertEqual(weeks.met, weeks.total, "every week was met on its Monday and Tuesday")
+    }
+
+    /// A met day in a course gap doesn't take one of the week's slots for the streak (as in History).
+    func testTheStreakSkipsAWeeklyDayInACourseGap() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        let lastMonday = cal.date(byAdding: .day, value: -7, to: NutrientSchedule.weekStart(of: today, calendar: cal))!
+        let lastWednesday = cal.date(byAdding: .day, value: 2, to: lastMonday)!
+        let vitaminD = Nutrient(name: "Vitamin D", unit: "IU", step: 50000, dailyTarget: 50000, sortOrder: 0)
+        vitaminD.createdAt = cal.date(byAdding: .day, value: -30, to: today)!
+        vitaminD.scheduleRaw = NutrientSchedule().setting(.weekly(times: 1), from: vitaminD.createdAt, calendar: cal)
+            .encode(calendar: cal)
+        vitaminD.courseGapsRaw = NutrientCourse.encode([lastMonday...lastMonday], calendar: cal)
+        context.insert(vitaminD)
+        for day in [lastMonday, lastWednesday] {
+            context.insert(IntakeRecord(nutrient: vitaminD, amount: 50000, date: day.addingTimeInterval(9 * 3600)))
+        }
+        try context.save()
+        XCTAssertEqual(StreakService.compute(context: context).current, 1, "Wednesday counts; Monday was paused")
     }
 }

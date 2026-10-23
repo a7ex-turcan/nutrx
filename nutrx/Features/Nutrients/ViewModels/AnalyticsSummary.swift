@@ -88,9 +88,13 @@ struct AnalyticsSummary: Equatable {
         let counted = days.filter { $0.isTracked && !$0.isToday }
         countedDays = counted.count
         metDays = counted.filter(\.countsAsMet).count
-        average = counted.isEmpty ? nil : counted.reduce(0) { $0 + $1.total } / Double(counted.count)
+        // Under a weekly schedule only met days are tracked, so the average and best day go over every covered day
+        // instead: a real daily average, which can fall below the goal (#132).
+        let averaged = schedule.weeklyTimes(on: startOfToday, calendar: calendar) != nil
+            ? days.filter { covered($0.date) && !$0.isToday } : counted
+        average = averaged.isEmpty ? nil : averaged.reduce(0) { $0 + $1.total } / Double(averaged.count)
         // Highest intake; the earliest day wins a tie. Nothing logged at all → no best day.
-        bestDay = counted.filter { $0.total > 0 }.max { lhs, rhs in
+        bestDay = averaged.filter { $0.total > 0 }.max { lhs, rhs in
             lhs.total == rhs.total ? lhs.date > rhs.date : lhs.total < rhs.total
         }
 
