@@ -62,6 +62,25 @@ enum StreakService {
         let schedules = Dictionary(nutrients.map { ($0.persistentModelID, $0.schedule(calendar: calendar)) },
                                    uniquingKeysWith: { first, _ in first })
 
+        // Under a weekly schedule (#132) a day counts only once met, among its week's first few.
+        var weeklyCounted: [PersistentIdentifier: Set<Date>] = [:]
+        for nutrient in nutrients {
+            let id = nutrient.persistentModelID
+            guard let schedule = schedules[id], schedule.hasWeekly else { continue }
+            // As in HistoryLog: only days it was tracked (created, in its course), so a met day in a course gap
+            // doesn't take a slot.
+            let metDays = intakeByDayNutrient.compactMap { day, totals -> Date? in
+                guard let total = totals[id], GoalProgress(nutrient: nutrient, current: total).countsAsMet,
+                      !exclusionSet.contains("\(day.timeIntervalSince1970)-\(id)"),
+                      calendar.startOfDay(for: nutrient.createdAt) <= day,
+                      NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[id] ?? [],
+                                              day: day, calendar: calendar)
+                else { return nil }
+                return day
+            }
+            weeklyCounted[id] = schedule.weeklyCountedDays(metDays, calendar: calendar)
+        }
+
         /// A rest day had nothing due (every nutrient off its schedule, past its course or not created yet): it
         /// neither breaks nor extends a streak (#132).
         enum DayStatus { case rest, streak, broken }
@@ -72,9 +91,9 @@ enum StreakService {
                 calendar.startOfDay(for: nutrient.createdAt) <= day
                     && NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[nutrient.persistentModelID] ?? [],
                                                day: day, calendar: calendar)
-                    // TODO(#132 phase 4): add a weekly schedule's met days (`weeklyCountedDays`); until then a
-                    // weekly-only setup is all rest days. It can't be set before phase 4.
-                    && schedules[nutrient.persistentModelID]?.isCountedDay(day, calendar: calendar) ?? true
+                    // A dose day of a fixed schedule, or a weekly one's met day among its week's first few (#132)
+                    && (schedules[nutrient.persistentModelID]?.isCountedDay(day, calendar: calendar) ?? true
+                        || weeklyCounted[nutrient.persistentModelID]?.contains(day) == true)
             }
             guard !due.isEmpty else { return .rest }
 

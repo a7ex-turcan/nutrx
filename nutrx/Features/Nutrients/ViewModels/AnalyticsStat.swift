@@ -18,7 +18,15 @@ extension AnalyticsStat {
     /// For "at most" and range goals the highest day isn't the best one, so it's labelled "Peak day".
     static func triplet(for summary: AnalyticsSummary, period: AnalyticsPeriod, unit: String, goalType: GoalType,
                         calendar: Calendar = .current, locale: Locale = .current) -> [AnalyticsStat] {
-        let hitRate: AnalyticsStat = if let rate = summary.hitRate {
+        let hitRate: AnalyticsStat = if let weeks = summary.weeks {
+            // A weekly schedule (#132): the share of weeks that reached their count.
+            if let rate = summary.hitRate {
+                AnalyticsStat(label: "Hit rate", value: (rate * 100).rounded().formattedAmount(locale: locale, maxFractionDigits: 0),
+                              suffix: "%", caption: "\(weeks.met) of \(weeks.total) \(weeks.total == 1 ? "week" : "weeks")")
+            } else {
+                AnalyticsStat(label: "Hit rate", value: placeholder, caption: "No full weeks yet")
+            }
+        } else if let rate = summary.hitRate {
             AnalyticsStat(label: "Hit rate", value: (rate * 100).rounded().formattedAmount(locale: locale, maxFractionDigits: 0),
                           suffix: "%",
                           caption: "\(summary.metDays) of \(summary.countedDays) \(summary.countedDays == 1 ? "day" : "days")")

@@ -75,6 +75,8 @@ struct HistoryLog {
 
     private let totals: [Date: [UUID: Double]]
     private let excluded: [Date: Set<UUID>]
+    /// Under a weekly schedule (#132) a day counts only once met, among its week's first few: those days per nutrient.
+    private let weeklyCounted: [UUID: Set<Date>]
 
     /// - Parameters:
     ///   - totals: summed intake per nutrient, keyed by start of day. A day is present iff something was logged.
@@ -86,6 +88,18 @@ struct HistoryLog {
         self.excluded = exclusions
         self.calendar = calendar
         self.today = calendar.startOfDay(for: today)
+        self.weeklyCounted = Dictionary(uniqueKeysWithValues: nutrients.filter(\.schedule.hasWeekly).map { nutrient in
+            let metDays = totals.compactMap { day, byID -> Date? in
+                guard let total = byID[nutrient.id], !(exclusions[day]?.contains(nutrient.id) ?? false),
+                      calendar.startOfDay(for: nutrient.createdAt) <= day,
+                      NutrientCourse.includes(nutrient.endDate, gaps: nutrient.courseGaps, day: day, calendar: calendar),
+                      GoalProgress(current: max(0, total), goalType: nutrient.goalType, target: nutrient.target,
+                                   upperBound: nutrient.upperBound).countsAsMet
+                else { return nil }
+                return day
+            }
+            return (nutrient.id, nutrient.schedule.weeklyCountedDays(metDays, calendar: calendar))
+        })
     }
 
     func day(_ date: Date) -> HistoryDay {
@@ -104,8 +118,9 @@ struct HistoryLog {
             !nutrient.isRemoved && calendar.startOfDay(for: nutrient.createdAt) <= start
                 && NutrientCourse.includes(nutrient.endDate, gaps: nutrient.courseGaps, day: start,
                                            calendar: calendar)
-                // TODO(#132 phase 4): add a weekly schedule's met days (`weeklyCountedDays`).
-                && nutrient.schedule.isCountedDay(start, calendar: calendar)
+                // A dose day of a fixed schedule, or a weekly one's met day among its week's first few (#132)
+                && (nutrient.schedule.isCountedDay(start, calendar: calendar)
+                    || weeklyCounted[nutrient.id]?.contains(start) == true)
         }
         let counted = due.filter { !excludedIDs.contains($0.id) }
         let countedIDs = Set(counted.map(\.id))
