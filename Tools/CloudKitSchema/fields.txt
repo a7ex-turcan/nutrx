@@ -29,6 +29,7 @@ CD_Nutrient CD_isRemoved
 CD_Nutrient CD_name
 CD_Nutrient CD_notes
 CD_Nutrient CD_refillReminderDays
+CD_Nutrient CD_scheduleRaw
 CD_Nutrient CD_servingAmount
 CD_Nutrient CD_sortOrder
 CD_Nutrient CD_step
