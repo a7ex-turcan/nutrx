@@ -15,7 +15,8 @@ enum StackLogging {
     /// history, and so do those whose course has ended, #99, but a stack skips them).
     static func activeEntries(of stack: LogStack, now: Date = .now) -> [LogStackEntry] {
         (stack.entries ?? [])
-            .filter { $0.nutrient?.isRunning(on: now) ?? false }
+            // Only what's due today: an ended course (#99) or an off day of a schedule (#132) is skipped.
+            .filter { $0.nutrient?.isDue(on: now) ?? false }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 

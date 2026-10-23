@@ -61,8 +61,8 @@ struct NutrxTimelineProvider: TimelineProvider {
         let nutrientDescriptor = FetchDescriptor<Nutrient>(
             predicate: #Predicate { !$0.isRemoved }
         )
-        // As on Today: a nutrient whose course has ended (#99) is gone from the widgets.
-        let nutrients = ((try? context.fetch(nutrientDescriptor)) ?? []).filter { $0.isRunning(on: startOfDay) }
+        // As on Today: a nutrient whose course has ended (#99), or that isn't due today (#132), isn't in the widgets.
+        let nutrients = ((try? context.fetch(nutrientDescriptor)) ?? []).filter { $0.isDue(on: startOfDay) }
 
         // Fetch today's exclusions
         let exclusionDescriptor = FetchDescriptor<Exclusion>(

@@ -180,6 +180,7 @@ nutrx/
 │   │   │   ├── RecapTodayCard.swift         # "Your week" (Pro): Sunday 18:00 through Monday, ✕ hides it for that week.
 │   │   │   ├── StackSuggestionCard.swift    # "Log several at once" / Make a stack, before any stack exists (3+ nutrients).
 │   │   │   ├── HealthInsightsTodayCard.swift # Apple Health insights on the way / ready, See where, ✕ (Pro, #102).
+│   │   │   ├── NotTodaySection.swift        # Schedules (#132): collapsed "Not today" header + card of nutrients off today, "Next: Sunday".
 │   │   │   └── NotificationBannerView.swift
 │   │   └── ViewModels/
 │   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords.
@@ -216,7 +217,8 @@ nutrx/
 │   │       ├── HealthInsights.swift             # Where Health insights stand across nutrients (gathering / ready / …) for the hints (#102).
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       ├── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
-│   │       └── CourseText.swift                 # Courses (Pro, #99): "Until Fri 24 Oct · 5 days", "Last day today", "Ended 24 Oct".
+│   │       ├── CourseText.swift                 # Courses (Pro, #99): "Until Fri 24 Oct · 5 days", "Last day today", "Ended 24 Oct".
+│   │       └── ScheduleText.swift               # Schedules (Pro, #132): "Next: tomorrow / Sunday / Mon 2 Nov" for Not today.
 │   │
 │   ├── History/                 # Tab 4 — read-only log of past days.
 │   │   ├── Views/
@@ -328,7 +330,8 @@ nutrx/
     │   ├── NutrientGroup+Create.swift       # NutrientGroup.create(named:among:in:) — new user group before General.
     │   ├── NutrientGroup+Move.swift         # NutrientGroup.append(_:) — one or several nutrients to the end of a group, in order.
     │   ├── PreviewSampleData.swift
-    │   └── ScreenshotDemoData.swift         # DEBUG: -screenshotDemoData replaces the store with the App Store demo set.
+    │   ├── ScreenshotDemoData.swift         # DEBUG: -screenshotDemoData replaces the store with the App Store demo set.
+    │   └── ScheduleDebug.swift              # DEBUG: nutrx.debug.schedules sets schedules by name at launch (#132, until the sheet).
     ├── Intents/                         # App only. Siri & Shortcuts (see "Siri & App Shortcuts").
     │   ├── LogNutrientShortcutIntent.swift  # "Log Nutrient": nutrient + optional amount; NutrientShortcutLogging.
     │   ├── NutrientEntity.swift         # AppEntity + EntityStringQuery: nutrients by name, in Today's order.
@@ -896,7 +899,11 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
     - History: logged, it's `DayCompletion.rest` (plain, but it opens, with the logs under "Also logged"); unlogged, it's `.noEntries`. Recent days leave rest days out.
   - **The recap ring** has `WeeklyRecap.dayCount` segments, the week's days that aren't rest days, so a Mon/Wed/Fri week reads "3/3" and "all 3 days".
   - Tests are in `NutrientScheduleTests` (Counting).
-- Still to come: the list readers (phase 2b: Today's Not today, stacks, widgets, the Watch, Health), the sheet, times a week.
+- **Phase 2b (lists):** the list readers take only nutrients that are due today (`Nutrient.isDue`): Today, `StackLogging.activeEntries`, the widgets' `Provider`, `WatchTodayViewModel` and `NutrxComplication`. Siri (`NutrientEntityQuery`) and Health insights keep `isRunning`. Health's paired days are dose days (`HealthTrends.state(schedule:)`).
+  - **Today:** `TodayViewModel.notToday` (`NotTodayItem`: running, not due, Today's order, today's total, `nextDue` from `Nutrient.nextDueDay`) feeds `NotTodaySection`. That's a collapsed "NOT TODAY" header with a count (`@AppStorage("nutrx.showsNotToday")`), then one card of rows: tile, name and `ScheduleText.next` ("Next: tomorrow", "Next: Sunday", "Next: Mon 2 Nov", "Course ends first"). It sits after the groups in the list and in the grid. A row opens the log sheet; an off-day log is kept (`total(for:)` and `updateTotal` include Not today) but doesn't count.
+  - Today's empty state is only for no running nutrients (`hasRunningNutrients`). With everything off, the day score reads "Nothing due today" (`DayScore.title` with no goals) and the Watch reads "Nothing to track today".
+  - **Debug:** until the sheet exists, `ScheduleDebug` (DEBUG only) sets schedules by name at launch: `xcrun simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.schedules -dict "Vitamin D" "days:1"`, then relaunch. Use "daily" to go back.
+- Still to come: the Schedule sheet (phase 3), times a week (phase 4), shipping (phase 5).
 
 ### nutrx Pro: Report for your doctor (phase 8)
 

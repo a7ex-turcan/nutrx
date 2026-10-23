@@ -28,6 +28,8 @@ struct DayScore: Equatable {
     /// With nothing left to log toward but a goal over its limit: "1 over limit" (the widgets say the same).
     /// The count and its words are joined with non-breaking spaces so a wrap never leaves the number on its own.
     var title: String {
+        // Every nutrient is off today (schedules, #132): Today lists them under Not today.
+        if total == 0 { return "Nothing due today" }
         if toGo == 0, overLimit > 0 { return "\(overLimit)\u{00A0}over\u{00A0}limit" }
         if met == 0 { return "Let's get started" }
         if met == total { return "All done for today" }

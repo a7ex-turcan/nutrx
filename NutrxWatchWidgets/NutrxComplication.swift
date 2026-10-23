@@ -55,8 +55,8 @@ struct ComplicationProvider: TimelineProvider {
         let nutrientDescriptor = FetchDescriptor<Nutrient>(
             predicate: #Predicate { !$0.isRemoved }
         )
-        // As on Today: a nutrient whose course has ended (#99) doesn't count.
-        let nutrients = ((try? context.fetch(nutrientDescriptor)) ?? []).filter { $0.isRunning(on: startOfDay) }
+        // As on Today: a nutrient whose course has ended (#99), or that isn't due today (#132), doesn't count.
+        let nutrients = ((try? context.fetch(nutrientDescriptor)) ?? []).filter { $0.isDue(on: startOfDay) }
 
         let exclusionDescriptor = FetchDescriptor<Exclusion>(
             predicate: #Predicate<Exclusion> { $0.date >= startOfDay && $0.date < endOfDay }

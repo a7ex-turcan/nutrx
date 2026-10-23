@@ -27,9 +27,11 @@ final class DayScoreTests: XCTestCase {
         XCTAssertEqual(DayScore(met: 1, total: 3).title, "2\u{00A0}to\u{00A0}go")  // 33%
     }
 
-    func testNoNutrientsIsLetsGetStarted() {
+    /// No goals today: Today only shows the card then when every nutrient is off (schedules, #132); with no nutrients
+    /// at all it shows its empty state instead.
+    func testNoGoalsIsNothingDueToday() {
         let score = DayScore(met: 0, total: 0)
-        XCTAssertEqual(score.title, "Let's get started")
+        XCTAssertEqual(score.title, "Nothing due today")
         XCTAssertEqual(score.remaining, 0)
     }
 
