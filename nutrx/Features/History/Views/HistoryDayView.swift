@@ -34,7 +34,8 @@ struct HistoryDayView: View {
                                 .font(.headline)
                                 .foregroundStyle(Theme.textPrimary)
                                 .accessibilityAddTraits(.isHeader)
-                            Text("Removed or excluded that day, so not counted.")
+                            Text(day.isRest ? "Nothing was due that day, so not counted."
+                                 : "Removed, excluded or not due that day, so not counted.")
                                 .font(.footnote)
                                 .foregroundStyle(Theme.textSecondary)
                         }

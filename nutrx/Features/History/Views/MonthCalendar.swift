@@ -101,8 +101,9 @@ struct MonthCalendar: View {
             if isSelected {
                 Circle().strokeBorder(Theme.controlPrimary, lineWidth: 2)
             }
-            if state == .noneMet && !isToday && !isSelected {
-                // Logged but nothing met: no fill (§4.9), but a faint outline so it reads as tappable.
+            if (state == .noneMet || state == .rest) && !isToday && !isSelected {
+                // Logged but nothing met, or logged on a rest day (#132): no fill (§4.9), but a faint outline so it
+                // reads as tappable.
                 Circle().strokeBorder(Theme.surfaceChip, lineWidth: 2)
             }
             if isToday {
@@ -139,7 +140,7 @@ struct MonthCalendar: View {
         switch state {
         case .allMet: Theme.green
         case .someMet: Theme.green.opacity(0.25)
-        case .noneMet, .noEntries: .clear
+        case .noneMet, .noEntries, .rest: .clear
         }
     }
 
@@ -154,6 +155,7 @@ struct MonthCalendar: View {
         case .someMet: "Some goals met"
         case .noneMet: "No goals met"
         case .noEntries: "Nothing logged"
+        case .rest: "Nothing due"
         }
         return isToday ? "Today, \(status)" : status
     }

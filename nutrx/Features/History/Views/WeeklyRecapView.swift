@@ -58,8 +58,8 @@ struct WeeklyRecapView: View {
     private func hero(_ recap: WeeklyRecap) -> some View {
         let text = RecapText(recap)
         return heroCard(
-            ring: SegmentedDayRing(met: recap.fullDays, total: 7, caption: text.ringLabel),
-            ringSummary: "\(recap.fullDays) of 7 full days",
+            ring: SegmentedDayRing(met: recap.fullDays, total: recap.dayCount, caption: text.ringLabel),
+            ringSummary: "\(recap.fullDays) of \(recap.dayCount) full days",
             eyebrow: text.range,
             title: text.headline,
             body: viewModel.summary(for: recap)

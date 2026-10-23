@@ -1,3 +1,4 @@
+import SwiftData
 import XCTest
 @testable import nutrx
 
@@ -13,6 +14,10 @@ final class NutrientScheduleTests: XCTestCase {
     /// 2026: Mon 19 Oct … Sun 25 Oct, Mon 26 Oct.
     private func day(_ month: Int, _ day: Int) -> Date {
         calendar.date(from: DateComponents(year: 2026, month: month, day: day))!
+    }
+
+    private func day(_ month: Int, _ day: Int, hour: Int) -> Date {
+        calendar.date(from: DateComponents(year: 2026, month: month, day: day, hour: hour))!
     }
 
     private func schedule(_ raw: String) -> NutrientSchedule {
@@ -218,5 +223,104 @@ final class NutrientScheduleTests: XCTestCase {
 
         nutrient.isRemoved = true
         XCTAssertFalse(nutrient.isDue(on: day(10, 22), calendar: calendar))
+    }
+
+    // MARK: Counting (phase 2a): History, streaks, the recap, analytics, reminders
+
+    /// Mon, Wed, Fri from 1 Oct, in History: Tuesday is a rest day, logged or not.
+    private func monWedFriLog(totals: [Date: [UUID: Double]], id: UUID, today: Date) -> HistoryLog {
+        let nutrient = HistoryNutrient(id: id, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(10, 1),
+                                       isRemoved: false, schedule: schedule("20261001=days:2,4,6"))
+        return HistoryLog(nutrients: [nutrient], totals: totals, today: today, calendar: calendar)
+    }
+
+    func testHistoryRestDays() {
+        let id = UUID()
+        let log = monWedFriLog(totals: [day(10, 19): [id: 1], day(10, 20): [id: 1], day(10, 21): [id: 1]], id: id,
+                               today: day(10, 26))
+        XCTAssertEqual(log.day(day(10, 19)).completion, .allMet)
+        let tuesday = log.day(day(10, 20))
+        XCTAssertTrue(tuesday.isRest)
+        XCTAssertTrue(tuesday.goals.isEmpty)
+        XCTAssertEqual(tuesday.otherLogged.map(\.nutrientID), [id], "an off-day log is kept, not counted")
+        XCTAssertEqual(tuesday.completion, .rest)
+        XCTAssertTrue(log.day(day(10, 22)).isRest)
+        XCTAssertEqual(log.day(day(10, 22)).completion, .noEntries, "a rest day with nothing logged is plain")
+        XCTAssertFalse(log.day(day(10, 23)).isRest)
+        XCTAssertEqual(log.recentDays(limit: 7).map(\.date), [day(10, 21), day(10, 19)], "rest days aren't results")
+    }
+
+    /// A day whose nutrients were all excluded isn't a rest day: it still breaks a streak, as before.
+    func testAnExcludedDayIsntARestDay() {
+        let id = UUID()
+        let nutrient = HistoryNutrient(id: id, goalType: .minimum, target: 1, upperBound: nil, createdAt: day(10, 1),
+                                       isRemoved: false)
+        let log = HistoryLog(nutrients: [nutrient], totals: [day(10, 20): [id: 1]],
+                             exclusions: [day(10, 20): [id]], today: day(10, 26), calendar: calendar)
+        XCTAssertFalse(log.day(day(10, 20)).isRest)
+    }
+
+    /// Every other day, logged on each dose day: the off days in between don't break the streak.
+    func testTheStreakStepsOverRestDays() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        func daysAgo(_ n: Int) -> Date { cal.date(byAdding: .day, value: -n, to: today)! }
+        let magnesium = Nutrient(name: "Magnesium", unit: "mg", step: 200, dailyTarget: 200, sortOrder: 0)
+        magnesium.createdAt = daysAgo(12)
+        magnesium.scheduleRaw = NutrientSchedule()
+            .setting(.cycle(on: 1, off: 1, start: daysAgo(10)), from: daysAgo(12), calendar: cal).encode(calendar: cal)
+        context.insert(magnesium)
+        for n in [10, 8, 6, 4, 2] {
+            context.insert(IntakeRecord(nutrient: magnesium, amount: 200, date: daysAgo(n).addingTimeInterval(9 * 3600)))
+        }
+        try context.save()
+        XCTAssertEqual(StreakService.compute(context: context).current, 5)
+        XCTAssertEqual(StreakService.compute(context: context).best, 5)
+
+        let missed = try context.fetch(FetchDescriptor<IntakeRecord>()).first { cal.isDate($0.date, inSameDayAs: daysAgo(4)) }
+        context.delete(try XCTUnwrap(missed))
+        try context.save()
+        XCTAssertEqual(StreakService.compute(context: context).current, 1, "a missed dose day still breaks it")
+        XCTAssertEqual(StreakService.compute(context: context).best, 3)
+    }
+
+    /// A Mon / Wed / Fri week met in full is 3 of 3 full days, not 3 of 7.
+    func testTheRecapCountsOnlyDueDays() {
+        let id = UUID()
+        let log = monWedFriLog(totals: [day(10, 19): [id: 1], day(10, 21): [id: 1], day(10, 23): [id: 1]], id: id,
+                               today: day(10, 26))
+        let recap = WeeklyRecap.build(log: log, names: [id: "Magnesium"], week: day(10, 19), streaksEnabled: true)
+        XCTAssertEqual(recap.dayCount, 3)
+        XCTAssertEqual(recap.fullDays, 3)
+        XCTAssertEqual(RecapText(recap).ringValue, "3/3")
+        XCTAssertTrue(RecapText(recap).summary.hasPrefix("You met every goal on all 3 days."))
+        XCTAssertEqual(recap.streak?.now, 3, "the rest days in between don't break the recap's streak")
+    }
+
+    func testAnalyticsTrackOnlyDoseDays() {
+        let goal = AnalyticsGoal(goalType: .minimum, target: 1, upperBound: nil)
+        let monWedFri = schedule("20261001=days:2,4,6")
+        let summary = AnalyticsSummary(dayCount: 8, totals: [day(10, 19): 1, day(10, 21): 1], goal: goal,
+                                       createdAt: day(10, 1), schedule: monWedFri, today: day(10, 26),
+                                       calendar: calendar)
+        XCTAssertEqual(summary.countedDays, 3, "Mon 19, Wed 21 and Fri 23; Monday 26 is today, not counted yet")
+        XCTAssertEqual(summary.metDays, 2)
+
+        // Created with the schedule: before 1 Oct every day would count, Tuesdays included.
+        let pattern = WeekdayPattern(totals: [:], goal: goal, createdAt: day(10, 1), schedule: monWedFri,
+                                     today: day(10, 26), calendar: calendar)
+        let rates = Dictionary(uniqueKeysWithValues: pattern.entries.map { ($0.weekday, $0.hitRate) })
+        XCTAssertNotNil(rates[2] ?? nil, "Monday is rated")
+        XCTAssertNil(rates[3] ?? nil, "Tuesday has no dose days, so its square is blank")
+    }
+
+    func testRemindersOnlyOnDoseDays() {
+        let plan = ReminderSchedule.Plan(nutrientID: UUID(), times: [.init(hour: 9, minute: 0)], loggedToday: false,
+                                         schedule: schedule("20261001=days:2,4,6"))
+        let occurrences = ReminderSchedule.occurrences(for: [plan], now: day(10, 19, hour: 7), calendar: calendar)
+        XCTAssertEqual(occurrences.prefix(4).map(\.fireDate),
+                       [day(10, 19, hour: 9), day(10, 21, hour: 9), day(10, 23, hour: 9), day(10, 26, hour: 9)])
     }
 }
