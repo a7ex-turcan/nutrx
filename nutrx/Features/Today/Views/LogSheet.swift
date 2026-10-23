@@ -236,6 +236,13 @@ struct LogSheet: View {
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
                 keyboardShown = false
             }
+            // While the amount is edited it has no grouping, so deleting a digit can't leave separators in the wrong
+            // places ("1.000" → "1.00", which de reads as 1). Once the field is left it's grouped again, like the
+            // chips and the Log button ("123456789" → "123,456,789", #258). One that doesn't parse stays as typed.
+            .onChange(of: focusedField) { previous, current in
+                guard previous == .amount || current == .amount, let value = amountText.parsedDouble else { return }
+                setAmount(value)
+            }
             .task(id: focusedField) {
                 do { try await Task.sleep(for: .milliseconds(350)) } catch { return }
                 switch focusedField {
@@ -537,8 +544,9 @@ struct LogSheet: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// Grouped, except while the field is being edited.
     private func setAmount(_ value: Double) {
-        amountText = value.formattedAmount(maxFractionDigits: Self.precision)
+        amountText = value.formattedAmount(maxFractionDigits: Self.precision, grouped: focusedField != .amount)
     }
 }
 
