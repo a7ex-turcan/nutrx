@@ -105,6 +105,29 @@ Released on the App Store on 21 Oct 2026 (build 128, phased release; tag `v2.2.1
 | Next reminder and notification banner refresh right away | ✅ Shipped (v2.2.1, #44, #45) |
 | Courses listed on the Pro screens | ✅ Shipped (v2.2.1, #147) |
 
+### v2.3 — Large screens ✅
+
+Released on the App Store on 23 Oct 2026 (build 148, phased release; tag `v2.3`).
+
+| Feature | Status |
+|---|---|
+| iPad: readable column, log sheet as a form sheet | ✅ Shipped (v2.3, #151) |
+| iPad: Today in two columns, side column on wide screens | ✅ Shipped (v2.3, #152) |
+| iPad: My Nutrients as a split view | ✅ Shipped (v2.3, #153) |
+| iPad: History as a split view | ✅ Shipped (v2.3, #154, #196) |
+| iPad: one column at the largest text sizes | ✅ Shipped (v2.3, #155) |
+| Today keeps its place when the layout changes | ✅ Shipped (v2.3, part of #198) |
+| iPhone Duo: the large-screen layouts when unfolded | ✅ Shipped (v2.3, #130) |
+| "What's new" card on Today after an update | ✅ Shipped (v2.3, #148) |
+| "Last day" on a course's card (Pro) | ✅ Shipped (v2.3, #128) |
+| Analytics goal labels beside the chart; large text sizes | ✅ Shipped (v2.3, #47, #66) |
+| VoiceOver doesn't read done goals as "Selected" | ✅ Shipped (v2.3, #77, #203) |
+| Select bar at accessibility sizes | ✅ Shipped (v2.3, #171) |
+| Stack log sheet: totals on one line, rows scroll | ✅ Shipped (v2.3, #97, #180) |
+| Supply hints shorten to fit | ✅ Shipped (v2.3, #185) |
+| Paywall: plans in view at large sizes and on iPad | ✅ Shipped (v2.3, #161, #189, #205) |
+| App Store screenshots: iPhone Duo and iPad landscape | ✅ Shipped (v2.3, #211) |
+
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
 ---

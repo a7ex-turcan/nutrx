@@ -12,7 +12,7 @@ All notable changes to nutrx are documented in this file.
 ### Fixes
 - **Log button in view on shorter screens** — On the iPhone SE and the folded iPhone Duo, the log sheet opens tall enough to show the Log button, so you no longer have to drag it up first.
 
-## v2.3 — in review
+## v2.3 — 2026-10-23
 
 ### nutrx Pro
 - **"Last day" for courses** — On the last day of a course, its card on Today says so next to the goal, so the nutrient leaving Today tomorrow isn't a surprise.
