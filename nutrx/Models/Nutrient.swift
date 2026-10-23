@@ -404,18 +404,53 @@ extension Nutrient {
             && schedule(calendar: calendar).isCountedDay(day, calendar: calendar)
     }
 
-    /// The next day it's due after `day`, or nil when its course is over first (Today's Not today line).
+    /// The next day it's due after `day`, or nil when its course is over first (Today's Not today line). A weekly
+    /// schedule whose count is reached is due again next Monday.
     func nextDueDay(after day: Date, calendar: Calendar = .current) -> Date? {
-        guard let next = schedule(calendar: calendar).nextDoseDay(after: day, calendar: calendar),
-              !hasEnded(by: next, calendar: calendar) else { return nil }
+        let next: Date?
+        if weekProgress(including: day, calendar: calendar)?.isDone == true {
+            next = calendar.date(byAdding: .day, value: 7, to: NutrientSchedule.weekStart(of: day, calendar: calendar))
+        } else {
+            next = schedule(calendar: calendar).nextDoseDay(after: day, calendar: calendar)
+        }
+        guard let next, !hasEnded(by: next, calendar: calendar) else { return nil }
         return next
     }
 
-    /// On Today's list (and the widgets', the Watch's and stacks') on `day`: running and due. `weekDone` is whether a
-    /// weekly schedule's count was reached before `day`, from the caller's met days; on the day it's reached the
-    /// nutrient stays, as Done. `isRunning` itself knows nothing of schedules, so Siri still sees every nutrient.
-    func isDue(on day: Date = .now, weekDone: Bool = false, calendar: Calendar = .current) -> Bool {
+    /// Under a weekly schedule (#132): the counted days of `day`'s week (those before it, or through it with
+    /// `including`) and the count. Nil when `day` isn't under one. Read from its own logs, so Today, stacks, the
+    /// widgets, the Watch and reminders agree.
+    func weekProgress(before day: Date, calendar: Calendar = .current) -> NutrientSchedule.WeekProgress? {
+        weekProgress(of: day, throughDay: false, calendar: calendar)
+    }
+
+    func weekProgress(including day: Date, calendar: Calendar = .current) -> NutrientSchedule.WeekProgress? {
+        weekProgress(of: day, throughDay: true, calendar: calendar)
+    }
+
+    private func weekProgress(of day: Date, throughDay: Bool, calendar: Calendar) -> NutrientSchedule.WeekProgress? {
+        let schedule = self.schedule(calendar: calendar)
+        let start = calendar.startOfDay(for: day)
+        guard schedule.weeklyTimes(on: start, calendar: calendar) != nil,
+              let end = calendar.date(byAdding: .day, value: throughDay ? 1 : 0, to: start) else { return nil }
+        let monday = NutrientSchedule.weekStart(of: start, calendar: calendar)
+        var totals: [Date: Double] = [:]
+        for record in intakeRecords ?? [] where record.date >= monday && record.date < end {
+            totals[calendar.startOfDay(for: record.date), default: 0] += record.amount
+        }
+        let gaps = courseGaps(calendar: calendar)
+        let metDays = totals.compactMap { date, total -> Date? in
+            GoalProgress(nutrient: self, current: max(0, total)).countsAsMet
+                && NutrientCourse.includes(endDate, gaps: gaps, day: date, calendar: calendar) ? date : nil
+        }
+        return schedule.weekProgress(on: start, metDays: metDays, calendar: calendar)
+    }
+
+    /// On Today's list (and the widgets', the Watch's and stacks') on `day`: running and due. A weekly schedule
+    /// whose count was reached before `day` isn't due again until Monday; on the day it's reached the nutrient stays,
+    /// as Done. `isRunning` itself knows nothing of schedules, so Siri still sees every nutrient.
+    func isDue(on day: Date = .now, calendar: Calendar = .current) -> Bool {
         isRunning(on: day, calendar: calendar) && schedule(calendar: calendar).isDoseDay(day, calendar: calendar)
-            && !weekDone
+            && weekProgress(before: day, calendar: calendar)?.isDone != true
     }
 }

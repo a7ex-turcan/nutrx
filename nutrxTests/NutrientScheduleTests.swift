@@ -217,12 +217,30 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertFalse(nutrient.isDue(on: day(10, 24), calendar: calendar))
         XCTAssertTrue(nutrient.isRunning(on: day(10, 24), calendar: calendar), "isRunning knows nothing of schedules")
 
-        nutrient.scheduleRaw = "20261019=week:2"
-        XCTAssertTrue(nutrient.isDue(on: day(10, 22), weekDone: false, calendar: calendar))
-        XCTAssertFalse(nutrient.isDue(on: day(10, 22), weekDone: true, calendar: calendar))
-
         nutrient.isRemoved = true
-        XCTAssertFalse(nutrient.isDue(on: day(10, 22), calendar: calendar))
+        XCTAssertFalse(nutrient.isDue(on: day(10, 25), calendar: calendar))
+    }
+
+    /// Twice a week, met on Monday and Tuesday: due through Tuesday (it stays, Done, the day it's reached), then not
+    /// until next Monday. Worked out from its own logs.
+    func testAWeeklyNutrientIsDueUntilItsWeekIsDone() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let magnesium = Nutrient(name: "Magnesium", unit: "mg", step: 200, dailyTarget: 200, sortOrder: 0)
+        magnesium.createdAt = day(10, 1)
+        magnesium.scheduleRaw = "20261001=week:2"
+        context.insert(magnesium)
+        for date in [19, 20] {
+            context.insert(IntakeRecord(nutrient: magnesium, amount: 200, date: day(10, date, hour: 9)))
+        }
+        try context.save()
+        XCTAssertTrue(magnesium.isDue(on: day(10, 20), calendar: calendar))
+        XCTAssertEqual(magnesium.weekProgress(including: day(10, 20), calendar: calendar),
+                       NutrientSchedule.WeekProgress(met: 2, times: 2))
+        XCTAssertFalse(magnesium.isDue(on: day(10, 21), calendar: calendar))
+        XCTAssertFalse(magnesium.isDue(on: day(10, 25), calendar: calendar))
+        XCTAssertEqual(magnesium.nextDueDay(after: day(10, 21), calendar: calendar), day(10, 26))
+        XCTAssertTrue(magnesium.isDue(on: day(10, 26), calendar: calendar), "a new week")
     }
 
     // MARK: Counting (phase 2a): History, streaks, the recap, analytics, reminders
@@ -705,5 +723,103 @@ final class NutrientScheduleTests: XCTestCase {
         let report = DoctorReport.build(log: log, names: [weeklyID: "Iron"], units: [weeklyID: "mg"],
                                         start: day(10, 12), end: day(10, 25), nutrientIDs: [weeklyID])
         XCTAssertEqual(report.longestStreak, 4, "its four counted days, all met")
+    }
+
+    // MARK: Times a week (phase 4c): Today, reminders, the sheet
+
+    /// Twice a week, nothing met yet this week: on Today with "0 of 2", outside the day score until met today.
+    func testTodayCountsAWeeklyNutrientOnceMet() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        context.insert(NutrientGroup(name: "General", sortOrder: Int.max, isSystem: true))
+        let iron = Nutrient(name: "Iron", unit: "mg", step: 18, dailyTarget: 18, sortOrder: 0)
+        iron.createdAt = cal.date(byAdding: .day, value: -30, to: today)!
+        iron.scheduleRaw = NutrientSchedule().setting(.weekly(times: 2), from: iron.createdAt, calendar: cal)
+            .encode(calendar: cal)
+        let zinc = Nutrient(name: "Zinc", unit: "mg", step: 10, dailyTarget: 10, sortOrder: 1)
+        context.insert(iron)
+        context.insert(zinc)
+        try context.save()
+
+        let viewModel = TodayViewModel()
+        viewModel.refresh(context: context)
+        let card = try XCTUnwrap(viewModel.groupSections.flatMap(\.intakes).first { $0.nutrient.name == "Iron" })
+        XCTAssertEqual(card.weekly, NutrientSchedule.WeekProgress(met: 0, times: 2))
+        XCTAssertFalse(card.isGoalToday, "the group chips count through this too")
+        XCTAssertEqual(viewModel.dayScore.total, 1, "not a goal of the day until it's met")
+
+        viewModel.addCustomAmount(18, to: iron, context: context)
+        let logged = try XCTUnwrap(viewModel.groupSections.flatMap(\.intakes).first { $0.nutrient.name == "Iron" })
+        XCTAssertEqual(logged.weekly, NutrientSchedule.WeekProgress(met: 1, times: 2))
+        XCTAssertTrue(logged.isGoalToday)
+        XCTAssertEqual(viewModel.dayScore.total, 2)
+        XCTAssertEqual(viewModel.dayScore.met, 1)
+    }
+
+    /// Once a week, met yesterday (in the same week): Not today, done this week, back on Monday.
+    func testAWeekDoneMovesToNotToday() throws {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        try XCTSkipIf(NutrientSchedule.weekStart(of: today, calendar: cal) == today, "on a Monday there's no earlier day")
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        context.insert(NutrientGroup(name: "General", sortOrder: Int.max, isSystem: true))
+        let vitaminD = Nutrient(name: "Vitamin D", unit: "IU", step: 50000, dailyTarget: 50000, sortOrder: 0)
+        vitaminD.createdAt = cal.date(byAdding: .day, value: -30, to: today)!
+        vitaminD.scheduleRaw = NutrientSchedule().setting(.weekly(times: 1), from: vitaminD.createdAt, calendar: cal)
+            .encode(calendar: cal)
+        context.insert(vitaminD)
+        let yesterday = cal.date(byAdding: .day, value: -1, to: today)!
+        context.insert(IntakeRecord(nutrient: vitaminD, amount: 50000, date: yesterday.addingTimeInterval(9 * 3600)))
+        try context.save()
+
+        let viewModel = TodayViewModel()
+        viewModel.refresh(context: context)
+        XCTAssertTrue(viewModel.groupSections.isEmpty)
+        let item = try XCTUnwrap(viewModel.notToday.first)
+        XCTAssertTrue(item.isWeekDone)
+        XCTAssertEqual(item.nextDue, cal.date(byAdding: .day, value: 7, to: NutrientSchedule.weekStart(of: today, calendar: cal)))
+        XCTAssertEqual(ScheduleText.doneThisWeek(nextDue: item.nextDue), "Done this week · back Monday")
+
+        // A course whose last day is today is over before Monday.
+        vitaminD.endDate = today
+        try context.save()
+        viewModel.refresh(context: context)
+        let ending = try XCTUnwrap(viewModel.notToday.first)
+        XCTAssertTrue(ending.isWeekDone)
+        XCTAssertNil(ending.nextDue)
+        XCTAssertEqual(ScheduleText.doneThisWeek(nextDue: ending.nextDue), "Done this week · course ends first")
+    }
+
+    /// A week whose count is reached has no more reminders that week; the next week's are there.
+    func testRemindersStopForTheRestOfADoneWeek() {
+        let plan = ReminderSchedule.Plan(nutrientID: UUID(), times: [.init(hour: 9, minute: 0)], loggedToday: true,
+                                         schedule: schedule("20261001=week:2"), doneWeekStart: day(10, 19))
+        let occurrences = ReminderSchedule.occurrences(for: [plan], now: day(10, 21, hour: 7), calendar: calendar)
+        XCTAssertEqual(occurrences.first?.fireDate, day(10, 26, hour: 9))
+    }
+
+    func testTimesAWeekWording() {
+        let text = ScheduleText(calendar: calendar, locale: Locale(identifier: "en_GB"))
+        XCTAssertEqual(text.upcoming(.weekly(times: 3), today: day(10, 23)), "Any 3 days a week, Monday to Sunday.")
+        XCTAssertEqual(text.upcoming(.weekly(times: 1), today: day(10, 23)), "Any one day a week, Monday to Sunday.")
+        XCTAssertEqual(ScheduleText.weekLine(.init(met: 2, times: 3)), "2 of 3 this week")
+    }
+
+    /// Times a week only fits an "At least" goal; with another the form can't be saved.
+    func testTimesAWeekNeedsAnAtLeastGoal() {
+        let draft = NutrientDraft()
+        draft.name = "Caffeine"
+        draft.unit = "mg"
+        draft.step = "100"
+        draft.dailyTarget = "400"
+        draft.scheduleKind = .weekly(times: 3)
+        XCTAssertNil(draft.scheduleError)
+        XCTAssertTrue(draft.isValid)
+        draft.goalType = .maximum
+        XCTAssertNotNil(draft.scheduleError)
+        XCTAssertFalse(draft.isValid)
     }
 }

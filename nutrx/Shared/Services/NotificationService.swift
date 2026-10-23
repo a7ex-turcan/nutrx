@@ -156,7 +156,9 @@ enum NotificationService {
                 },
                 loggedToday: (totals[nutrient.persistentModelID] ?? 0) > 0,
                 lastDay: nutrient.endDate,
-                schedule: nutrient.schedule()
+                schedule: nutrient.schedule(),
+                doneWeekStart: nutrient.weekProgress(including: now)?.isDone == true
+                    ? NutrientSchedule.weekStart(of: now) : nil
             )
         }
         let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }) { first, _ in first }

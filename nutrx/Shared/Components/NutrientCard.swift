@@ -14,6 +14,8 @@ struct NutrientCard: View {
     var onRefill: () -> Void = {}
     /// A course's last day (nutrx Pro, #128): "Last day" on the third line, in place of a low-supply hint.
     var isLastDay: Bool = false
+    /// Under a weekly schedule (nutrx Pro, #132): "2 of 3 this week" on the third line, first of the hints.
+    var weekly: NutrientSchedule.WeekProgress? = nil
     /// A VoiceOver "Edit Nutrient" action, for layouts without swipe actions (Today's grid on large screens, #152).
     var onEdit: (() -> Void)? = nil
 
@@ -117,6 +119,10 @@ struct NutrientCard: View {
 
     /// On a course's last day that beats a low-supply hint: the days of supply left past the course don't matter.
     private var lineHint: LineHint? {
+        if let weekly {
+            return LineHint(symbol: "calendar", text: ScheduleText.weekLine(weekly),
+                            shortText: "\(weekly.met) of \(weekly.times)", color: Theme.textSecondary)
+        }
         if isLastDay {
             return LineHint(symbol: "hourglass", text: CourseText.lastDay, color: Theme.textSecondary)
         }
@@ -232,7 +238,9 @@ struct NutrientCard: View {
             parts.append(supply.text)
         } else {
             parts.append(progress.remainingText)
-            if isLastDay {
+            if let weekly {
+                parts.append(ScheduleText.weekLine(weekly))
+            } else if isLastDay {
                 parts.append(CourseText.lastDaySpoken)
             } else if let supply {
                 parts.append(supply.text)
