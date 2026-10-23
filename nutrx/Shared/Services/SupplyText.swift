@@ -63,6 +63,26 @@ enum SupplyText {
         withoutPrice("This stack costs about \(money(total.monthly, locale: locale)) a month", total)
     }
 
+    // MARK: Add to list (#134)
+
+    /// What Add to list shares for one bottle: "Vitamin D: 120 × 1,000 IU", its servings and each serving; just the
+    /// name when the nutrient has no unit ("120 × 1" reads oddly).
+    static func listLine(name: String, servings: Double, servingAmount: Double, unit: String,
+                         locale: Locale = .current) -> String {
+        guard !unit.isEmpty else { return name }
+        return "\(name): \(servings.formattedAmount(locale: locale)) × \(amount(servingAmount, unit: unit, locale: locale))"
+    }
+
+    /// The share sheet's title for it: "2 running low", "1 running low".
+    static func runningLowTitle(_ count: Int) -> String {
+        "\(count) running low"
+    }
+
+    /// My Nutrients' share of everything low or out: "2 running low · Add to list".
+    static func runningLowShare(_ count: Int) -> String {
+        "\(count) running low · Add to list"
+    }
+
     /// "· 2 without a price", held together with no-break spaces so a line only breaks at the dot.
     private static func withoutPrice(_ line: String, _ total: SupplyCost.Total) -> String {
         total.unpriced > 0 ? "\(line) · \(total.unpriced)\u{00A0}without\u{00A0}a\u{00A0}price" : line

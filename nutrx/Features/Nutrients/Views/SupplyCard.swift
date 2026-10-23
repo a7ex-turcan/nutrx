@@ -144,25 +144,21 @@ struct SupplyCard: View {
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
 
-            Button {
-                confirmRefill = true
-            } label: {
-                Label("Refilled", systemImage: "arrow.clockwise")
-                    .font(.headline)
-                    .foregroundStyle(isFocused ? Theme.controlOnPrimary : Theme.textPrimary)
-                    .frame(maxWidth: .infinity, minHeight: 50)
-                    .background {
-                        if isFocused {
-                            RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
-                                .fill(Theme.controlPrimary)
-                        } else {
-                            RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
-                                .strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
-                        }
+            // Low or out: Add to list beside Refilled, under it when they don't fit side by side (#134).
+            if low, let line = nutrient.supplyListLine {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) {
+                        refilledButton
+                        addToListButton(line)
                     }
-                    .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+                    VStack(spacing: 10) {
+                        refilledButton
+                        addToListButton(line)
+                    }
+                }
+            } else {
+                refilledButton
             }
-            .buttonStyle(.plain)
         }
         .padding(padding)
         .cardStyle()
@@ -222,6 +218,45 @@ struct SupplyCard: View {
 
     private func markdown(_ string: String) -> AttributedString {
         (try? AttributedString(markdown: string)) ?? AttributedString(string)
+    }
+
+    private var refilledButton: some View {
+        Button {
+            confirmRefill = true
+        } label: {
+            Label("Refilled", systemImage: "arrow.clockwise")
+                .font(.headline)
+                .foregroundStyle(isFocused ? Theme.controlOnPrimary : Theme.textPrimary)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .background {
+                    if isFocused {
+                        RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                            .fill(Theme.controlPrimary)
+                    } else {
+                        RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                            .strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
+                    }
+                }
+                .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// The share sheet with the bottle's line, so it can go on a list in Reminders, Notes or Messages (#134): no
+    /// permission, nothing stored.
+    private func addToListButton(_ line: String) -> some View {
+        ShareLink(item: line, preview: SharePreview(line)) {
+            Label("Add to list", systemImage: "square.and.arrow.up")
+                .font(.headline)
+                .foregroundStyle(Theme.textPrimary)
+                .frame(maxWidth: .infinity, minHeight: 50)
+                .background {
+                    RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
+                        .strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
+                }
+                .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     private func refill() {

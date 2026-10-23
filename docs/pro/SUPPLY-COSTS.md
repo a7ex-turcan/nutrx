@@ -1,6 +1,6 @@
 # Supply costs and Add to list — spec (nutrx Pro, #134)
 
-Supply (Pro) already knows a bottle's size and how fast it goes. With an optional **price per bottle** it can also say what a nutrient costs a month, for one nutrient, a stack or everything. When a bottle runs low, **Add to list** puts it on a list of your choice, Apple's Reminders included, through the share sheet. Planned for 2.5.
+Supply (Pro) already knows a bottle's size and how fast it goes. With an optional **price per bottle** it can also say what a nutrient costs a month, for one nutrient, a stack or everything. When a bottle runs low, **Add to list** puts it on a list of your choice, Apple's Reminders included, through the share sheet. Built for 2.5 (spec #265, phases #266, #267 and the Add to list PR).
 
 Decided with the user on 2026-10-23:
 - **The share sheet, not EventKit.** iOS has no add-only permission for reminders: adding one directly needs full access to all of the user's reminders. The share sheet needs no permission and stores nothing, and the user picks Reminders, Notes or Messages.
@@ -40,7 +40,7 @@ Decided with the user on 2026-10-23:
 ## 4. Add to list
 
 - **On the Supply card,** when the level is low or out: an **Add to list** button (`square.and.arrow.up`) beside Refilled. It opens the system share sheet with that nutrient's line (below). Picking Reminders adds it there. The text is plain, so Notes, Messages or Mail work too.
-- **On My Nutrients,** when anything is low or out: "2 running low · Add to list" shares one line per nutrient, the same text, in Today's order. It sits on the total line, or on its own for a Pro user who tracks supply without prices.
+- **On My Nutrients,** when anything is low or out: "2 running low · Add to list" shares one line per nutrient, the same text, in My Nutrients' order. It sits under the total line, or on its own for a Pro user who tracks supply without prices.
 - **The text:** "Vitamin D: 120 × 1,000 IU", the bottle's servings and each serving (`effectiveServingAmount`, so there's always one). It's just "Vitamin D" when the nutrient has no unit, where "120 × 1" would read oddly.
 - **The refill notification** keeps its actions (Refilled, Remind me tomorrow). Tapping it already opens the nutrient's Supply card, where Add to list is.
 - Nothing is stored and no permission is asked. The share sheet is `ShareLink` (no completion needed).
@@ -55,7 +55,7 @@ Decided with the user on 2026-10-23:
 
 ## 6. Build phases (one PR each, in order)
 
-1. **The rule.** `supplyPrice`, `SupplyCost` and its wording, with tests. `Tools/CloudKitSchema/fields.txt` and the development schema with `cktool`. **The production schema needs `CD_supplyPrice` before this merges**, because every merge to `main` uploads a TestFlight build.
+1. **The rule.** `supplyPrice`, `SupplyCost` and its wording, with tests. `Tools/CloudKitSchema/fields.txt` and the development schema with `cktool`. **The production schema needs `CD_supplyPrice` before this merges**, because every merge to `main` uploads a TestFlight build. It was deployed to production on 2026-10-24.
 2. **Prices and costs.** The Supply sheet's price field and its sentence on `SupplyCost`'s daily amount, the Supply card's line, My Nutrients' total, a stack's line.
 3. **Add to list, and shipping.** The Supply card's button, the total line's share, the paywall's Supply subtitle, a 2.5 What's New entry, and the docs (CLAUDE.md, CHANGELOG, ROADMAP).
 

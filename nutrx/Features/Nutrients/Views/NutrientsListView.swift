@@ -7,6 +7,8 @@ struct NutrientsListView: View {
     /// What supply costs a month across the nutrients with a price (nutrx Pro, #134). Worked out when the list appears
     /// and when its nutrients or Pro change, not on every redraw (each reads its whole log).
     @State private var costTotal: SupplyCost.Total?
+    /// The running nutrients whose supply is low or out, for "2 running low · Add to list" (#134).
+    @State private var runningLow: [Nutrient] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<Nutrient> { !$0.isRemoved },
            sort: \Nutrient.sortOrder)
@@ -401,9 +403,25 @@ struct NutrientsListView: View {
                         .font(.footnote)
                         .foregroundStyle(Theme.textSecondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 12, trailing: 4))
+                        .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: runningLow.isEmpty ? 12 : 2, trailing: 4))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
+                }
+                // Everything low or out onto a list through the share sheet; there with or without prices.
+                if proAccess?.isPro == true, !runningLow.isEmpty {
+                    // Titled, since the sheet's preview shows only the text's first line.
+                    ShareLink(item: runningLow.compactMap(\.supplyListLine).joined(separator: "\n"),
+                              preview: SharePreview(SupplyText.runningLowTitle(runningLow.count))) {
+                        Label(SupplyText.runningLowShare(runningLow.count), systemImage: "square.and.arrow.up")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Theme.controlPrimary)
+                            .frame(maxWidth: .infinity, minHeight: Theme.minTouchTarget, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 8, trailing: 4))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
             }
         }
@@ -783,7 +801,10 @@ struct NutrientsListView: View {
     }
 
     private func refreshCostTotal() {
-        costTotal = proAccess?.isPro == true ? SupplyCost.total(of: nutrients) : nil
+        let isPro = proAccess?.isPro == true
+        costTotal = isPro ? SupplyCost.total(of: nutrients) : nil
+        // In the list's order (group, then within it), which isn't `nutrients`' own.
+        runningLow = isPro ? groupedSections.flatMap(\.nutrients).filter { $0.isRunningLow() } : []
     }
 
     private var newGroupButton: some View {

@@ -32,7 +32,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
 
     var subtitle: String {
         switch self {
-        case .supply: "Know when a bottle runs out"
+        case .supply: "Know when a bottle runs out, and what it costs"
         case .scan: "Add a nutrient from its bottle"
         case .recap: "Your week, summarised"
         case .health: "Intake against sleep and workouts"

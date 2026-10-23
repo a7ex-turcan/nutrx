@@ -147,6 +147,18 @@ Submitted for App Review on 23 Oct 2026 (build 173, phased release). Main builds
 | Weekly progress read with a date-bounded fetch | ✅ Built (v2.4, #249) |
 | `Tools/testflight` for manual TestFlight uploads | ✅ Built (v2.4, #144) |
 
+### v2.5 — Supply costs
+
+Building (version 2.5).
+
+| Feature | Status |
+|---|---|
+| Supply costs: a price per bottle, monthly costs, Add to list (Pro) | ✅ Built (v2.5, #134) |
+| Doctor report: "Days counted" for weekly nutrients | ✅ Built (v2.5, #257) |
+| No "Fill to goal" on a day off | ✅ Built (v2.5, #256) |
+| Editing an amount without thousands separators | ✅ Built (v2.5, #258) |
+| Log clear of the Done bar with a hardware keyboard | ✅ Built (v2.5, #261) |
+
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
 ---
