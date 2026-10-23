@@ -131,6 +131,13 @@ struct SupplyCard: View {
             }
             .accessibilityElement(children: .combine)
 
+            // What it costs a month, once there's a price (#134).
+            if let cost = nutrient.monthlySupplyCost() {
+                Text(SupplyText.monthlyCost(cost))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+
             gauge(status, low: low)
 
             Text(markdown(SupplyText.explanation(status, unit: nutrient.unit)))

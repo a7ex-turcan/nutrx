@@ -35,14 +35,18 @@ final class SupplyTextTests: XCTestCase {
 
     func testBottleSentenceUsesUsualUseThenTheGoal() {
         XCTAssertEqual(SupplyText.bottleSentence(servings: 120, servingAmount: 1000, unit: "IU", dailyUse: 2000,
-                                                 dailyGoal: 4000, locale: enUS),
+                                                 goal: 4000, locale: enUS),
                        "That's **120,000 IU** — about 60 days at your usual 2,000 IU a day.")
         XCTAssertEqual(SupplyText.bottleSentence(servings: 120, servingAmount: 1000, unit: "IU", dailyUse: nil,
-                                                 dailyGoal: 4000, locale: enUS),
+                                                 goal: 4000, locale: enUS),
                        "That's **120,000 IU** — about 30 days at your goal of 4,000 IU a day.")
-        XCTAssertEqual(SupplyText.bottleSentence(servings: 30, servingAmount: 1, unit: "", dailyUse: nil, dailyGoal: 0,
+        XCTAssertEqual(SupplyText.bottleSentence(servings: 30, servingAmount: 1, unit: "", dailyUse: nil, goal: nil,
                                                  locale: enUS),
                        "That's **30**.")
+        // Under a schedule the goal goes by its dose days (#134): 4,000 IU on 3 days a week lasts 70 days, not 30.
+        XCTAssertEqual(SupplyText.bottleSentence(servings: 120, servingAmount: 1000, unit: "IU", dailyUse: nil,
+                                                 goal: 4000, doseShare: 3.0 / 7, locale: enUS),
+                       "That's **120,000 IU** — about 70 days at your goal of 4,000 IU on its days.")
     }
 
     func testAveragesShowAsRoundNumbers() {
@@ -50,7 +54,7 @@ final class SupplyTextTests: XCTestCase {
         XCTAssertEqual(SupplyText.usual(412.5), 413)
         XCTAssertEqual(SupplyText.usual(1.86), 1.9)
         XCTAssertEqual(SupplyText.bottleSentence(servings: 120, servingAmount: 1000, unit: "IU", dailyUse: 3928.57,
-                                                 dailyGoal: 4000, locale: enUS),
+                                                 goal: 4000, locale: enUS),
                        "That's **120,000 IU** — about 30 days at your usual 3,930 IU a day.")
     }
 

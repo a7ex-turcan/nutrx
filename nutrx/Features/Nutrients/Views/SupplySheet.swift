@@ -3,8 +3,8 @@ import SwiftUI
 import WidgetKit
 
 /// Supply for one nutrient (nutrx Pro; docs/pro/design/3-supply: supply-form): servings in the bottle, each serving
-/// (pre-filled from "each tap adds"), when to remind, the bottle in a sentence, and Refilled today. Saving the first
-/// time starts the count from now.
+/// (pre-filled from "each tap adds"), when to remind, an optional price per bottle (#134), the bottle in a sentence,
+/// and Refilled today. Saving the first time starts the count from now.
 struct SupplySheet: View {
     let nutrient: Nutrient
 
@@ -19,7 +19,17 @@ struct SupplySheet: View {
     @State private var reminderDays: Int
     @State private var refillToday = false
     @State private var confirmStop = false
-    @FocusState private var servingsFocused: Bool
+    /// The typed price per bottle, in the user's currency; empty = no price.
+    @State private var priceText: String
+    @FocusState private var focusedField: Field?
+
+    private enum Field { case servings, price }
+
+    /// The typed price, if it's a positive number.
+    private var price: Double? {
+        guard let value = priceText.parsedDouble, value > 0 else { return nil }
+        return value
+    }
 
     private var isSet: Bool { nutrient.supplySetup != nil }
     static let maxServings = 9999
@@ -35,6 +45,7 @@ struct SupplySheet: View {
         _servingsText = State(initialValue: String(Int(nutrient.supplyServings ?? 60)))
         _servingAmount = State(initialValue: nutrient.effectiveServingAmount)
         _reminderDays = State(initialValue: nutrient.refillReminderDays)
+        _priceText = State(initialValue: nutrient.supplyPrice.map { $0.formattedAmount(grouped: false) } ?? "")
     }
 
     var body: some View {
@@ -68,13 +79,22 @@ struct SupplySheet: View {
                                     decrease: { reminderDays = max(1, reminderDays - 1) },
                                     increase: { reminderDays = min(60, reminderDays + 1) })
                         }
+                        Rectangle().fill(Theme.lineHairline).frame(height: 1)
+                        row(title: "Price per bottle", hint: "Optional, for what it costs a month") {
+                            priceField
+                        }
                     }
                     .cardStyle()
 
-                    Text((try? AttributedString(markdown: sentence)) ?? AttributedString(sentence))
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.textSecondary)
-                        .padding(.horizontal, 4)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text((try? AttributedString(markdown: sentence)) ?? AttributedString(sentence))
+                        if let monthlyCost {
+                            Text(SupplyText.monthlyCost(monthlyCost) + ".")
+                        }
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .padding(.horizontal, 4)
 
                     if isSet {
                         VStack(spacing: 8) {
@@ -121,7 +141,7 @@ struct SupplySheet: View {
                 }
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
-                    Button("Done") { servingsFocused = false }
+                    Button("Done") { focusedField = nil }
                 }
             }
             .confirmationDialog("Stop tracking \(nutrient.name)'s supply?", isPresented: $confirmStop,
@@ -169,7 +189,7 @@ struct SupplySheet: View {
             stepButton("minus", enabled: servings > 1) { servingsText = String(max(1, servings - 1)) }
             TextField("Servings", text: $servingsText)
                 .keyboardType(.numberPad)
-                .focused($servingsFocused)
+                .focused($focusedField, equals: .servings)
                 .multilineTextAlignment(.center)
                 .font(.system(.body, design: .rounded, weight: .bold))
                 .monospacedDigit()
@@ -182,6 +202,27 @@ struct SupplySheet: View {
         }
         .padding(.horizontal, 4)
         .frame(minWidth: Self.stepperWidth)  // the three capsules line up, as in the design
+        .background(Theme.surfaceChip, in: Capsule())
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+    }
+
+    /// The price capsule, the width of the steppers: the currency symbol and the typed amount.
+    private var priceField: some View {
+        HStack(spacing: 4) {
+            Text(Locale.current.currencySymbol ?? "$")
+                .foregroundStyle(Theme.textSecondary)
+                .accessibilityHidden(true)
+            TextField("None", text: $priceText)
+                .keyboardType(.decimalPad)
+                .focused($focusedField, equals: .price)
+                .font(.system(.body, design: .rounded, weight: .bold))
+                .monospacedDigit()
+                .frame(minWidth: 44, maxWidth: 90)
+                .fixedSize(horizontal: true, vertical: false)
+                .accessibilityLabel("Price per bottle, \(Locale.current.currency?.identifier ?? "")")
+        }
+        .padding(.horizontal, 16)
+        .frame(minWidth: Self.stepperWidth, minHeight: Theme.minTouchTarget)
         .background(Theme.surfaceChip, in: Capsule())
         .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
@@ -233,11 +274,28 @@ struct SupplySheet: View {
 
     // MARK: - Text
 
-    private var sentence: String {
+    /// Supply's own estimate of daily use, from the nutrient's logs.
+    private var usualDailyUse: Double? {
         let logs = (nutrient.intakeRecords ?? []).map { SupplySchedule.Log(date: $0.date, amount: $0.amount) }
-        return SupplyText.bottleSentence(servings: Double(servings), servingAmount: servingAmount, unit: nutrient.unit,
-                                         dailyUse: SupplySchedule.averageDailyUse(logs: logs),
-                                         dailyGoal: nutrient.dailyTarget)
+        return SupplySchedule.averageDailyUse(logs: logs)
+    }
+
+    /// The share of days the schedule in effect today makes dose days (#134: the same goal fallback as the cost).
+    private var doseShare: Double {
+        SupplyCost.doseShare(nutrient.schedule().kind(on: .now))
+    }
+
+    private var sentence: String {
+        SupplyText.bottleSentence(servings: Double(servings), servingAmount: servingAmount, unit: nutrient.unit,
+                                  dailyUse: usualDailyUse, goal: nutrient.goalType == .maximum ? nil : nutrient.dailyTarget,
+                                  doseShare: doseShare)
+    }
+
+    /// What the bottle as set here costs a month, once there's a price.
+    private var monthlyCost: Double? {
+        let use = SupplyCost.dailyUse(estimate: usualDailyUse, goalType: nutrient.goalType, target: nutrient.dailyTarget,
+                                      doseShare: doseShare)
+        return SupplyCost.monthly(price: price, bottleAmount: Double(servings) * servingAmount, dailyUse: use)
     }
 
     private func amountText(_ value: Double) -> String {
@@ -247,8 +305,9 @@ struct SupplySheet: View {
     // MARK: - Actions
 
     private func save() {
-        servingsFocused = false
+        focusedField = nil
         nutrient.supplyServings = Double(min(Self.maxServings, max(1, servings)))
+        nutrient.supplyPrice = price
         // nil while it's one step, so a later change to "each tap adds" carries over.
         nutrient.servingAmount = abs(servingAmount - nutrient.step) < 1e-9 ? nil : servingAmount
         nutrient.refillReminderDays = reminderDays
@@ -265,6 +324,7 @@ struct SupplySheet: View {
         nutrient.supplyServings = nil
         nutrient.supplyRefilledAt = nil
         nutrient.servingAmount = nil
+        nutrient.supplyPrice = nil
         try? modelContext.save()
         NotificationService.refreshAllNutrientReminders(context: modelContext)
         WidgetCenter.shared.reloadAllTimelines()

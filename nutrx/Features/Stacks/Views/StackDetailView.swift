@@ -17,6 +17,7 @@ struct StackDetailView: View {
     /// The Siri tip's ✕ hides it on this device for every stack.
     @AppStorage("hidesStackSiriTip") private var hidesSiriTip = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
 
     private var entries: [LogStackEntry] { StackLogging.activeEntries(of: stack) }
 
@@ -61,7 +62,16 @@ struct StackDetailView: View {
                 Text("Nutrients & amounts")
                     .textCase(.uppercase)
             } footer: {
-                Text("Amounts start at each nutrient's step. You can still change them each time you log.")
+                VStack(alignment: .leading, spacing: 6) {
+                    // What the stack's nutrients cost a month, each at its own usual use (nutrx Pro, #134). Stacks are
+                    // free: nothing here, not even a PRO chip, for free users.
+                    if proAccess?.isPro == true,
+                       let total = SupplyCost.total(of: entries.compactMap(\.nutrient)) {
+                        Text(SupplyText.stackCost(total))
+                            .fontWeight(.semibold)
+                    }
+                    Text("Amounts start at each nutrient's step. You can still change them each time you log.")
+                }
             }
             .listRowBackground(Theme.surfaceCard)
 

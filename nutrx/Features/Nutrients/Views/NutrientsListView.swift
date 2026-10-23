@@ -3,6 +3,7 @@ import SwiftData
 
 struct NutrientsListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<Nutrient> { !$0.isRemoved },
            sort: \Nutrient.sortOrder)
@@ -391,6 +392,16 @@ struct NutrientsListView: View {
                 newGroupButton
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
+                // What supply costs a month across the nutrients with a price (nutrx Pro, #134).
+                if proAccess?.isPro == true, let total = SupplyCost.total(of: nutrients) {
+                    Text(SupplyText.totalCost(total))
+                        .font(.footnote)
+                        .foregroundStyle(Theme.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 12, trailing: 4))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
             }
         }
         .listStyle(.insetGrouped)

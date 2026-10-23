@@ -45,11 +45,11 @@ final class SupplyCostTests: XCTestCase {
         XCTAssertEqual(SupplyText.totalCost(.init(monthly: 38.2, priced: 5, unpriced: 0), locale: enUS),
                        "About $38 a month for 5 nutrients")
         XCTAssertEqual(SupplyText.totalCost(.init(monthly: 4, priced: 1, unpriced: 2), locale: enUS),
-                       "About $4.00 a month for 1 nutrient · 2 without a price")
+                       "About $4.00 a month for 1 nutrient · 2\u{00A0}without\u{00A0}a\u{00A0}price")
         XCTAssertEqual(SupplyText.stackCost(.init(monthly: 12.4, priced: 2, unpriced: 0), locale: enUS),
                        "This stack costs about $12 a month")
         XCTAssertEqual(SupplyText.stackCost(.init(monthly: 12.4, priced: 2, unpriced: 1), locale: enUS),
-                       "This stack costs about $12 a month · 1 without a price")
+                       "This stack costs about $12 a month · 1\u{00A0}without\u{00A0}a\u{00A0}price")
         // The currency's own minor units: none for the yen; a no-break space before the euro sign.
         XCTAssertEqual(SupplyText.money(8.4, locale: Locale(identifier: "ja_JP")), "¥8")
         XCTAssertEqual(SupplyText.money(480, locale: Locale(identifier: "ja_JP")), "¥480")
