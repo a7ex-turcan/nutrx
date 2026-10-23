@@ -3,6 +3,10 @@ import SwiftData
 
 struct NutrientsListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
+    /// What supply costs a month across the nutrients with a price (nutrx Pro, #134). Worked out when the list appears
+    /// and when its nutrients or Pro change, not on every redraw (each reads its whole log).
+    @State private var costTotal: SupplyCost.Total?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query(filter: #Predicate<Nutrient> { !$0.isRemoved },
            sort: \Nutrient.sortOrder)
@@ -391,6 +395,16 @@ struct NutrientsListView: View {
                 newGroupButton
                     .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0))
                     .listRowBackground(Color.clear)
+                // What supply costs a month across the nutrients with a price (nutrx Pro, #134).
+                if proAccess?.isPro == true, let total = costTotal {
+                    Text(SupplyText.totalCost(total))
+                        .font(.footnote)
+                        .foregroundStyle(Theme.textSecondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 12, trailing: 4))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                }
             }
         }
         .listStyle(.insetGrouped)
@@ -398,6 +412,11 @@ struct NutrientsListView: View {
         // A 640 pt column where the list fills a large window (largest text sizes on an iPad, a landscape iPhone);
         // nothing in the split view's sidebar or on a portrait iPhone (#155).
         .readableColumn(ownMargin: 16)  // the inset-grouped sections' own margin here: cards at 640, like Today's
+        .onAppear { refreshCostTotal() }
+        .onChange(of: nutrients) { refreshCostTotal() }
+        // A price or a log saved beside the list (the split view's detail) changes no nutrient in it.
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in refreshCostTotal() }
+        .onChange(of: proAccess?.isPro) { refreshCostTotal() }
         .listRowSpacing(0)
         .environment(\.editMode, $editMode)
         // The selection circles in the app's colour rather than grey; only while selecting, or the swipe Delete
@@ -761,6 +780,10 @@ struct NutrientsListView: View {
         nutrient.setCourse(endDate: nil)
         try? modelContext.save()
         NotificationService.refreshAllNutrientReminders(context: modelContext)
+    }
+
+    private func refreshCostTotal() {
+        costTotal = proAccess?.isPro == true ? SupplyCost.total(of: nutrients) : nil
     }
 
     private var newGroupButton: some View {

@@ -63,8 +63,9 @@ enum SupplyText {
         withoutPrice("This stack costs about \(money(total.monthly, locale: locale)) a month", total)
     }
 
+    /// "· 2 without a price", held together with no-break spaces so a line only breaks at the dot.
     private static func withoutPrice(_ line: String, _ total: SupplyCost.Total) -> String {
-        total.unpriced > 0 ? "\(line) · \(total.unpriced) without a price" : line
+        total.unpriced > 0 ? "\(line) · \(total.unpriced)\u{00A0}without\u{00A0}a\u{00A0}price" : line
     }
 
     /// "About 6 days left", "About 1 day left", "Runs out today".
@@ -96,16 +97,20 @@ enum SupplyText {
     }
 
     /// The Supply sheet's sentence, markdown: "That's **120,000 IU** — about 60 days at your usual 2,000 IU a day."
-    /// Without history it uses the goal ("at your goal of 4,000 IU a day"); with neither, just the total.
+    /// Without history, the goal on the schedule's dose days (`doseShare`, as the cost counts it, #134): "at your goal
+    /// of 2,000 IU a day", or "… on its days" under a schedule. No goal to go by (an "at most" limit isn't what's
+    /// taken): just the bottle.
     static func bottleSentence(servings: Double, servingAmount: Double, unit: String, dailyUse: Double?,
-                               dailyGoal: Double, locale: Locale = .current) -> String {
+                               goal: Double?, doseShare: Double = 1, locale: Locale = .current) -> String {
         let total = "That's **\(amount(servings * servingAmount, unit: unit, locale: locale))**"
         if let dailyUse, let days = SupplySchedule.daysInBottle(servings: servings, servingAmount: servingAmount,
                                                                  dailyAmount: dailyUse) {
             return "\(total) — about \(daysPhrase(days)) at your usual \(amount(usual(dailyUse), unit: unit, locale: locale)) a day."
         }
-        if let days = SupplySchedule.daysInBottle(servings: servings, servingAmount: servingAmount, dailyAmount: dailyGoal) {
-            return "\(total) — about \(daysPhrase(days)) at your goal of \(amount(dailyGoal, unit: unit, locale: locale)) a day."
+        if let goal, let days = SupplySchedule.daysInBottle(servings: servings, servingAmount: servingAmount,
+                                                             dailyAmount: goal * doseShare) {
+            let when = doseShare < 1 ? "on its days" : "a day"
+            return "\(total) — about \(daysPhrase(days)) at your goal of \(amount(goal, unit: unit, locale: locale)) \(when)."
         }
         return "\(total)."
     }
