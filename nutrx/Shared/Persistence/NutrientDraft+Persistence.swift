@@ -22,6 +22,8 @@ extension NutrientDraft {
         nutrient.tint = tint
         nutrient.symbolName = symbolName
         nutrient.endDate = endDate
+        // A schedule (#132) from today; every day stores nothing.
+        nutrient.scheduleRaw = NutrientSchedule().setting(scheduleKind, from: .now).encode()
 
         if let group {
             nutrient.group = group
@@ -66,6 +68,8 @@ extension NutrientDraft {
         nutrient.symbolName = symbolName
         // Through setCourse, so a new duration on an ended course keeps the days since it ended as a gap.
         nutrient.setCourse(endDate: endDate)
+        // A changed schedule (#132) applies from today on; the days before keep the one they had.
+        nutrient.scheduleRaw = nutrient.schedule().setting(scheduleKind, from: .now).encode()
         // Pending reminders carry the name and notes, and stop after a course's last day; re-adding them picks up
         // the edit.
         if !(nutrient.reminders ?? []).isEmpty, let context = nutrient.modelContext {
