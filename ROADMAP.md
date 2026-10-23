@@ -130,15 +130,22 @@ Released on the App Store on 23 Oct 2026 (build 148, phased release; tag `v2.3`)
 
 ### v2.4 — Schedules
 
-Building (version 2.4).
+Submitted for App Review on 23 Oct 2026 (build 173, phased release). Main builds 2.5 from here.
 
 | Feature | Status |
 |---|---|
 | Schedules: set weekdays, every few days, on and off, times a week (Pro) | ✅ Built (v2.4, #132) |
+| Logging from Not today says it won't count | ✅ Built (v2.4, #247) |
+| Weekly nutrients in the doctor report's summary | ✅ Built (v2.4, #248) |
+| Day score collapses into a bar while scrolling; tap to bring it back | ✅ Built (v2.4, #243, #246) |
 | Suggest a feature, from Settings | ✅ Built (v2.4, #142) |
 | Courses reopen in the mode they were set in (Pro) | ✅ Built (v2.4, #188) |
 | Chart dates under their own day | ✅ Built (v2.4, #95) |
-| Log button in view on shorter screens | ✅ Built (v2.4, #212) |
+| Log button in view on shorter screens, and above the keyboard | ✅ Built (v2.4, #212, #221) |
+| Unit beside the log sheet's amount stays whole | ✅ Built (v2.4, #242) |
+| Paywall wording at larger text sizes | ✅ Built (v2.4, #241) |
+| Weekly progress read with a date-bounded fetch | ✅ Built (v2.4, #249) |
+| `Tools/testflight` for manual TestFlight uploads | ✅ Built (v2.4, #144) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
