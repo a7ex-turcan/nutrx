@@ -9,8 +9,12 @@ struct DurationSheet: View {
     @State private var mode: Mode = .ongoing
     @State private var days = 5
     @State private var untilDate = Date.now
+    /// For days or Until a date, whichever was last chosen on this device (#188).
+    @AppStorage(Self.lastModeKey) private var lastMode = ""
 
-    private enum Mode: Hashable, CaseIterable {
+    static let lastModeKey = "nutrx.courseDurationMode"
+
+    enum Mode: String, Hashable, CaseIterable {
         case ongoing, days, date
 
         var title: String {
@@ -82,15 +86,17 @@ struct DurationSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
                         draft.endDate = lastDay
+                        if mode != .ongoing { lastMode = mode.rawValue }
                         dismiss()
                     }
                     .fontWeight(.semibold)
                 }
             }
             .onAppear {
-                // An existing course opens on its last day; one that's already over opens as ongoing.
+                // An existing course opens with both its days left and its last day filled in, on the mode last
+                // chosen; one that's already over opens as ongoing.
                 if let endDate = draft.endDate, !NutrientCourse.hasEnded(endDate, by: .now) {
-                    mode = .date
+                    mode = Self.reopeningMode(lastChosen: lastMode)
                     untilDate = endDate
                     days = NutrientCourse.dayCount(from: today, to: endDate)
                 }
@@ -98,5 +104,11 @@ struct DurationSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+    }
+
+    /// How an existing course reopens: the way it was last set on this device, For days unless that was a date.
+    /// Only the last day is stored, so "for 5 days" used to come back as "until" that date (#188).
+    static func reopeningMode(lastChosen: String) -> Mode {
+        Mode(rawValue: lastChosen) == .date ? .date : .days
     }
 }
