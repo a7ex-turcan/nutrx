@@ -219,7 +219,8 @@ struct SupplySheet: View {
                 .monospacedDigit()
                 .frame(minWidth: 44, maxWidth: 90)
                 .fixedSize(horizontal: true, vertical: false)
-                .accessibilityLabel("Price per bottle, \(Locale.current.currency?.identifier ?? "")")
+                .accessibilityLabel(Locale.current.currency.map { "Price per bottle, \($0.identifier)" }
+                                    ?? "Price per bottle")
         }
         .padding(.horizontal, 16)
         .frame(minWidth: Self.stepperWidth, minHeight: Theme.minTouchTarget)

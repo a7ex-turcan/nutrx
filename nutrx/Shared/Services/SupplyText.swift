@@ -97,7 +97,6 @@ enum SupplyText {
     }
 
     /// The Supply sheet's sentence, markdown: "That's **120,000 IU** — about 60 days at your usual 2,000 IU a day."
-    /// Without history it uses the goal ("at your goal of 4,000 IU a day"); with neither, just the total.
     /// Without history, the goal on the schedule's dose days (`doseShare`, as the cost counts it, #134): "at your goal
     /// of 2,000 IU a day", or "… on its days" under a schedule. No goal to go by (an "at most" limit isn't what's
     /// taken): just the bottle.

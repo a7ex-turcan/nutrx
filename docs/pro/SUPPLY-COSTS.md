@@ -13,7 +13,7 @@ Decided with the user on 2026-10-23:
 
 - `Nutrient.supplyPrice: Double?`: what one bottle costs, meaning the supply the Supply sheet sets up (servings × each serving). Nil means no price. It's CloudKit-safe as an optional, and the field is `CD_supplyPrice`.
 - **Currency:** the user's (`Locale.current.currency`, USD when there's none). Only the number is stored, so changing region shows the same number in the new currency. No conversion, no shops, no links.
-- **Set in the Supply sheet:** an optional "Price per bottle" field under the servings, with the currency symbol, a `.decimalPad` keyboard, and an empty placeholder. Stop tracking supply clears it with the rest.
+- **Set in the Supply sheet:** an optional "Price per bottle" row, last in the card (after Remind me: the bottle comes first, then the extra), a capsule the steppers' width with the currency symbol, a `.decimalPad` keyboard and the placeholder "None". Stop tracking supply clears it with the rest.
 
 ## 2. What it costs a month
 
