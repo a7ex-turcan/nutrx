@@ -104,6 +104,7 @@ struct HistoryLog {
             !nutrient.isRemoved && calendar.startOfDay(for: nutrient.createdAt) <= start
                 && NutrientCourse.includes(nutrient.endDate, gaps: nutrient.courseGaps, day: start,
                                            calendar: calendar)
+                // TODO(#132 phase 4): add a weekly schedule's met days (`weeklyCountedDays`).
                 && nutrient.schedule.isCountedDay(start, calendar: calendar)
         }
         let counted = due.filter { !excludedIDs.contains($0.id) }

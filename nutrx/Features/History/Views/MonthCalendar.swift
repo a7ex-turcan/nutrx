@@ -101,8 +101,9 @@ struct MonthCalendar: View {
             if isSelected {
                 Circle().strokeBorder(Theme.controlPrimary, lineWidth: 2)
             }
-            if state == .noneMet && !isToday && !isSelected {
-                // Logged but nothing met: no fill (§4.9), but a faint outline so it reads as tappable.
+            if (state == .noneMet || state == .rest) && !isToday && !isSelected {
+                // Logged but nothing met, or logged on a rest day (#132): no fill (§4.9), but a faint outline so it
+                // reads as tappable.
                 Circle().strokeBorder(Theme.surfaceChip, lineWidth: 2)
             }
             if isToday {

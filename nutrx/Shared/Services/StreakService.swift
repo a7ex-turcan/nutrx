@@ -72,6 +72,8 @@ enum StreakService {
                 calendar.startOfDay(for: nutrient.createdAt) <= day
                     && NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[nutrient.persistentModelID] ?? [],
                                                day: day, calendar: calendar)
+                    // TODO(#132 phase 4): add a weekly schedule's met days (`weeklyCountedDays`); until then a
+                    // weekly-only setup is all rest days. It can't be set before phase 4.
                     && schedules[nutrient.persistentModelID]?.isCountedDay(day, calendar: calendar) ?? true
             }
             guard !due.isEmpty else { return .rest }

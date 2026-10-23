@@ -20,7 +20,7 @@ final class NutrientScheduleTests: XCTestCase {
         calendar.date(from: DateComponents(year: 2026, month: month, day: day, hour: hour))!
     }
 
-        private func schedule(_ raw: String) -> NutrientSchedule {
+    private func schedule(_ raw: String) -> NutrientSchedule {
         NutrientSchedule.decode(raw, calendar: calendar)
     }
 
