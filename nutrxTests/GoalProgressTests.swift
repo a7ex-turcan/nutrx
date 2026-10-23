@@ -270,6 +270,16 @@ final class GoalProgressTests: XCTestCase {
         XCTAssertEqual(1234.5.formattedAmount(maxFractionDigits: 6).parsedDouble, 1234.5)
     }
 
+    /// While an amount is edited it has no grouping, so deleting a digit leaves a number, not misplaced separators
+    /// (#258).
+    func testFormattedAmountWithoutGroupingForEditing() {
+        let de = Locale(identifier: "de_DE")
+        XCTAssertEqual(123456789.0.formattedAmount(locale: de, grouped: false), "123456789")
+        XCTAssertEqual(1234.5.formattedAmount(locale: de, maxFractionDigits: 6, grouped: false), "1234,5")
+        XCTAssertEqual(1000.0.formattedAmount(locale: enUS, grouped: false), "1000")
+        XCTAssertEqual(1234.5.formattedAmount(maxFractionDigits: 6, grouped: false).parsedDouble, 1234.5)
+    }
+
     // MARK: - Nutrient convenience
 
     func testNutrientInitializerReadsGoalFromTheModel() throws {
