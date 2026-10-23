@@ -213,7 +213,8 @@ struct CollapsingDayScore: View {
                              y: rowY - scoreOffset.y * endScale)
         return ringLabelLayout(captionOpacity: 1 - DayScoreMorph.stage(progress, from: 0, to: 0.3))
             .scaleEffect(scale)
-            .opacity(1 - DayScoreMorph.stage(progress, from: reduceMotion ? 0 : 0.92, to: reduceMotion ? 0.5 : 1))
+            // Fully there until the bar's label is: two half-faded copies on top of each other dimmed it.
+            .opacity(reduceMotion ? 1 - DayScoreMorph.stage(progress, from: 0, to: 0.5) : (progress < 1 ? 1 : 0))
             .position(x: ring.center.x + (target.x - ring.center.x) * move,
                       y: ring.center.y + (target.y - ring.center.y) * move)
             .allowsHitTesting(false)
