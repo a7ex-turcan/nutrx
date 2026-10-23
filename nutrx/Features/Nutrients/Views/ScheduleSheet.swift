@@ -23,6 +23,9 @@ struct ScheduleSheet: View {
     @State private var daysOff = 2
     @State private var inWeeks = false
     @State private var start = Date.now
+    /// A weekly schedule (#132 phase 4) has no option here yet: it opens as Every day and Done keeps it, unless an
+    /// option is picked.
+    @State private var keepsLoadedKind = false
 
     private let text = ScheduleText()
     private var calendar: Calendar { .current }
@@ -48,7 +51,8 @@ struct ScheduleSheet: View {
         case .everyDay:
             return .everyDay
         case .weekdays:
-            return weekdays.isEmpty ? nil : .weekdays(weekdays)
+            if weekdays.isEmpty { return nil }
+            return weekdays.count == 7 ? .everyDay : .weekdays(weekdays)  // all seven is every day
         case .everyFewDays:
             return .cycle(on: 1, off: every - 1, start: first)
         case .onAndOff:
@@ -62,7 +66,10 @@ struct ScheduleSheet: View {
             Form {
                 Section {
                     ForEach(Option.allCases, id: \.self) { choice in
-                        Button { option = choice } label: {
+                        Button {
+                            option = choice
+                            keepsLoadedKind = false
+                        } label: {
                             HStack {
                                 Text(choice.title)
                                     .foregroundStyle(Theme.textPrimary)
@@ -96,7 +103,7 @@ struct ScheduleSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
-                        if let kind { draft.scheduleKind = kind }
+                        if !keepsLoadedKind, let kind { draft.scheduleKind = kind }
                         dismiss()
                     }
                     .fontWeight(.semibold)
@@ -147,13 +154,16 @@ struct ScheduleSheet: View {
                 }
                 .pickerStyle(.segmented)
                 .onChange(of: inWeeks) { _, weeks in
-                    // Up to 8 weeks each way, so a cycle stays within 60 days on or off.
+                    // Up to 8 weeks each way, so a cycle stays within 60 days on or off; at least 2 days on.
                     if weeks {
                         daysOn = min(daysOn, 8)
                         daysOff = min(daysOff, 8)
+                    } else {
+                        daysOn = max(daysOn, 2)
                     }
                 }
-                Stepper(value: $daysOn, in: inWeeks ? 1...8 : NutrientSchedule.cycleLengths) {
+                // From 2 days: 1 day on is Every few days.
+                Stepper(value: $daysOn, in: inWeeks ? 1...8 : 2...NutrientSchedule.cycleLengths.upperBound) {
                     Text("\(daysOn) \(unitName(daysOn)) on").monospacedDigit()
                 }
                 Stepper(value: $daysOff, in: inWeeks ? 1...8 : NutrientSchedule.cycleLengths) {
@@ -205,7 +215,8 @@ struct ScheduleSheet: View {
     private var weekdayButtons: some View {
         let names = text.weekdayNames(.abbreviated)
         let fullNames = text.weekdayNames(.wide)
-        return LazyVGrid(columns: [GridItem(.adaptive(minimum: 52), spacing: 8)], spacing: 8) {
+        // Seven columns: the week on one row (an adaptive grid wrapped it 5 + 2 on an iPhone).
+        return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 8) {
             ForEach(text.ordered(1...7), id: \.self) { day in
                 let isOn = weekdays.contains(day)
                 Button {
@@ -226,8 +237,11 @@ struct ScheduleSheet: View {
         .padding(.vertical, 4)
     }
 
+    /// Any day back (to line up with a routine already running), up to one cycle ahead.
     private var startPicker: some View {
-        DatePicker("Starting", selection: $start, displayedComponents: .date)
+        let cycle = option == .everyFewDays ? every : (daysOn + daysOff) * (inWeeks ? 7 : 1)
+        let latest = calendar.date(byAdding: .day, value: cycle, to: today) ?? today
+        return DatePicker("Starting", selection: $start, in: ...latest, displayedComponents: .date)
     }
 
     /// The next days it's due, or a hint while it can't be saved.
@@ -242,8 +256,11 @@ struct ScheduleSheet: View {
     /// Opens on the draft's schedule.
     private func load() {
         switch draft.scheduleKind {
-        case .everyDay, .weekly:
+        case .everyDay:
             option = .everyDay
+        case .weekly:
+            option = .everyDay
+            keepsLoadedKind = true
         case .weekdays(let days):
             option = .weekdays
             weekdays = days
