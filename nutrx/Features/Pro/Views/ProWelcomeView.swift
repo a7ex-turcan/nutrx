@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// "Welcome to nutrx Pro" (docs/pro/design/2-paywall: success), shown in the paywall's sheet (half height, full height
-/// at accessibility sizes) once a purchase or restore unlocks Pro: the ring badge, what's on now, the plan line and
-/// Continue. The text scrolls and Continue stays pinned below it, so it's reachable at any text size.
+/// at accessibility sizes and on large widths) once a purchase or restore unlocks Pro: the ring badge, what's on now,
+/// the plan line and Continue. The text scrolls and Continue stays pinned below it, so it's reachable at any text size.
 struct ProWelcomeView: View {
     let onContinue: () -> Void
 
@@ -29,6 +29,8 @@ struct ProWelcomeView: View {
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 24)
+            .frame(maxWidth: Self.columnWidth)
+            .frame(maxWidth: .infinity)
             .padding(.top, 8)
             .padding(.bottom, 16)
             .background(Theme.surfaceGround)
@@ -68,8 +70,14 @@ struct ProWelcomeView: View {
             }
         }
         .padding(.horizontal, 24)
+        .frame(maxWidth: Self.columnWidth)
         .frame(maxWidth: .infinity)
     }
+
+    /// In the iPad's page sheet, the paywall's 640 pt column (#206): with these 24 pt margins against its 16, the
+    /// text and Continue are as wide as the purchase button they replace. Wider than a portrait iPhone, so no change
+    /// there; a landscape iPhone (a regular width) gets the column and the full-height sheet too.
+    private static let columnWidth = ReadableColumn.maxWidth + 2 * (24 - Theme.Spacing.screenMargin)
 }
 
 /// Six rounded green dashes in a ring, as in the welcome badge.
