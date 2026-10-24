@@ -28,9 +28,9 @@ Two `ControlWidget`s in `NutrxWidgetsExtension`, configurable when added (`AppIn
 
 - **Not configured yet:** "Choose a stack" / "Choose a nutrient". A tap opens the control's configuration.
 - **The rules are the app's.** Logging goes through `StackLogging` and the same record insert as `LogNutrientIntent`, with the same follow-ups: widget reload and the reminder resync the next time the app runs. A stack with nothing due today logs nothing and says "Nothing due today". A removed stack or nutrient says so.
-- **Where it runs:** in the widget extension, with `ModelContainerFactory.createForExtension()`, never `create()` (CLAUDE.md, iCloud Sync). The app's CloudKit mirroring exports the records the next time it runs, as it does for the widget's +.
-- **Free:** the control shows its label with "nutrx Pro", and a tap opens the app on the paywall (`OpenIntent` to `nutrx://pro`).
-- **Entities in the extension:** `StackEntity` and `NutrientEntity` (`Shared/Intents`, app only today) gain queries that also work in the extension. They read the store read-only through `createForExtension(allowsSave: false)`, with the same order and name matching as Siri. The app keeps its `@Dependency` container (one store per process).
+- **Where it runs:** in the widget extension. Each log tap opens its own writable `ModelContainerFactory.createForExtension()` as `LogNutrientIntent` does, never `create()` (CLAUDE.md, iCloud Sync). The app's CloudKit mirroring exports the records the next time it runs, as it does for the widget's +.
+- **Free:** the control shows its label with "nutrx Pro", and a tap opens the app on the paywall: `OpenURLIntent` with `nutrx://pro`, which needs the `nutrx` scheme registered (§5).
+- **Entities in the extension:** `StackEntity` and `NutrientEntity` (`Shared/Intents`, app only today) are compiled into the extension too. Their queries keep `@Dependency`: the extension registers a **read-only** `createForExtension(allowsSave: false)` container, opened on first use. They keep the same order and name matching as Siri. The app keeps its own registered container (one store per process). Only the pickers read through it; the log taps write through their own container (above).
 
 ## 3. One nutrient widget
 
@@ -60,7 +60,9 @@ Two `ControlWidget`s in `NutrxWidgetsExtension`, configurable when added (`AppIn
   | Lock Screen rectangular | the soonest one, e.g. "Vitamin D · 6 days" |
 
 - **Nothing due:** "Supply and courses on track", with how many are tracked ("4 bottles, 1 course").
-- **Tap:** opens the first item's analytics, or My Nutrients.
+- **Tap:**
+  - On the medium size, each row is its own `Link` to that nutrient's analytics.
+  - On the small and Lock Screen sizes, the tap opens the first item's analytics, or My Nutrients when nothing is listed.
 - **Free:** the PRO chip, "Know when a bottle runs out", and a tap opens the paywall.
 - **Ordering** is pure and tested (`SupplyWidgetSummary`): out first, then the fewest days. Supply and courses are interleaved by days left, and a course's last day counts as 0 days.
 
@@ -73,15 +75,17 @@ The widgets already pass `nutrx://today` and the like, but the app has no URL ha
   - `nutrx://today` and `nutrx://nutrients` open those tabs.
   - `nutrx://nutrients/<uuid>` opens that nutrient's analytics, through the same path as a refill reminder, without focusing the Supply card.
   - `nutrx://pro` opens the paywall over Today.
-- An unknown link opens Today. The parsing is pure and tested (`AppLink`). It's not registered as a URL type: widget and control links reach their own app without one.
+- An unknown link opens Today. The parsing is pure and tested (`AppLink`).
+- **`nutrx` is registered as a URL scheme** (`CFBundleURLTypes`). A widget's `widgetURL` and `Link` reach their own app without it, but a control's `OpenURLIntent` hands the URL to the system, which needs it. Registering it also lets `xcrun simctl openurl` test the links. Other apps could open these links too, which only opens a screen.
 
 ## 6. Build phases (one PR each, in order)
 
 1. **Groundwork:**
    - the `AppLink` router and `onOpenURL`;
    - `StackEntity` / `NutrientEntity` queries that work in the widget extension (compiled into it, with the extension
-     registering its own `createForExtension()` container as their `@Dependency`);
-   - the Debug `nutrx.debug.widgetsPro` switch (§6);
+     registering its own read-only `createForExtension(allowsSave: false)` container as their `@Dependency`);
+   - the `nutrx` URL scheme, tried with `simctl openurl` and a control's `OpenURLIntent`;
+   - the Debug `nutrx.debug.widgetsPro` switch (see "Checking widgets and controls" below);
    - tests.
 2. **Controls:** Log stack and Log nutrient, with the free variant.
 3. **One nutrient widget:** small and the Lock Screen ring.
