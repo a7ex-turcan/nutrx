@@ -18,7 +18,7 @@ enum SharePreviewImage {
 
     private static let size: CGFloat = 60
 
-    fileprivate static var listTile: some View {
+    private static var listTile: some View {
         NutrientIconTile(glyph: Theme.green, background: Theme.forest, symbolName: "checklist", size: size)
     }
 
