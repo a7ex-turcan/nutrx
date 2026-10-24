@@ -151,19 +151,9 @@ struct LogSheet: View {
     // MARK: - Body
 
     var body: some View {
-        // The NavigationStack (bar hidden) is only there so the keyboard toolbar — the Done button for the
-        // return-less .decimalPad — actually renders; outside one it doesn't.
-        NavigationStack {
-            content
-                .toolbar(.hidden, for: .navigationBar)
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Spacer()
-                        Button("Done") { focusedField = nil }
-                            .fontWeight(.semibold)
-                    }
-                }
-        }
+        // No keyboard toolbar: Done sits in the panel with Log (#274), as in onboarding (#19). The keyboard's floating
+        // Done bar stopped counting in the keyboard's safe area after a rotation and covered Log's right end.
+        content
         // On iPhone half height first, then full. From regular widths a centred form sheet (LAYOUT.md: about 540 pt
         // wide): at the medium detent the iPad cut off "Logged today" (#151). Sizing doesn't change an iPhone sheet.
         // Half height is taller where it would cut off the Log button (the folded iPhone Duo, #212).
@@ -209,15 +199,19 @@ struct LogSheet: View {
             }
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { sheetWidth = $0 }
             .scrollDismissesKeyboard(.interactively)
-            // While typing, Log sits on the keyboard's bar instead, and the field being typed in scrolls into view
-            // above it: in the content it ended up under the bar and its Done button on an iPhone SE (#221).
+            // While typing, Done (for the return-less .decimalPad) and Log sit just above the keyboard instead, and
+            // the field being typed in scrolls into view above them: in the content Log ended up under the keyboard's
+            // bar on an iPhone SE (#221).
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if pinsLog {
-                    logButton
-                        .padding(.horizontal, Self.contentMargin)
-                        .padding(.vertical, 8)
-                        // Down through the keyboard's bar too, so the content doesn't show around its Done button.
-                        .background { Theme.surfaceCard.ignoresSafeArea(.all, edges: .bottom) }
+                    VStack(spacing: 4) {
+                        KeyboardDoneButton { focusedField = nil }
+                        logButton
+                    }
+                    .padding(.horizontal, Self.contentMargin)
+                    .padding(.vertical, 8)
+                    // Down to the keyboard, so the content doesn't show under the panel.
+                    .background { Theme.surfaceCard.ignoresSafeArea(.all, edges: .bottom) }
                 }
             }
             // The note field scrolls only its line into view, so bring its whole box above Log: once the keyboard
@@ -249,8 +243,8 @@ struct LogSheet: View {
     private static let contentSpace = "logSheetContent"
     private static let topID = "logSheetTop"
 
-    /// Log sits above the keyboard rather than under the note, whenever a field is focused: the keyboard's bar with
-    /// its Done shows even with a hardware keyboard, where no on-screen keyboard comes up, and it covered Log (#261).
+    /// Done and Log sit above the keyboard rather than under the note whenever a field is focused, with a hardware
+    /// keyboard too (no on-screen keyboard comes up, but Done is still how the field is left, #261).
     private var pinsLog: Bool { focusedField != nil }
 
     private func scroll(_ proxy: ScrollViewProxy, to id: some Hashable, anchor: UnitPoint) {

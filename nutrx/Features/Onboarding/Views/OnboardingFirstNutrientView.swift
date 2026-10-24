@@ -216,18 +216,7 @@ struct OnboardingFirstNutrientView: View {
             // keyboard toolbar made SwiftUI log attribute-graph cycles on the first keyboard open (#19), and from the
             // third open on the panel no longer cleared its floating Done bar, which covered Start tracking.
             if focusedField != nil {
-                Button {
-                    focusedField = nil
-                } label: {
-                    Text("Done")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Theme.controlPrimary)
-                        .frame(minWidth: Theme.minTouchTarget, minHeight: Theme.minTouchTarget)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .accessibilityHint("Hides the keyboard")
+                KeyboardDoneButton { focusedField = nil }
             }
             if !fieldsInContent, viewModel.selectedStartingPoint != nil {
                 goalSection
