@@ -216,11 +216,11 @@ struct NutrientsListView: View {
         }
         #endif
         .onChange(of: router?.nutrientID, initial: true) { _, id in
-            // A widget's link to a nutrient: its analytics, once.
-            if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
-                show(nutrient)
-                router?.nutrientID = nil
-            }
+            // A widget's link to a nutrient: its analytics, once. Cleared even when the nutrient is gone, or the same
+            // link tapped again would change nothing and the tab bar wouldn't switch.
+            guard let id else { return }
+            if let nutrient = nutrients.first(where: { $0.id == id }) { show(nutrient) }
+            router?.nutrientID = nil
         }
         .onChange(of: router?.supplyNutrientID, initial: true) { _, id in
             // A refill reminder: show that nutrient's analytics (its Supply card focuses itself).

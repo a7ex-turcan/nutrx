@@ -75,12 +75,13 @@ nonisolated enum ProEntitlement {
                            isFamilyShared: best.isFamilyShared, isTrial: plan != .lifetime && best.isTrial)
     }
 
-    /// The current entitlement straight from StoreKit (verified transactions only), without renewal info — for
-    /// places that only need "is this person Pro": the widget, and notification actions on a background launch.
     #if DEBUG
     /// The App Group default that makes Debug builds of the widget extension Pro (`current()`).
     static let debugWidgetsProKey = "nutrx.debug.widgetsPro"
     #endif
+
+    /// The current entitlement straight from StoreKit (verified transactions only), without renewal info — for
+    /// places that only need "is this person Pro": the widget, and notification actions on a background launch.
 
     static func current(now: Date = .now) async -> Entitlement? {
         #if DEBUG

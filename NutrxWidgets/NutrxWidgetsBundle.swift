@@ -14,7 +14,8 @@ struct NutrxWidgetsBundle: WidgetBundle {
 
     /// The shared store read-only, or an empty one if it can't be opened, so a picker shows nothing rather than the
     /// extension crashing.
-    private static func openStore() -> ModelContainer {
+    /// Nonisolated: App Intents can resolve the dependency off the main actor.
+    nonisolated private static func openStore() -> ModelContainer {
         if let container = try? ModelContainerFactory.createForExtension(allowsSave: false) { return container }
         let empty = ModelConfiguration(schema: ModelContainerFactory.schema, isStoredInMemoryOnly: true)
         return try! ModelContainer(for: ModelContainerFactory.schema, configurations: [empty])

@@ -339,7 +339,7 @@ nutrx/
     │   ├── PreviewSampleData.swift
     │   ├── ScreenshotDemoData.swift         # DEBUG: -screenshotDemoData replaces the store with the App Store demo set.
     │   └── ScheduleDebug.swift              # DEBUG: nutrx.debug.schedules sets schedules by name at launch (#132, until the sheet).
-    ├── Intents/                         # App only. Siri & Shortcuts (see "Siri & App Shortcuts").
+    ├── Intents/                         # Siri & Shortcuts (see "Siri & App Shortcuts"); the two entities also in the widget extension (#138).
     │   ├── LogNutrientShortcutIntent.swift  # "Log Nutrient": nutrient + optional amount; NutrientShortcutLogging.
     │   ├── NutrientEntity.swift         # AppEntity + EntityStringQuery: nutrients by name, in Today's order.
     │   ├── LogStackShortcutIntent.swift # "Log Stack": a stack by name; StackShortcutLogging (+ the Siri tip's phrase).
