@@ -82,6 +82,8 @@ The widgets already pass `nutrx://today` and the like, but the app has no URL ha
 
 ## 6. Build phases (one PR each, in order)
 
+All five are built: phase 1 in #291, phase 2 in #293, phase 3 in #294, phase 4 in #296 and phase 5 in #297. The App Store paywall screenshot is #272.
+
 1. **Groundwork:**
    - the `AppLink` router and `onOpenURL`;
    - `StackEntity` / `NutrientEntity` queries that work in the widget extension (compiled into it, with the extension

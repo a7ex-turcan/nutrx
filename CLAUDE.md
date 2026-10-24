@@ -280,7 +280,7 @@ nutrx/
 │   │   │   ├── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
 │   │   │   └── PlanChip.swift               # Today's Free / PRO chip and the "Enjoy nutrx Pro" sheet (#101).
 │   │   └── ViewModels/
-│   │       ├── ProFeature.swift             # The seven Pro features (courses since 2.2, schedules since 2.4); `listed` = shipped ones only.
+│   │       ├── ProFeature.swift             # The eight Pro features (courses since 2.2, schedules since 2.4, widgets and controls since 2.5); `listed` = shipped ones only.
 │   │       └── ProText.swift                # Paywall / status copy (pure).
 │   │
 │   └── Profile/
@@ -775,7 +775,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 ## Monetisation
 
 - Free with no ads. **nutrx Pro** is an optional subscription (or lifetime purchase) that only *adds* things around tracking. Nothing that's free today becomes Pro.
-- **What Pro is:** $1.99 a month, $14.99 a year with a one-week free trial, or $29.99 once (`docs/pro/PLAN.md`, agreed 2026-10-14; designer prompts in `docs/pro/DESIGN-PROMPTS.md`). Five features built for 2.1: supply & refills, label scanning, weekly recap, Apple Health trends and the report for your doctor; courses came in 2.2 and schedules in 2.4 (their sections follow). Everything in 2.0 stays free, and so do stacks, Siri logging and export.
+- **What Pro is:** $1.99 a month, $14.99 a year with a one-week free trial, or $29.99 once (`docs/pro/PLAN.md`, agreed 2026-10-14; designer prompts in `docs/pro/DESIGN-PROMPTS.md`). Five features built for 2.1: supply & refills, label scanning, weekly recap, Apple Health trends and the report for your doctor; courses came in 2.2, schedules in 2.4, and widgets and controls in 2.5 (their sections follow). Everything in 2.0 stays free, and so do stacks, Siri logging and export.
 - **Rules that stay:** StoreKit 2 verifies on the device; no receipt or entitlement leaves it or goes into SwiftData, iCloud or UserDefaults; AI runs on the device only (Foundation Models), with a non-AI path or a clear "needs Apple Intelligence" mark (label scanning and recaps have a non-AI path), and nothing is charged for what the device can't run; Health data is read live and never stored. A Pro entry point is a `ProGatedButton` (PRO chip + paywall), never a lock or a wall, and nothing free may become Pro: check this in every PR.
 - **Launched** with 2.1 on 2026-10-16 (tag `v2.1`, build 59): the three products were approved with the version, and the store listing, review notes and website carry the Pro section and the "everything else stays free" line. First-time products can't be attached by the public API: they go into the review draft from the web UI (each product and the subscription group), then the version is added and submitted by API.
 - The old "no paywall / StoreKit / AI before MVP 4" guardrail is retired.
@@ -801,7 +801,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - Below xLarge the button, terms and links are pinned at the bottom. From xLarge (#189), and on large widths at any size (`widthClass != .compact`: the iPad sheet, a landscape iPhone; #205), only the button is, with `ProText.planSummary` above it ("Yearly · $14.99 a year · 1 week free", "Plans ⌃", which scrolls to the plans) and a hairline on top; the terms and links scroll after the plans. At accessibility sizes the button scrolls with the content.
   - The paywall never claims a store it can't reach, and never says nothing was charged.
   - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
-- **`ProFeature`**: the Pro features with titles, symbols and tints (seven since schedules, #132). A new Pro feature gets a case here, or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2, schedules since 2.4).
+- **`ProFeature`**: the Pro features with titles, symbols and tints (eight since widgets and controls, #138). A new Pro feature gets a case here, or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2, schedules since 2.4, widgets and controls since 2.5).
 - **Settings:** `ProSettingsCard` sits under the profile card, only when `isStoreVisible` is true.
   - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Supply and label scan" now, a plain list for two or three, and "… and more" only from four) with **Learn more**, which opens the paywall.
   - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.
@@ -984,6 +984,14 @@ Mockups: `docs/pro/design/7-doctor-report/`.
 - **Create sheet** (`ReportView`, `ReportViewModel`, `ReportViewModelTests`): a thumbnail of the real cover (hidden from VoiceOver), "4 pages · PDF", Preview (the pages scaled to the screen), PERIOD segmented 30 days / 90 days / Custom (From / To in their own card, from the first entry to yesterday; From never after To, each moving the other along) with the dates under it, then **Nutrients** ("All 6" / "4 of 6": a checklist of the nutrients tracked in the period; one with no entries in the period starts unchecked, since a page of "0 days logged" reads as a goal never met; at least one stays checked), Include my name (only when the profile has one), Include notes, Include Apple Health trends (only when Health is connected: each nutrient's `HealthTrends` findings over the last 28 days, read live). **Create PDF** opens the share sheet. It's off with "Nothing logged in this period" or "Choose at least one nutrient" under the period; a failed render shows "Couldn't make the PDF", never an empty file.
 - **Entry points** (History, since #103): the **Your data** card at the end of History (Report for your doctor: blue tile, PRO chip and paywall for free users through `ProGatedButton`; Export data: green tile) and the toolbar's **Your data** menu (share icon before the avatar, once History has past days: Report for your doctor, with a "nutrx Pro" subtitle for free users, and Export data). A Pro user gets the sheet with Cancel; the menu waits for the first entitlement check before choosing the paywall. History applies `withProfileMenu()` itself, before that toolbar, so the avatar keeps its far-right place. Neither is in Settings any more. The report is shipped on the paywall (`ProFeature.isShipped` is true for all five).
 
+### nutrx Pro: Widgets and controls (#138, 2.5)
+
+The spec is `docs/pro/WIDGETS.md`; how they're built is under Widgets above.
+- **What's Pro:** two controls (Log stack, Log nutrient), the Nutrient widget (small and the Lock Screen ring), and the Supply and courses widget (small, medium, Lock Screen rectangle). The five widgets from before stay free, with their kind IDs.
+- **Free users** see each one with "nutrx Pro" or the PRO chip, and a tap opens the paywall (`nutrx://pro`, or `OpenNutrxIntent(.pro)` from a control): never a lock.
+- **`ProFeature.widgets`** ("Widgets and controls", "Log from Control Center and the Home Screen", brown `square.grid.2x2`) is the paywall's eighth row, and 2.5's What's New has an item for it.
+- **Simulator checks** set the extension's Pro state with the Debug switch (Widgets, "The Debug switch").
+
 ---
 
 ## Out of Scope — Not Yet Built
@@ -998,7 +1006,7 @@ Every item here has an issue, so GitHub issues are the one list of what's left (
 
 **Deferred:** Localisation (#129). Large screens (#130) shipped in 2.3; what's left of them is in its open `large-screens` issues.
 
-**Last release:** 2.4 on 2026-10-24 (build 173, tag `v2.4`, phased release; website updated). `main` builds **2.5** since 2.4's submission (#259). The App Store's paywall screenshot still shows six Pro features: retake it (seven, with Schedules) for 2.5's submission, since a released version's screenshots can't change (#272).
+**Last release:** 2.4 on 2026-10-24 (build 173, tag `v2.4`, phased release; website updated). `main` builds **2.5** since 2.4's submission (#259). The App Store's paywall screenshot still shows six Pro features: retake it (eight, with Schedules and Widgets and controls) for 2.5's submission, since a released version's screenshots can't change (#272).
 
 **If App Review rejects a submitted version:** a metadata or notes fix needs no build: change it in App Store Connect and resubmit there. A code fix can't come from `main`, which already builds the next version (bumped at submission). Branch from that version's submission commit, fix it there, and upload with `Tools/testflight --build <n>` from that branch: it insists on origin/main, so either merge the fix with a temporary version or relax that check for the run. Then attach the new build to the version and resubmit in the web UI. Merge the fix into `main` afterwards.
 

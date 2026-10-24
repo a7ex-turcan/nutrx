@@ -119,13 +119,23 @@ final class ProTextTests: XCTestCase {
         XCTAssertNil(ProFeature.courses.appleIntelligenceName, "courses don't use the on-device model")
     }
 
-    /// Schedules (#132) ship in 2.4, last in the list.
+    /// Schedules (#132) ship in 2.4.
     func testSchedulesIsListed() {
         XCTAssertTrue(ProFeature.listed.contains(.schedules))
-        XCTAssertEqual(ProFeature.allCases.last, .schedules)
         XCTAssertEqual(ProFeature.schedules.title, "Schedules")
         XCTAssertEqual(ProFeature.schedules.subtitle, "Take something on set days")
         XCTAssertNil(ProFeature.schedules.appleIntelligenceName, "schedules don't use the on-device model")
+    }
+
+    /// Widgets and controls (#138) ship in 2.5, last in the list: the eighth row.
+    func testWidgetsIsListed() {
+        XCTAssertTrue(ProFeature.listed.contains(.widgets))
+        XCTAssertEqual(ProFeature.allCases.last, .widgets)
+        XCTAssertEqual(ProFeature.allCases.count, 8)
+        XCTAssertEqual(ProFeature.widgets.title, "Widgets and controls")
+        XCTAssertEqual(ProFeature.widgets.subtitle, "Log from Control Center and the Home Screen")
+        XCTAssertEqual(ProFeature.widgets.symbolName, "square.grid.2x2")
+        XCTAssertNil(ProFeature.widgets.appleIntelligenceName, "widgets don't use the on-device model")
     }
 
     func testPrimaryButtonIsLabelledWhilePurchasing() {
@@ -142,7 +152,7 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.welcome([.supply, .scan]),
                        "Supply and label scanning are on. Nothing you already use has changed.")
         XCTAssertEqual(ProText.welcome(ProFeature.allCases),
-                       "Supply, label scanning, weekly recaps, Apple Health trends, doctor reports, courses and schedules are on. Nothing you already use has changed.")
+                       "Supply, label scanning, weekly recaps, Apple Health trends, doctor reports, courses, schedules and widgets are on. Nothing you already use has changed.")
     }
 
     func testPlanChip() {
