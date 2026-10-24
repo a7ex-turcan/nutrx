@@ -41,6 +41,9 @@ nonisolated struct WhatsNew: Equatable {
             Item(title: "What your supply costs",
                  subtitle: "Add a price per bottle to see what it costs a month, and add what's running low to Reminders.",
                  symbolName: "creditcard", tint: .amber, isPro: true),
+            Item(title: "Widgets and controls",
+                 subtitle: "Log a stack or a nutrient from Control Center, and see a nutrient or what's running low on your Home and Lock Screens.",
+                 symbolName: "square.grid.2x2", tint: .brown, isPro: true),
         ]),
     ]
 

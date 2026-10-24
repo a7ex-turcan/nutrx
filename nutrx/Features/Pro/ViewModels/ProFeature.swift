@@ -1,7 +1,7 @@
 import Foundation
 
-/// What nutrx Pro adds (docs/pro/PLAN.md, D5 order, then courses from 2.2 and schedules from 2.4), as the paywall and the
-/// Pro screen list them.
+/// What nutrx Pro adds (docs/pro/PLAN.md, D5 order, then courses from 2.2, schedules from 2.4 and widgets and controls
+/// from 2.5), as the paywall and the Pro screen list them.
 enum ProFeature: String, CaseIterable, Identifiable {
     case supply
     case scan
@@ -10,6 +10,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
     case report
     case courses
     case schedules
+    case widgets
 
     var id: Self { self }
 
@@ -22,6 +23,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .report: "A report for your doctor"
         case .courses: "Courses"
         case .schedules: "Schedules"
+        case .widgets: "Widgets and controls"
         }
     }
 
@@ -39,6 +41,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .report: "A PDF of any period"
         case .courses: "Take something for a set time"
         case .schedules: "Take something on set days"
+        case .widgets: "Log from Control Center and the Home Screen"
         }
     }
 
@@ -52,6 +55,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .report: "doctor reports"
         case .courses: "courses"
         case .schedules: "schedules"
+        case .widgets: "widgets"
         }
     }
 
@@ -65,6 +69,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .report: "doctor reports"
         case .courses: "courses"
         case .schedules: "schedules"
+        case .widgets: "widgets"  // "…, schedules and widgets are on": "and controls" doubled the "and"
         }
     }
 
@@ -73,7 +78,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         switch self {
         case .scan: "label scanning"
         case .recap: "recaps"
-        case .supply, .health, .report, .courses, .schedules: nil
+        case .supply, .health, .report, .courses, .schedules, .widgets: nil
         }
     }
 
@@ -86,6 +91,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .report: "doc.text"
         case .courses: "hourglass"
         case .schedules: "calendar.badge.clock"
+        case .widgets: "square.grid.2x2"
         }
     }
 
@@ -98,11 +104,12 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .report: .blue
         case .courses: .green
         case .schedules: .pink
+        case .widgets: .brown
         }
     }
 
-    /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, courses since 2.2 and
-    /// schedules since 2.4: all seven).
+    /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, courses since 2.2,
+    /// schedules since 2.4, widgets and controls since 2.5: all eight).
     var isShipped: Bool {
         true
     }

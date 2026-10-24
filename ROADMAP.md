@@ -147,13 +147,14 @@ Released on the App Store on 24 Oct 2026 (build 173, phased release; tag `v2.4`)
 | Weekly progress read with a date-bounded fetch | ✅ Shipped (v2.4, #249) |
 | `Tools/testflight` for manual TestFlight uploads | ✅ Shipped (v2.4, #144) |
 
-### v2.5 — Supply costs
+### v2.5 — Supply costs, widgets and controls
 
 Building (version 2.5).
 
 | Feature | Status |
 |---|---|
 | Supply costs: a price per bottle, monthly costs, Add to list (Pro) | ✅ Built (v2.5, #134) |
+| Widgets and controls: Log stack and Log nutrient controls, a Nutrient widget, a Supply and courses widget (Pro) | ✅ Built (v2.5, #138) |
 | Doctor report: "Days counted" for weekly nutrients | ✅ Built (v2.5, #257) |
 | No "Fill to goal" on a day off | ✅ Built (v2.5, #256) |
 | Editing an amount without thousands separators | ✅ Built (v2.5, #258) |
