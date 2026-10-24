@@ -106,4 +106,34 @@ final class ControlTextTests: XCTestCase {
         XCTAssertEqual(ControlText.state(of: nutrient("Vitamin D"), isPro: false), .free)
         XCTAssertEqual(ControlText.text(ControlText.NutrientState.free), "nutrx Pro")
     }
+
+    func testANutrientOffTodaySaysSo() {
+        // Due only on the weekday after today's, from a week ago (1 = Sunday).
+        let today = calendar.component(.weekday, from: .now)
+        let weekAgo = calendar.date(byAdding: .day, value: -7, to: .now)!
+        let vitaminD = nutrient("Vitamin D")
+        vitaminD.scheduleRaw = NutrientSchedule()
+            .setting(.weekdays([today % 7 + 1]), from: weekAgo, calendar: calendar).encode(calendar: calendar)
+        XCTAssertEqual(ControlText.state(of: vitaminD, isPro: true), .notDue)
+        XCTAssertEqual(ControlText.text(ControlText.NutrientState.notDue), "Not due today")
+    }
+
+    // MARK: - Taps
+
+    func testAStackTapLogsOnlyWhenThereIsSomethingNewToLog() {
+        XCTAssertEqual(ControlText.tap(ControlText.StackState.ready), .log)
+        XCTAssertEqual(ControlText.tap(ControlText.StackState.loggedToday), .open(.today),
+                       "Log again with Undo is on Today, not one accidental tap away")
+        XCTAssertEqual(ControlText.tap(ControlText.StackState.nothingDue), .nothing)
+        XCTAssertEqual(ControlText.tap(ControlText.StackState.removed), .open(.today))
+        XCTAssertEqual(ControlText.tap(ControlText.StackState.free), .open(.pro))
+    }
+
+    func testANutrientTapLogsOnlyWhenItCounts() {
+        XCTAssertEqual(ControlText.tap(.ready(step: 1000, unit: "IU")), .log)
+        XCTAssertEqual(ControlText.tap(ControlText.NutrientState.notDue), .open(.today))
+        XCTAssertEqual(ControlText.tap(ControlText.NutrientState.courseEnded), .open(.nutrients))
+        XCTAssertEqual(ControlText.tap(ControlText.NutrientState.removed), .open(.nutrients))
+        XCTAssertEqual(ControlText.tap(ControlText.NutrientState.free), .open(.pro))
+    }
 }

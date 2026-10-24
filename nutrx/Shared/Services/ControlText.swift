@@ -1,8 +1,8 @@
 import Foundation
 
-/// What the Log stack and Log nutrient controls show under their name (nutrx Pro, #138, docs/pro/WIDGETS.md §2).
-/// The controls live in the widget extension, which tests can't reach, so the choice is made here
-/// (`ControlTextTests`); also compiled into the extension.
+/// What the Log stack and Log nutrient controls show under their name and do when tapped (nutrx Pro, #138,
+/// docs/pro/WIDGETS.md §2). The controls live in the widget extension, which tests can't reach, so the choice is made
+/// here (`ControlTextTests`); also compiled into the extension.
 enum ControlText {
     enum StackState: Equatable {
         case free
@@ -18,8 +18,18 @@ enum ControlText {
         case free
         case removed
         case courseEnded
+        /// Off today under its schedule (#132): a log wouldn't count.
+        case notDue
         /// What one tap logs.
         case ready(step: Double, unit: String)
+    }
+
+    /// What a tap does.
+    enum Tap: Equatable {
+        case log
+        case open(AppScreen)
+        /// The control's text already says why ("Nothing due today").
+        case nothing
     }
 
     /// `stack` is nil when it's gone from the store.
@@ -35,7 +45,29 @@ enum ControlText {
         guard isPro else { return .free }
         guard let nutrient, !nutrient.isRemoved else { return .removed }
         guard nutrient.isRunning(on: now) else { return .courseEnded }
+        guard nutrient.isDue(on: now) else { return .notDue }
         return .ready(step: nutrient.step, unit: nutrient.unit)
+    }
+
+    /// Logged today, a tap opens Today rather than logging the whole stack again: Log again there has Undo, and a
+    /// control is easy to tap by accident.
+    static func tap(_ state: StackState) -> Tap {
+        switch state {
+        case .free: .open(.pro)
+        case .removed, .loggedToday: .open(.today)
+        case .nothingDue: .nothing
+        case .ready: .log
+        }
+    }
+
+    /// Off today, a tap opens Today, where a log shows that it won't count (#247).
+    static func tap(_ state: NutrientState) -> Tap {
+        switch state {
+        case .free: .open(.pro)
+        case .removed, .courseEnded: .open(.nutrients)
+        case .notDue: .open(.today)
+        case .ready: .log
+        }
     }
 
     static func text(_ state: StackState) -> String {
@@ -59,6 +91,7 @@ enum ControlText {
         case .free: "nutrx Pro"
         case .removed: "Removed in nutrx"
         case .courseEnded: "Course ended"
+        case .notDue: "Not due today"
         case .ready(let step, let unit): "+\(step.formattedAmount(locale: locale))\(unit.isEmpty ? "" : " \(unit)")"
         }
     }
