@@ -66,6 +66,8 @@ private struct GroupHeaderPreviewGallery: View {
                 withAnimation(.easeInOut(duration: 0.25)) { collapsed.toggle() }
             }
             GroupHeader(name: "Through the day", met: 1, total: 3, isCollapsed: true) {}
+            // One word too long for the row at the largest sizes: it shrinks rather than breaking.
+            GroupHeader(name: "Micronutrients", met: 0, total: 4, isCollapsed: false) {}
         }
         .padding(.horizontal, Theme.Spacing.screenMargin)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
