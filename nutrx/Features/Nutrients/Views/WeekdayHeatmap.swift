@@ -46,7 +46,7 @@ struct WeekdayHeatmap: View {
     private func day(_ entry: WeekdayPattern.Entry) -> some View {
         let opacity = WeekdayPattern.fillOpacity(for: entry.hitRate)
         let ink = Self.ink(on: tint, opacity: opacity, in: environment).color
-        let percent = entry.hitRate.map { $0.formatted(.percent.precision(.fractionLength(0))) } ?? "–"
+        let percent = entry.hitRate.map { $0.formatted(Self.percentStyle) } ?? "–"
 
         return VStack(spacing: 6) {
             RoundedRectangle(cornerRadius: Theme.Radius.iconTile, style: .continuous)
@@ -67,6 +67,8 @@ struct WeekdayHeatmap: View {
                         percentLabel(percent, ink: ink, upTo: .xxLarge)
                         percentLabel(percent, ink: ink, upTo: .xLarge)
                         percentLabel(percent, ink: ink, upTo: .large)
+                        // Last resort, on a square too narrow even for that: each label shrinks on its own here, so
+                        // "100%" can come out smaller than "75%" again. No iPhone width gets this far.
                         percentLabel(percent, ink: ink, upTo: .xSmall)
                             .minimumScaleFactor(0.5)
                     }
@@ -96,7 +98,9 @@ struct WeekdayHeatmap: View {
         .dynamicTypeSize(...size)
     }
 
-    private static var widestPercent: String { 1.0.formatted(.percent.precision(.fractionLength(0))) }
+    /// Whole percentages, for the labels and the "100%" they're sized by.
+    private static let percentStyle = FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))
+    private static var widestPercent: String { 1.0.formatted(percentStyle) }
 }
 
 extension WeekdayHeatmap {
