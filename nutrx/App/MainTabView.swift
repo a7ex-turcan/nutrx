@@ -122,7 +122,20 @@ struct MainTabView: View {
         }
         // A notification routed during the cover (a recap, a refill reminder) wins over where the app opened; a flag
         // set before this view appeared never fired `onChange`, so they're checked too.
-        selection = routedTab ?? routeBefore ?? routeSetBeforeAppearing ?? start
+        let target = routedTab ?? routeBefore ?? routeSetBeforeAppearing ?? start
+        // A launch routed to a split-view tab (a recap notification opens History, a refill reminder My Nutrients)
+        // came up with that tab's sidebar title collapsed and its content 52 pt down, straight after the visit
+        // (#201). Shown from Today after a pause, still under the cover, it's laid out as when tapped.
+        if target == .nutrients || target == .history {
+            selection = .today
+            try? await Task.sleep(for: .milliseconds(300))
+            if Task.isCancelled {
+                selection = routedTab ?? target
+                return
+            }
+        }
+        // A route that came in during the pause wins, as during the visit.
+        selection = routedTab ?? target
         try? await Task.sleep(for: .milliseconds(16))
         if Task.isCancelled { return }
         preparedSplitViews = true
