@@ -71,6 +71,19 @@ struct MainTabView: View {
         .onChange(of: router?.healthNutrientID) { _, id in
             if id != nil { route(to: .nutrients) }
         }
+        #if DEBUG
+        // `-screenshotRoute` (#218): the tab here, the screen in it from there.
+        .task {
+            guard let screenshot = ScreenshotRoute.requested else { return }
+            router?.screenshotRoute = screenshot
+            switch screenshot {
+            case .today, .paywall: route(to: .today)
+            case .nutrients, .nutrient: route(to: .nutrients)
+            case .stacks: route(to: .stacks)
+            case .history, .historyDay: route(to: .history)
+            }
+        }
+        #endif
         // Today's stacks row "Edit" opens the Stacks tab.
         .onChange(of: router?.showsStacks) { _, shows in
             if shows == true {

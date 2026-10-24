@@ -153,6 +153,11 @@ struct HistoryListView: View {
             openRecapIfAsked()
         }
         .onChange(of: router?.showsRecap) { openRecapIfAsked() }
+        #if DEBUG
+        .onChange(of: router?.screenshotRoute, initial: true) { _, route in
+            if case .historyDay(let day) = route { select(day) }
+        }
+        #endif
         // Shown during the launch visit to the split-view tabs: the recap opens once that's over and the tab bar
         // has come here.
         .onChange(of: isPreparingSplitViews) { _, preparing in

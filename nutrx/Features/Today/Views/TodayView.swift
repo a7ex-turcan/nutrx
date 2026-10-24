@@ -191,6 +191,11 @@ struct TodayView: View {
             }
         }
         .planChipSheets(showPaywall: $showPaywall, showEnjoy: $showEnjoyPro)
+        #if DEBUG
+        .onChange(of: router?.screenshotRoute, initial: true) { _, route in
+            if route == .paywall { showPaywall = true }
+        }
+        #endif
         .onAppear {
             viewModel.refresh(context: modelContext)
             refreshBannerVisibility()
