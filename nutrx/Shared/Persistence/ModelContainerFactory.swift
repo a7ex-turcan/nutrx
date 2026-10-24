@@ -5,12 +5,12 @@ import SwiftData
 private let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "ModelContainerFactory")
 
 enum ModelContainerFactory {
-    static let appGroupID = "group.nutrx-labs.nutrx"
+    nonisolated static let appGroupID = "group.nutrx-labs.nutrx"
     static let cloudKitContainerID = "iCloud.nutrx-labs.nutrx"
     private static let cloudKitUpgradeKey = "nutrx.hasCompletedCloudKitUpgrade"
 
     /// Every stored model: the schema, and the tests that check every model (`ManagedObjectNameTests`).
-    static let models: [any PersistentModel.Type] = [
+    nonisolated static let models: [any PersistentModel.Type] = [
         UserProfile.self,
         Nutrient.self,
         IntakeRecord.self,
@@ -22,7 +22,7 @@ enum ModelContainerFactory {
         LogStackEntry.self,
     ]
 
-    static var schema: Schema {
+    nonisolated static var schema: Schema {
         Schema(models)
     }
 
@@ -32,8 +32,8 @@ enum ModelContainerFactory {
     /// app's one-off steps in `create()` (store move, CloudKit-upgrade backup / migration keyed on their own
     /// `UserDefaults`, seeding, dedup). What they write lands in the shared store's history, and the app's
     /// CloudKit mirroring exports it the next time the app runs. Read-only callers (complications) pass
-    /// `allowsSave: false`.
-    static func createForExtension(allowsSave: Bool = true) throws -> ModelContainer {
+    /// `allowsSave: false`. Nonisolated, so a widget extension can open it lazily for its App Intents queries.
+    nonisolated static func createForExtension(allowsSave: Bool = true) throws -> ModelContainer {
         let configuration = ModelConfiguration(schema: schema, url: sharedStoreURL(), allowsSave: allowsSave,
                                                cloudKitDatabase: .none)
         return try ModelContainer(for: schema, configurations: [configuration])
@@ -129,7 +129,7 @@ enum ModelContainerFactory {
 
     // MARK: - Shared Store URL
 
-    static func sharedStoreURL() -> URL {
+    nonisolated static func sharedStoreURL() -> URL {
         FileManager.default
             .containerURL(forSecurityApplicationGroupIdentifier: appGroupID)!
             .appending(path: "default.store")

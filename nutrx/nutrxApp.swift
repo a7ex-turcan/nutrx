@@ -39,6 +39,8 @@ struct nutrxApp: App {
                 .measuresWidthClass()
                 .environment(proAccess)
                 .environment(NotificationRouter.shared)
+                // Widget and control taps (docs/pro/WIDGETS.md §5); a link the app doesn't know opens Today.
+                .onOpenURL { url in NotificationRouter.shared.open(AppLink(url) ?? .today) }
                 .task { await proAccess.refreshEntitlement() }
                 .onChange(of: proAccess.isPro) {
                     // Becoming Pro (or lapsing) adds or removes refill reminders.

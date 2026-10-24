@@ -71,6 +71,19 @@ struct MainTabView: View {
         .onChange(of: router?.healthNutrientID) { _, id in
             if id != nil { route(to: .nutrients) }
         }
+        // Widget and control links (docs/pro/WIDGETS.md §5). Initial too: a tap can cold-launch the app with the link
+        // already followed.
+        .onChange(of: router?.linkedTab, initial: true) { _, tab in
+            guard let tab else { return }
+            route(to: tab == .today ? .today : .nutrients)
+            router?.linkedTab = nil
+        }
+        .onChange(of: router?.nutrientID, initial: true) { _, id in
+            if id != nil { route(to: .nutrients) }
+        }
+        .onChange(of: router?.showsPaywall, initial: true) { _, shows in
+            if shows == true { route(to: .today) }
+        }
         #if DEBUG
         // `-screenshotRoute` (#218): the tab here, the screen in it from there.
         .task {
@@ -151,7 +164,10 @@ struct MainTabView: View {
     /// refill reminder or Today's Health card opens My Nutrients.
     private var routeSetBeforeAppearing: TabID? {
         if router?.showsRecap == true { return .history }
-        if router?.supplyNutrientID != nil || router?.healthNutrientID != nil { return .nutrients }
+        if router?.supplyNutrientID != nil || router?.healthNutrientID != nil || router?.nutrientID != nil {
+            return .nutrients
+        }
+        if router?.showsPaywall == true { return .today }
         return nil
     }
 

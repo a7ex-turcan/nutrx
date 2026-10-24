@@ -75,9 +75,22 @@ nonisolated enum ProEntitlement {
                            isFamilyShared: best.isFamilyShared, isTrial: plan != .lifetime && best.isTrial)
     }
 
+    #if DEBUG
+    /// The App Group default that makes Debug builds of the widget extension Pro (`current()`).
+    static let debugWidgetsProKey = "nutrx.debug.widgetsPro"
+    #endif
+
     /// The current entitlement straight from StoreKit (verified transactions only), without renewal info — for
     /// places that only need "is this person Pro": the widget, and notification actions on a background launch.
     static func current(now: Date = .now) async -> Entitlement? {
+        #if DEBUG
+        // The widget extension never sees Xcode's local StoreKit, so simulator checks of the Pro widgets and controls
+        // turn this on (docs/pro/WIDGETS.md §6). Extensions only: the app reads its own StoreKit test purchases.
+        if Bundle.main.bundlePath.hasSuffix(".appex"),
+           UserDefaults(suiteName: ModelContainerFactory.appGroupID)?.bool(forKey: debugWidgetsProKey) == true {
+            return Entitlement(plan: .lifetime, expirationDate: nil, isFamilyShared: false)
+        }
+        #endif
         var candidates: [Candidate] = []
         for await result in Transaction.currentEntitlements {
             guard case .verified(let transaction) = result else { continue }
