@@ -124,21 +124,24 @@ struct MainTabView: View {
         // set before this view appeared never fired `onChange`, so they're checked too.
         let target = routedTab ?? routeBefore ?? routeSetBeforeAppearing ?? start
         // A launch routed to a split-view tab (a recap notification opens History, a refill reminder My Nutrients)
-        // came up with that tab's sidebar title collapsed and its content 52 pt down, straight after the visit
-        // (#201). Shown from Today after a pause, still under the cover, it's laid out as when tapped.
+        // came up with that tab's sidebar title collapsed and its content 52 pt down when the visit was left on it
+        // (#201). Stepping off to Today for a frame first lays it out as when tapped. What matters is that it's shown
+        // again, not the time: one frame did it on every launch on the 13-inch iPad simulator, as did 300 ms.
         if target == .nutrients || target == .history {
             selection = .today
-            try? await Task.sleep(for: .milliseconds(300))
+            try? await Task.sleep(for: .milliseconds(16))
             if Task.isCancelled {
                 selection = routedTab ?? target
                 return
             }
         }
-        // A route that came in during the pause wins, as during the visit.
+        // A route that came in meanwhile wins, as during the visit.
         selection = routedTab ?? target
         try? await Task.sleep(for: .milliseconds(16))
         if Task.isCancelled { return }
         preparedSplitViews = true
+        // One that came in during that last frame: `route(to:)` only records it while the cover is up.
+        if let routedTab, routedTab != selection { selection = routedTab }
     }
 
     /// The tab a notification's flag asks for when it was set before this view appeared: a recap opens History; a
@@ -149,11 +152,14 @@ struct MainTabView: View {
         return nil
     }
 
-    /// Switches tab for a notification or one of Today's links, remembered if the launch cover is up so the visit
-    /// ends there.
+    /// Switches tab for a notification or one of Today's links. While the launch cover is up it's only recorded, and
+    /// the visit ends there: switching at once would show a split-view tab straight after the visit (#201).
     private func route(to tab: TabID) {
-        selection = tab
-        if preparingSplitViews { routedTab = tab }
+        if preparingSplitViews {
+            routedTab = tab
+        } else {
+            selection = tab
+        }
     }
 }
 
