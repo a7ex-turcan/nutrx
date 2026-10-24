@@ -37,6 +37,7 @@ private struct NutrientAnalyticsContent: View {
     @State private var headerScrolledAway = false
 
     @State private var showHealthIntro = false
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @Environment(\.widthClass) private var widthClass
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -80,14 +81,18 @@ private struct NutrientAnalyticsContent: View {
                         .cardStyle()
                     }
 
-                    // One column at the largest text sizes, whatever the width (#155).
-                    if contentWidth >= Self.sideBySideMinimum, !dynamicTypeSize.isAccessibilitySize {
+                    // One column at the largest text sizes, whatever the width (#155). Side by side, both are as tall as
+                    // the taller (#215); a one-row Supply card (the free teaser, Set up) goes full width under them
+                    // instead, as on iPhone, rather than leave a half-width card with a gap under it.
+                    if contentWidth >= Self.sideBySideMinimum, !dynamicTypeSize.isAccessibilitySize,
+                       SupplyCard.showsStatus(for: nutrient, isPro: proAccess?.isPro == true) {
                         HStack(alignment: .top, spacing: Theme.Spacing.cardGap + 2) {
                             heatmapCard
-                                .frame(maxWidth: .infinity)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                             SupplyCard(nutrient: nutrient)
-                                .frame(maxWidth: .infinity)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
+                        .fixedSize(horizontal: false, vertical: true)
                     } else {
                         SupplyCard(nutrient: nutrient)
                         heatmapCard
@@ -151,6 +156,8 @@ private struct NutrientAnalyticsContent: View {
         if let pattern = viewModel.weekdayPattern {
             WeekdayHeatmap(pattern: pattern, tint: nutrient.tint)
                 .padding(cardPadding)
+                // As tall as the Supply card beside it on large widths (#215).
+                .frame(maxHeight: .infinity, alignment: .top)
                 .cardStyle()
         }
     }
