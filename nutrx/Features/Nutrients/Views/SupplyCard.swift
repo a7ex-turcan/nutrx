@@ -25,6 +25,12 @@ struct SupplyCard: View {
     /// The analytics cards' inset (design source: 18pt).
     private let padding: CGFloat = 18
 
+    /// Whether it shows its full card (days left, gauge, Refilled) rather than a one-row teaser or Set up: only then
+    /// does analytics put it beside the weekday pattern on large widths (#215).
+    static func showsStatus(for nutrient: Nutrient, isPro: Bool) -> Bool {
+        ProAccess.isStoreVisible && isPro && nutrient.supplySetup != nil
+    }
+
     var body: some View {
         if ProAccess.isStoreVisible {
             Group {
@@ -112,6 +118,9 @@ struct SupplyCard: View {
                     .font(.body.weight(.semibold))
                     .foregroundStyle(Theme.controlPrimary)
                     .frame(minHeight: Theme.minTouchTarget)
+                    // The 44 pt target reaches into the card's padding instead of pushing the title down: it sat
+                    // 12 pt lower than the other cards' titles, which showed beside the weekday pattern (#215).
+                    .padding(.vertical, -12)
                     .accessibilityLabel("Edit supply")
             }
 
@@ -172,6 +181,8 @@ struct SupplyCard: View {
             }
         }
         .padding(padding)
+        // As tall as the weekday pattern beside it (#215); nothing proposes a height when stacked.
+        .frame(maxHeight: .infinity, alignment: .top)
         .cardStyle()
         .overlay {
             if isFocused {

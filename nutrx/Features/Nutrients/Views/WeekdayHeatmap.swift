@@ -31,6 +31,9 @@ struct WeekdayHeatmap: View {
                     day(entry)
                 }
             }
+            // Beside a taller Supply card on large widths (#215) the squares take the extra height, centred, rather
+            // than leave it empty under the card's last line; stacked, nothing proposes more.
+            .frame(maxHeight: .infinity)
 
             if let weakest = pattern.weakestWeekday {
                 Text("\(calendar.weekdaySymbols[weakest - 1])s are your weakest day.")
@@ -106,6 +109,8 @@ private struct WeekdayHeatmapPreview: View {
         return WeekdayHeatmap(pattern: pattern, tint: tint)
             .padding(18)
             .cardStyle()
+            // Its stacked size: the squares would take the canvas's height otherwise (#215).
+            .fixedSize(horizontal: false, vertical: true)
             .padding()
             .frame(maxHeight: .infinity)
             .background(Theme.surfaceGround)
