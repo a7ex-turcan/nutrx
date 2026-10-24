@@ -19,7 +19,9 @@ struct GroupHeader: View {
         let title = large ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 10))
 
         Button(action: onToggle) {
-            HStack(spacing: 10) {
+            // At accessibility sizes the chevron sits on the name's first line, as on the one row at other sizes,
+            // rather than centred on the name and the chip under it (#280).
+            HStack(alignment: large ? .firstTextBaseline : .center, spacing: 10) {
                 title {
                     if large {
                         // The largest size whose widest word fits the row: shrinking the text only when it overflows
