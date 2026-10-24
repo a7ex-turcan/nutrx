@@ -82,7 +82,6 @@ nonisolated enum ProEntitlement {
 
     /// The current entitlement straight from StoreKit (verified transactions only), without renewal info — for
     /// places that only need "is this person Pro": the widget, and notification actions on a background launch.
-
     static func current(now: Date = .now) async -> Entitlement? {
         #if DEBUG
         // The widget extension never sees Xcode's local StoreKit, so simulator checks of the Pro widgets and controls
