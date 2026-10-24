@@ -46,7 +46,7 @@ struct WeekdayHeatmap: View {
     private func day(_ entry: WeekdayPattern.Entry) -> some View {
         let opacity = WeekdayPattern.fillOpacity(for: entry.hitRate)
         let ink = Self.ink(on: tint, opacity: opacity, in: environment).color
-        let percent = entry.hitRate.map { $0.formatted(.percent.precision(.fractionLength(0))) } ?? "–"
+        let percent = entry.hitRate.map { $0.formatted(Self.percentStyle) } ?? "–"
 
         return VStack(spacing: 6) {
             RoundedRectangle(cornerRadius: Theme.Radius.iconTile, style: .continuous)
@@ -55,16 +55,24 @@ struct WeekdayHeatmap: View {
                 // At most 64 pt: in a wide analytics pane each square was about 182 pt (#153).
                 .frame(maxWidth: 64)
                 .overlay {
-                    Text(percent)
-                        .font(.system(.caption2, design: .rounded, weight: .bold))
-                        .monospacedDigit()
-                        .foregroundStyle(ink)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        // The square doesn't grow with the text, so the percentage stops growing too: at the
-                        // largest sizes it read "1…" (#66). VoiceOver reads the full value.
-                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                        .padding(2)
+                    // The square doesn't grow with the text, so the percentage stops growing too: at the largest
+                    // sizes it read "1…" (#66). VoiceOver reads the full value. One size across the row (#279): each
+                    // square takes the largest size, up to XXXL, at which "100%" (the widest a square reads) fits,
+                    // rather than shrinking its own text, which left "100%" smaller than "75%" beside it. The squares
+                    // are all one width, so they all pick the same size.
+                    // A step at a time, and a 1 pt inset: on a 6.3-inch iPhone "100%" just fits at xLarge that way,
+                    // rather than every square dropping back to the Large size.
+                    ViewThatFits(in: .horizontal) {
+                        percentLabel(percent, ink: ink, upTo: .xxxLarge)
+                        percentLabel(percent, ink: ink, upTo: .xxLarge)
+                        percentLabel(percent, ink: ink, upTo: .xLarge)
+                        percentLabel(percent, ink: ink, upTo: .large)
+                        // Last resort, on a square too narrow even for that: each label shrinks on its own here, so
+                        // "100%" can come out smaller than "75%" again. No iPhone width gets this far.
+                        percentLabel(percent, ink: ink, upTo: .xSmall)
+                            .minimumScaleFactor(0.5)
+                    }
+                    .padding(1)
                 }
             Text(calendar.veryShortWeekdaySymbols[entry.weekday - 1])
                 .font(.caption.weight(.semibold))
@@ -75,6 +83,24 @@ struct WeekdayHeatmap: View {
         .accessibilityLabel(calendar.weekdaySymbols[entry.weekday - 1])
         .accessibilityValue(entry.hitRate == nil ? "No days yet" : "\(percent) of days on target")
     }
+
+    /// A square's percentage at most `size`, as wide as "100%" would be there, which `ViewThatFits` measures.
+    private func percentLabel(_ percent: String, ink: Color, upTo size: DynamicTypeSize) -> some View {
+        ZStack {
+            Text(Self.widestPercent)
+                .hidden()
+            Text(percent)
+                .foregroundStyle(ink)
+        }
+        .font(.system(.caption2, design: .rounded, weight: .bold))
+        .monospacedDigit()
+        .lineLimit(1)
+        .dynamicTypeSize(...size)
+    }
+
+    /// Whole percentages, for the labels and the "100%" they're sized by.
+    private static let percentStyle = FloatingPointFormatStyle<Double>.Percent.percent.precision(.fractionLength(0))
+    private static var widestPercent: String { 1.0.formatted(percentStyle) }
 }
 
 extension WeekdayHeatmap {
