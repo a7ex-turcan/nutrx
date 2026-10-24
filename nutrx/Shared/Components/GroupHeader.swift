@@ -9,20 +9,32 @@ struct GroupHeader: View {
     let isCollapsed: Bool
     let onToggle: () -> Void
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
+        // At accessibility sizes the chip goes under the name, which then has the row up to the chevron, and a word
+        // still too long for it shrinks rather than breaking mid-word ("Throug / h the / day" at AX5, #273).
+        let large = dynamicTypeSize.isAccessibilitySize
+        let title = large ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 10))
+
         Button(action: onToggle) {
             HStack(spacing: 10) {
-                Text(name)
-                    .font(.headline)
-                    .foregroundStyle(Theme.textPrimary)
+                title {
+                    Text(name)
+                        .font(.headline)
+                        .foregroundStyle(Theme.textPrimary)
+                        // At most one line per word, as My Nutrients' rows (#108); names still wrap between words.
+                        .lineLimit(large ? max(name.split(separator: " ").count, 1) : nil)
+                        .minimumScaleFactor(large ? 0.5 : 1)
 
-                Text("\(met)/\(total)")
-                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textSecondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 3)
-                    .background(Theme.surfaceChip, in: Capsule())
+                    Text("\(met)/\(total)")
+                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.textSecondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 3)
+                        .background(Theme.surfaceChip, in: Capsule())
+                }
 
                 Spacer(minLength: 0)
 
@@ -73,4 +85,9 @@ private struct GroupHeaderPreviewGallery: View {
 #Preview("Accessibility 3") {
     GroupHeaderPreviewGallery()
         .environment(\.dynamicTypeSize, .accessibility3)
+}
+
+#Preview("Accessibility 5") {
+    GroupHeaderPreviewGallery()
+        .environment(\.dynamicTypeSize, .accessibility5)
 }
