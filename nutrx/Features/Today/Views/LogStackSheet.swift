@@ -34,7 +34,7 @@ struct LogStackSheet: View {
         self.onUndo = onUndo
         self.onEditStack = onEditStack
         _detent = State(initialValue: StackLogging.dueEntries(of: stack).count > Self.rowsAtHalfHeight
-                            ? .large : .custom(HalfThroughRows.self))
+                            ? .large : Self.halfHeight(rows: StackLogging.dueEntries(of: stack).count))
     }
 
     /// Whether every row puts its stepper under the name and total (from xLarge, #97) rather than beside them.
@@ -44,6 +44,12 @@ struct LogStackSheet: View {
 
     /// Rows shown at the medium detent before the sheet opens full height instead.
     static let rowsAtHalfHeight = 3
+
+    /// The lower detent: tall enough for every row up to three (#213). With more, the sheet opens full height and drags
+    /// down to plain half height, which `HalfThroughRows`, measuring all of them, would have made full height too.
+    private static func halfHeight(rows: Int) -> PresentationDetent {
+        rows > rowsAtHalfHeight ? .medium : .custom(HalfThroughRows.self)
+    }
 
     private func amount(for entry: LogStackEntry) -> Double {
         amounts[entry.persistentModelID] ?? entry.amount
@@ -70,8 +76,11 @@ struct LogStackSheet: View {
         // more than three rows it opens full height too, so they're all in view (it can still be dragged down).
         // From regular widths a centred form sheet, like the log sheet (#152): at half height on an iPad the rows
         // sat far above Log with an empty gap between.
-        .presentationDetents(large || widthClass != .compact ? [.large] : [.custom(HalfThroughRows.self), .large],
+        .presentationDetents(large || widthClass != .compact
+                                 ? [.large] : [Self.halfHeight(rows: entries.count), .large],
                              selection: large || widthClass != .compact ? .constant(.large) : $detent)
+        // The next stack's sheet measures its own rows; until then it mustn't size itself by these.
+        .onDisappear { HalfThroughRows.reset() }
         .presentationSizing(.form)
         .presentationDragIndicator(widthClass == .compact ? .visible : .hidden)
         // At half height a swipe on the rows scrolls them rather than growing the sheet, so a row behind the pinned
@@ -392,9 +401,10 @@ struct LogStackSheet: View {
     }
 }
 
-/// Half height, or taller where that would cut off one of the rows (up to three, `rowsAtHalfHeight`) above the pinned
-/// footer: on the iPhone SE and the folded iPhone Duo only two and a half showed (#213), as the log sheet's Log button
-/// was cut off there (#212, `HalfThroughLogButton`). Never past full height.
+/// Half height, or taller where that would cut off one of the rows above the pinned footer (stacks of up to three,
+/// `rowsAtHalfHeight`; with more the lower detent is plain `.medium`): on the iPhone SE and the folded iPhone Duo only
+/// two and a half showed (#213), as the log sheet's Log button was cut off there (#212, `HalfThroughLogButton`). Never
+/// past full height.
 private struct HalfThroughRows: CustomPresentationDetent {
     /// The pinned header, the rows and the pinned footer, set by `LogStackSheet` from its layout; 0 until measured. A
     /// detent's context reads the presenting view's environment, not the sheet's, so the sheet hands them over here.
@@ -404,6 +414,12 @@ private struct HalfThroughRows: CustomPresentationDetent {
 
     static func height(in context: Context) -> CGFloat? {
         min(max(context.maxDetentValue / 2, header + rows + footer), context.maxDetentValue)
+    }
+
+    static func reset() {
+        header = 0
+        rows = 0
+        footer = 0
     }
 }
 
