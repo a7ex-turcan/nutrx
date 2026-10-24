@@ -3,7 +3,10 @@ import SwiftUI
 /// Rounded-square tile with a nutrient's symbol on its tint's tile colour (DESIGN.md §4.7).
 /// 42pt in My Nutrients, 40pt on History day, 52pt in the analytics header.
 struct NutrientIconTile: View {
-    let tint: NutrientTint
+    /// The tint's glyph and tile colours, or other colours for a tile that isn't a tint's (the share sheet's list
+    /// tile, #270).
+    let glyph: Color
+    let background: Color
     let symbolName: String
     var size: CGFloat = 42
 
@@ -13,16 +16,20 @@ struct NutrientIconTile: View {
             .resizable()
             .scaledToFit()
             .fontWeight(.regular)
-            .foregroundStyle(tint.tileGlyph)
+            .foregroundStyle(glyph)
             .frame(width: size * 22 / 42, height: size * 22 / 42)
             .frame(width: size, height: size)
-            .background(tint.tileBackground,
+            .background(background,
                         in: RoundedRectangle(cornerRadius: size * Theme.Radius.iconTile / 40, style: .continuous))
             .accessibilityHidden(true)
     }
 }
 
 extension NutrientIconTile {
+    init(tint: NutrientTint, symbolName: String, size: CGFloat = 42) {
+        self.init(glyph: tint.tileGlyph, background: tint.tileBackground, symbolName: symbolName, size: size)
+    }
+
     init(nutrient: Nutrient, size: CGFloat = 42) {
         self.init(tint: nutrient.tint, symbolName: nutrient.symbolName, size: size)
     }

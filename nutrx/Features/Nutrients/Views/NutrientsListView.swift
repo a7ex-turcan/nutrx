@@ -9,7 +9,7 @@ struct NutrientsListView: View {
     @State private var costTotal: SupplyCost.Total?
     /// The running nutrients whose supply is low or out, for "2 running low · Add to list" (#134).
     @State private var runningLow: [Nutrient] = []
-    /// The running-low share's preview image (#270), drawn once per appearance rather than on every redraw.
+    /// The running-low share's preview image (#270), drawn once rather than on every redraw.
     @State private var listPreviewImage: Image?
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.displayScale) private var displayScale
@@ -416,7 +416,7 @@ struct NutrientsListView: View {
                     // Titled, since the sheet's preview shows only the text's first line.
                     ShareLink(item: runningLow.compactMap(\.supplyListLine).joined(separator: "\n"),
                               preview: SharePreview(SupplyText.runningLowTitle(runningLow.count),
-                                                    image: listPreviewImage ?? Image(systemName: "checklist"))) {
+                                                    image: listPreviewImage ?? SharePreviewImage.placeholder)) {
                         Label(SupplyText.runningLowShare(runningLow.count), systemImage: "square.and.arrow.up")
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(Theme.controlPrimary)
@@ -436,7 +436,7 @@ struct NutrientsListView: View {
         // nothing in the split view's sidebar or on a portrait iPhone (#155).
         .readableColumn(ownMargin: 16)  // the inset-grouped sections' own margin here: cards at 640, like Today's
         .onAppear { refreshCostTotal() }
-        .task(id: colorScheme) {
+        .task(id: SharePreviewImageKey(colorScheme: colorScheme, scale: displayScale)) {
             listPreviewImage = SharePreviewImage.list(scale: displayScale, colorScheme: colorScheme)
         }
         .onChange(of: nutrients) { refreshCostTotal() }
