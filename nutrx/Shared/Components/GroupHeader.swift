@@ -22,7 +22,7 @@ struct GroupHeader: View {
             HStack(spacing: 10) {
                 title {
                     if large {
-                        // The largest size whose longest word fits the row: shrinking the text only when it overflows
+                        // The largest size whose widest word fits the row: shrinking the text only when it overflows
                         // its lines would still give "Supplementa- / tion stack", which fits in two.
                         ViewThatFits(in: .horizontal) {
                             nameText(upTo: .accessibility5)
