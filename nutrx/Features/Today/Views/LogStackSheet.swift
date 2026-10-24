@@ -33,7 +33,8 @@ struct LogStackSheet: View {
         self.onLog = onLog
         self.onUndo = onUndo
         self.onEditStack = onEditStack
-        _detent = State(initialValue: StackLogging.dueEntries(of: stack).count > Self.rowsAtHalfHeight ? .large : .medium)
+        _detent = State(initialValue: StackLogging.dueEntries(of: stack).count > Self.rowsAtHalfHeight
+                            ? .large : .custom(HalfThroughRows.self))
     }
 
     /// Whether every row puts its stepper under the name and total (from xLarge, #97) rather than beside them.
@@ -58,6 +59,7 @@ struct LogStackSheet: View {
                     .padding(.horizontal, Theme.Spacing.screenMargin)
                     .padding(.top, 20)
                     .padding(.bottom, 4)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { HalfThroughRows.header = $0 }
             }
             // In a form sheet (regular widths and up, #152) the sheet doesn't shrink to its content, so a pinned
             // footer left a gap under a few rows: there it follows the rows, as at accessibility sizes.
@@ -68,7 +70,7 @@ struct LogStackSheet: View {
         // more than three rows it opens full height too, so they're all in view (it can still be dragged down).
         // From regular widths a centred form sheet, like the log sheet (#152): at half height on an iPad the rows
         // sat far above Log with an empty gap between.
-        .presentationDetents(large || widthClass != .compact ? [.large] : [.medium, .large],
+        .presentationDetents(large || widthClass != .compact ? [.large] : [.custom(HalfThroughRows.self), .large],
                              selection: large || widthClass != .compact ? .constant(.large) : $detent)
         .presentationSizing(.form)
         .presentationDragIndicator(widthClass == .compact ? .visible : .hidden)
@@ -104,6 +106,9 @@ struct LogStackSheet: View {
             .padding(.bottom, 24)
         }
         .scrollBounceBehavior(.basedOnSize)
+        .onScrollGeometryChange(for: CGFloat.self) { $0.contentSize.height } action: { _, height in
+            HalfThroughRows.rows = height
+        }
         // Rows scrolled up at half height were drawn above the sheet's top edge.
         .clipped()
         // Pinned, so Log (or Undo / Done) is on screen at half height whatever the phone and text size; the rows
@@ -115,6 +120,7 @@ struct LogStackSheet: View {
                     .padding(.top, 12)
                     .padding(.bottom, 8)
                     .background(Theme.surfaceGround)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { HalfThroughRows.footer = $0 }
             }
         }
     }
@@ -198,9 +204,10 @@ struct LogStackSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 HStack(spacing: 8) {
+                    // Taking the free width itself rather than through a Spacer, whose own spacing cost the total
+                    // another 8 pt it needs on a narrow sheet (#97, #213).
                     summary
-                    // No extra minimum: the stack's spacing keeps them apart, and the total needs every point (#97).
-                    Spacer(minLength: 0)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     trailing(entry, nutrient: nutrient)
                 }
             }
@@ -210,28 +217,34 @@ struct LogStackSheet: View {
     }
 
     /// "2,000 / 4,000 IU" (with "· Done" once logged and met). Beside the stepper it stays on one line: without the
-    /// unit, which the stepper shows, when the whole doesn't fit, rather than wrapping at the slash (#97). Stacked
-    /// rows have the width and may wrap.
+    /// unit, which the stepper shows, when the whole doesn't fit, rather than wrapping at the slash (#97); then a size
+    /// smaller at a time, and the amount alone last, so it's never cut off ("2,000 / 2,0…" on the folded iPhone Duo,
+    /// #213). Fixed sizes rather than shrinking to fit: `ViewThatFits` measures each at full size, so a shrinking one
+    /// could only come last. VoiceOver reads the whole line. Stacked rows have the width and may wrap.
     @ViewBuilder
     private func totalLine(_ progress: GoalProgress) -> some View {
         let done = logged != nil && progress.countsAsMet ? " · Done" : ""
         let full = "\(progress.currentText) \(progress.goalText)\(done)"
+        let withoutUnit = "\(progress.currentText) \(progress.goalTextWithoutUnit)\(done)"
         if rowsAreStacked {
             totalText(full)
         } else {
             ViewThatFits(in: .horizontal) {
-                totalText(full).lineLimit(1)
-                totalText("\(progress.currentText) \(progress.goalTextWithoutUnit)\(done)")
-                    .lineLimit(1)
+                totalText(full)
+                totalText(withoutUnit)
+                totalText(withoutUnit, font: .footnote)
+                totalText(withoutUnit, font: .caption)
+                totalText("\(progress.currentText)\(done)", font: .caption)
                     .minimumScaleFactor(0.7)
-                    .accessibilityLabel(full)
             }
+            .lineLimit(1)
+            .accessibilityLabel(full)
         }
     }
 
-    private func totalText(_ text: String) -> some View {
+    private func totalText(_ text: String, font: Font = .subheadline) -> some View {
         Text(text)
-            .font(.subheadline)
+            .font(font)
             .fontDesign(.rounded)
             .monospacedDigit()
             .foregroundStyle(Theme.textSecondary)
@@ -376,6 +389,21 @@ struct LogStackSheet: View {
             self.logged = nil
             loggedAmounts = [:]
         }
+    }
+}
+
+/// Half height, or taller where that would cut off one of the rows (up to three, `rowsAtHalfHeight`) above the pinned
+/// footer: on the iPhone SE and the folded iPhone Duo only two and a half showed (#213), as the log sheet's Log button
+/// was cut off there (#212, `HalfThroughLogButton`). Never past full height.
+private struct HalfThroughRows: CustomPresentationDetent {
+    /// The pinned header, the rows and the pinned footer, set by `LogStackSheet` from its layout; 0 until measured. A
+    /// detent's context reads the presenting view's environment, not the sheet's, so the sheet hands them over here.
+    static var header: CGFloat = 0
+    static var rows: CGFloat = 0
+    static var footer: CGFloat = 0
+
+    static func height(in context: Context) -> CGFloat? {
+        min(max(context.maxDetentValue / 2, header + rows + footer), context.maxDetentValue)
     }
 }
 
