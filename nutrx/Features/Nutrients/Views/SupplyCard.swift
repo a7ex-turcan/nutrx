@@ -11,6 +11,7 @@ struct SupplyCard: View {
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.displayScale) private var displayScale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
 
@@ -250,7 +251,8 @@ struct SupplyCard: View {
     /// The share sheet with the bottle's line, so it can go on a list in Reminders, Notes or Messages (#134): no
     /// permission, nothing stored.
     private func addToListButton(_ line: String) -> some View {
-        ShareLink(item: line, preview: SharePreview(line)) {
+        ShareLink(item: line, preview: SharePreview(line, image: SharePreviewImage.tile(for: nutrient, scale: displayScale,
+                                                                                  colorScheme: colorScheme))) {
             Label("Add to list", systemImage: "square.and.arrow.up")
                 .font(.headline)
                 .foregroundStyle(Theme.textPrimary)
