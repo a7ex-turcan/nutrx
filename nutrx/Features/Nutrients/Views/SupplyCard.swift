@@ -11,6 +11,7 @@ struct SupplyCard: View {
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.displayScale) private var displayScale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
 
@@ -18,6 +19,8 @@ struct SupplyCard: View {
     private var isFocused: Bool { router?.supplyNutrientID == nutrient.id }
     @State private var showSheet = false
     @State private var confirmRefill = false
+    /// Add to list's share-sheet image (#270), drawn once rather than on every redraw.
+    @State private var sharePreview: Image?
 
     /// The analytics cards' inset (design source: 18pt).
     private let padding: CGFloat = 18
@@ -157,6 +160,11 @@ struct SupplyCard: View {
                         addToListButton(line)
                     }
                 }
+                .task(id: SharePreviewImageKey(colorScheme: colorScheme, scale: displayScale, tint: nutrient.tint,
+                                               symbolName: nutrient.symbolName)) {
+                    sharePreview = SharePreviewImage.tile(tint: nutrient.tint, symbolName: nutrient.symbolName,
+                                                          scale: displayScale, colorScheme: colorScheme)
+                }
             } else {
                 // Its own height: the `maxHeight: .infinity` it has for EqualHeightStack would let the card stretch it.
                 refilledButton
@@ -250,7 +258,7 @@ struct SupplyCard: View {
     /// The share sheet with the bottle's line, so it can go on a list in Reminders, Notes or Messages (#134): no
     /// permission, nothing stored.
     private func addToListButton(_ line: String) -> some View {
-        ShareLink(item: line, preview: SharePreview(line)) {
+        ShareLink(item: line, preview: SharePreview(line, image: sharePreview ?? SharePreviewImage.placeholder)) {
             Label("Add to list", systemImage: "square.and.arrow.up")
                 .font(.headline)
                 .foregroundStyle(Theme.textPrimary)
