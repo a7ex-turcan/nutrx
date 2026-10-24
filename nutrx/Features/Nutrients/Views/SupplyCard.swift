@@ -158,7 +158,7 @@ struct SupplyCard: View {
                     }
                 }
             } else {
-                // Its own height: it fills the height EqualHeightStack gives it, and nothing else should stretch it.
+                // Its own height: the `maxHeight: .infinity` it has for EqualHeightStack would let the card stretch it.
                 refilledButton
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -282,10 +282,10 @@ private struct EqualHeightStack: Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         guard !subviews.isEmpty else { return .zero }
         let gaps = spacing * CGFloat(subviews.count - 1)
-        // No width proposed (ViewThatFits asking for the ideal size): each subview's own.
-        let width = proposal.width ?? (axis == .horizontal
-            ? subviews.map { $0.sizeThatFits(.unspecified).width }.reduce(gaps, +)
-            : subviews.map { $0.sizeThatFits(.unspecified).width }.max() ?? 0)
+        // No width proposed (ViewThatFits asking for the ideal size): side by side, the widest one's in every
+        // column, since the row is split equally (the sum would fit a long label that then wraps in its half).
+        let widest = subviews.map { $0.sizeThatFits(.unspecified).width }.max() ?? 0
+        let width = proposal.width ?? (axis == .horizontal ? widest * CGFloat(subviews.count) + gaps : widest)
         let height = rowHeight(subviews, itemWidth: itemWidth(width, count: subviews.count))
         return axis == .horizontal
             ? CGSize(width: width, height: height)
