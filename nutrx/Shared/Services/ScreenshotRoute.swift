@@ -6,7 +6,7 @@ import Foundation
 /// `xcrun simctl launch <UDID> nutrx-labs.nutrx -screenshotDemoData -screenshotRoute "nutrients/Vitamin D"`.
 ///
 /// Routes: `today`, `nutrients`, `stacks`, `history` (a tab); `nutrients/<name>` (that nutrient's analytics, by name,
-/// ignoring case); `history/<yyyy-MM-dd>` (that day); `paywall` (over Today). `NotificationRouter.screenshotRoute`
+/// ignoring case); `history/<yyyy-MM-dd>` (that day); `paywall` (over Today). An unknown name or day opens the tab. `NotificationRouter.screenshotRoute`
 /// carries it to the screens, the way a tapped notification's route does.
 enum ScreenshotRoute: Equatable {
     case today, nutrients, stacks, history
@@ -35,9 +35,8 @@ enum ScreenshotRoute: Equatable {
         case ("nutrients", false): return .nutrient(name: rest)
         case ("stacks", true): return .stacks
         case ("history", true): return .history
-        case ("history", false):
-            guard let day = day(rest, calendar: calendar) else { return nil }
-            return .historyDay(day)
+        // A day that doesn't read still opens History, as an unknown nutrient name opens My Nutrients.
+        case ("history", false): return day(rest, calendar: calendar).map(ScreenshotRoute.historyDay) ?? .history
         case ("paywall", true): return .paywall
         default: return nil
         }

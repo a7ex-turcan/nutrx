@@ -22,8 +22,9 @@ final class ScreenshotRouteTests: XCTestCase {
     func testHistoryDay() throws {
         let day = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 10, day: 20)))
         XCTAssertEqual(ScreenshotRoute.parse("history/2026-10-20", calendar: calendar), .historyDay(day))
-        XCTAssertNil(ScreenshotRoute.parse("history/2026-02-30", calendar: calendar), "no such day")
-        XCTAssertNil(ScreenshotRoute.parse("history/yesterday", calendar: calendar))
+        // A day that doesn't read opens History itself.
+        XCTAssertEqual(ScreenshotRoute.parse("history/2026-02-30", calendar: calendar), .history, "no such day")
+        XCTAssertEqual(ScreenshotRoute.parse("history/yesterday", calendar: calendar), .history)
     }
 
     func testUnknown() {
