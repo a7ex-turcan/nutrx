@@ -27,7 +27,9 @@ struct NutrxWidgetsBundle: WidgetBundle {
         NutrxCircularWidget()
         NutrxRectangularWidget()
         NutrxInlineWidget()
-        // nutrx Pro (#138): Control Center, Lock Screen and Action button controls.
+        // nutrx Pro (#138): one nutrient on the Home and Lock Screens, and Control Center, Lock Screen and Action
+        // button controls.
+        NutrxNutrientWidget()
         NutrxLogStackControl()
         NutrxLogNutrientControl()
     }
