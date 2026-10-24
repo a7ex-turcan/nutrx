@@ -128,24 +128,24 @@ Released on the App Store on 23 Oct 2026 (build 148, phased release; tag `v2.3`)
 | Paywall: plans in view at large sizes and on iPad | ✅ Shipped (v2.3, #161, #189, #205) |
 | App Store screenshots: iPhone Duo and iPad landscape | ✅ Shipped (v2.3, #211) |
 
-### v2.4 — Schedules
+### v2.4 — Schedules ✅
 
-Submitted for App Review on 23 Oct 2026 (build 173, phased release). Main builds 2.5 from here.
+Released on the App Store on 24 Oct 2026 (build 173, phased release; tag `v2.4`). Main builds 2.5 from here.
 
 | Feature | Status |
 |---|---|
-| Schedules: set weekdays, every few days, on and off, times a week (Pro) | ✅ Built (v2.4, #132) |
-| Logging from Not today says it won't count | ✅ Built (v2.4, #247) |
-| Weekly nutrients in the doctor report's summary | ✅ Built (v2.4, #248) |
-| Day score collapses into a bar while scrolling; tap to bring it back | ✅ Built (v2.4, #243, #246) |
-| Suggest a feature, from Settings | ✅ Built (v2.4, #142) |
-| Courses reopen in the mode they were set in (Pro) | ✅ Built (v2.4, #188) |
-| Chart dates under their own day | ✅ Built (v2.4, #95) |
-| Log button in view on shorter screens, and above the keyboard | ✅ Built (v2.4, #212, #221) |
-| Unit beside the log sheet's amount stays whole | ✅ Built (v2.4, #242) |
-| Paywall wording at larger text sizes | ✅ Built (v2.4, #241) |
-| Weekly progress read with a date-bounded fetch | ✅ Built (v2.4, #249) |
-| `Tools/testflight` for manual TestFlight uploads | ✅ Built (v2.4, #144) |
+| Schedules: set weekdays, every few days, on and off, times a week (Pro) | ✅ Shipped (v2.4, #132) |
+| Logging from Not today says it won't count | ✅ Shipped (v2.4, #247) |
+| Weekly nutrients in the doctor report's summary | ✅ Shipped (v2.4, #248) |
+| Day score collapses into a bar while scrolling; tap to bring it back | ✅ Shipped (v2.4, #243, #246) |
+| Suggest a feature, from Settings | ✅ Shipped (v2.4, #142) |
+| Courses reopen in the mode they were set in (Pro) | ✅ Shipped (v2.4, #188) |
+| Chart dates under their own day | ✅ Shipped (v2.4, #95) |
+| Log button in view on shorter screens, and above the keyboard | ✅ Shipped (v2.4, #212, #221) |
+| Unit beside the log sheet's amount stays whole | ✅ Shipped (v2.4, #242) |
+| Paywall wording at larger text sizes | ✅ Shipped (v2.4, #241) |
+| Weekly progress read with a date-bounded fetch | ✅ Shipped (v2.4, #249) |
+| `Tools/testflight` for manual TestFlight uploads | ✅ Shipped (v2.4, #144) |
 
 ### v2.5 — Supply costs
 

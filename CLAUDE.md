@@ -955,7 +955,7 @@ Every item here has an issue, so GitHub issues are the one list of what's left (
 
 **Deferred:** Localisation (#129). Large screens (#130) shipped in 2.3; what's left of them is in its open `large-screens` issues.
 
-**Last release:** 2.3 on 2026-10-23 (build 148, tag `v2.3`, phased release; website updated). **2.4** (build 173) was submitted for App Review on 2026-10-23, phased and manual release; `main` builds **2.5** since (#259). When 2.4 ships, its bookkeeping PR dates the changelog and roadmap, tags `v2.4` and keeps 2.5: no second bump.
+**Last release:** 2.4 on 2026-10-24 (build 173, tag `v2.4`, phased release; website updated). `main` builds **2.5** since its submission (#259). The App Store's paywall screenshot still shows six Pro features: retake it (seven, with Schedules) for 2.5's submission, since a released version's screenshots can't change.
 
 **If App Review rejects 2.4:** a metadata or notes fix needs no build: change it in App Store Connect and resubmit there. A code fix can't come from `main`, which builds 2.5. Branch from the `v2.4` submission commit (main at 1bace6b), fix it there, and upload with `Tools/testflight --build <n>` from that branch: it insists on origin/main, so either merge the fix with a temporary 2.4 version or relax that check for the run. Then attach the new build to 2.4 and resubmit in the web UI. Merge the fix into `main` afterwards.
 

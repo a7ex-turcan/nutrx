@@ -17,7 +17,7 @@ All notable changes to nutrx are documented in this file.
 ### Fixes
 - **Log clear of the Done bar with a keyboard attached** — With a hardware keyboard (or an iPad's), the keyboard's Done bar no longer covers the log sheet's Log button while you edit the amount or a note.
 
-## v2.4 — submitted for review 2026-10-23 (build 173)
+## v2.4 — 2026-10-24
 
 ### nutrx Pro
 - **Schedules** — A nutrient can follow a schedule instead of every day: set weekdays (Mon, Wed, Fri), every few days, on and off (5 days on, 2 off; 3 weeks on, 1 off), or any few days a week. On a day it's not due, it moves to a collapsed **Not today** section on Today with the next day it's due, its reminders stay quiet, and the day never counts as missed: not in History, streaks, analytics, the weekly recap or the doctor report. A few times a week shows "2 of 3 this week" on its card, counts the week rather than each day, and leaves Today once the week is done until Monday. A change to a schedule applies from today, so past days keep theirs. The widgets, the Watch and stacks follow the same days.
