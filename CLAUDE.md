@@ -362,6 +362,7 @@ nutrx/
         ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (no ProAccess needed; also in the widget).
         ├── AppLink.swift                    # nutrx:// links from widgets and controls (today, nutrients, a nutrient, pro) (#138).
         ├── ControlText.swift                # What the Log stack / Log nutrient controls show under their name (pure, #138).
+        ├── SupplyWidgetSummary.swift        # The supply & courses widget's list: low / out bottles and courses ending, soonest first (pure, #138).
         ├── NutrientWidgetContent.swift      # What the one-nutrient widget shows: free, choose, due / not today / ended / removed (pure, #138).
         ├── WidgetReload.swift               # WidgetReload.all(): widget timelines + Control Center controls, after a change.
         ├── SupplySchedule.swift             # Supply: remaining, daily use, days left, level (pure); Nutrient.supplyStatus / refillSupply.
@@ -711,6 +712,7 @@ Five free widget configurations in `NutrxWidgetsExtension`, redesigned in phase 
 | Goals | `NutrxCircularWidget` | `.accessoryCircular` | Lock Screen capacity gauge with "3/6" |
 | Next up | `NutrxRectangularWidget` | `.accessoryRectangular` | Lock Screen: first goal that still needs more — name, value, linear bar; else "1 over limit" or "All done" + "5/6 goals met" |
 | Goals and streak | `NutrxInlineWidget` | `.accessoryInline` | "3/6 goals · 10-day streak" |
+| Supply and courses (Pro, #138) | `NutrxSupplyWidget` | `.systemSmall`, `.systemMedium`, `.accessoryRectangular` | What's running low or ending soonest: two (small), four with tint tiles, each a link (medium), one (Lock Screen) |
 | Nutrient (Pro, #138) | `NutrxNutrientWidget` | `.systemSmall`, `.accessoryCircular` | One chosen nutrient: ring, "**2,000** / 4,000 IU", status line and + (small); a gauge ring with its symbol, a tick once met (Lock Screen) |
 
 `NutrientSnapshot` (`WidgetEntry.swift`) carries tint, symbol and goal type and takes status / ring fraction / text from `GoalProgress`; widget text comes from `Shared/Services/WidgetSummary.swift` (tested in `WidgetSummaryTests`). `ProgressRing`, `SegmentedDayRing` and `WidgetSummary` are compiled into the widget target via membership exceptions. In widgets, set rounded numerals as `.font(.title.weight(.bold)).fontDesign(.rounded)` — `Font.system(_:design:weight:)` drops the weight there.
@@ -743,6 +745,12 @@ The handlers fire on first appearance too, so a cold launch from a tap lands rig
   - nothing chosen, or the pick gone → "Choose a nutrient"; a tap opens My Nutrients;
   - due today → the ring, value, status line and a + (`LogNutrientIntent`); not due under a schedule → "Not today" and "Next: Sunday" (`ScheduleText`, compiled into the extension), no +; "Course ended"; "Removed in nutrx". A tap opens that nutrient's analytics (`nutrx://nutrients/<id>`).
   - The gallery and placeholder show Vitamin D halfway (`NutrientWidgetEntry.sample`). `ProBadge` and a small copy of the `BrandMark` image (96 and 144 px wide, @2x / @3x) are in the extension for the free states. **Keep widget images small:** WidgetKit refuses one larger than the family allows ("imageTooLarge", the app's 804 px mark on the Lock Screen), and that failure fails the whole widget's reload, other sizes included, until the next retry an hour later.
+- **Supply and courses widget** (`NutrxWidgets/SupplyWidget*.swift`, `SupplyListWidgetView`, `SupplyRectangularWidgetView`; phase 4): static. The provider reads Pro, then the running nutrients in Today's order through `ExtensionStore.read` (a read-only context kept while the summary is built) and `todaysNutrients(in:)`. `SupplyWidgetSummary` (pure, `SupplyWidgetSummaryTests`, also in the extension) lists:
+  - bottles that are low or out (`supplyStatus()`, the Supply card's levels): "out", "6 days left", "runs out today";
+  - courses within 7 days of their last day: "last day", "ends tomorrow", "ends in 3 days" (a nutrient can be listed twice);
+  - out first, then the fewest days left (a course's last day is 0), a bottle before a course on the same day, then Today's order.
+  - Small shows two and "+2 more"; medium four, two by two, each a `Link` to its analytics; the Lock Screen one ("Running low" / "Ending soon", "Vitamin D · 6 days", "+2 more"). The small and Lock Screen taps open the first item's analytics, or My Nutrients with nothing listed.
+  - Nothing listed: a tick, "Supply and courses on track" and "4 bottles, 1 course". A store the extension can't open reads "Open nutrx to see your supply" (`SupplyWidgetEntry.Content.unavailable`), not "on track". Free: the PRO chip and "Know when a bottle runs out"; a tap opens the paywall. `NutrientIconTile` is compiled into the extension for the medium rows.
 
 ---
 
@@ -812,7 +820,7 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
   - Daily use is the last 14 days' total divided by the days since the first log in them, once there are at least 3. It's deliberately not tied to the refill, so refilling doesn't throw the estimate away.
   - Days left = remaining ÷ daily use, rounded down.
   - Levels: `out` (less than a fifth of a serving left, shown even without history), `low` (days left ≤ `refillReminderDays`), `plenty`, and `noHistory`.
-  - `Nutrient.supplyStatus()` reads the nutrient's own records; `refillSupply()` restarts the count.
+  - `Nutrient.supplyStatus()` reads the nutrient's own records, fetched by date from the refill (or 14 days back, if earlier) through `records(from:to:)` (#249), never the whole history; `refillSupply()` restarts the count.
 - **Copy:** `SupplyText`, tested in `SupplyTextTests`.
 - **Today** (`NutrientCard.supply`) shows a hint only for Pro users, and only when low or out, so the card's height never changes. Low reads "2,000 IU to go · About 6 days left": an amber bottle and the text in AmberInk, on one line. If that doesn't fit beside the buttons, it tries "· 6 days left", then the bottle with "6 days", then the hint alone, which shortens the same way ("About 6 days left", "6 days left", "6 days"; #185). At accessibility sizes both wrap on their own lines. Out reads "Out of supply · Refilled?", replacing the goal status, and steps down to the bottle with "Out · Refilled?", then the bottle with "Refilled?" (the last may truncate); at accessibility sizes "Out of supply" and "Refilled?" take a line each. "Refilled?" is its own button (and a VoiceOver "Refilled" action) and asks for confirmation.
 - **Nutrient form:** a Supply row after Reminders, for saved nutrients only. Pro opens `SupplySheet`; free shows the PRO chip and opens the paywall.

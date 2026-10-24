@@ -143,6 +143,7 @@
 				Models/UserPreferences.swift,
 				Models/UserProfile.swift,
 				Shared/Components/CheckmarkShape.swift,
+				Shared/Components/NutrientIconTile.swift,
 				Shared/Components/ProBadge.swift,
 				Shared/Components/ProgressRing.swift,
 				Shared/Components/SegmentedDayRing.swift,
@@ -161,6 +162,7 @@
 				Shared/Services/StackLogging.swift,
 				Shared/Services/StreakService.swift,
 				Shared/Services/SupplySchedule.swift,
+				Shared/Services/SupplyWidgetSummary.swift,
 				Shared/Services/WidgetReload.swift,
 				Shared/Services/WidgetSummary.swift,
 			);

@@ -66,6 +66,7 @@ Two `ControlWidget`s in `NutrxWidgetsExtension`, configurable when added (`AppIn
   - On the small and Lock Screen sizes, the tap opens the first item's analytics, or My Nutrients when nothing is listed.
 - **Free:** the PRO chip, "Know when a bottle runs out", and a tap opens the paywall.
 - **Ordering** is pure and tested (`SupplyWidgetSummary`): out first, then the fewest days. Supply and courses are interleaved by days left, and a course's last day counts as 0 days.
+- **Built (phase 4):** a course reads "last day", "ends tomorrow" or "ends in 3 days" rather than "3 days left", which could be read either way for a course. A bottle comes before a course on the same day, and a nutrient with both is listed twice. With more than fit: "+2 more".
 
 ## 5. Opening the app from them
 

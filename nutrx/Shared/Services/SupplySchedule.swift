@@ -131,7 +131,12 @@ extension Nutrient {
     /// The supply status from this nutrient's own records, if supply is set.
     func supplyStatus(now: Date = .now, calendar: Calendar = .current) -> SupplySchedule.Status? {
         guard let setup = supplySetup else { return nil }
-        let logs = (intakeRecords ?? []).map { SupplySchedule.Log(date: $0.date, amount: $0.amount) }
+        // Only what the status reads: since the refill and over the usage window, never the whole history (the
+        // supply widget asks for every bottle on each reload, #138).
+        let windowStart = calendar.date(byAdding: .day, value: -(SupplySchedule.historyWindowDays - 1),
+                                        to: calendar.startOfDay(for: now)) ?? setup.refilledAt
+        let logs = records(from: min(setup.refilledAt, windowStart), to: .distantFuture)
+            .map { SupplySchedule.Log(date: $0.date, amount: $0.amount) }
         return SupplySchedule.status(setup: setup, logs: logs, now: now, calendar: calendar)
     }
 

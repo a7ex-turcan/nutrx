@@ -40,6 +40,18 @@ enum ExtensionStore {
         return ((try? context.fetch(descriptor)) ?? []).reduce(0) { $0 + $1.amount }
     }
 
+    /// Runs `body` with a read-only context, kept for as long as `body` reads through it; nil when the store can't
+    /// be opened.
+    static func read<Value>(_ body: (ModelContext) -> Value) -> Value? {
+        readOnlyContext().map(body)
+    }
+
+    /// Nutrients that aren't removed, in Today's order (as Siri lists them).
+    static func todaysNutrients(in context: ModelContext) -> [Nutrient] {
+        let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isRemoved })
+        return NutrientEntityQuery.ordered((try? context.fetch(descriptor)) ?? [])
+    }
+
     private static func readOnlyContext() -> ModelContext? {
         (try? ModelContainerFactory.createForExtension(allowsSave: false)).map { ModelContext($0) }
     }
