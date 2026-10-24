@@ -84,7 +84,9 @@ private struct NutrientAnalyticsContent: View {
                     // One column at the largest text sizes, whatever the width (#155). Side by side, both are as tall as
                     // the taller (#215); a one-row Supply card (the free teaser, Set up) goes full width under them
                     // instead, as on iPhone, rather than leave a half-width card with a gap under it.
+                    // A weekly schedule has no weekday pattern, so then Supply goes full width too.
                     if contentWidth >= Self.sideBySideMinimum, !dynamicTypeSize.isAccessibilitySize,
+                       viewModel.weekdayPattern != nil,
                        SupplyCard.showsStatus(for: nutrient, isPro: proAccess?.isPro == true) {
                         HStack(alignment: .top, spacing: Theme.Spacing.cardGap + 2) {
                             heatmapCard

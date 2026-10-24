@@ -109,6 +109,8 @@ private struct WeekdayHeatmapPreview: View {
         return WeekdayHeatmap(pattern: pattern, tint: tint)
             .padding(18)
             .cardStyle()
+            // Its stacked size: the squares would take the canvas's height otherwise (#215).
+            .fixedSize(horizontal: false, vertical: true)
             .padding()
             .frame(maxHeight: .infinity)
             .background(Theme.surfaceGround)
