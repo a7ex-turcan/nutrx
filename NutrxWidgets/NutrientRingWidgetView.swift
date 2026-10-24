@@ -52,11 +52,7 @@ struct NutrientRingWidgetView: View {
     }
 
     private func accessibilityValue(_ status: NutrientWidgetContent.Status) -> String {
-        switch status {
-        case .due(let progress): "\(progress.progressText), \(progress.remainingText)"
-        case .notToday(let next): "\(ScheduleText.notTodayTitle). \(next)"
-        case .courseEnded: "Course ended"
-        case .removed: "Removed in nutrx"
-        }
+        guard case .due(let progress) = status else { return status.captions.joined(separator: ". ") }
+        return "\(progress.progressText), \(progress.remainingText)"
     }
 }

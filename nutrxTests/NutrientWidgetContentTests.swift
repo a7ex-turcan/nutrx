@@ -71,10 +71,12 @@ final class NutrientWidgetContentTests: XCTestCase {
         let removed = vitaminD()
         removed.isRemoved = true
         XCTAssertEqual(status(make(removed)), .removed)
+        XCTAssertEqual(status(make(removed))?.captions, ["Removed in nutrx"])
 
         let ended = vitaminD()
         ended.endDate = calendar.startOfDay(for: day(10, 22))
         XCTAssertEqual(status(make(ended)), .courseEnded)
+        XCTAssertEqual(status(make(ended))?.captions, ["Course ended"])
         ended.endDate = calendar.startOfDay(for: day(10, 24))
         XCTAssertEqual(status(make(ended, total: 1000)), .due(GoalProgress(nutrient: ended, current: 1000)),
                        "its last day still shows")
@@ -85,6 +87,7 @@ final class NutrientWidgetContentTests: XCTestCase {
         let nutrient = vitaminD()
         nutrient.scheduleRaw = "20261019=days:2,4,6"
         XCTAssertEqual(status(make(nutrient)), .notToday(next: "Next: Monday"))
+        XCTAssertEqual(status(make(nutrient))?.captions, ["Not today", "Next: Monday"])
         XCTAssertEqual(status(make(nutrient, now: day(10, 23))), .due(GoalProgress(nutrient: nutrient, current: 0)))
     }
 }

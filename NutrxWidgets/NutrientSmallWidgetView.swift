@@ -85,13 +85,8 @@ struct NutrientSmallWidgetView: View {
                 .foregroundStyle(progress.status.textColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-        case .notToday(let next):
-            caption(ScheduleText.notTodayTitle)
-            caption(next)
-        case .courseEnded:
-            caption("Course ended")
-        case .removed:
-            caption("Removed in nutrx")
+        case .notToday, .courseEnded, .removed:
+            ForEach(status.captions, id: \.self) { caption($0) }
         }
     }
 

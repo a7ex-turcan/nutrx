@@ -24,6 +24,17 @@ enum NutrientWidgetContent: Equatable {
         case notToday(next: String)
         case courseEnded
         case removed
+
+        /// What shows instead of progress, a line each: "Not today" and "Next: Sunday", "Course ended",
+        /// "Removed in nutrx"; none while due.
+        var captions: [String] {
+            switch self {
+            case .due: []
+            case .notToday(let next): [ScheduleText.notTodayTitle, next]
+            case .courseEnded: ["Course ended"]
+            case .removed: ["Removed in nutrx"]
+            }
+        }
     }
 
     /// `chosen`: the widget has a pick; `nutrient` is that pick read from the store (nil when it's gone).
