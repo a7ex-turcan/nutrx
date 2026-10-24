@@ -63,14 +63,18 @@ struct GroupHeader: View {
         .accessibilityAddTraits([.isHeader, .isButton])  // children: .ignore can drop the button's own trait
     }
 
-    /// The name at accessibility sizes, at most `size`. Its ideal width is its longest word's, which `ViewThatFits`
+    /// The name at accessibility sizes, at most `size`. Its ideal width is its widest word's, which `ViewThatFits`
     /// compares with the row; laid out, it wraps between words in the width it's given.
     private func nameText(upTo size: DynamicTypeSize) -> some View {
         let words = name.split(separator: " ")
-        let longest = words.max { $0.count < $1.count }.map(String.init) ?? name
         return ZStack(alignment: .topLeading) {
-            Text(longest)
-                .hidden()
+            // Every word, since the most letters isn't the widest ("WOMEN" is wider than "illicit"); one line each, so
+            // a word too wide even at the last step doesn't add height under the shrunk name.
+            ForEach(Array(words.enumerated()), id: \.offset) { _, word in
+                Text(word)
+                    .lineLimit(1)
+                    .hidden()
+            }
             Text(name)
                 .foregroundStyle(Theme.textPrimary)
                 // A single word too long even at the smallest step shrinks rather than breaking.
@@ -99,6 +103,8 @@ private struct GroupHeaderPreviewGallery: View {
                 // A word too long for the row at the largest sizes, alone and with others.
                 GroupHeader(name: "Supplementation", met: 0, total: 4, isCollapsed: false) {}
                 GroupHeader(name: "Supplementation stack", met: 0, total: 4, isCollapsed: false) {}
+                // Too wide even at the last step: it shrinks onto one line.
+                GroupHeader(name: "Electrolytesupplementation", met: 0, total: 2, isCollapsed: false) {}
             }
             .padding(.horizontal, Theme.Spacing.screenMargin)
         }
