@@ -131,6 +131,7 @@
 		64702AAD2F72ABD400C45D23 /* Exceptions for "nutrx" folder in "NutrxWidgetsExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Features/Nutrients/ViewModels/ScheduleText.swift,
 				Models/Exclusion.swift,
 				Models/IntakeRecord.swift,
 				Models/LogStack.swift,
@@ -142,6 +143,7 @@
 				Models/UserPreferences.swift,
 				Models/UserProfile.swift,
 				Shared/Components/CheckmarkShape.swift,
+				Shared/Components/ProBadge.swift,
 				Shared/Components/ProgressRing.swift,
 				Shared/Components/SegmentedDayRing.swift,
 				Shared/DesignSystem/Colors.xcassets,
@@ -154,6 +156,7 @@
 				Shared/Services/AppLink.swift,
 				Shared/Services/ControlText.swift,
 				Shared/Services/GoalStatus.swift,
+				Shared/Services/NutrientWidgetContent.swift,
 				Shared/Services/ProEntitlement.swift,
 				Shared/Services/StackLogging.swift,
 				Shared/Services/StreakService.swift,

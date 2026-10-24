@@ -44,6 +44,7 @@ Two `ControlWidget`s in `NutrxWidgetsExtension`, configurable when added (`AppIn
 - **Not configured:** the small size reads "Choose a nutrient", and editing the widget picks one.
 - **Tap:** opens that nutrient's analytics (`nutrx://nutrients/<id>`, §5).
 - **Free:** the PRO chip, "One nutrient, on your Home Screen", and a tap opens the paywall. The Lock Screen ring shows the nutrx mark.
+- **Built (phase 3):** what shows is `NutrientWidgetContent` (pure, tested). As with the controls, a deleted nutrient or an ended course stops resolving through the entity query, so the widget usually reads "Choose a nutrient" again; "Removed in nutrx" and "Course ended" cover a pick that still resolves.
 
 ## 4. Supply & courses widget
 

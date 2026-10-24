@@ -362,6 +362,7 @@ nutrx/
         ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (no ProAccess needed; also in the widget).
         ├── AppLink.swift                    # nutrx:// links from widgets and controls (today, nutrients, a nutrient, pro) (#138).
         ├── ControlText.swift                # What the Log stack / Log nutrient controls show under their name (pure, #138).
+        ├── NutrientWidgetContent.swift      # What the one-nutrient widget shows: free, choose, due / not today / ended / removed (pure, #138).
         ├── WidgetReload.swift               # WidgetReload.all(): widget timelines + Control Center controls, after a change.
         ├── SupplySchedule.swift             # Supply: remaining, daily use, days left, level (pure); Nutrient.supplyStatus / refillSupply.
         ├── SupplyText.swift                 # Supply copy: Today hint, analytics card, sheet sentence.
@@ -701,7 +702,7 @@ Uses `SKStoreReviewController` — no custom UI. Triggered after intake actions 
 
 ## Widgets
 
-Five widget configurations in `NutrxWidgetsExtension`, redesigned in phase 9 (DESIGN.md §5.10). Kind IDs and supported families never change — widgets people have placed would disappear.
+Five free widget configurations in `NutrxWidgetsExtension`, redesigned in phase 9 (DESIGN.md §5.10), plus the Pro ones from #138 (below the table). Kind IDs and supported families never change — widgets people have placed would disappear.
 
 | Widget (gallery name) | Kind ID | Families | Content |
 |---|---|---|---|
@@ -710,6 +711,7 @@ Five widget configurations in `NutrxWidgetsExtension`, redesigned in phase 9 (DE
 | Goals | `NutrxCircularWidget` | `.accessoryCircular` | Lock Screen capacity gauge with "3/6" |
 | Next up | `NutrxRectangularWidget` | `.accessoryRectangular` | Lock Screen: first goal that still needs more — name, value, linear bar; else "1 over limit" or "All done" + "5/6 goals met" |
 | Goals and streak | `NutrxInlineWidget` | `.accessoryInline` | "3/6 goals · 10-day streak" |
+| Nutrient (Pro, #138) | `NutrxNutrientWidget` | `.systemSmall`, `.accessoryCircular` | One chosen nutrient: ring, "**2,000** / 4,000 IU", status line and + (small); a gauge ring with its symbol, a tick once met (Lock Screen) |
 
 `NutrientSnapshot` (`WidgetEntry.swift`) carries tint, symbol and goal type and takes status / ring fraction / text from `GoalProgress`; widget text comes from `Shared/Services/WidgetSummary.swift` (tested in `WidgetSummaryTests`). `ProgressRing`, `SegmentedDayRing` and `WidgetSummary` are compiled into the widget target via membership exceptions. In widgets, set rounded numerals as `.font(.title.weight(.bold)).fontDesign(.rounded)` — `Font.system(_:design:weight:)` drops the weight there.
 
@@ -736,6 +738,11 @@ The handlers fire on first appearance too, so a cold launch from a tap lands rig
   - those open the app by returning `OpenNutrxIntent` (`Shared/Intents/`, an `OpenIntent` on an `AppScreen` enum, compiled into both targets and performed in the app, which hands it to `NotificationRouter.open` through `OpenNutrxIntent.openLink`, set in `nutrxApp.init`). `OpenURLIntent` doesn't work there: it takes universal links, and with `nutrx://pro` the control opened nothing. The result is declared `some IntentResult & OpensIntent`: with plain `IntentResult`, iOS drops the returned intent ("Did not declare OpensIntent but provided one");
   - otherwise it logs through `StackLogging.log` (a writable `createForExtension()`) or `LogNutrientIntent.logStep` (the widget's +, shared), then reloads the widgets and controls. Logged today, a stack's symbol becomes a tick (the 1×1 control shows only the symbol).
   - The text under the name comes from `ControlText` (pure, `ControlTextTests`, also in the extension): "Log", "Logged today", "Nothing due today" or "Removed in nutrx" for a stack; "+1,000 IU", "Not due today", "Course ended" or "Removed in nutrx" for a nutrient; "nutrx Pro" when free. The name and symbol are read live, so a rename shows. A deleted stack or nutrient (or an ended course) stops resolving through its entity query, so the control reads "Choose a stack" / "Choose a nutrient" again.
+- **Nutrient widget** (`NutrxWidgets/NutrientWidget*.swift`, `NutrientSmallWidgetView`, `NutrientRingWidgetView`; phase 3): an `AppIntentConfiguration` whose `NutrientWidgetConfiguration` picks a `NutrientEntity`. The provider reads the nutrient (removed ones too) and today's total through `ExtensionStore`, and Pro through `ProEntitlement.current()`; it refreshes at midnight and on `WidgetReload`. `NutrientWidgetContent` (pure, `NutrientWidgetContentTests`, also in the extension) decides what shows:
+  - free → the PRO chip and "One nutrient, on your Home Screen" (the brand mark on the Lock Screen); a tap opens `nutrx://pro`;
+  - nothing chosen, or the pick gone → "Choose a nutrient"; a tap opens My Nutrients;
+  - due today → the ring, value, status line and a + (`LogNutrientIntent`); not due under a schedule → "Not today" and "Next: Sunday" (`ScheduleText`, compiled into the extension), no +; "Course ended"; "Removed in nutrx". A tap opens that nutrient's analytics (`nutrx://nutrients/<id>`).
+  - The gallery and placeholder show Vitamin D halfway (`NutrientWidgetEntry.sample`). `ProBadge` and a small copy of the `BrandMark` image (96 and 144 px wide, @2x / @3x) are in the extension for the free states. **Keep widget images small:** WidgetKit refuses one larger than the family allows ("imageTooLarge", the app's 804 px mark on the Lock Screen), and that failure fails the whole widget's reload, other sizes included, until the next retry an hour later.
 
 ---
 
