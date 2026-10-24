@@ -79,13 +79,13 @@ The widgets already pass `nutrx://today` and the like, but the app has no URL ha
 
 1. **Groundwork:**
    - the `AppLink` router and `onOpenURL`;
-   - `StackEntity` / `NutrientEntity` queries that work in the widget extension (compiled into it);
-   - `SupplyWidgetSummary`;
+   - `StackEntity` / `NutrientEntity` queries that work in the widget extension (compiled into it, with the extension
+     registering its own `createForExtension()` container as their `@Dependency`);
    - the Debug `nutrx.debug.widgetsPro` switch (§6);
    - tests.
 2. **Controls:** Log stack and Log nutrient, with the free variant.
 3. **One nutrient widget:** small and the Lock Screen ring.
-4. **Supply & courses widget:** small, medium and Lock Screen rectangular.
+4. **Supply & courses widget:** `SupplyWidgetSummary` (pure, tested), then small, medium and Lock Screen rectangular.
 5. **Shipping:**
    - a new `ProFeature` row, "Widgets and controls" ("Log from Control Center and the Home Screen", `square.grid.2x2`). It's the eighth, so the App Store paywall screenshot (#272) gets retaken with `-screenshotRoute paywall`;
    - a 2.5 What's New item;
