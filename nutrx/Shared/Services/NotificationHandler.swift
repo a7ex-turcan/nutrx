@@ -20,6 +20,10 @@ final class NotificationRouter {
     /// Today's Apple Health card asked to see where insights appear (#102): Nutrients pushes that nutrient's analytics,
     /// which scrolls to its With Apple Health card, then clears it.
     var healthNutrientID: UUID?
+    #if DEBUG
+    /// `-screenshotRoute` (#218): the tab bar switches, and My Nutrients, History or Today open what it names.
+    var screenshotRoute: ScreenshotRoute?
+    #endif
 }
 
 /// The app's notification delegate: refill reminder actions (Refilled, Remind me tomorrow) and taps. Dose and

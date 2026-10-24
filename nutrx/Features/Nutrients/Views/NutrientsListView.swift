@@ -207,6 +207,14 @@ struct NutrientsListView: View {
                 show(nutrient)
             }
         }
+        #if DEBUG
+        .onChange(of: router?.screenshotRoute, initial: true) { _, route in
+            if case .nutrient(let name) = route,
+               let nutrient = nutrients.first(where: { $0.name.localizedCaseInsensitiveCompare(name) == .orderedSame }) {
+                show(nutrient)
+            }
+        }
+        #endif
         .onChange(of: router?.supplyNutrientID, initial: true) { _, id in
             // A refill reminder: show that nutrient's analytics (its Supply card focuses itself).
             if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
