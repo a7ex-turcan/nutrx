@@ -74,9 +74,10 @@ enum StackShortcutLogging {
     }
 
     /// What to say to Siri for a stack — the first "Log Stack" phrase in `NutrxShortcuts`, with the stack's name, or
-    /// the second for a name that already ends in "stack", so the tip never says "Morning stack stack" (#292).
+    /// the second when the name's last word is already "stack", so the tip never says "Morning stack stack" (#292).
     static func siriPhrase(for stackName: String) -> String {
         let name = stackName.trimmingCharacters(in: .whitespaces)
-        return name.lowercased().hasSuffix("stack") ? "Log my \(name) with nutrx" : "Log my \(name) stack with nutrx"
+        let endsInStack = name.lowercased().split(separator: " ").last == "stack"
+        return endsInStack ? "Log the \(name) with nutrx" : "Log my \(name) stack with nutrx"
     }
 }
