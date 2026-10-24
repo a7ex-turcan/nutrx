@@ -113,7 +113,10 @@ struct NutrientsListView: View {
                     listPage
                         .navigationDestination(for: PersistentIdentifier.self) { id in
                             if let nutrient = nutrients.first(where: { $0.persistentModelID == id }) {
+                                // A new id, a new view: `show(_:)` replaces the path, and the reused view kept the
+                                // last nutrient's stats (a widget or refill reminder opening another one).
                                 NutrientAnalyticsView(nutrient: nutrient)
+                                    .id(id)
                             }
                         }
                 }
