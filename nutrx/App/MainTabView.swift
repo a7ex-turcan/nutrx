@@ -138,7 +138,10 @@ struct MainTabView: View {
         // A route that came in meanwhile wins, as during the visit.
         selection = routedTab ?? target
         try? await Task.sleep(for: .milliseconds(16))
-        if Task.isCancelled { return }
+        if Task.isCancelled {
+            if let routedTab { selection = routedTab }
+            return
+        }
         preparedSplitViews = true
         // One that came in during that last frame: `route(to:)` only records it while the cover is up.
         if let routedTab, routedTab != selection { selection = routedTab }
