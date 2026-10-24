@@ -20,6 +20,24 @@ final class NotificationRouter {
     /// Today's Apple Health card asked to see where insights appear (#102): Nutrients pushes that nutrient's analytics,
     /// which scrolls to its With Apple Health card, then clears it.
     var healthNutrientID: UUID?
+    /// A widget opened a nutrient (`nutrx://nutrients/<id>`): Nutrients shows its analytics, then clears it.
+    var nutrientID: UUID?
+    /// A Pro widget or control tapped by a free user (`nutrx://pro`): Today opens the paywall, then clears it.
+    var showsPaywall = false
+    /// A widget asked for a tab (`nutrx://today`, `nutrx://nutrients`): the tab bar switches, then clears it.
+    var linkedTab: LinkedTab?
+
+    enum LinkedTab { case today, nutrients }
+
+    /// Follows a widget's or control's link (docs/pro/WIDGETS.md §5).
+    func open(_ link: AppLink) {
+        switch link {
+        case .today: linkedTab = .today
+        case .nutrients: linkedTab = .nutrients
+        case .nutrient(let id): nutrientID = id
+        case .pro: showsPaywall = true
+        }
+    }
     #if DEBUG
     /// `-screenshotRoute` (#218): the tab bar switches, and My Nutrients, History or Today open what it names.
     var screenshotRoute: ScreenshotRoute?

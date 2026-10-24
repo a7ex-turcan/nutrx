@@ -215,6 +215,13 @@ struct NutrientsListView: View {
             }
         }
         #endif
+        .onChange(of: router?.nutrientID, initial: true) { _, id in
+            // A widget's link to a nutrient: its analytics, once.
+            if let id, let nutrient = nutrients.first(where: { $0.id == id }) {
+                show(nutrient)
+                router?.nutrientID = nil
+            }
+        }
         .onChange(of: router?.supplyNutrientID, initial: true) { _, id in
             // A refill reminder: show that nutrient's analytics (its Supply card focuses itself).
             if let id, let nutrient = nutrients.first(where: { $0.id == id }) {

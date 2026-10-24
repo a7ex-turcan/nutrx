@@ -359,6 +359,7 @@ nutrx/
         ├── ExportService.swift              # CSV export: entries for a period, RFC 4180 CSV, file name, temp file.
         ├── ProAccess.swift                  # nutrx Pro: StoreKit 2 entitlement (never stored), products, purchase, restore.
         ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (no ProAccess needed; also in the widget).
+        ├── AppLink.swift                    # nutrx:// links from widgets and controls (today, nutrients, a nutrient, pro) (#138).
         ├── SupplySchedule.swift             # Supply: remaining, daily use, days left, level (pure); Nutrient.supplyStatus / refillSupply.
         ├── SupplyText.swift                 # Supply copy: Today hint, analytics card, sheet sentence.
         ├── RefillSchedule.swift             # Refill reminders: when (one per bottle, 10:00), snooze, title/body (pure).
@@ -712,6 +713,18 @@ Five widget configurations in `NutrxWidgetsExtension`, redesigned in phase 9 (DE
 **Checking Lock Screen widgets (#24):** their `#Preview(as: .accessoryCircular / .accessoryRectangular / .accessoryInline)` previews render fully transparent in preview snapshots (the vibrant Lock Screen material only exists on a real Lock Screen), and a widget extension can only host widget previews, so a plain view preview isn't an option ("The widget extension can only host widget previews."). Check them on a simulator's Lock Screen instead (long-press → Customize → Lock Screen → add the nutrx widgets), in light and dark wallpapers. Home Screen widget previews render normally.
 
 **Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent, widget extension only, hidden from Shortcuts) for interactive + buttons; Siri and Shortcuts use the app's `LogNutrientShortcutIntent`. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`, which opens the store read-only with `ModelContainerFactory.createForExtension(allowsSave: false)`. "Next up" means `GoalProgress.needsMore` (below an "at least" target or a range's lower bound), never an "at most" goal or one over its limit. Widgets refresh on intent completion and app foreground.
+
+**Links into the app (#138, docs/pro/WIDGETS.md §5):** `nutrx` is a registered URL scheme (`CFBundleURLTypes`), and `nutrxApp`'s `onOpenURL` hands links to `NotificationRouter.open(_:)` through `AppLink` (pure, `AppLinkTests`; also compiled into the widget extension, which builds them):
+- `nutrx://today` and `nutrx://nutrients` switch tabs (`linkedTab`).
+- `nutrx://nutrients/<uuid>` opens that nutrient's analytics (`nutrientID`, cleared once shown).
+- `nutrx://pro` opens the paywall over Today, or "Enjoy nutrx Pro" for a Pro user, since the extension's entitlement can lag the app's (`showsPaywall`).
+- Anything else opens Today.
+
+The handlers fire on first appearance too, so a cold launch from a tap lands right. Test with `xcrun simctl openurl <UDID> nutrx://…`; iOS asks "Open in nutrx?" the first time.
+
+**For the Pro widgets and controls:**
+- `NutrientEntity`, `StackEntity` and `StackLogging` are compiled into the widget extension. `NutrxWidgetsBundle` registers a read-only `createForExtension(allowsSave: false)` container, opened on first use, as the entities' `@Dependency`. `createForExtension`, the schema and the store URL are `nonisolated` for this.
+- Debug builds of the extension treat themselves as Pro when the App Group default `nutrx.debug.widgetsPro` is on (`ProEntitlement.debugWidgetsProKey`), because the extension never sees Xcode's local StoreKit: `xcrun simctl spawn <UDID> defaults write group.nutrx-labs.nutrx nutrx.debug.widgetsPro -bool YES`.
 
 ---
 

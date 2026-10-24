@@ -191,6 +191,17 @@ struct TodayView: View {
             }
         }
         .planChipSheets(showPaywall: $showPaywall, showEnjoy: $showEnjoyPro)
+        // A Pro widget or control tapped by a free user (`nutrx://pro`, docs/pro/WIDGETS.md §5). The extension can see
+        // a different entitlement from the app's (a lapse not caught up yet), so a Pro user gets "Enjoy nutrx Pro",
+        // as the plan chip does, and not the paywall. Right after launch it waits for the first check.
+        .onChange(of: router?.showsPaywall, initial: true) { _, shows in
+            guard shows == true else { return }
+            router?.showsPaywall = false
+            Task {
+                if let proAccess, !proAccess.hasCheckedEntitlements { await proAccess.refreshEntitlement() }
+                if proAccess?.isPro == true { showEnjoyPro = true } else { showPaywall = true }
+            }
+        }
         #if DEBUG
         .onChange(of: router?.screenshotRoute, initial: true) { _, route in
             if route == .paywall { showPaywall = true }
