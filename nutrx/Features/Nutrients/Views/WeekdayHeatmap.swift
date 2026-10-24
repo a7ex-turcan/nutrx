@@ -60,14 +60,17 @@ struct WeekdayHeatmap: View {
                     // square takes the largest size, up to XXXL, at which "100%" (the widest a square reads) fits,
                     // rather than shrinking its own text, which left "100%" smaller than "75%" beside it. The squares
                     // are all one width, so they all pick the same size.
+                    // A step at a time, and a 1 pt inset: on a 6.3-inch iPhone "100%" just fits at xLarge that way,
+                    // rather than every square dropping back to the Large size.
                     ViewThatFits(in: .horizontal) {
                         percentLabel(percent, ink: ink, upTo: .xxxLarge)
+                        percentLabel(percent, ink: ink, upTo: .xxLarge)
                         percentLabel(percent, ink: ink, upTo: .xLarge)
-                        percentLabel(percent, ink: ink, upTo: .medium)
+                        percentLabel(percent, ink: ink, upTo: .large)
                         percentLabel(percent, ink: ink, upTo: .xSmall)
                             .minimumScaleFactor(0.5)
                     }
-                    .padding(2)
+                    .padding(1)
                 }
             Text(calendar.veryShortWeekdaySymbols[entry.weekday - 1])
                 .font(.caption.weight(.semibold))
