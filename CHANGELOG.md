@@ -15,6 +15,7 @@ All notable changes to nutrx are documented in this file.
 - **Editing an amount** — While you edit the log sheet's amount it shows without thousands separators, so deleting a digit from "1,000" gives 100 rather than a number the app misreads; when you tap Done it takes the same form as the rest of the app ("123456789" becomes "123,456,789").
 
 ### Fixes
+- **Group names at the largest text sizes** — On Today, a group's name no longer breaks mid-word ("Throug / h the / day") at the largest text sizes: its count moves under the name, and a name with a very long word is set a little smaller so every word stays whole.
 - **Log clear of the Done bar with a keyboard attached** — With a hardware keyboard (or an iPad's), the keyboard's Done bar no longer covers the log sheet's Log button while you edit the amount or a note.
 
 ## v2.4 — 2026-10-24
