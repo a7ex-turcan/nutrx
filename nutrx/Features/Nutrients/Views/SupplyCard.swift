@@ -144,20 +144,23 @@ struct SupplyCard: View {
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
 
-            // Low or out: Add to list beside Refilled, under it when they don't fit side by side (#134).
+            // Low or out: Add to list beside Refilled, under it when they don't fit side by side (#134), the two as
+            // tall as the taller (the share symbol stands taller than the refill arrow, #269).
             if low, let line = nutrient.supplyListLine {
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 10) {
+                    EqualHeightStack(axis: .horizontal) {
                         refilledButton
                         addToListButton(line)
                     }
-                    VStack(spacing: 10) {
+                    EqualHeightStack(axis: .vertical) {
                         refilledButton
                         addToListButton(line)
                     }
                 }
             } else {
+                // Its own height: the `maxHeight: .infinity` it has for EqualHeightStack would let the card stretch it.
                 refilledButton
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(padding)
@@ -227,7 +230,9 @@ struct SupplyCard: View {
             Label("Refilled", systemImage: "arrow.clockwise")
                 .font(.headline)
                 .foregroundStyle(isFocused ? Theme.controlOnPrimary : Theme.textPrimary)
-                .frame(maxWidth: .infinity, minHeight: 50)
+                // Room above and below the label at the largest sizes, where it outgrows the 50 pt.
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, minHeight: 50, maxHeight: .infinity)
                 .background {
                     if isFocused {
                         RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
@@ -249,7 +254,8 @@ struct SupplyCard: View {
             Label("Add to list", systemImage: "square.and.arrow.up")
                 .font(.headline)
                 .foregroundStyle(Theme.textPrimary)
-                .frame(maxWidth: .infinity, minHeight: 50)
+                .padding(.vertical, 6)
+                .frame(maxWidth: .infinity, minHeight: 50, maxHeight: .infinity)
                 .background {
                     RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous)
                         .strokeBorder(Theme.controlGhostBorder, lineWidth: 1.5)
@@ -265,5 +271,44 @@ struct SupplyCard: View {
         router?.supplyNutrientID = nil
         NotificationService.refreshAllNutrientReminders(context: modelContext)
         WidgetCenter.shared.reloadAllTimelines()  // the medium widget's "Running low" line
+    }
+}
+
+/// Its subviews side by side (equal widths) or stacked, every one as tall as the tallest at that width (#269).
+private struct EqualHeightStack: Layout {
+    let axis: Axis
+    var spacing: CGFloat = 10
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard !subviews.isEmpty else { return .zero }
+        let gaps = spacing * CGFloat(subviews.count - 1)
+        // No width proposed (ViewThatFits asking for the ideal size): side by side, the widest one's in every
+        // column, since the row is split equally (the sum would fit a long label that then wraps in its half).
+        let widest = subviews.map { $0.sizeThatFits(.unspecified).width }.max() ?? 0
+        let width = proposal.width ?? (axis == .horizontal ? widest * CGFloat(subviews.count) + gaps : widest)
+        let height = rowHeight(subviews, itemWidth: itemWidth(width, count: subviews.count))
+        return axis == .horizontal
+            ? CGSize(width: width, height: height)
+            : CGSize(width: width, height: height * CGFloat(subviews.count) + gaps)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let width = itemWidth(bounds.width, count: subviews.count)
+        let height = rowHeight(subviews, itemWidth: width)
+        for (index, subview) in subviews.enumerated() {
+            let offset = CGFloat(index)
+            let origin = axis == .horizontal
+                ? CGPoint(x: bounds.minX + offset * (width + spacing), y: bounds.minY)
+                : CGPoint(x: bounds.minX, y: bounds.minY + offset * (height + spacing))
+            subview.place(at: origin, proposal: ProposedViewSize(width: width, height: height))
+        }
+    }
+
+    private func itemWidth(_ width: CGFloat, count: Int) -> CGFloat {
+        axis == .horizontal ? max(0, (width - spacing * CGFloat(count - 1)) / CGFloat(count)) : width
+    }
+
+    private func rowHeight(_ subviews: Subviews, itemWidth: CGFloat) -> CGFloat {
+        subviews.map { $0.sizeThatFits(ProposedViewSize(width: itemWidth, height: nil)).height }.max() ?? 0
     }
 }
