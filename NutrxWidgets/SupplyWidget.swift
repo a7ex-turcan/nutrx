@@ -50,6 +50,7 @@ struct SupplyWidgetView: View {
     SupplyWidgetEntry.sample
     SupplyWidgetEntry.onTrackSample
     SupplyWidgetEntry.freeSample
+    SupplyWidgetEntry.unavailableSample
 }
 
 #Preview("Medium", as: .systemMedium) {
@@ -58,4 +59,5 @@ struct SupplyWidgetView: View {
     SupplyWidgetEntry.sample
     SupplyWidgetEntry.onTrackSample
     SupplyWidgetEntry.freeSample
+    SupplyWidgetEntry.unavailableSample
 }

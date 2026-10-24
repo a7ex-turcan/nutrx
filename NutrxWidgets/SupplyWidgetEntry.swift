@@ -27,4 +27,5 @@ struct SupplyWidgetEntry: TimelineEntry {
     static let onTrackSample = SupplyWidgetEntry(
         date: .now, content: .summary(SupplyWidgetSummary(items: [], bottles: 4, courses: 1)))
     static let freeSample = SupplyWidgetEntry(date: .now, content: .free)
+    static let unavailableSample = SupplyWidgetEntry(date: .now, content: .unavailable)
 }

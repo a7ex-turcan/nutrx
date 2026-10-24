@@ -67,4 +67,5 @@ struct SupplyRectangularWidgetView: View {
     SupplyWidgetEntry.sample
     SupplyWidgetEntry.onTrackSample
     SupplyWidgetEntry.freeSample
+    SupplyWidgetEntry.unavailableSample
 }
