@@ -4,7 +4,7 @@ import SwiftUI
 /// The nutrx Pro paywall (docs/pro/design/2-paywall: paywall, paywall-lifetime), a full-height sheet: a forest
 /// header with the wordmark, what Pro adds, the three plans as radio cards (lifetime under "or pay once"), the
 /// buy button with its price terms, and Restore · Terms · Privacy. After a purchase the sheet turns into the
-/// welcome (`ProWelcomeView`) at half height, or full height at accessibility sizes.
+/// welcome (`ProWelcomeView`): at half height on iPhone, full height at accessibility sizes and on large widths.
 struct PaywallView: View {
     @Environment(ProAccess.self) private var proAccess
     @Environment(\.dismiss) private var dismiss
@@ -31,6 +31,10 @@ struct PaywallView: View {
         var id: String { title + body }
     }
 
+    private var halvesWelcome: Bool {
+        welcomed && !dynamicTypeSize.isAccessibilitySize && widthClass == .compact
+    }
+
     static let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
     static let privacyURL = URL(string: "https://nutrx.nutrx-labs.com/privacy.html")!
 
@@ -42,9 +46,11 @@ struct PaywallView: View {
                 paywall
             }
         }
-        // The welcome sheet is half height, or full height at accessibility sizes, where its text doesn't fit.
-        .presentationDetents(welcomed && !dynamicTypeSize.isAccessibilitySize ? [.medium] : [.large])
-        .presentationDragIndicator(welcomed ? .visible : .hidden)
+        // The welcome sheet is half height on iPhone, or full height at accessibility sizes, where its text doesn't
+        // fit. From regular widths the page sheet keeps its height, the welcome centred in it: a medium detent shrank
+        // it from the bottom up, and the welcome sat in the lower half of the iPad's screen (#206).
+        .presentationDetents(halvesWelcome ? [.medium] : [.large])
+        .presentationDragIndicator(welcomed && widthClass == .compact ? .visible : .hidden)
         // On iPad a page sheet, taller than the default form sheet, so more of the plans are in view (#205); sizing
         // doesn't change a sheet on iPhone.
         .presentationSizing(.page)
