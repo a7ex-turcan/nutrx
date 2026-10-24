@@ -205,7 +205,7 @@ struct LogSheet: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if pinsLog {
                     VStack(spacing: 4) {
-                        doneButton
+                        KeyboardDoneButton { focusedField = nil }
                         logButton
                     }
                     .padding(.horizontal, Self.contentMargin)
@@ -246,22 +246,6 @@ struct LogSheet: View {
     /// Done and Log sit above the keyboard rather than under the note whenever a field is focused, with a hardware
     /// keyboard too (no on-screen keyboard comes up, but Done is still how the field is left, #261).
     private var pinsLog: Bool { focusedField != nil }
-
-    /// Hides the keyboard: the amount's .decimalPad has no return key.
-    private var doneButton: some View {
-        Button {
-            focusedField = nil
-        } label: {
-            Text("Done")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(Theme.controlPrimary)
-                .frame(minWidth: Theme.minTouchTarget, minHeight: Theme.minTouchTarget)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .accessibilityHint("Hides the keyboard")
-    }
 
     private func scroll(_ proxy: ScrollViewProxy, to id: some Hashable, anchor: UnitPoint) {
         withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
