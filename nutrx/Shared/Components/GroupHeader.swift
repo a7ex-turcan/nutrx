@@ -13,19 +13,28 @@ struct GroupHeader: View {
 
     var body: some View {
         // At accessibility sizes the chip goes under the name, which then has the row up to the chevron, and a word
-        // still too long for it shrinks rather than breaking mid-word ("Throug / h the / day" at AX5, #273).
+        // still too long for it makes the name smaller rather than breaking mid-word ("Throug / h the / day" at AX5,
+        // #273).
         let large = dynamicTypeSize.isAccessibilitySize
         let title = large ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4)) : AnyLayout(HStackLayout(spacing: 10))
 
         Button(action: onToggle) {
             HStack(spacing: 10) {
                 title {
-                    Text(name)
-                        .font(.headline)
-                        .foregroundStyle(Theme.textPrimary)
-                        // At most one line per word, as My Nutrients' rows (#108); names still wrap between words.
-                        .lineLimit(large ? max(name.split(separator: " ").count, 1) : nil)
-                        .minimumScaleFactor(large ? 0.5 : 1)
+                    if large {
+                        // The largest size whose longest word fits the row: shrinking the text only when it overflows
+                        // its lines would still give "Supplementa- / tion stack", which fits in two.
+                        ViewThatFits(in: .horizontal) {
+                            nameText(upTo: .accessibility5)
+                            nameText(upTo: .accessibility3)
+                            nameText(upTo: .accessibility1)
+                            nameText(upTo: .xxxLarge)
+                        }
+                    } else {
+                        Text(name)
+                            .font(.headline)
+                            .foregroundStyle(Theme.textPrimary)
+                    }
 
                     Text("\(met)/\(total)")
                         .font(.system(.subheadline, design: .rounded, weight: .semibold))
@@ -53,6 +62,25 @@ struct GroupHeader: View {
         .accessibilityHint("Shows or hides this group")
         .accessibilityAddTraits([.isHeader, .isButton])  // children: .ignore can drop the button's own trait
     }
+
+    /// The name at accessibility sizes, at most `size`. Its ideal width is its longest word's, which `ViewThatFits`
+    /// compares with the row; laid out, it wraps between words in the width it's given.
+    private func nameText(upTo size: DynamicTypeSize) -> some View {
+        let words = name.split(separator: " ")
+        let longest = words.max { $0.count < $1.count }.map(String.init) ?? name
+        return ZStack(alignment: .topLeading) {
+            Text(longest)
+                .hidden()
+            Text(name)
+                .foregroundStyle(Theme.textPrimary)
+                // A single word too long even at the smallest step shrinks rather than breaking.
+                .lineLimit(max(words.count, 1))
+                .minimumScaleFactor(0.5)
+                .frame(minWidth: 0, idealWidth: 0, maxWidth: .infinity, alignment: .leading)
+        }
+        .font(.headline)
+        .dynamicTypeSize(...size)
+    }
 }
 
 // MARK: - Previews
@@ -61,16 +89,19 @@ private struct GroupHeaderPreviewGallery: View {
     @State private var collapsed = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            GroupHeader(name: "Morning stack", met: 2, total: 3, isCollapsed: collapsed) {
-                withAnimation(.easeInOut(duration: 0.25)) { collapsed.toggle() }
+        // Scrolling, like Today's list: in a fixed height the names would shrink to fit it instead.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                GroupHeader(name: "Morning stack", met: 2, total: 3, isCollapsed: collapsed) {
+                    withAnimation(.easeInOut(duration: 0.25)) { collapsed.toggle() }
+                }
+                GroupHeader(name: "Through the day", met: 1, total: 3, isCollapsed: true) {}
+                // A word too long for the row at the largest sizes, alone and with others.
+                GroupHeader(name: "Supplementation", met: 0, total: 4, isCollapsed: false) {}
+                GroupHeader(name: "Supplementation stack", met: 0, total: 4, isCollapsed: false) {}
             }
-            GroupHeader(name: "Through the day", met: 1, total: 3, isCollapsed: true) {}
-            // One word too long for the row at the largest sizes: it shrinks rather than breaking.
-            GroupHeader(name: "Micronutrients", met: 0, total: 4, isCollapsed: false) {}
+            .padding(.horizontal, Theme.Spacing.screenMargin)
         }
-        .padding(.horizontal, Theme.Spacing.screenMargin)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(Theme.surfaceGround)
     }
 }
