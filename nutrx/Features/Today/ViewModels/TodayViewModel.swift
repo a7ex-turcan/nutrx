@@ -1,6 +1,5 @@
 import Foundation
 import SwiftData
-import WidgetKit
 
 @Observable
 final class TodayViewModel {
@@ -109,7 +108,7 @@ final class TodayViewModel {
         refresh(context: context)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetReload.all()
     }
 
     /// A nutrient's supply status from the cached logs, or nil when supply isn't set.
@@ -244,7 +243,7 @@ final class TodayViewModel {
         updateTotal(for: nutrient, delta: nutrient.step)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetReload.all()
     }
 
     func addCustomAmount(_ amount: Double, to nutrient: Nutrient, note: String? = nil, context: ModelContext) {
@@ -254,7 +253,7 @@ final class TodayViewModel {
         updateTotal(for: nutrient, delta: amount)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetReload.all()
     }
 
     func decrement(_ nutrient: Nutrient, context: ModelContext) {
@@ -268,7 +267,7 @@ final class TodayViewModel {
                 NotificationService.refreshDailyReminder(context: context)
                 // Back to zero today: its remaining reminders today come back.
                 NotificationService.refreshAllNutrientReminders(context: context)
-                WidgetCenter.shared.reloadAllTimelines()
+                WidgetReload.all()
             }
         }
     }
@@ -283,7 +282,7 @@ final class TodayViewModel {
         updateTotal(for: nutrient, delta: -amount, at: date)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetReload.all()
     }
 
     /// Brings the pending reminders in line with today's logs and the rolling window (call on foreground).

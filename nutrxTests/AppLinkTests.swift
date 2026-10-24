@@ -35,4 +35,18 @@ final class AppLinkTests: XCTestCase {
         router.open(.today)
         XCTAssertEqual(router.linkedTab, .today)
     }
+
+    func testControlsOpenTheirScreens() async throws {
+        XCTAssertEqual(AppScreen.today.link, .today)
+        XCTAssertEqual(AppScreen.nutrients.link, .nutrients)
+        XCTAssertEqual(AppScreen.pro.link, .pro)
+
+        // The app performs the intent and hands the link on (nutrxApp sets `openLink`).
+        let previous = OpenNutrxIntent.openLink
+        defer { OpenNutrxIntent.openLink = previous }
+        var opened: [AppLink] = []
+        OpenNutrxIntent.openLink = { opened.append($0) }
+        _ = try await OpenNutrxIntent(.pro).perform()
+        XCTAssertEqual(opened, [.pro])
+    }
 }

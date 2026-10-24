@@ -2,7 +2,6 @@ import AppIntents
 import SwiftUI
 import UserNotifications
 import SwiftData
-import WidgetKit
 
 @main
 struct nutrxApp: App {
@@ -24,6 +23,8 @@ struct nutrxApp: App {
         NotificationHandler.shared.container = container
         UNUserNotificationCenter.current().delegate = NotificationHandler.shared
         NotificationHandler.registerCategories()
+        // A control's tap that opens the app (#138) lands here, as a link would.
+        OpenNutrxIntent.openLink = { NotificationRouter.shared.open($0) }
         #if DEBUG
         if ScreenshotDemoData.isRequested {
             ScreenshotDemoData.replaceStore(in: modelContainer.mainContext)
@@ -59,9 +60,12 @@ struct nutrxApp: App {
                 // A subscription that lapses sends no `Transaction.updates`, so look again whenever the app comes back.
                 Task { await proAccess.refreshEntitlement() }
                 StackLogging.repairDuplicateIDs(context: modelContainer.mainContext)
-                WidgetCenter.shared.reloadAllTimelines()
+                WidgetReload.all()
                 // Siri's "Log my <nutrient>" phrases use the current nutrient names.
                 NutrxShortcuts.updateAppShortcutParameters()
+            } else if newPhase == .background {
+                // Renames and other edits made in the app reach the widgets and controls.
+                WidgetReload.all()
             }
         }
     }

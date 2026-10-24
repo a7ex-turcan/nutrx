@@ -2,7 +2,6 @@ import Foundation
 import Observation
 import SwiftData
 import UserNotifications
-import WidgetKit
 
 /// Where a tapped notification wants to take the app. The tab bar and My Nutrients follow it: a refill reminder
 /// opens that nutrient's analytics with the Supply card focused (docs/pro/design/3-supply: analytics-open).
@@ -122,7 +121,7 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
             nutrient.refillSupply()
             try? context.save()
             NotificationService.refreshAllNutrientReminders(context: context)
-            WidgetCenter.shared.reloadAllTimelines()
+            WidgetReload.all()
             // Today patches totals in place; this makes it reload (the same note Siri logging posts).
             NotificationCenter.default.post(name: .intakeLoggedByShortcut, object: nil)
         case Self.snoozeAction:

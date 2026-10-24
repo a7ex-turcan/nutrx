@@ -1,6 +1,5 @@
 import SwiftData
 import SwiftUI
-import WidgetKit
 
 /// The analytics Supply card (nutrx Pro; docs/pro/design/3-supply: analytics, cards). Pro, set: days left (amber
 /// when low), "12 of 120 left", a gauge with the reminder tick, an explanation and Refilled. Pro, not set: Set up.
@@ -289,7 +288,7 @@ struct SupplyCard: View {
         try? modelContext.save()
         router?.supplyNutrientID = nil
         NotificationService.refreshAllNutrientReminders(context: modelContext)
-        WidgetCenter.shared.reloadAllTimelines()  // the medium widget's "Running low" line
+        WidgetReload.all()  // the medium widget's "Running low" line
     }
 }
 

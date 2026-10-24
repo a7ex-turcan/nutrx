@@ -1,6 +1,5 @@
 import SwiftData
 import SwiftUI
-import WidgetKit
 
 /// Supply for one nutrient (nutrx Pro; docs/pro/design/3-supply: supply-form): servings in the bottle, each serving
 /// (pre-filled from "each tap adds"), when to remind, an optional price per bottle (#134), the bottle in a sentence,
@@ -317,7 +316,7 @@ struct SupplySheet: View {
         }
         try? modelContext.save()
         NotificationService.refreshAllNutrientReminders(context: modelContext)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetReload.all()
         dismiss()
     }
 
@@ -328,7 +327,7 @@ struct SupplySheet: View {
         nutrient.supplyPrice = nil
         try? modelContext.save()
         NotificationService.refreshAllNutrientReminders(context: modelContext)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetReload.all()
         dismiss()
     }
 }

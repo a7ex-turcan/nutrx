@@ -148,14 +148,17 @@
 				Shared/DesignSystem/Theme.swift,
 				"Shared/Extensions/Double+Formatting.swift",
 				Shared/Intents/NutrientEntity.swift,
+				Shared/Intents/OpenNutrxIntent.swift,
 				Shared/Intents/StackEntity.swift,
 				Shared/Persistence/ModelContainerFactory.swift,
 				Shared/Services/AppLink.swift,
+				Shared/Services/ControlText.swift,
 				Shared/Services/GoalStatus.swift,
 				Shared/Services/ProEntitlement.swift,
 				Shared/Services/StackLogging.swift,
 				Shared/Services/StreakService.swift,
 				Shared/Services/SupplySchedule.swift,
+				Shared/Services/WidgetReload.swift,
 				Shared/Services/WidgetSummary.swift,
 			);
 			target = 64702A892F72A89200C45D23 /* NutrxWidgetsExtension */;

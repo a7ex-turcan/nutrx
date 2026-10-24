@@ -42,7 +42,7 @@ Runs are serial because parallel test clones stall ("Simulator device failed to 
 - **Use nutrx's own simulators:** "nutrx iPhone 17" (iOS 27.0), "nutrx SE" (iPhone SE 3rd generation, iOS 27.0: 375 × 667 pt, the shortest screen), "nutrx Duo" (iPhone Duo, iOS 27.1) and "nutrx iPad 13" (iPad Pro 13-inch (M5), iOS 27.0, for the large-screen layouts; added 2026-10-24, never signed into iCloud). Other sessions boot the stock ones ("iPhone 17", "iPhone Duo", the iPads), so don't install builds or run tests there. **The exception is App Store screenshots**, which need sizes nutrx has no simulator of its own for (the 6.9″ iPhone, the 13″ iPad, the 46mm Watch; see App Store screenshots): check first that nobody else is using that simulator, and that it's signed out of iCloud before `-screenshotDemoData`. None of nutrx's own has been signed into iCloud, so `-screenshotDemoData` is safe on them (checked 2026-10-23: each device's `data/Library/Accounts/Accounts3.sqlite` lists only the App Store and holiday calendar accounts).
 - **Runtimes:** the iOS 27.1 runtime only has the iPhone Duo; every other iPhone and the iPads run on iOS 27.0.
 - **Run the full suite on the nutrx Duo.** On iOS 27.0 iPhones, nutrx iPhone 17 included, the StoreKit tests (`ProAccessTests`) time out and read the trial as "7 days" instead of "1 week"; on the Duo they pass (#223). Other test classes run fine on nutrx iPhone 17, so it's good for a quick single-class run.
-- **Pro** only works in runs started from Xcode (the scheme's StoreKit config). After `simctl launch`, Pro screens show the paywall. Uninstalling resets the test purchases.
+- **Pro** only works in runs started from Xcode (the scheme's StoreKit config). After `simctl launch`, Pro screens show the paywall. Uninstalling resets the test purchases. (On nutrx iPhone 17, iOS 27.0, a test purchase made in an earlier Xcode run still showed after `simctl launch` on 2026-10-24, in the app and the widget extension.)
 - **The Duo:** folding, the inner display and its screenshots are covered under App Store screenshots (iPhone Duo and iPad landscape).
 - **Console:** some framework messages, such as Swift Charts' warnings, go to stdout, not the unified log. Read them in an Xcode run's console or with `xcrun simctl launch --console-pty`; `log stream` misses them (#95).
 
@@ -339,11 +339,12 @@ nutrx/
     │   ├── PreviewSampleData.swift
     │   ├── ScreenshotDemoData.swift         # DEBUG: -screenshotDemoData replaces the store with the App Store demo set.
     │   └── ScheduleDebug.swift              # DEBUG: nutrx.debug.schedules sets schedules by name at launch (#132, until the sheet).
-    ├── Intents/                         # Siri & Shortcuts (see "Siri & App Shortcuts"); the two entities also in the widget extension (#138).
+    ├── Intents/                         # Siri & Shortcuts (see "Siri & App Shortcuts"); the two entities and OpenNutrxIntent also in the widget extension (#138).
     │   ├── LogNutrientShortcutIntent.swift  # "Log Nutrient": nutrient + optional amount; NutrientShortcutLogging.
     │   ├── NutrientEntity.swift         # AppEntity + EntityStringQuery: nutrients by name, in Today's order.
     │   ├── LogStackShortcutIntent.swift # "Log Stack": a stack by name; StackShortcutLogging (+ the Siri tip's phrase).
     │   ├── StackEntity.swift            # AppEntity + EntityStringQuery: stacks by name, in Today's order.
+    │   ├── OpenNutrxIntent.swift        # OpenIntent + AppScreen: a control's tap that opens the app (Today, My Nutrients, Pro).
     │   └── NutrxShortcuts.swift         # AppShortcutsProvider: "Log my <nutrient> with nutrx", "Log my <stack> stack with nutrx".
     └── Services/
         ├── DayScore.swift                   # Met / total + the day-score card headline.
@@ -360,6 +361,8 @@ nutrx/
         ├── ProAccess.swift                  # nutrx Pro: StoreKit 2 entitlement (never stored), products, purchase, restore.
         ├── ProEntitlement.swift             # Pro products + the pure "what unlocks Pro" rule + a StoreKit read (no ProAccess needed; also in the widget).
         ├── AppLink.swift                    # nutrx:// links from widgets and controls (today, nutrients, a nutrient, pro) (#138).
+        ├── ControlText.swift                # What the Log stack / Log nutrient controls show under their name (pure, #138).
+        ├── WidgetReload.swift               # WidgetReload.all(): widget timelines + Control Center controls, after a change.
         ├── SupplySchedule.swift             # Supply: remaining, daily use, days left, level (pure); Nutrient.supplyStatus / refillSupply.
         ├── SupplyText.swift                 # Supply copy: Today hint, analytics card, sheet sentence.
         ├── RefillSchedule.swift             # Refill reminders: when (one per bottle, 10:00), snooze, title/body (pure).
@@ -712,7 +715,7 @@ Five widget configurations in `NutrxWidgetsExtension`, redesigned in phase 9 (DE
 
 **Checking Lock Screen widgets (#24):** their `#Preview(as: .accessoryCircular / .accessoryRectangular / .accessoryInline)` previews render fully transparent in preview snapshots (the vibrant Lock Screen material only exists on a real Lock Screen), and a widget extension can only host widget previews, so a plain view preview isn't an option ("The widget extension can only host widget previews."). Check them on a simulator's Lock Screen instead (long-press → Customize → Lock Screen → add the nutrx widgets), in light and dark wallpapers. Home Screen widget previews render normally.
 
-**Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent, widget extension only, hidden from Shortcuts) for interactive + buttons; Siri and Shortcuts use the app's `LogNutrientShortcutIntent`. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`, which opens the store read-only with `ModelContainerFactory.createForExtension(allowsSave: false)`. "Next up" means `GoalProgress.needsMore` (below an "at least" target or a range's lower bound), never an "at most" goal or one over its limit. Widgets refresh on intent completion and app foreground.
+**Infrastructure:** App Group `group.nutrx-labs.nutrx` for shared SwiftData store. `LogNutrientIntent` (AppIntent, widget extension only, hidden from Shortcuts) for interactive + buttons; Siri and Shortcuts use the app's `LogNutrientShortcutIntent`. `ModelContainerFactory` shared across both targets. No `@Query` in widgets — manual `ModelContext` fetches in `TimelineProvider`, which opens the store read-only with `ModelContainerFactory.createForExtension(allowsSave: false)`. "Next up" means `GoalProgress.needsMore` (below an "at least" target or a range's lower bound), never an "at most" goal or one over its limit. Widgets and controls refresh on intent completion, after logs and stack changes, and when the app becomes active or goes to the background: the app calls `WidgetReload.all()` (both reloads; controls don't follow `reloadAllTimelines()`), never `WidgetCenter` alone.
 
 **Links into the app (#138, docs/pro/WIDGETS.md §5):** `nutrx` is a registered URL scheme (`CFBundleURLTypes`), and `nutrxApp`'s `onOpenURL` hands links to `NotificationRouter.open(_:)` through `AppLink` (pure, `AppLinkTests`; also compiled into the widget extension, which builds them):
 - `nutrx://today` and `nutrx://nutrients` switch tabs (`linkedTab`).
@@ -724,7 +727,14 @@ The handlers fire on first appearance too, so a cold launch from a tap lands rig
 
 **For the Pro widgets and controls:**
 - `NutrientEntity`, `StackEntity` and `StackLogging` are compiled into the widget extension. `NutrxWidgetsBundle` registers a read-only `createForExtension(allowsSave: false)` container, opened on first use, as the entities' `@Dependency`. `createForExtension`, the schema and the store URL are `nonisolated` for this.
-- Debug builds of the extension treat themselves as Pro when the App Group default `nutrx.debug.widgetsPro` is on (`ProEntitlement.debugWidgetsProKey`), because the extension never sees Xcode's local StoreKit: `xcrun simctl spawn <UDID> defaults write group.nutrx-labs.nutrx nutrx.debug.widgetsPro -bool YES`.
+- **The Debug switch:** in Debug builds, the App Group default `nutrx.debug.widgetsPro` (`ProEntitlement.debugWidgetsProKey`) makes the extension Pro (YES) or free (NO); unset, StoreKit decides. Whether the extension sees the simulator's StoreKit test purchases varies: on nutrx iPhone 17 (iOS 27.0, 2026-10-24) it saw the app's, so the free state can only be checked with NO. Write it into the App Group container's own plist (with the app installed): `xcrun simctl spawn <UDID> defaults write "$(xcrun simctl get_app_container <UDID> nutrx-labs.nutrx group.nutrx-labs.nutrx)/Library/Preferences/group.nutrx-labs.nutrx" nutrx.debug.widgetsPro -bool YES` (`-bool NO` for free, `defaults delete` with the same path to unset). A plain `defaults write group.nutrx-labs.nutrx` writes the simulator-wide preferences, which the extension never reads. Open the app afterwards: becoming active reloads the widgets and controls.
+- **Controls** (`NutrxWidgets/LogControls.swift`, phase 2): **Log stack** (`NutrxLogStackControl`) and **Log nutrient** (`NutrxLogNutrientControl`); kind IDs never change. Each is an `AppIntentControlConfiguration` whose stack or nutrient is chosen when it's added (`promptsForUserConfiguration`). A control's template can't branch on its action (no `if` in `ControlWidgetTemplateBuilder`), so each has one intent, hidden from Shortcuts, that decides when tapped:
+  - free → the paywall (or "Enjoy nutrx Pro" when the app already knows it's Pro);
+  - nothing chosen, or the stack is gone → Today;
+  - a removed nutrient, or one whose course ended → My Nutrients;
+  - those open the app by returning `OpenNutrxIntent` (`Shared/Intents/`, an `OpenIntent` on an `AppScreen` enum, compiled into both targets and performed in the app, which hands it to `NotificationRouter.open` through `OpenNutrxIntent.openLink`, set in `nutrxApp.init`). `OpenURLIntent` doesn't work there: it takes universal links, and with `nutrx://pro` the control opened nothing. The result is declared `some IntentResult & OpensIntent`: with plain `IntentResult`, iOS drops the returned intent ("Did not declare OpensIntent but provided one");
+  - otherwise it logs through `StackLogging.log` (a writable `createForExtension()`) or `LogNutrientIntent.logStep` (the widget's +, shared), then reloads the widgets and controls. Logged today, a stack's tap logs it again, like Today's Log again, and its symbol becomes a tick (the 1×1 control shows only the symbol).
+  - The text under the name comes from `ControlText` (pure, `ControlTextTests`, also in the extension): "Log", "Logged today", "Nothing due today" or "Removed in nutrx" for a stack; "+1,000 IU", "Course ended" or "Removed in nutrx" for a nutrient; "nutrx Pro" when free. The name and symbol are read live, so a rename shows. A deleted stack or nutrient (or an ended course) stops resolving through its entity query, so the control reads "Choose a stack" / "Choose a nutrient" again.
 
 ---
 
@@ -819,7 +829,7 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
 - **Widget:** the medium widget swaps its third row for a hairline and "Running low: Vitamin D · 6 days" (an amber bottle; "· out" when out). It names only the supply that runs out soonest (`SupplySchedule.soonest`: out first, then the fewest days).
   - Pro only: the provider asks StoreKit itself through `ProEntitlement.current()`, so nothing is cached from the app.
   - `ProEntitlement.swift` and `SupplySchedule.swift` are compiled into the widget extension.
-  - The widget process isn't attached to Xcode's local StoreKit, so in the simulator the line only shows in the "Medium, running low" preview.
+  - In the simulator, set the extension's Pro state with the Debug switch (see Widgets, "The Debug switch"); the "Medium, running low" preview shows the line too.
 
 ### nutrx Pro: Scan a label (phase 5)
 
