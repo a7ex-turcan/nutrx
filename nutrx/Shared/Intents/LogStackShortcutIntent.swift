@@ -1,6 +1,5 @@
 import AppIntents
 import SwiftData
-import WidgetKit
 
 /// "Log Stack" for Siri and the Shortcuts app: logs every nutrient in a stack at its amount, the same as Log on
 /// Today's stack card. Runs in the app's process, on the app's own store.
@@ -31,7 +30,7 @@ struct LogStackShortcutIntent: AppIntent {
         // The same follow-ups as Log on Today's stack card.
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetReload.all()
         NotificationCenter.default.post(name: .intakeLoggedByShortcut, object: nil)
         return .result(dialog: "\(confirmation)")
     }
@@ -71,6 +70,7 @@ enum StackShortcutLogging {
     /// Siri's "Log my <stack> stack" phrases use the stacks' names: call after a stack is created, renamed or deleted.
     static func stacksChanged() {
         NutrxShortcuts.updateAppShortcutParameters()
+        WidgetReload.all()  // the Log stack control shows the stack's name
     }
 
     /// What to say to Siri for a stack — the first "Log Stack" phrase in `NutrxShortcuts`, with the stack's name.

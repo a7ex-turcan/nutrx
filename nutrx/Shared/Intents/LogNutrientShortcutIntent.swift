@@ -1,6 +1,5 @@
 import AppIntents
 import SwiftData
-import WidgetKit
 
 /// "Log Nutrient" for Siri and the Shortcuts app: a nutrient picked by name and an optional amount (one step when
 /// it's left empty). Runs in the app's process, on the app's own store. The widget's + button keeps using
@@ -44,7 +43,7 @@ struct LogNutrientShortcutIntent: AppIntent {
         // The same follow-ups as a + tap on Today.
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetReload.all()
         // Today patches its totals in place, so tell it when a shortcut logs while it's on screen (Action button,
         // Back Tap).
         NotificationCenter.default.post(name: .intakeLoggedByShortcut, object: nil)

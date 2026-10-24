@@ -76,7 +76,8 @@ nonisolated enum ProEntitlement {
     }
 
     #if DEBUG
-    /// The App Group default that makes Debug builds of the widget extension Pro (`current()`).
+    /// The App Group default that sets Debug builds of the widget extension Pro (YES) or free (NO); unset, StoreKit
+    /// decides (`current()`).
     static let debugWidgetsProKey = "nutrx.debug.widgetsPro"
     #endif
 
@@ -84,11 +85,13 @@ nonisolated enum ProEntitlement {
     /// places that only need "is this person Pro": the widget, and notification actions on a background launch.
     static func current(now: Date = .now) async -> Entitlement? {
         #if DEBUG
-        // The widget extension never sees Xcode's local StoreKit, so simulator checks of the Pro widgets and controls
-        // turn this on (docs/pro/WIDGETS.md §6). Extensions only: the app reads its own StoreKit test purchases.
+        // Whether the widget extension sees the simulator's StoreKit test purchases varies (on iOS 27 it sees the
+        // app's), so simulator checks of the Pro widgets and controls set either state here (docs/pro/WIDGETS.md §6).
+        // Extensions only: the app reads its own StoreKit test purchases.
         if Bundle.main.bundlePath.hasSuffix(".appex"),
-           UserDefaults(suiteName: ModelContainerFactory.appGroupID)?.bool(forKey: debugWidgetsProKey) == true {
-            return Entitlement(plan: .lifetime, expirationDate: nil, isFamilyShared: false)
+           let forced = UserDefaults(suiteName: ModelContainerFactory.appGroupID)?
+               .object(forKey: debugWidgetsProKey) as? Bool {
+            return forced ? Entitlement(plan: .lifetime, expirationDate: nil, isFamilyShared: false) : nil
         }
         #endif
         var candidates: [Candidate] = []

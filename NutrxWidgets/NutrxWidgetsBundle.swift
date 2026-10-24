@@ -27,5 +27,8 @@ struct NutrxWidgetsBundle: WidgetBundle {
         NutrxCircularWidget()
         NutrxRectangularWidget()
         NutrxInlineWidget()
+        // nutrx Pro (#138): Control Center, Lock Screen and Action button controls.
+        NutrxLogStackControl()
+        NutrxLogNutrientControl()
     }
 }
