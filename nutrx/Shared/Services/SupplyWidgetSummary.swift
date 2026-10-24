@@ -64,6 +64,8 @@ struct SupplyWidgetSummary: Equatable {
     static let courseWindowDays = 7
     static let onTrackTitle = "Supply and courses on track"
     static let freeTitle = "Know when a bottle runs out"
+    /// The store couldn't be read in the widget; opening the app gets things going again.
+    static let unavailableTitle = "Open nutrx to see your supply"
 
     /// "4 bottles, 1 course", or how to start when there's neither.
     var trackedLine: String {

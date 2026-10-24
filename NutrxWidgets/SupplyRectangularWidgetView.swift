@@ -4,11 +4,12 @@ import WidgetKit
 /// The Lock Screen size of the supply & courses widget: the soonest one ("Vitamin D · 6 days") and how many more.
 /// Monochrome there, so the header's symbol says bottle or course.
 struct SupplyRectangularWidgetView: View {
-    let summary: SupplyWidgetSummary?
+    let content: SupplyWidgetEntry.Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            if let summary {
+            switch content {
+            case .summary(let summary):
                 if let first = summary.items.first {
                     Label(first.kind == .supply ? "Running low" : "Ending soon",
                           systemImage: first.kind == .supply ? "waterbottle" : "hourglass")
@@ -39,17 +40,24 @@ struct SupplyRectangularWidgetView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                 }
-            } else {
-                Text("nutrx Pro")
-                    .font(.headline)
-                    .widgetAccentable()
-                Text(SupplyWidgetSummary.freeTitle)
-                    .font(.subheadline)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)  // it was cut to one line ("Know when a bot…")
+            case .free:
+                message(title: "nutrx Pro", SupplyWidgetSummary.freeTitle)
+            case .unavailable:
+                message(title: "nutrx", SupplyWidgetSummary.unavailableTitle)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func message(title: String, _ text: String) -> some View {
+        Text(title)
+            .font(.headline)
+            .widgetAccentable()
+        Text(text)
+            .font(.subheadline)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)  // it was cut to one line ("Know when a bot…")
     }
 }
 

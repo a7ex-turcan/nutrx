@@ -450,8 +450,9 @@ extension Nutrient {
     }
 
     /// Its records from `start` up to `end`, fetched by date when it's in a store, so reading one week doesn't load
-    /// years of history (#249: a Today refresh, the widgets, the Watch and stacks all ask); otherwise the relationship.
-    private func records(from start: Date, to end: Date) -> [IntakeRecord] {
+    /// years of history (#249: a Today refresh, the widgets, the Watch and stacks all ask; supply too, #138);
+    /// otherwise the relationship.
+    func records(from start: Date, to end: Date) -> [IntakeRecord] {
         if let modelContext {
             let id = self.id
             let descriptor = FetchDescriptor<IntakeRecord>(predicate: #Predicate {

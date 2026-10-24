@@ -23,11 +23,11 @@ struct SupplyWidgetView: View {
 
     var body: some View {
         if family == .accessoryRectangular {
-            SupplyRectangularWidgetView(summary: entry.summary)
+            SupplyRectangularWidgetView(content: entry.content)
                 .containerBackground(.fill.tertiary, for: .widget)
                 .widgetURL(link.url)
         } else {
-            SupplyListWidgetView(summary: entry.summary, isMedium: family == .systemMedium)
+            SupplyListWidgetView(content: entry.content, isMedium: family == .systemMedium)
                 .containerBackground(Theme.surfaceCard, for: .widget)
                 .widgetURL(link.url)
         }
@@ -36,8 +36,11 @@ struct SupplyWidgetView: View {
     /// The paywall when free; else the first item's analytics, or My Nutrients with nothing listed. The medium
     /// size's rows are links of their own.
     private var link: AppLink {
-        guard let summary = entry.summary else { return .pro }
-        return summary.items.first.map { .nutrient($0.nutrientID) } ?? .nutrients
+        switch entry.content {
+        case .free: .pro
+        case .unavailable: .today
+        case .summary(let summary): summary.items.first.map { .nutrient($0.nutrientID) } ?? .nutrients
+        }
     }
 }
 

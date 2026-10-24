@@ -28,6 +28,6 @@ struct SupplyWidgetProvider: TimelineProvider {
                 SupplyWidgetSummary.make(ExtensionStore.todaysNutrients(in: context))
             }
         }
-        return SupplyWidgetEntry(date: .now, summary: summary ?? SupplyWidgetSummary(items: [], bottles: 0, courses: 0))
+        return SupplyWidgetEntry(date: .now, content: summary.map { .summary($0) } ?? .unavailable)
     }
 }

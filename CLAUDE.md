@@ -750,7 +750,7 @@ The handlers fire on first appearance too, so a cold launch from a tap lands rig
   - courses within 7 days of their last day: "last day", "ends tomorrow", "ends in 3 days" (a nutrient can be listed twice);
   - out first, then the fewest days left (a course's last day is 0), a bottle before a course on the same day, then Today's order.
   - Small shows two and "+2 more"; medium four, two by two, each a `Link` to its analytics; the Lock Screen one ("Running low" / "Ending soon", "Vitamin D · 6 days", "+2 more"). The small and Lock Screen taps open the first item's analytics, or My Nutrients with nothing listed.
-  - Nothing listed: a tick, "Supply and courses on track" and "4 bottles, 1 course". Free: the PRO chip and "Know when a bottle runs out"; a tap opens the paywall. `NutrientIconTile` is compiled into the extension for the medium rows.
+  - Nothing listed: a tick, "Supply and courses on track" and "4 bottles, 1 course". A store the extension can't open reads "Open nutrx to see your supply" (`SupplyWidgetEntry.Content.unavailable`), not "on track". Free: the PRO chip and "Know when a bottle runs out"; a tap opens the paywall. `NutrientIconTile` is compiled into the extension for the medium rows.
 
 ---
 
@@ -820,7 +820,7 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
   - Daily use is the last 14 days' total divided by the days since the first log in them, once there are at least 3. It's deliberately not tied to the refill, so refilling doesn't throw the estimate away.
   - Days left = remaining ÷ daily use, rounded down.
   - Levels: `out` (less than a fifth of a serving left, shown even without history), `low` (days left ≤ `refillReminderDays`), `plenty`, and `noHistory`.
-  - `Nutrient.supplyStatus()` reads the nutrient's own records; `refillSupply()` restarts the count.
+  - `Nutrient.supplyStatus()` reads the nutrient's own records, fetched by date from the refill (or 14 days back, if earlier) through `records(from:to:)` (#249), never the whole history; `refillSupply()` restarts the count.
 - **Copy:** `SupplyText`, tested in `SupplyTextTests`.
 - **Today** (`NutrientCard.supply`) shows a hint only for Pro users, and only when low or out, so the card's height never changes. Low reads "2,000 IU to go · About 6 days left": an amber bottle and the text in AmberInk, on one line. If that doesn't fit beside the buttons, it tries "· 6 days left", then the bottle with "6 days", then the hint alone, which shortens the same way ("About 6 days left", "6 days left", "6 days"; #185). At accessibility sizes both wrap on their own lines. Out reads "Out of supply · Refilled?", replacing the goal status, and steps down to the bottle with "Out · Refilled?", then the bottle with "Refilled?" (the last may truncate); at accessibility sizes "Out of supply" and "Refilled?" take a line each. "Refilled?" is its own button (and a VoiceOver "Refilled" action) and asks for confirmation.
 - **Nutrient form:** a Supply row after Reminders, for saved nutrients only. Pro opens `SupplySheet`; free shows the PRO chip and opens the paywall.

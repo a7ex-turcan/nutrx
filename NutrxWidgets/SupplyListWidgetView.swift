@@ -2,17 +2,21 @@ import SwiftUI
 import WidgetKit
 
 /// The Home Screen sizes of the supply & courses widget: the soonest two (small) or four (medium, each a link to its
-/// analytics, two by two when there are more than two), "on track" with nothing listed, and the free card without Pro.
+/// analytics, two by two when there are more than two), "on track" with nothing listed, the free card without Pro,
+/// and "Open nutrx" when the store couldn't be read.
 struct SupplyListWidgetView: View {
-    let summary: SupplyWidgetSummary?
+    let content: SupplyWidgetEntry.Content
     let isMedium: Bool
 
     var body: some View {
         Group {
-            if let summary {
+            switch content {
+            case .free:
+                message(SupplyWidgetSummary.freeTitle, showsPro: true)
+            case .unavailable:
+                message(SupplyWidgetSummary.unavailableTitle, showsPro: false)
+            case .summary(let summary):
                 if summary.items.isEmpty { onTrack(summary) } else { list(summary.items) }
-            } else {
-                free
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -100,7 +104,7 @@ struct SupplyListWidgetView: View {
         }
     }
 
-    private var free: some View {
+    private func message(_ text: String, showsPro: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
                 Image(systemName: "waterbottle")
@@ -108,10 +112,10 @@ struct SupplyListWidgetView: View {
                     .foregroundStyle(Theme.green)
                     .accessibilityHidden(true)
                 Spacer(minLength: 4)
-                ProBadge()
+                if showsPro { ProBadge() }
             }
             Spacer(minLength: 6)
-            Text(SupplyWidgetSummary.freeTitle)
+            Text(text)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.textPrimary)
                 .lineLimit(3)

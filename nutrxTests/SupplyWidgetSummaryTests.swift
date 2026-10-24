@@ -128,6 +128,24 @@ final class SupplyWidgetSummaryTests: XCTestCase {
         XCTAssertEqual(summary.courses, 2)
     }
 
+    func testCoursesShowFromAWeekBeforeTheirLastDay() {
+        let inWindow = course("Iron", lastDayIn: 7), outside = course("Zinc", lastDayIn: 8)
+        let summary = SupplyWidgetSummary.make([inWindow, outside], now: now, calendar: calendar)
+        XCTAssertEqual(summary.items.map(\.name), ["Iron"])
+        XCTAssertEqual(summary.items.first?.detail, "ends in 7 days")
+        XCTAssertEqual(summary.courses, 2)
+    }
+
+    func testABottleAndACourseOnOneNutrientAreListedTwice() throws {
+        let iron = bottle("Iron", servings: 10)
+        iron.endDate = day(1)
+        try context.save()
+        let summary = SupplyWidgetSummary.make([iron], now: now, calendar: calendar)
+        XCTAssertEqual(summary.items.map(\.kind), [.supply, .course], "1 day each: the bottle first")
+        XCTAssertEqual(Set(summary.items.map(\.id)).count, 2, "distinct ids for the two rows")
+        XCTAssertEqual(Set(summary.items.map(\.nutrientID)), [iron.id])
+    }
+
     func testACoursesLastDayIsListedAsToday() throws {
         let iron = course("Iron", lastDayIn: 0)
         let summary = SupplyWidgetSummary.make([iron], now: now, calendar: calendar)
