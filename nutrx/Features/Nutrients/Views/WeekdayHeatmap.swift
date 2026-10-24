@@ -55,16 +55,19 @@ struct WeekdayHeatmap: View {
                 // At most 64 pt: in a wide analytics pane each square was about 182 pt (#153).
                 .frame(maxWidth: 64)
                 .overlay {
-                    Text(percent)
-                        .font(.system(.caption2, design: .rounded, weight: .bold))
-                        .monospacedDigit()
-                        .foregroundStyle(ink)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                        // The square doesn't grow with the text, so the percentage stops growing too: at the
-                        // largest sizes it read "1…" (#66). VoiceOver reads the full value.
-                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                        .padding(2)
+                    // The square doesn't grow with the text, so the percentage stops growing too: at the largest
+                    // sizes it read "1…" (#66). VoiceOver reads the full value. One size across the row (#279): each
+                    // square takes the largest size, up to XXXL, at which "100%" (the widest a square reads) fits,
+                    // rather than shrinking its own text, which left "100%" smaller than "75%" beside it. The squares
+                    // are all one width, so they all pick the same size.
+                    ViewThatFits(in: .horizontal) {
+                        percentLabel(percent, ink: ink, upTo: .xxxLarge)
+                        percentLabel(percent, ink: ink, upTo: .xLarge)
+                        percentLabel(percent, ink: ink, upTo: .medium)
+                        percentLabel(percent, ink: ink, upTo: .xSmall)
+                            .minimumScaleFactor(0.5)
+                    }
+                    .padding(2)
                 }
             Text(calendar.veryShortWeekdaySymbols[entry.weekday - 1])
                 .font(.caption.weight(.semibold))
@@ -75,6 +78,22 @@ struct WeekdayHeatmap: View {
         .accessibilityLabel(calendar.weekdaySymbols[entry.weekday - 1])
         .accessibilityValue(entry.hitRate == nil ? "No days yet" : "\(percent) of days on target")
     }
+
+    /// A square's percentage at most `size`, as wide as "100%" would be there, which `ViewThatFits` measures.
+    private func percentLabel(_ percent: String, ink: Color, upTo size: DynamicTypeSize) -> some View {
+        ZStack {
+            Text(Self.widestPercent)
+                .hidden()
+            Text(percent)
+                .foregroundStyle(ink)
+        }
+        .font(.system(.caption2, design: .rounded, weight: .bold))
+        .monospacedDigit()
+        .lineLimit(1)
+        .dynamicTypeSize(...size)
+    }
+
+    private static var widestPercent: String { 1.0.formatted(.percent.precision(.fractionLength(0))) }
 }
 
 extension WeekdayHeatmap {
