@@ -16,7 +16,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Fixes
 - **Group names at the largest text sizes** — On Today, a group's name no longer breaks mid-word ("Throug / h the / day") at the largest text sizes: its count moves under the name, and a name with a very long word is set a little smaller so every word stays whole.
-- **Log clear of the Done bar with a keyboard attached** — With a hardware keyboard (or an iPad's), the keyboard's Done bar no longer covers the log sheet's Log button while you edit the amount or a note.
+- **Log clear of the keyboard's Done bar** — In the log sheet, Done now sits just above the Log button instead of on a bar over the keyboard, so nothing covers Log while you edit the amount or a note: with a hardware keyboard (or an iPad's), and after turning the iPhone sideways and back.
 
 ## v2.4 — 2026-10-24
 
