@@ -33,8 +33,8 @@ struct LogStackSheet: View {
         self.onLog = onLog
         self.onUndo = onUndo
         self.onEditStack = onEditStack
-        _detent = State(initialValue: StackLogging.dueEntries(of: stack).count > Self.rowsAtHalfHeight
-                            ? .large : Self.halfHeight(rows: StackLogging.dueEntries(of: stack).count))
+        let rows = StackLogging.dueEntries(of: stack).count
+        _detent = State(initialValue: rows > Self.rowsAtHalfHeight ? .large : .custom(HalfThroughRows.self))
     }
 
     /// Whether every row puts its stepper under the name and total (from xLarge, #97) rather than beside them.
