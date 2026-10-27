@@ -117,4 +117,15 @@ final class StackShortcutTests: XCTestCase {
     func testTheSiriTipNamesTheApp() {
         XCTAssertEqual(StackShortcutLogging.siriPhrase(for: "Morning"), "Log my Morning stack with nutrx")
     }
+
+    /// A name that already ends in "stack" doesn't get it twice (#292).
+    func testTheSiriTipDoesntSayStackTwice() {
+        XCTAssertEqual(StackShortcutLogging.siriPhrase(for: "Morning stack"), "Log the Morning stack with nutrx")
+        XCTAssertEqual(StackShortcutLogging.siriPhrase(for: "Evening Stack"), "Log the Evening Stack with nutrx")
+        XCTAssertEqual(StackShortcutLogging.siriPhrase(for: "Morning stack "), "Log the Morning stack with nutrx")
+        XCTAssertEqual(StackShortcutLogging.siriPhrase(for: "Stack"), "Log the Stack with nutrx", "the fallback name")
+        XCTAssertEqual(StackShortcutLogging.siriPhrase(for: "Stacked"), "Log my Stacked stack with nutrx")
+        XCTAssertEqual(StackShortcutLogging.siriPhrase(for: "Haystack"), "Log my Haystack stack with nutrx",
+                       "only the last word counts")
+    }
 }

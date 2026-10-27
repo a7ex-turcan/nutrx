@@ -73,8 +73,11 @@ enum StackShortcutLogging {
         WidgetReload.all()  // the Log stack control shows the stack's name
     }
 
-    /// What to say to Siri for a stack — the first "Log Stack" phrase in `NutrxShortcuts`, with the stack's name.
+    /// What to say to Siri for a stack — the first "Log Stack" phrase in `NutrxShortcuts`, with the stack's name, or
+    /// the second when the name's last word is already "stack", so the tip never says "Morning stack stack" (#292).
     static func siriPhrase(for stackName: String) -> String {
-        "Log my \(stackName) stack with nutrx"
+        let name = stackName.trimmingCharacters(in: .whitespaces)
+        let endsInStack = name.lowercased().split(separator: " ").last == "stack"
+        return endsInStack ? "Log the \(name) with nutrx" : "Log my \(name) stack with nutrx"
     }
 }

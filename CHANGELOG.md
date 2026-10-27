@@ -16,6 +16,7 @@ All notable changes to nutrx are documented in this file.
 - **Editing an amount** — While you edit the log sheet's amount it shows without thousands separators, so deleting a digit from "1,000" gives 100 rather than a number the app misreads; when you tap Done it takes the same form as the rest of the app ("123456789" becomes "123,456,789").
 
 ### Fixes
+- **"Stack" said once** — The Siri tip on a stack named "Morning stack" now reads "Log the Morning stack with nutrx", a phrase Siri understands, instead of "Log my Morning stack stack".
 - **The right nutrient's numbers** — When a nutrient's analytics was open and a refill reminder (or another link into nutrx) opened a different one, the screen showed the new name over the old nutrient's averages, chart and weekday pattern. It now shows the nutrient you opened.
 - **Group names at the largest text sizes** — On Today, a group's name no longer breaks mid-word ("Throug / h the / day") at the largest text sizes: its count moves under the name, and a name with a very long word is set a little smaller so every word stays whole.
 - **Log clear of the keyboard's Done bar** — In the log sheet, Done now sits just above the Log button instead of on a bar over the keyboard, so nothing covers Log while you edit the amount or a note: with a hardware keyboard (or an iPad's), and after turning the iPhone sideways and back.

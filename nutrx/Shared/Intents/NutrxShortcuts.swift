@@ -16,11 +16,14 @@ struct NutrxShortcuts: AppShortcutsProvider {
             shortTitle: "Log Nutrient",
             systemImageName: "plus.circle"
         )
-        // The first phrase is the one the Siri tip on a stack's detail screen shows (`StackShortcutLogging.siriPhrase`).
+        // The first phrase is the one the Siri tip on a stack's detail screen shows (`StackShortcutLogging.siriPhrase`);
+        // the second is the tip's for a name that already ends in "stack" ("Log the Morning stack with nutrx", #292).
+        // Never "Log my <stack> with nutrx": that's the nutrient phrase, and a stack named like a nutrient would clash.
         AppShortcut(
             intent: LogStackShortcutIntent(),
             phrases: [
                 "Log my \(\.$stack) stack with \(.applicationName)",
+                "Log the \(\.$stack) with \(.applicationName)",
                 "Log my \(\.$stack) stack in \(.applicationName)",
                 "Log the \(\.$stack) stack in \(.applicationName)",
                 "Log a stack in \(.applicationName)",
