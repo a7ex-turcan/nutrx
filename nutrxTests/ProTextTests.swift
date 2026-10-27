@@ -109,7 +109,7 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.appleIntelligenceRowNote(.scan, reading: .modelTurnedOff, device: "iPad"),
                        "Basic text reading on this iPad")
         XCTAssertNil(ProText.appleIntelligenceRowNote(.recap, reading: .model, device: "iPhone"))
-        XCTAssertNil(ProText.appleIntelligenceRowNote(.supply, reading: .basic, device: "iPhone"))
+        XCTAssertNil(ProText.appleIntelligenceRowNote(ProFeature.supply, reading: .basic, device: "iPhone"))
     }
 
     /// Courses (#99) is Pro, so the paywall, the Pro screen and "Enjoy nutrx Pro" list it (#147).
