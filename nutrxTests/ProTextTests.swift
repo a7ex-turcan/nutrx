@@ -128,7 +128,8 @@ final class ProTextTests: XCTestCase {
         XCTAssertNil(ProFeature.schedules.appleIntelligenceName, "schedules don't use the on-device model")
     }
 
-    /// Widgets and controls (#138) ship in 2.5, last in the list: the eighth row.
+    /// Widgets and controls (#138) ship in 2.5, listed with the rest; nine features since reminders at your usual
+    /// time (#137) in 2.6.
     func testWidgetsIsListed() {
         XCTAssertTrue(ProFeature.listed.contains(.widgets))
         XCTAssertEqual(ProFeature.allCases.count, 9)
