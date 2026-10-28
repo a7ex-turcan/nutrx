@@ -95,7 +95,8 @@ enum RecapPhrasing {
         return Set(numbers + words).isSubset(of: text.factNumbers)
     }
 
-    /// The numbers in a text, a grouped one ("3,960", "3 960") read as one, not as 3 and 960.
+    /// The numbers in a text, a grouped one read as one, not as 3 and 960: "3,960", or 3 960 grouped with a no-break
+    /// or narrow no-break space, as some locales write it. A plain space doesn't group, so "3 960" is two numbers.
     static func numbers(in text: String) -> [Int] {
         let grouped = /\d{1,3}(?:[,\u{00A0}\u{202F}]\d{3})+|\d+/
         return text.matches(of: grouped).compactMap { Int(String($0.output).filter(\.isNumber)) }

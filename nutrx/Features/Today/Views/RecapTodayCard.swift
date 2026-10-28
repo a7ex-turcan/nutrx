@@ -1,16 +1,46 @@
 import SwiftUI
 
-/// "Your week" on Today from Sunday evening through Monday (nutrx Pro, docs/pro/design/5-weekly-recap: today): a
-/// small ring of goals met, "31 of 42 goals · Vitamin D steadiest", and a close button that hides it for that week.
+/// The recap card on Today (nutrx Pro, docs/pro/design/5-weekly-recap: today): "Your week" from Sunday evening through
+/// Monday, or "Your October" on the 1st and 2nd (#136). A small ring of goals met, "31 of 42 goals · Vitamin D
+/// steadiest", and a close button that hides it for that period.
 struct RecapTodayCard: View {
-    let recap: WeeklyRecap
+    let title: String
+    /// Markdown: the first number bold.
+    let line: String
+    let fraction: Double
+    let openHint: String
+    let hideLabel: String
     let onOpen: () -> Void
     let onDismiss: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    init(week recap: WeeklyRecap, onOpen: @escaping () -> Void, onDismiss: @escaping () -> Void) {
+        self.init(title: "Your week", line: RecapText(recap).todayLine,
+                  fraction: recap.goalsCounted > 0 ? Double(recap.goalsMet) / Double(recap.goalsCounted) : 0,
+                  openHint: "Opens the weekly recap", hideLabel: "Hide this week's recap",
+                  onOpen: onOpen, onDismiss: onDismiss)
+    }
+
+    init(month recap: MonthlyRecap, onOpen: @escaping () -> Void, onDismiss: @escaping () -> Void) {
+        let text = MonthlyRecapText(recap)
+        self.init(title: "Your \(text.monthName)", line: text.todayLine, fraction: recap.rate ?? 0,
+                  openHint: "Opens the monthly recap", hideLabel: "Hide \(text.monthName)'s recap",
+                  onOpen: onOpen, onDismiss: onDismiss)
+    }
+
+    private init(title: String, line: String, fraction: Double, openHint: String, hideLabel: String,
+                 onOpen: @escaping () -> Void, onDismiss: @escaping () -> Void) {
+        self.title = title
+        self.line = line
+        self.fraction = fraction
+        self.openHint = openHint
+        self.hideLabel = hideLabel
+        self.onOpen = onOpen
+        self.onDismiss = onDismiss
+    }
+
     var body: some View {
-        let fraction = recap.goalsCounted > 0 ? Double(recap.goalsMet) / Double(recap.goalsCounted) : 0
         HStack(spacing: 14) {
             Button(action: onOpen) {
                 HStack(spacing: 14) {
@@ -27,10 +57,10 @@ struct RecapTodayCard: View {
                         .accessibilityHidden(true)
                     }
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Your week")
+                        Text(title)
                             .font(.headline)
                             .foregroundStyle(Theme.textPrimary)
-                        Text((try? AttributedString(markdown: RecapText(recap).todayLine)) ?? "")
+                        Text((try? AttributedString(markdown: line)) ?? "")
                             .font(.subheadline)
                             .foregroundStyle(Theme.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -41,7 +71,7 @@ struct RecapTodayCard: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityHint("Opens the weekly recap")
+            .accessibilityHint(openHint)
 
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
@@ -51,7 +81,7 @@ struct RecapTodayCard: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Hide this week's recap")
+            .accessibilityLabel(hideLabel)
         }
         .padding(.leading, Theme.Spacing.cardPadding + 2)
         .padding(.trailing, 4)
