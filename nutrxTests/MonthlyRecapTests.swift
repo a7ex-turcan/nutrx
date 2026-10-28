@@ -68,6 +68,18 @@ final class MonthlyRecapTests: XCTestCase {
         XCTAssertTrue(recap.hasData)
     }
 
+    func testTheGridOutlinesOnlyDaysWithSomethingDue() {
+        // Tracking starts on the 8th, and the month runs to the 15th: due days are the 8th to the 14th.
+        let late = nutrients.map {
+            HistoryNutrient(id: $0.id, goalType: $0.goalType, target: $0.target, upperBound: $0.upperBound,
+                            createdAt: day(10, 8), isRemoved: false)
+        }
+        let recap = recap(totals(from: day(10, 8), through: day(10, 14)), today: day(10, 15), nutrients: late)
+        XCTAssertEqual(recap.dueDayFlags.count, 31)
+        XCTAssertEqual(recap.dueDayFlags.indices.filter { recap.dueDayFlags[$0] }, Array(7...13))
+        XCTAssertEqual(recap.dayCount, 7)
+    }
+
     func testTheMonthSoFarCountsOnlyFinishedDays() {
         let recap = recap(october, today: day(10, 15, hour: 9))
         XCTAssertFalse(recap.isMonthOver)
@@ -173,6 +185,16 @@ final class MonthlyRecapTests: XCTestCase {
         XCTAssertEqual(text.cards.first { $0.kind == .slipped }?.detail, "Missed on weekends")
     }
 
+    func testHistoryNamesTheRecapOutLast() {
+        // On 28 October the week of 19 October (out on the 25th) is newer than September (out on 1 October).
+        XCTAssertFalse(RecapSchedule.monthIsNewer(day(9, 1), thanWeek: day(10, 19), calendar: calendar))
+        // October comes out on Sunday 1 November, at 18:00 like the week ending that day: the month wins.
+        XCTAssertTrue(RecapSchedule.monthIsNewer(day(10, 1), thanWeek: day(10, 19), calendar: calendar))
+        XCTAssertTrue(RecapSchedule.monthIsNewer(day(10, 1), thanWeek: day(10, 26), calendar: calendar))
+        XCTAssertFalse(RecapSchedule.monthIsNewer(day(10, 1), thanWeek: day(11, 2), calendar: calendar))
+        XCTAssertTrue(RecapSchedule.monthIsNewer(day(10, 1), thanWeek: nil, calendar: calendar))
+    }
+
     func testTodaysMonthCardShowsOnTheFirstAndSecond() {
         // October's card: 1 and 2 November, all day (the month is over at midnight; 18:00 is the notification's).
         XCTAssertEqual(RecapSchedule.todayCardMonth(at: day(11, 1, hour: 8), isPro: true, dismissedMonth: nil,
@@ -220,14 +242,14 @@ final class MonthlyRecapTests: XCTestCase {
         XCTAssertEqual(text.headline, "88 of 93 goals met")
         XCTAssertEqual(text.percent, 95)
         XCTAssertEqual(text.ringValue, "26/31")
-        XCTAssertEqual(text.summary, "In October you met 95 % of your goals, with 26 full days. "
+        XCTAssertEqual(text.summary, "In October you met 95% of your goals, with 26 full days. "
             + "Vitamin D was your steadiest, 31 of 31 days. Omega-3 slipped on Sundays. "
-            + "Caffeine went over your limit on 1 day. Your best run was 6 days in a row. Up from 67 % in September.")
+            + "Caffeine went over your limit on 1 day. Your best run was 6 days in a row. Up from 67% in September.")
         XCTAssertEqual(text.cacheKey, "month-2026-10")
         XCTAssertEqual(text.notificationTitle, "Your October in nutrx")
-        XCTAssertEqual(text.notificationBody, "You met 95 % of your goals in October. Vitamin D was your steadiest.")
+        XCTAssertEqual(text.notificationBody, "You met 95% of your goals in October. Vitamin D was your steadiest.")
         XCTAssertEqual(text.cards.map(\.label), ["Steadiest", "Slipped", "Day you tend to miss", "Best run", "Goals met"])
-        XCTAssertEqual(text.cards.last?.detail, "Up from 67 % in September")
+        XCTAssertEqual(text.cards.last?.detail, "Up from 67% in September")
         XCTAssertTrue(RecapPhrasing.isAcceptable(text.summary, for: text), "the template passes its own check")
     }
 
@@ -255,7 +277,7 @@ final class MonthlyRecapTests: XCTestCase {
     func testAdviceAboutTheNextMonthIsRejected() {
         let text = octoberText
         XCTAssertFalse(RecapPhrasing.isAcceptable("Vitamin D held all 31 days. Next month, keep Omega-3 going.", for: text))
-        XCTAssertTrue(RecapPhrasing.isAcceptable("Vitamin D held all 31 days, and you met 95 % of your goals.", for: text))
+        XCTAssertTrue(RecapPhrasing.isAcceptable("Vitamin D held all 31 days, and you met 95% of your goals.", for: text))
     }
 
     func testTheCacheKeepsEachKindApart() {

@@ -6,6 +6,9 @@ import Foundation
 struct RecapTally {
     /// Per day in `days`: every goal met. False for a day after `lastDay`, which hasn't counted yet.
     var fullDayFlags: [Bool] = []
+    /// Per day in `days`: counted and something was due, so not a rest day (#132) or a day before anything was
+    /// tracked. What a full day is out of.
+    var dueDayFlags: [Bool] = []
     var goalsMet = 0
     var goalsCounted = 0
     /// Counted days with anything logged.
@@ -35,9 +38,11 @@ struct RecapTally {
         for date in days {
             guard date <= lastDay else {
                 tally.fullDayFlags.append(false)
+                tally.dueDayFlags.append(false)
                 continue
             }
             let day = log.day(date)
+            tally.dueDayFlags.append(!day.goals.isEmpty && !day.isRest)
             tally.fullDayFlags.append(day.hasEntries && !day.goals.isEmpty && !day.isRest && day.completion == .allMet)
             if day.hasEntries { tally.daysLogged += 1 }
             if !day.goals.isEmpty { tally.daysWithGoals += 1 }

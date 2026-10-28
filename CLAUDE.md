@@ -900,7 +900,7 @@ Mockups: `docs/pro/design/5-weekly-recap/`.
     - The facts: goals met, full days out of the counted non-rest days, days logged, the best run inside the month, and the weekday missed most.
     - Steadiest, slipped and over limit come from nutrients counted on at least 7 days.
     - Last month's rate shows when it had 7 counted days and the gap is at least 3 points. Weekly nutrients count by weeks wholly inside the month.
-  - **`MonthlyRecapText`** has the words ("In October you met 76 % of your goals, with 18 full days. …", "Up from 68 % in September").
+  - **`MonthlyRecapText`** has the words ("In October you met 76% of your goals, with 18 full days. …", "Up from 68% in September").
   - **The rewording** takes any `RecapWording` (the week's or the month's).
     - The model is told the period.
     - "next month" and "next year" count as advice.
@@ -908,11 +908,11 @@ Mockups: `docs/pro/design/5-weekly-recap/`.
     - The cache keys have a kind (`week-<epoch>`, `month-2026-10`, `year-2026`), and the newest 12 weeks, 12 months and 3 years are kept separately; old bare-epoch keys count as weeks.
   - **Phase 2 (the screen):** `RecapsView` (was `WeeklyRecapView`, titled "Recaps") has a segmented Week / Month switch (`RecapTab`, `init(tab:)`).
     - **Week** is as before.
-    - **Month** opens on last month and shows the hero (`RecapHeroCard`, shared with the week), the fact cards (`RecapFactGrid`, shared) and `RecapMonthGrid`, the month's calendar with full days lit (`MonthlyRecap.fullDayFlags`; one VoiceOver element, "18 of 30 full days in October").
+    - **Month** opens on last month and shows the hero (`RecapHeroCard`, shared with the week), the fact cards (`RecapFactGrid`, shared) and `RecapMonthGrid`, the month's calendar: full days lit (`MonthlyRecap.fullDayFlags`), other days with something due outlined (`dueDayFlags`), rest days, days before tracking and days to come faint; one VoiceOver element, "18 of 30 full days in October".
     - "Earlier months" lists the last 12 months with something in them, plus the month so far once it has a completed day (`RecapViewModel.monthChoices`).
     - With no month yet: "Your first monthly recap arrives on 1 November" with the days logged so far.
     - The month so far reads in the present ("is your steadiest", "has slipped"); misses on Saturdays and Sundays only (three or more) read "on weekends".
-    - **History's row** is "Recaps": "Latest: October · 412 of 540 goals" (`HistoryViewModel.latestMonthRecap`), else the week's line; free: "A short summary of each week and month".
+    - **History's row** is "Recaps" and names the recap out last, opening on its tab: last month ("Latest: October · 412 of 540 goals", `HistoryViewModel.latestMonthRecap`) from the 1st until the next Sunday's recap (`RecapSchedule.monthIsNewer`), else the week. Free: "A short summary of each week and month".
     - **Today:** `RecapTodayCard(month:)` ("Your October") on the 1st and 2nd (`RecapSchedule.todayCardMonth`), in place of the week's card. ✕ hides it for that month (`nutrx.dismissedRecapMonth`), and a tap opens the sheet on the Month tab. Debug: `nutrx.debug.showMonthRecapCard`, like the week's flag.
 - **Screen** (`RecapsView`'s Week tab, #136; was `WeeklyRecapView`): large "Recaps", share (the range, headline and summary as text). A forest hero with `SegmentedDayRing(met: fullDays, total: 7, caption: "full days")`, the range, "31 of 42 goals met" and the summary (the template at once, the on-device rewording when ready, `RecapViewModel`). Fact cards in two columns (one, without icons, at accessibility sizes; the hero drops its ring there too). "Earlier weeks": the last eight weeks with something in them as mini rings (goals met), selectable. Before any week has data: "Your first recap arrives Sunday" with days logged so far and the explainer.
 - **History:** a "Recaps" row ("Weekly recaps" before #136) under the streak card (indigo calendar tile, `RecapRow`, a `ProGatedButton`): Pro reads "Latest: 5 – 11 October · 31 of 42 goals" (`HistoryViewModel.latestRecap`, computed in `refresh`) and pushes the screen; free shows the PRO chip and "A short summary of each week", and opens the paywall.

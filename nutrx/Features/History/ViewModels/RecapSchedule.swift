@@ -63,6 +63,14 @@ enum RecapSchedule {
         return month
     }
 
+    /// Whether last month's recap came out after the latest week's (#136), so History's row names it and opens on
+    /// Month: from the 1st until the next Sunday's recap. On a Sunday 1st both come out at 18:00, and the month wins.
+    static func monthIsNewer(_ month: Date, thanWeek week: Date?, calendar: Calendar = .current) -> Bool {
+        guard let week else { return true }
+        return MonthlyRecap.releaseDate(ofMonthStarting: month, calendar: calendar)
+            >= WeeklyRecap.releaseDate(ofWeekStarting: week, calendar: calendar)
+    }
+
     /// Today's "Your October" card shows on 1 and 2 November.
     static func showsTodayCard(forMonthStarting month: Date, at now: Date, calendar: Calendar = .current) -> Bool {
         let next = calendar.date(byAdding: .month, value: 1, to: month)!

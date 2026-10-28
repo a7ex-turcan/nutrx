@@ -38,9 +38,9 @@ struct TodayView: View {
     @State private var weekRecap: WeeklyRecap?
     /// "Your October" on the 1st and 2nd (#136); it takes the week card's place.
     @State private var monthRecap: MonthlyRecap?
-    @State private var showRecap = false
-    /// The tab the recap sheet opens on: the card's period.
-    @State private var recapTab: RecapTab = .week
+    /// The open recap sheet's tab, the card's period. An item rather than a flag and a tab: with a flag, the first
+    /// open read the tab from before the tap.
+    @State private var recapSheetTab: RecapTab?
     @AppStorage("nutrx.hidesStackSuggestion") private var hidesStackSuggestion = false
     @State private var showNewStack = false
     @State private var newStackName = ""
@@ -257,12 +257,12 @@ struct TodayView: View {
         } message: {
             Text(StackLogging.newStackMessage(existing: stacks.map(\.name)))
         }
-        .sheet(isPresented: $showRecap) {
+        .sheet(item: $recapSheetTab) { tab in
             NavigationStack {
-                RecapsView(tab: recapTab)
+                RecapsView(tab: tab)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Done") { showRecap = false }
+                            Button("Done") { recapSheetTab = nil }
                         }
                     }
             }
@@ -671,10 +671,7 @@ struct TodayView: View {
         }
 
         if let monthRecap {
-            RecapTodayCard(month: monthRecap, onOpen: {
-                recapTab = .month
-                showRecap = true
-            }, onDismiss: {
+            RecapTodayCard(month: monthRecap, onOpen: { recapSheetTab = .month }, onDismiss: {
                 dismissedRecapMonth = monthRecap.monthStart.timeIntervalSince1970
                 withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
                     self.monthRecap = nil
@@ -683,10 +680,7 @@ struct TodayView: View {
         }
 
         if let weekRecap {
-            RecapTodayCard(week: weekRecap, onOpen: {
-                recapTab = .week
-                showRecap = true
-            }, onDismiss: {
+            RecapTodayCard(week: weekRecap, onOpen: { recapSheetTab = .week }, onDismiss: {
                 dismissedRecapWeek = weekRecap.weekStart.timeIntervalSince1970
                 withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
                     self.weekRecap = nil

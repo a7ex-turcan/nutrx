@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The month's full days on a small calendar (#136, docs/pro/RECAPS.md §5): a full day in green, another counted day
-/// outlined, a day still to come faint. One VoiceOver element: "18 of 30 full days in October".
+/// The month's full days on a small calendar (#136, docs/pro/RECAPS.md §5): a full day in green, another day with
+/// something due outlined, and a day with nothing due (a rest day, before anything was tracked) or still to come
+/// faint. One VoiceOver element: "18 of 30 full days in October".
 struct RecapMonthGrid: View {
     let recap: MonthlyRecap
 
@@ -17,15 +18,17 @@ struct RecapMonthGrid: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.textSecondary)
             LazyVGrid(columns: columns, spacing: 6) {
+                // Ids that don't collide in the one grid: the weekdays' 0…6, "blank-n", the days' dates (days by
+                // index hid the 1st to the 7th behind the weekday letters).
                 ForEach(Array(grid.narrowWeekdaySymbols.enumerated()), id: \.offset) { _, symbol in
                     Text(symbol)
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(Theme.textSecondary)
                 }
-                ForEach(0..<grid.leadingBlanks, id: \.self) { _ in Color.clear.frame(height: 1) }
-                ForEach(Array(grid.days.enumerated()), id: \.offset) { index, day in
+                ForEach((0..<grid.leadingBlanks).map { "blank-\($0)" }, id: \.self) { _ in Color.clear.frame(height: 1) }
+                ForEach(Array(grid.days.enumerated()), id: \.element) { index, day in
                     cell(day: index + 1, full: recap.fullDayFlags.indices.contains(index) && recap.fullDayFlags[index],
-                         counted: day <= recap.lastDay)
+                         counted: recap.dueDayFlags.indices.contains(index) && recap.dueDayFlags[index])
                 }
             }
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // seven columns, as History's calendar

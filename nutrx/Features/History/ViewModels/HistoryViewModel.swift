@@ -13,7 +13,8 @@ final class HistoryViewModel {
     private(set) var streak: StreakResult?
     /// For History's "Recaps" row.
     private(set) var latestRecap: WeeklyRecap?
-    /// Last month's recap, when it has something in it: the row names it once there is one (#136).
+    /// Last month's recap, when it has something in it and is newer than the latest week's (#136): the row names
+    /// it and opens on Month.
     private(set) var latestMonthRecap: MonthlyRecap?
     private(set) var month = MonthGrid(containing: .now)
 
@@ -32,7 +33,9 @@ final class HistoryViewModel {
         let lastMonth = MonthlyRecap.build(log: log, names: nutrientsByID.mapValues(\.name),
                                            month: MonthlyRecap.latestMonth(at: now, calendar: log.calendar),
                                            streaksEnabled: false)
-        latestMonthRecap = lastMonth.hasData ? lastMonth : nil
+        latestMonthRecap = lastMonth.hasData
+            && RecapSchedule.monthIsNewer(lastMonth.monthStart, thanWeek: latestRecap?.weekStart, calendar: log.calendar)
+            ? lastMonth : nil
     }
 
     /// Every nutrient, entry and exclusion as a `HistoryLog`, with the nutrients in display order (also used by the

@@ -34,15 +34,15 @@ struct MonthlyRecapText: RecapWording {
     var ringValue: String { "\(recap.fullDays)/\(recap.dayCount)" }
     let ringLabel = "full days"
 
-    /// "In October you met 76 % of your goals, with 18 full days. Vitamin D was your steadiest, 31 of 31 days. …"
+    /// "In October you met 76% of your goals, with 18 full days. Vitamin D was your steadiest, 31 of 31 days. …"
     var summary: String {
         guard recap.hasData else { return "Nothing was logged \(recap.isMonthOver ? "in" : "so far in") \(monthName)." }
         let full = recap.fullDays == 0 ? "no full days" : days(recap.fullDays, "full day")
         // The month so far reads in the present (docs/pro/RECAPS.md §4).
         let over = recap.isMonthOver
         var sentences = [over
-            ? "In \(monthName) you met \(percent) % of your goals, with \(full)."
-            : "So far in \(monthName) you've met \(percent) % of your goals, with \(full)."]
+            ? "In \(monthName) you met \(percent)% of your goals, with \(full)."
+            : "So far in \(monthName) you've met \(percent)% of your goals, with \(full)."]
         if let steadiest = recap.steadiest {
             sentences.append("\(steadiest.name) \(over ? "was" : "is") your steadiest, "
                 + "\(steadiest.daysMet) of \(steadiest.daysCounted) days.")
@@ -68,11 +68,11 @@ struct MonthlyRecapText: RecapWording {
         return sentences.joined(separator: " ")
     }
 
-    /// "Up from 68 % in September", "Down from 81 % in September".
+    /// "Up from 68% in September", "Down from 81% in September".
     func comparisonLine(_ comparison: MonthlyRecap.Comparison) -> String {
         let previous = Int((comparison.rate * 100).rounded())
         let name = calendar.standaloneMonthSymbols[calendar.component(.month, from: comparison.month) - 1]
-        return "\((recap.rate ?? 0) >= comparison.rate ? "Up" : "Down") from \(previous) % in \(name)"
+        return "\((recap.rate ?? 0) >= comparison.rate ? "Up" : "Down") from \(previous)% in \(name)"
     }
 
     // MARK: - Fact cards
@@ -91,14 +91,16 @@ struct MonthlyRecapText: RecapWording {
         if let miss = recap.weakestWeekday {
             let weekday = calendar.weekdaySymbols[miss.weekday - 1]
             cards.append(.init(kind: .weekday, label: "Day you tend to miss", value: weekday,
-                               detail: "Missed \(miss.missed) of \(miss.weeks) \(weekday)s", nutrientID: nil))
+                               detail: "Missed \(RecapText.together("\(miss.missed) of \(miss.weeks) \(weekday)s"))",
+                               nutrientID: nil))
         }
         if let streak = recap.bestStreak {
             cards.append(.init(kind: .streak, label: "Best run", value: days(streak, "day"),
-                               detail: "Every goal met, in a row", nutrientID: nil))
+                               detail: "\(RecapText.together("Every goal met")), \(RecapText.together("in a row"))",
+                               nutrientID: nil))
         }
         if let comparison = recap.comparison {
-            cards.append(.init(kind: .comparison, label: "Goals met", value: "\(percent) %",
+            cards.append(.init(kind: .comparison, label: "Goals met", value: "\(percent)%",
                                detail: comparisonLine(comparison), nutrientID: nil))
         }
         return cards
@@ -120,9 +122,9 @@ struct MonthlyRecapText: RecapWording {
     /// "Your October in nutrx".
     var notificationTitle: String { "Your \(monthName) in nutrx" }
 
-    /// "You met 76 % of your goals in October. Vitamin D was your steadiest."
+    /// "You met 76% of your goals in October. Vitamin D was your steadiest."
     var notificationBody: String {
-        let goals = "You met \(percent) % of your goals in \(monthName)."
+        let goals = "You met \(percent)% of your goals in \(monthName)."
         return recap.steadiest.map { "\(goals) \($0.name) was your steadiest." } ?? goals
     }
 

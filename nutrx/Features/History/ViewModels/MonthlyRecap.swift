@@ -27,6 +27,8 @@ struct MonthlyRecap: Equatable {
     let isMonthOver: Bool
     /// The 1st to the last day: every goal met that day (the month grid's lit days). False after `lastDay`.
     let fullDayFlags: [Bool]
+    /// The 1st to the last day: counted, and something was due (the month grid's outlined days).
+    let dueDayFlags: [Bool]
     let fullDays: Int
     /// Counted days that aren't rest days (#132): what the full days are out of.
     let dayCount: Int
@@ -80,7 +82,7 @@ struct MonthlyRecap: Equatable {
 
         return MonthlyRecap(
             monthStart: monthStart, lastDay: lastDay, isMonthOver: lastDay >= monthEnd,
-            fullDayFlags: tally.fullDayFlags, fullDays: tally.fullDays,
+            fullDayFlags: tally.fullDayFlags, dueDayFlags: tally.dueDayFlags, fullDays: tally.fullDays,
             dayCount: counted.filter { !log.day($0).isRest }.count, goalsMet: tally.goalsMet,
             goalsCounted: tally.goalsCounted, daysLogged: tally.daysLogged, daysElapsed: counted.count,
             daysLoggedSoFar: monthDays.filter { $0 <= log.today && log.day($0).hasEntries }.count,
