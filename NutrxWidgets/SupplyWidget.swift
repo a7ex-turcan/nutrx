@@ -57,6 +57,7 @@ struct SupplyWidgetView: View {
     NutrxSupplyWidget()
 } timeline: {
     SupplyWidgetEntry.sample
+    SupplyWidgetEntry.twoItemsSample
     SupplyWidgetEntry.onTrackSample
     SupplyWidgetEntry.freeSample
     SupplyWidgetEntry.unavailableSample
