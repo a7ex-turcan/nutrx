@@ -178,16 +178,17 @@ struct NutrientCard: View {
         }
     }
 
+    /// Amber like a low bottle's hint: out is the more urgent of the two (#303; the design had it grey).
     private func outText(_ text: String) -> some View {
         Text(text)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(Theme.textSecondary)
+            .foregroundStyle(Theme.textAmberInk)
     }
 
     private var bottle: some View {
         Image(systemName: "waterbottle")
             .font(.caption2.weight(.semibold))
-            .foregroundStyle(Theme.textSecondary)
+            .foregroundStyle(Theme.textAmberInk)
             .accessibilityHidden(true)
     }
 

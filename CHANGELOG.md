@@ -15,6 +15,7 @@ All notable changes to nutrx are documented in this file.
 - **Weekly nutrients in the doctor report, part two** — A nutrient taken a few times a week now shows "Days counted" in its section, matching its chart, instead of every day it was logged, and the chart says which days count.
 - **No "Fill to goal" on a day off** — Logging a nutrient from **Not today** no longer offers to fill it to its goal, since that log won't count toward it.
 - **Editing an amount** — While you edit the log sheet's amount it shows without thousands separators, so deleting a digit from "1,000" gives 100 rather than a number the app misreads; when you tap Done it takes the same form as the rest of the app ("123456789" becomes "123,456,789").
+- **"Out of supply" in amber** — On Today, a bottle that's run out now reads "Out of supply" in amber, like one that's running low, instead of grey.
 
 ### Fixes
 - **"Stack" said once** — The Siri tip on a stack named "Morning stack" now reads "Log the Morning stack with nutrx", a phrase Siri understands, instead of "Log my Morning stack stack".
