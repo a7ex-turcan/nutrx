@@ -151,9 +151,9 @@ struct NutrientCard: View {
                 }
             } else {
                 ViewThatFits(in: .horizontal) {
-                    outLine { outText("\(supply.text) ·") }
+                    outLine { outText(supply.text); separator }
                     if let compact = supply.compactText {
-                        outLine { bottle; outText("\(compact) ·") }
+                        outLine { bottle; outText(compact); separator }
                     }
                     outLine(fixed: false) { bottle }  // the last try may truncate rather than push into the buttons
                 }
@@ -178,16 +178,25 @@ struct NutrientCard: View {
         }
     }
 
+    /// Amber like a low bottle's hint: out is the more urgent of the two (#303; the design had it grey).
     private func outText(_ text: String) -> some View {
         Text(text)
             .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.textAmberInk)
+    }
+
+    /// The grey "·" between the line's parts, whatever their colours; VoiceOver doesn't read it.
+    private var separator: some View {
+        Text("·")
+            .font(.caption.weight(.semibold))
             .foregroundStyle(Theme.textSecondary)
+            .accessibilityHidden(true)
     }
 
     private var bottle: some View {
         Image(systemName: "waterbottle")
             .font(.caption2.weight(.semibold))
-            .foregroundStyle(Theme.textSecondary)
+            .foregroundStyle(Theme.textAmberInk)
             .accessibilityHidden(true)
     }
 
@@ -223,7 +232,7 @@ struct NutrientCard: View {
     private func sharedLine(_ goal: some View, _ hint: LineHint, _ text: String) -> some View {
         HStack(spacing: 4) {
             goal
-            Text("·").font(.caption.weight(.semibold)).foregroundStyle(Theme.textSecondary)
+            separator
             hintView(hint, text)
         }
         .lineLimit(1)
