@@ -24,6 +24,14 @@ struct SupplyWidgetEntry: TimelineEntry {
               isOut: false, daysLeft: 7),
     ], bottles: 4, courses: 1)))
 
+    /// One bottle and one course: the medium size's list rows (#301), amber and grey details.
+    static let twoItemsSample = SupplyWidgetEntry(date: .now, content: .summary(SupplyWidgetSummary(items: [
+        .init(nutrientID: UUID(), name: "Omega-3", tint: .teal, symbolName: "fish", kind: .supply, isOut: true,
+              daysLeft: 0),
+        .init(nutrientID: UUID(), name: "Iron", tint: .coral, symbolName: "drop", kind: .course, isOut: false,
+              daysLeft: 1),
+    ], bottles: 3, courses: 1)))
+
     static let onTrackSample = SupplyWidgetEntry(
         date: .now, content: .summary(SupplyWidgetSummary(items: [], bottles: 4, courses: 1)))
     static let freeSample = SupplyWidgetEntry(date: .now, content: .free)
