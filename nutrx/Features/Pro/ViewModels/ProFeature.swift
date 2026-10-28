@@ -1,7 +1,7 @@
 import Foundation
 
 /// What nutrx Pro adds (docs/pro/PLAN.md, D5 order, then courses from 2.2, schedules from 2.4, widgets and controls
-/// from 2.5, and reminders at your usual time being built for 2.6), as the paywall and the Pro screen list them.
+/// from 2.5, and reminders at your usual time from 2.6), as the paywall and the Pro screen list them.
 enum ProFeature: String, CaseIterable, Identifiable {
     case supply
     case scan
@@ -116,10 +116,9 @@ enum ProFeature: String, CaseIterable, Identifiable {
     }
 
     /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, courses since 2.2,
-    /// schedules since 2.4, widgets and controls since 2.5). Reminders at your usual time are being built (#137,
-    /// docs/pro/REMINDERS.md §6): Debug builds show their choice until they ship.
+    /// schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6: all nine).
     var isShipped: Bool {
-        self != .reminders
+        true
     }
 
     /// What the paywall and the Pro screen list: the shipped features — or, in Debug builds before any has

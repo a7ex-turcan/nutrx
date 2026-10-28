@@ -15,7 +15,7 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
     var features: [ProFeature] {
         switch self {
         case .supply: [.supply, .scan]
-        case .plans: [.courses, .schedules]
+        case .plans: [.courses, .schedules, .reminders]
         case .insights: [.recap, .health, .report]
         case .widgets: [.widgets]
         }
@@ -24,7 +24,7 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .supply: "Supply & label scan"
-        case .plans: "Courses & schedules"
+        case .plans: "Courses, schedules & reminders"
         case .insights: "Recaps, trends & reports"
         case .widgets: ProFeature.widgets.title
         }
@@ -33,7 +33,7 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
     var subtitle: String {
         switch self {
         case .supply: "Know when a bottle runs out and what it costs, and add one from its label"
-        case .plans: "Take something for a set time, or on set days"
+        case .plans: "Take something for a set time or on set days, and get a nudge when you're running late"
         case .insights: "Your week, month and year summarised, Apple Health trends, and a PDF for your doctor"
         case .widgets: ProFeature.widgets.subtitle
         }
