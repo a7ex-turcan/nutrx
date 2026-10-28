@@ -1,13 +1,21 @@
 import Foundation
 
-/// When and what the Sunday-evening recap notification says (nutrx Pro, phase 6). Pure, tested in
-/// `WeeklyRecapTests`; `NotificationService` schedules it with the other reminders.
+/// When and what the recap notifications say (nutrx Pro, phase 6; months and years since #136): Sunday 18:00 for
+/// the week, the 1st at 18:00 for the month just ended, 1 January at 18:00 for the year, one a night. Pure, tested in
+/// `WeeklyRecapTests`, `MonthlyRecapTests` and `YearlyRecapTests`; `NotificationService` schedules them with the other
+/// reminders.
 enum RecapSchedule {
     static let identifierPrefix = "weekly-recap-"
+    static let monthIdentifierPrefix = "monthly-recap-"
+    static let yearIdentifierPrefix = "yearly-recap-"
+    static let identifierPrefixes = [identifierPrefix, monthIdentifierPrefix, yearIdentifierPrefix]
     static let category = "nutrx.recap"
     static let turnOffAction = "nutrx.recap.turnOff"
+    /// The notification's period ("week", "month", "year"), so a tap opens that tab.
+    static let periodKey = "recapPeriod"
 
-    /// The device's setting (Settings → Notifications), on unless turned off.
+    /// The device's setting (Settings → Notifications → Recaps), on unless turned off. The key is the weekly
+    /// recap's from before #136, so an existing choice carries over to all three.
     static let enabledKey = "nutrx.weeklyRecapNotifications"
 
     static var isEnabled: Bool {
@@ -17,7 +25,9 @@ enum RecapSchedule {
     struct Plan: Equatable {
         let identifier: String
         let fireDate: Date
+        var title = RecapText.notificationTitle
         let body: String
+        var tab = RecapTab.week
     }
 
     /// The next recap notification, for the week whose Sunday 18:00 comes next — only once something has been
@@ -32,6 +42,68 @@ enum RecapSchedule {
         let id = identifierPrefix + String(format: "%04d%02d%02d", day.year ?? 0, day.month ?? 0, day.day ?? 0)
         return Plan(identifier: id, fireDate: fire, body: body)
     }
+
+    /// The month's notification, on the next 1st at 18:00, once something was logged that month. Numbers in the
+    /// body only when set up on the 1st itself, as for the week.
+    static func plan(month recap: MonthlyRecap, now: Date, calendar: Calendar = .current) -> Plan? {
+        let fire = MonthlyRecap.releaseDate(ofMonthStarting: recap.monthStart, calendar: calendar)
+        guard fire > now, recap.daysLoggedSoFar > 0 else { return nil }
+        let text = MonthlyRecapText(recap, calendar: calendar)
+        let day = calendar.dateComponents([.year, .month], from: recap.monthStart)
+        return Plan(identifier: monthIdentifierPrefix + String(format: "%04d%02d", day.year ?? 0, day.month ?? 0),
+                    fireDate: fire, title: text.notificationTitle,
+                    body: calendar.isDate(now, inSameDayAs: fire) ? text.notificationBody : text.notificationBodyWithoutFacts,
+                    tab: .month)
+    }
+
+    /// The year's notification, on 1 January at 18:00, once something was logged that year.
+    static func plan(year recap: YearlyRecap, now: Date, calendar: Calendar = .current) -> Plan? {
+        let fire = YearlyRecap.releaseDate(ofYearStarting: recap.yearStart, calendar: calendar)
+        guard fire > now, recap.daysLoggedSoFar > 0 else { return nil }
+        let text = YearlyRecapText(recap, calendar: calendar)
+        return Plan(identifier: yearIdentifierPrefix + text.yearName, fireDate: fire, title: text.notificationTitle,
+                    body: calendar.isDate(now, inSameDayAs: fire) ? text.notificationBody : text.notificationBodyWithoutFacts,
+                    tab: .year)
+    }
+
+    /// One recap a night (docs/pro/RECAPS.md §6): the year's and December's both land on 1 January, a month's and a
+    /// week's on a 1st that's a Sunday. Only the longest goes; the others are a tab away.
+    static func oneANight(_ plans: [Plan], calendar: Calendar = .current) -> [Plan] {
+        let longestFirst = plans.sorted { RecapTab.allCases.firstIndex(of: $0.tab)! > RecapTab.allCases.firstIndex(of: $1.tab)! }
+        var kept: [Plan] = []
+        for plan in longestFirst where !kept.contains(where: { calendar.isDate($0.fireDate, inSameDayAs: plan.fireDate) }) {
+            kept.append(plan)
+        }
+        return kept.sorted { $0.fireDate < $1.fireDate }
+    }
+
+    /// The month the next monthly notification is for: last month until the 1st's 18:00, then this one.
+    static func upcomingMonth(at now: Date, calendar: Calendar = .current) -> Date {
+        let lastMonth = MonthlyRecap.latestMonth(at: now, calendar: calendar)
+        return now < MonthlyRecap.releaseDate(ofMonthStarting: lastMonth, calendar: calendar)
+            ? lastMonth
+            : MonthlyRecap.monthStart(containing: now, calendar: calendar)
+    }
+
+    /// The year the next yearly notification is for: last year until 1 January's 18:00, then this one.
+    static func upcomingYear(at now: Date, calendar: Calendar = .current) -> Date {
+        let lastYear = YearlyRecap.latestYear(at: now, calendar: calendar)
+        return now < YearlyRecap.releaseDate(ofYearStarting: lastYear, calendar: calendar)
+            ? lastYear
+            : YearlyRecap.yearStart(containing: now, calendar: calendar)
+    }
+
+    /// Whether the year's notification is near enough to set up: in December, and on 1 January until it goes. The
+    /// rest of the year the sync after every log doesn't read the year's entries for it.
+    static func yearIsDue(at now: Date, calendar: Calendar = .current) -> Bool {
+        calendar.component(.month, from: now) == 12
+            || now < YearlyRecap.releaseDate(ofYearStarting: YearlyRecap.latestYear(at: now, calendar: calendar),
+                                             calendar: calendar)
+    }
+
+    /// The slots the recaps take of the 60 while the entitlement is unknown: the next week's and month's, plus
+    /// the year's when it's due.
+    static func slots(at now: Date, calendar: Calendar = .current) -> Int { yearIsDue(at: now, calendar: calendar) ? 3 : 2 }
 
     /// The week the next notification is for: this week until its Sunday 18:00, then next week.
     static func upcomingWeek(at now: Date, calendar: Calendar = .current) -> Date {

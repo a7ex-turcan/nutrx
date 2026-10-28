@@ -218,6 +218,30 @@ final class YearlyRecapTests: XCTestCase {
                                                calendar: calendar), .month)
     }
 
+    func testTheYearsNotification() {
+        let soFar = RecapSchedule.plan(year: recap(year2026, today: day(12, 15)), now: day(12, 15, hour: 9),
+                                       calendar: calendar)
+        XCTAssertEqual(soFar?.fireDate, day(1, 1, year: 2027, hour: 18))
+        XCTAssertEqual(soFar?.identifier, "yearly-recap-2026")
+        XCTAssertEqual(soFar?.title, "Your 2026 in nutrx")
+        XCTAssertEqual(soFar?.body, "See what you hit in 2026 and what slipped.")
+        XCTAssertEqual(soFar?.tab, .year)
+        XCTAssertEqual(RecapSchedule.plan(year: recap(year2026, today: day(1, 1, year: 2027)),
+                                          now: day(1, 1, year: 2027, hour: 9), calendar: calendar)?.body,
+                       "You met 88% of your goals in 2026. Vitamin D was your steadiest.")
+
+        // Only read in December and on 1 January until it goes: two slots otherwise, three then.
+        XCTAssertTrue(RecapSchedule.yearIsDue(at: day(12, 5), calendar: calendar))
+        XCTAssertTrue(RecapSchedule.yearIsDue(at: day(1, 1, year: 2027, hour: 9), calendar: calendar))
+        XCTAssertFalse(RecapSchedule.yearIsDue(at: day(1, 1, year: 2027, hour: 19), calendar: calendar))
+        XCTAssertFalse(RecapSchedule.yearIsDue(at: day(6, 1), calendar: calendar))
+        XCTAssertEqual(RecapSchedule.slots(at: day(12, 5), calendar: calendar), 3)
+        XCTAssertEqual(RecapSchedule.slots(at: day(6, 1), calendar: calendar), 2)
+        XCTAssertEqual(RecapSchedule.upcomingYear(at: day(1, 1, year: 2027, hour: 9), calendar: calendar), day(1, 1))
+        XCTAssertEqual(RecapSchedule.upcomingYear(at: day(1, 1, year: 2027, hour: 19), calendar: calendar),
+                       day(1, 1, year: 2027))
+    }
+
     // MARK: - Words
 
     func testTheYearsWords() {

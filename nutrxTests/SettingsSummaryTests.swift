@@ -33,7 +33,7 @@ final class SettingsSummaryTests: XCTestCase {
     func testNotifications() {
         XCTAssertEqual(SettingsSummary.notifications(dailyReminderEnabled: true), "Noon check-in")
         XCTAssertEqual(SettingsSummary.notifications(dailyReminderEnabled: false), "Off")
-        XCTAssertEqual(SettingsSummary.notifications(dailyReminderEnabled: false, weeklyRecap: true), "Weekly recap")
+        XCTAssertEqual(SettingsSummary.notifications(dailyReminderEnabled: false, weeklyRecap: true), "Recaps")
         XCTAssertEqual(SettingsSummary.notifications(dailyReminderEnabled: true, weeklyRecap: true), "Check-in and recap")
     }
 

@@ -34,7 +34,7 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
         switch self {
         case .supply: "Know when a bottle runs out and what it costs, and add one from its label"
         case .plans: "Take something for a set time, or on set days"
-        case .insights: "Your week summarised, Apple Health trends, and a PDF for your doctor"
+        case .insights: "Your week, month and year summarised, Apple Health trends, and a PDF for your doctor"
         case .widgets: ProFeature.widgets.subtitle
         }
     }

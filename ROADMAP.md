@@ -166,6 +166,14 @@ Submitted for App Review on 28 Oct 2026 (build 205, phased release). Main builds
 | Siri tip says "stack" once | ✅ Built (v2.5, #292) |
 | Group names at the largest text sizes | ✅ Built (v2.5, #273) |
 
+### v2.6 — Monthly and yearly recaps
+
+In progress on main.
+
+| Feature | Status |
+|---|---|
+| Monthly and yearly recaps: Week / Month / Year on Recaps, Today cards, notifications (Pro) | ✅ Built (v2.6, #136: #308–#311, phase 4) |
+
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
 ---

@@ -14,8 +14,8 @@ final class MonthlyRecapTests: XCTestCase {
     private let omega = UUID()
     private let caffeine = UUID()
 
-    private func day(_ month: Int, _ day: Int, hour: Int = 0) -> Date {
-        calendar.date(from: DateComponents(year: 2026, month: month, day: day, hour: hour))!
+    private func day(_ month: Int, _ day: Int, year: Int = 2026, hour: Int = 0) -> Date {
+        calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour))!
     }
 
     private var nutrients: [HistoryNutrient] {
@@ -194,6 +194,48 @@ final class MonthlyRecapTests: XCTestCase {
         XCTAssertEqual(RecapSchedule.latestTab(week: day(11, 2), month: day(10, 1), year: nil, calendar: calendar), .week)
         XCTAssertEqual(RecapSchedule.latestTab(week: nil, month: day(10, 1), year: nil, calendar: calendar), .month)
         XCTAssertEqual(RecapSchedule.latestTab(week: nil, month: nil, year: nil, calendar: calendar), .week)
+    }
+
+    // MARK: - Notification
+
+    func testTheMonthsNotification() {
+        // Set up mid-month: no numbers yet.
+        let soFar = RecapSchedule.plan(month: recap(october, today: day(10, 15)), now: day(10, 15, hour: 9),
+                                       calendar: calendar)
+        XCTAssertEqual(soFar?.fireDate, day(11, 1, hour: 18))
+        XCTAssertEqual(soFar?.identifier, "monthly-recap-202610")
+        XCTAssertEqual(soFar?.title, "Your October in nutrx")
+        XCTAssertEqual(soFar?.body, "See what you hit in October and what slipped.")
+        XCTAssertEqual(soFar?.tab, .month)
+        // On the 1st, the whole month's numbers.
+        XCTAssertEqual(RecapSchedule.plan(month: recap(october, today: day(11, 1)), now: day(11, 1, hour: 9),
+                                          calendar: calendar)?.body,
+                       "You met 95% of your goals in October. Vitamin D was your steadiest.")
+        XCTAssertNil(RecapSchedule.plan(month: recap(october, today: day(11, 1)), now: day(11, 1, hour: 19),
+                                        calendar: calendar), "gone out")
+        XCTAssertNil(RecapSchedule.plan(month: recap([:], today: day(10, 15)), now: day(10, 15, hour: 9),
+                                        calendar: calendar), "nothing logged")
+
+        XCTAssertEqual(RecapSchedule.upcomingMonth(at: day(10, 15), calendar: calendar), day(10, 1))
+        XCTAssertEqual(RecapSchedule.upcomingMonth(at: day(11, 1, hour: 9), calendar: calendar), day(10, 1))
+        XCTAssertEqual(RecapSchedule.upcomingMonth(at: day(11, 1, hour: 19), calendar: calendar), day(11, 1))
+    }
+
+    func testOneRecapANightTheLongest() {
+        func plan(_ tab: RecapTab, _ date: Date) -> RecapSchedule.Plan {
+            RecapSchedule.Plan(identifier: tab.rawValue, fireDate: date, body: "", tab: tab)
+        }
+        // Sunday 1 November: October and the week ending that day both at 18:00.
+        let sunday = day(11, 1, hour: 18)
+        XCTAssertEqual(RecapSchedule.oneANight([plan(.week, sunday), plan(.month, sunday)], calendar: calendar)
+                           .map(\.tab), [.month])
+        // 1 January: the year over December.
+        let newYear = day(1, 1, year: 2027, hour: 18)
+        XCTAssertEqual(RecapSchedule.oneANight([plan(.month, newYear), plan(.year, newYear), plan(.week, day(1, 3, year: 2027, hour: 18))],
+                                               calendar: calendar).map(\.tab), [.year, .week])
+        // Different nights: both, soonest first.
+        XCTAssertEqual(RecapSchedule.oneANight([plan(.month, sunday), plan(.week, day(10, 25, hour: 18))], calendar: calendar)
+                           .map(\.tab), [.week, .month])
     }
 
     func testTodaysMonthCardShowsOnTheFirstAndSecond() {

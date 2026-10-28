@@ -45,6 +45,11 @@ nonisolated struct WhatsNew: Equatable {
                  subtitle: "Log a stack or a nutrient from Control Center, and see a nutrient or what's running low on your Home and Lock Screens.",
                  symbolName: "square.grid.2x2", tint: .brown, isPro: true),
         ]),
+        WhatsNew(version: "2.6", items: [
+            Item(title: "Monthly and yearly recaps",
+                 subtitle: "Your month on the 1st and your year on 1 January, beside the weekly recap in History's Recaps.",
+                 symbolName: "calendar", tint: .indigo, isPro: true),
+        ]),
     ]
 
     /// The card to show, if any: the release `appVersion` belongs to (its first two numbers), with only the items

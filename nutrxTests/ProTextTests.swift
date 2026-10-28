@@ -152,7 +152,7 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.welcome([.supply, .scan]),
                        "Supply and label scanning are on. Nothing you already use has changed.")
         XCTAssertEqual(ProText.welcome(ProFeature.allCases),
-                       "Supply, label scanning, weekly recaps, Apple Health trends, doctor reports, courses, schedules and widgets are on. Nothing you already use has changed.")
+                       "Supply, label scanning, recaps, Apple Health trends, doctor reports, courses, schedules and widgets are on. Nothing you already use has changed.")
     }
 
     func testPlanChip() {

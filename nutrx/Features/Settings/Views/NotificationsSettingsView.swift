@@ -1,8 +1,8 @@
 import SwiftUI
 import SwiftData
 
-/// Settings → Notifications: the noon check-in reminder, with the permission flow, and for nutrx Pro the Sunday
-/// weekly recap (on unless turned off, per device).
+/// Settings → Notifications: the noon check-in reminder, with the permission flow, and for nutrx Pro the recaps:
+/// Sunday's week, the 1st's month and 1 January's year, one switch (on unless turned off, per device; #136).
 struct NotificationsSettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ProAccess.self) private var proAccess: ProAccess?
@@ -41,7 +41,7 @@ struct NotificationsSettingsView: View {
             if ProAccess.isStoreVisible, proAccess?.isPro == true {
                 Section {
                     // On only when it can actually arrive: the setting and notification permission.
-                    Toggle("Weekly recap", isOn: Binding(
+                    Toggle("Recaps", isOn: Binding(
                         get: { weeklyRecapEnabled && notificationsAllowed },
                         set: { newValue in
                             guard newValue else {
@@ -66,7 +66,8 @@ struct NotificationsSettingsView: View {
                         }
                     ))
                 } footer: {
-                    Text("On Sunday evening, a short summary of your week: what you hit, what slipped and which day.")
+                    Text("A short summary of your week on Sunday evening, your month on the 1st and your year on "
+                         + "1 January: what you hit, what slipped and which day.")
                 }
                 .listRowBackground(Theme.surfaceCard)
             }

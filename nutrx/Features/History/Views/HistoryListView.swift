@@ -184,13 +184,14 @@ struct HistoryListView: View {
     private func openRecapIfAsked() {
         guard router?.showsRecap == true, !isPreparingSplitViews else { return }
         router?.showsRecap = false
+        let tab = router?.recapTab ?? .week
         Task {
             // A tap can cold-launch the app before the entitlement is known.
             if let proAccess, !proAccess.hasCheckedEntitlements { await proAccess.refreshEntitlement() }
             guard ProAccess.isStoreVisible, proAccess?.isPro == true else { return }
             selectedDay = nil
             recapID = UUID()
-            recapTab = .week
+            recapTab = tab
         }
     }
 
