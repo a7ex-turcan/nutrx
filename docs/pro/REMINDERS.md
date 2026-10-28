@@ -64,21 +64,22 @@ From the last **28 completed days** (today never counts, as in recaps):
 
 ## 6. Pro and shipping
 
-- **`ProFeature.reminders`:** "Reminders at your usual time", with the line "A nudge only when you're running late". It joins the **Courses & schedules** group, which becomes "Courses, schedules & reminders": "Take something for a set time or on set days, and get a nudge when you're running late".
+- **`ProFeature.reminders`:** "Reminders at your usual time", with the line "A nudge only when you're running late". Once shipped it joins the **Courses & schedules** group, which becomes "Courses, schedules & reminders": "Take something for a set time or on set days, and get a nudge when you're running late".
 - **What's New 2.6:** "Reminders at your usual time" (PRO), and "Stack reminders" (free).
 - **CloudKit:** every merge to `main` becomes a TestFlight build, so each field reaches production **in the phase that adds it**, before that phase merges, as SCHEDULES.md did. That's `CD_usualReminderMinutes` in phase 1, and `CD_reminderMinutes` and `CD_remindsAtUsualTime` on `LogStack` in phase 2. Development goes in with `cktool`, and production is the user's Console deploy, checked with `Tools/check-cloudkit-schema`. Each is added to `Tools/CloudKitSchema/fields.txt`.
-- **Hidden until shipped:** the sheets' choice and the stack's Reminder row show only in Debug builds (`UsualTime.isShipped`) until phase 3, as the Schedule row was. Phases 1 and 2 reach TestFlight before the paywall row and What's New exist.
+- **Hidden until shipped:** `ProFeature.reminders` arrives in phase 1, not shipped (`isShipped` false), as `ProFeature.schedules` did. Until phase 3 flips it, the sheets' choice and the stack's whole Reminder row (set time too) show only in Debug builds, so phases 1 and 2 reach TestFlight with nothing half-shipped. The paywall row and What's New come with phase 3.
 
 ## 7. Build phases (one PR each)
 
 1. **The usual time and nutrients:**
    - `UsualTime` (pure, tested: percentile, rounding, weekday split, limits, schedules);
    - `Nutrient.usualReminderMinutes`, with its CloudKit field in development, and the production deploy (the user's) before merging;
+   - `ProFeature.reminders`, not shipped;
    - the scheduler;
    - the Reminders sheet choice and row text, Debug-only;
    - Pro gating and the lapse fallback.
-2. **Stack reminders:** the `LogStack` fields, with their CloudKit fields in development and production before merging, then the Reminder row and sheet (Debug-only for the usual time), scheduling, the done-today rule, and the notification and its tap.
-3. **Shipping:** `UsualTime.isShipped`, `ProFeature.reminders` and the paywall group, What's New, and CHANGELOG, ROADMAP and CLAUDE.md.
+2. **Stack reminders:** the `LogStack` fields, with their CloudKit fields in development and production before merging, then the Reminder row and sheet (Debug-only as a whole), scheduling, the done-today rule, and the notification and its tap.
+3. **Shipping:** `ProFeature.reminders.isShipped` and its paywall group, What's New, and CHANGELOG, ROADMAP and CLAUDE.md.
 
 Each phase is checked on nutrx iPhone 17 with the demo data. Its log times need to vary enough for a usual time; the demo set gets per-day times, with a test that the demo data learns one. Light and dark, and a large text size.
 
