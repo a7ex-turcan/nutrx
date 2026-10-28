@@ -1,25 +1,10 @@
 import SwiftData
 import SwiftUI
 
-/// Which recap the Recaps screen shows (#136, docs/pro/RECAPS.md §5).
-enum RecapTab: String, CaseIterable, Identifiable {
-    case week
-    case month
-
-    var id: Self { self }
-
-    var title: String {
-        switch self {
-        case .week: "Week"
-        case .month: "Month"
-        }
-    }
-}
-
-/// The recaps (nutrx Pro; docs/pro/design/5-weekly-recap, months since #136): a Week / Month switch, then a forest
-/// hero with the period's full days, goals met and summary, fact cards, and the earlier weeks or months to switch
-/// between. The month adds a small calendar of its full days. Before there's anything to sum up: when the first
-/// recap arrives.
+/// The recaps (nutrx Pro; docs/pro/design/5-weekly-recap, months and years since #136): a Week / Month / Year switch,
+/// then a forest hero with the period's full days, goals met and summary, fact cards, and the earlier weeks, months
+/// or years to switch between. The month adds a small calendar of its full days, the year its months as bars.
+/// Before there's anything to sum up: when the first recap arrives.
 struct RecapsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allPreferences: [UserPreferences]
@@ -37,7 +22,11 @@ struct RecapsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap + 2) {
-                Picker("Recap", selection: $tab) {
+                // The years are built when their tab first shows, before it draws.
+                Picker("Recap", selection: Binding(get: { tab }, set: { newTab in
+                    if newTab == .year { viewModel.loadYears() }
+                    tab = newTab
+                })) {
                     ForEach(RecapTab.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
@@ -46,6 +35,7 @@ struct RecapsView: View {
                 switch tab {
                 case .week: weekContent
                 case .month: monthContent
+                case .year: yearContent
                 }
                 if let status = healthStatus, let line = HealthText.recapLine(status) {
                     healthLine(line)
@@ -67,14 +57,21 @@ struct RecapsView: View {
                 }
             }
         }
-        .onAppear { viewModel.refresh(context: modelContext, streaksEnabled: streaksEnabled) }
+        .onAppear {
+            viewModel.refresh(context: modelContext, streaksEnabled: streaksEnabled)
+            if tab == .year { viewModel.loadYears() }
+        }
         // The recap is Pro already; the line needs Health connected (`load` is nil otherwise).
         .task { healthStatus = await HealthInsights.load(context: modelContext) }
-        .task(id: viewModel.selected?.weekStart) {
-            if let recap = viewModel.selected { await viewModel.loadSummary(for: recap) }
+        // Each tab's rewording runs only while it's shown: the week opened from Today needn't reword a month too.
+        .task(id: tab == .week ? viewModel.selected?.weekStart : nil) {
+            if tab == .week, let recap = viewModel.selected { await viewModel.loadSummary(for: recap) }
         }
-        .task(id: viewModel.selectedMonthRecap?.monthStart) {
-            if let recap = viewModel.selectedMonthRecap { await viewModel.loadSummary(for: recap) }
+        .task(id: tab == .month ? viewModel.selectedMonthRecap?.monthStart : nil) {
+            if tab == .month, let recap = viewModel.selectedMonthRecap { await viewModel.loadSummary(for: recap) }
+        }
+        .task(id: tab == .year ? viewModel.selectedYearRecap?.yearStart : nil) {
+            if tab == .year, let recap = viewModel.selectedYearRecap { await viewModel.loadSummary(for: recap) }
         }
     }
 
@@ -142,6 +139,37 @@ struct RecapsView: View {
         }
     }
 
+    // MARK: - Year
+
+    @ViewBuilder
+    private var yearContent: some View {
+        if let recap = viewModel.selectedYearRecap {
+            let text = YearlyRecapText(recap)
+            RecapHeroCard(
+                ring: SegmentedDayRing(met: recap.fullDays, total: recap.dayCount, caption: text.ringLabel),
+                ringSummary: "\(recap.fullDays) of \(recap.dayCount) full days",
+                eyebrow: text.range, title: text.headline, summary: viewModel.summary(for: recap))
+            RecapYearBars(recap: recap)
+            RecapFactGrid(cards: text.cards, nutrientsByID: viewModel.nutrientsByID)
+            if viewModel.yearChoices.count > 1 {
+                EarlierPicker(title: "Earlier years", items: viewModel.yearChoices.map { year in
+                    let name = YearlyRecapText(year).yearName
+                    return EarlierPicker.Item(id: year.yearStart, label: name,
+                                              accessibilityLabel: year.isYearOver ? name : "\(name) so far",
+                                              goalsMet: year.goalsMet, goalsCounted: year.goalsCounted)
+                }, selected: recap.yearStart) { viewModel.selectedYear = $0 }
+            }
+        } else {
+            let logged = viewModel.yearDaysLoggedSoFar
+            RecapHeroCard(
+                ring: SegmentedDayRing(met: logged, total: viewModel.yearLength,
+                                       caption: logged == 1 ? "day logged" : "days logged", showsTotal: false),
+                ringSummary: logged == 1 ? "1 day logged" : "\(logged) days logged",
+                eyebrow: "This year", title: YearlyRecapText.firstTitle(),
+                summary: YearlyRecapText.firstBody(daysLogged: logged))
+        }
+    }
+
     // MARK: - Pieces
 
     private var explainer: some View {
@@ -178,12 +206,16 @@ struct RecapsView: View {
             guard let recap = viewModel.selectedMonthRecap else { return nil }
             let text = MonthlyRecapText(recap)
             return "My \(text.range) in nutrx: \(text.headline). \(viewModel.summary(for: recap))"
+        case .year:
+            guard let recap = viewModel.selectedYearRecap else { return nil }
+            let text = YearlyRecapText(recap)
+            return "My \(text.range) in nutrx: \(text.headline). \(viewModel.summary(for: recap))"
         }
     }
 }
 
-/// "Earlier weeks" / "Earlier months": a row of small goals-met rings to switch between, spread across the card
-/// when they fit and scrolled to the newest when they don't.
+/// "Earlier weeks" / "Earlier months" / "Earlier years": a row of small goals-met rings to switch between, spread
+/// across the card when they fit and scrolled to the newest when they don't.
 private struct EarlierPicker: View {
     struct Item: Identifiable {
         let id: Date
@@ -263,9 +295,24 @@ private struct EarlierPicker: View {
     }
 }
 
-#Preview {
+#Preview("Week") {
     NavigationStack {
         RecapsView()
     }
     .modelContainer(previewContainer)
+}
+
+#Preview("Month") {
+    NavigationStack {
+        RecapsView(tab: .month)
+    }
+    .modelContainer(previewContainer)
+}
+
+#Preview("Year, dark") {
+    NavigationStack {
+        RecapsView(tab: .year)
+    }
+    .modelContainer(previewContainer)
+    .preferredColorScheme(.dark)
 }

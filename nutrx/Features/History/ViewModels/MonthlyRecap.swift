@@ -13,7 +13,7 @@ struct MonthlyRecap: Equatable {
         let weeks: Int
     }
 
-    /// The month before, for "Up from 68 % in September".
+    /// The month before, for "Up from 68% in September".
     struct Comparison: Equatable {
         let month: Date
         let rate: Double

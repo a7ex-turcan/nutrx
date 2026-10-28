@@ -1,9 +1,26 @@
 import Foundation
 import SwiftData
 
-/// Loads the recaps for the Recaps screen, Today's card and History's row (nutrx Pro, phase 6; months since #136):
-/// the last eight weeks and twelve months that have something to sum up, the running week and month, and each one's
-/// summary (the template at once, then the on-device rewording when there is one).
+/// Which recap the Recaps screen shows (#136, docs/pro/RECAPS.md §5).
+enum RecapTab: String, CaseIterable, Identifiable {
+    case week
+    case month
+    case year
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .week: "Week"
+        case .month: "Month"
+        case .year: "Year"
+        }
+    }
+}
+
+/// Loads the recaps for the Recaps screen, Today's card and History's row (nutrx Pro, phase 6; months and years since
+/// #136): the last eight weeks, twelve months and three years that have something to sum up, the running week, month
+/// and year, and each one's summary (the template at once, then the on-device rewording when there is one).
 @MainActor
 @Observable
 final class RecapViewModel {
@@ -34,11 +51,41 @@ final class RecapViewModel {
     /// The month the Month tab shows; nil is the default (`selectedMonthRecap`).
     var selectedMonth: Date?
 
-    /// The Month tab's picker: whole months, then the month so far.
-    var monthChoices: [MonthlyRecap] { months + [runningMonth].compactMap { $0 } }
+    /// The Month tab's picker: whole months, then the month so far, twelve at most, so no month's name shows twice
+    /// (October so far pushes out last October).
+    var monthChoices: [MonthlyRecap] { Array((months + [runningMonth].compactMap { $0 }).suffix(Self.monthCount)) }
     /// The month shown: the one picked, else the latest whole month, else the month so far (docs/pro/RECAPS.md §5).
     var selectedMonthRecap: MonthlyRecap? {
         monthChoices.first { $0.monthStart == selectedMonth } ?? months.last ?? runningMonth
+    }
+
+    /// How many whole years "Earlier years" goes back (the summaries' cache keeps three).
+    static let yearCount = 3
+
+    /// Whole years with a recap, oldest first.
+    private(set) var years: [YearlyRecap] = []
+    /// The year so far, once it has a completed day (not on 1 January).
+    private(set) var runningYear: YearlyRecap?
+    /// Days logged this year, today included: the first-year state's ring.
+    private(set) var yearDaysLoggedSoFar = 0
+    private(set) var yearLength = 365
+    private(set) var yearSummaries: [Date: String] = [:]
+    /// The year the Year tab shows; nil is the default (`selectedYearRecap`).
+    var selectedYear: Date?
+    /// Whether it's January, when the Year tab opens on the year just ended.
+    private(set) var isJanuary = false
+    /// Whether `years` is from the last refresh (`loadYears`).
+    private(set) var yearsLoaded = false
+    /// The last refresh's log, for `loadYears`.
+    private var loaded: (log: HistoryLog, names: [UUID: String], streaksEnabled: Bool, now: Date)?
+
+    /// The Year tab's picker: whole years, then the year so far.
+    var yearChoices: [YearlyRecap] { years + [runningYear].compactMap { $0 } }
+    /// The year shown: the one picked, else the year so far, except in January, when it's the year just ended
+    /// (docs/pro/RECAPS.md §5).
+    var selectedYearRecap: YearlyRecap? {
+        if let picked = yearChoices.first(where: { $0.yearStart == selectedYear }) { return picked }
+        return isJanuary ? years.last ?? runningYear : runningYear ?? years.last
     }
 
     var latest: WeeklyRecap? { weeks.last }
@@ -71,6 +118,50 @@ final class RecapViewModel {
         monthDaysLoggedSoFar = thisMonth.daysLoggedSoFar
         monthLength = thisMonth.fullDayFlags.count
         if let selectedMonth, !monthChoices.contains(where: { $0.monthStart == selectedMonth }) { self.selectedMonth = nil }
+
+        loaded = (log, names, streaksEnabled, now)
+        yearsLoaded = false
+    }
+
+    /// The years, built from the last refresh's log the first time the Year tab shows after it: four years of
+    /// tallies are too much to build on every open of the week.
+    func loadYears() {
+        guard !yearsLoaded, let (log, names, streaksEnabled, now) = loaded else { return }
+        yearsLoaded = true
+        let calendar = log.calendar
+        let lastYear = YearlyRecap.latestYear(at: now, calendar: calendar)
+        years = (0..<Self.yearCount).reversed().compactMap { back in
+            let year = calendar.date(byAdding: .year, value: -back, to: lastYear)!
+            let recap = YearlyRecap.build(log: log, names: names, year: year, streaksEnabled: streaksEnabled)
+            return recap.hasData ? recap : nil
+        }
+        let thisYear = YearlyRecap.build(log: log, names: names, year: now, streaksEnabled: streaksEnabled)
+        runningYear = thisYear.daysElapsed > 0 && thisYear.hasData ? thisYear : nil
+        yearDaysLoggedSoFar = thisYear.daysLoggedSoFar
+        yearLength = YearlyRecap.days(ofYearStarting: thisYear.yearStart, calendar: calendar).count
+        isJanuary = calendar.component(.month, from: now) == 1
+        if let selectedYear, !yearChoices.contains(where: { $0.yearStart == selectedYear }) { self.selectedYear = nil }
+    }
+
+    /// One year's recap, or nil when it has nothing in it (Today's card).
+    static func recap(forYear year: Date, context: ModelContext, now: Date = .now) -> YearlyRecap? {
+        // From the Monday of 1 January's week: a weekly nutrient's met days before New Year decide which of its
+        // days in that week count, as in the Year tab's full log.
+        let from = NutrientSchedule.weekStart(of: year)
+        let (log, nutrients) = HistoryViewModel.loadLog(context: context, now: now, from: from)
+        let names = Dictionary(nutrients.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
+        let recap = YearlyRecap.build(log: log, names: names, year: year, streaksEnabled: true)
+        return recap.hasData ? recap : nil
+    }
+
+    /// The year's summary: the template straight away, the rewording when it's ready.
+    func summary(for recap: YearlyRecap) -> String {
+        yearSummaries[recap.yearStart] ?? YearlyRecapText(recap).summary
+    }
+
+    func loadSummary(for recap: YearlyRecap) async {
+        guard yearSummaries[recap.yearStart] == nil else { return }
+        yearSummaries[recap.yearStart] = await RecapPhrasing.summary(for: YearlyRecapText(recap))
     }
 
     /// One month's recap, or nil when it has nothing in it (Today's card). The month before is read too, for the

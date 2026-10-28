@@ -56,3 +56,20 @@ struct RecapMonthGrid: View {
             }
     }
 }
+
+#if DEBUG
+#Preview("Light") {
+    RecapMonthGrid(recap: RecapPreviewSample.month)
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+}
+
+#Preview("Dark") {
+    RecapMonthGrid(recap: RecapPreviewSample.month)
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+        .preferredColorScheme(.dark)
+}
+#endif

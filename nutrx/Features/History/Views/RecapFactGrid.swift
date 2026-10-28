@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// A recap's fact cards in two columns (one, without icons, at accessibility sizes): steadiest, slipped, the day you
-/// tend to miss, the streak or best run, and the month's comparison (#136).
+/// tend to miss, the streak or best run, and the month's comparison; the year's best month, days logged and
+/// beginnings (#136).
 struct RecapFactGrid: View {
     let cards: [RecapText.Card]
     /// For the steadiest and slipped cards' icon tiles.
@@ -51,6 +52,16 @@ struct RecapFactGrid: View {
             if let id = card.nutrientID, let nutrient = nutrientsByID[id] {
                 NutrientIconTile(nutrient: nutrient, size: 32)
             }
+        case .started:
+            if let id = card.nutrientID, let nutrient = nutrientsByID[id] {
+                NutrientIconTile(nutrient: nutrient, size: 32)
+            } else {
+                NutrientIconTile(tint: .green, symbolName: "leaf", size: 32)
+            }
+        case .bestMonth:
+            NutrientIconTile(tint: .amber, symbolName: "trophy", size: 32)
+        case .daysLogged:
+            NutrientIconTile(tint: .teal, symbolName: "square.and.pencil", size: 32)
         case .weekday:
             NutrientIconTile(tint: .indigo, symbolName: "calendar", size: 32)
         case .streak:
@@ -60,3 +71,21 @@ struct RecapFactGrid: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Light") {
+    RecapFactGrid(cards: YearlyRecapText(RecapPreviewSample.year).cards + MonthlyRecapText(RecapPreviewSample.month).cards,
+                  nutrientsByID: [:])
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+}
+
+#Preview("Dark") {
+    RecapFactGrid(cards: MonthlyRecapText(RecapPreviewSample.month).cards, nutrientsByID: [:])
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+        .preferredColorScheme(.dark)
+}
+#endif

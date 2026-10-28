@@ -187,12 +187,13 @@ final class MonthlyRecapTests: XCTestCase {
 
     func testHistoryNamesTheRecapOutLast() {
         // On 28 October the week of 19 October (out on the 25th) is newer than September (out on 1 October).
-        XCTAssertFalse(RecapSchedule.monthIsNewer(day(9, 1), thanWeek: day(10, 19), calendar: calendar))
+        XCTAssertEqual(RecapSchedule.latestTab(week: day(10, 19), month: day(9, 1), year: nil, calendar: calendar), .week)
         // October comes out on Sunday 1 November, at 18:00 like the week ending that day: the month wins.
-        XCTAssertTrue(RecapSchedule.monthIsNewer(day(10, 1), thanWeek: day(10, 19), calendar: calendar))
-        XCTAssertTrue(RecapSchedule.monthIsNewer(day(10, 1), thanWeek: day(10, 26), calendar: calendar))
-        XCTAssertFalse(RecapSchedule.monthIsNewer(day(10, 1), thanWeek: day(11, 2), calendar: calendar))
-        XCTAssertTrue(RecapSchedule.monthIsNewer(day(10, 1), thanWeek: nil, calendar: calendar))
+        XCTAssertEqual(RecapSchedule.latestTab(week: day(10, 19), month: day(10, 1), year: nil, calendar: calendar), .month)
+        XCTAssertEqual(RecapSchedule.latestTab(week: day(10, 26), month: day(10, 1), year: nil, calendar: calendar), .month)
+        XCTAssertEqual(RecapSchedule.latestTab(week: day(11, 2), month: day(10, 1), year: nil, calendar: calendar), .week)
+        XCTAssertEqual(RecapSchedule.latestTab(week: nil, month: day(10, 1), year: nil, calendar: calendar), .month)
+        XCTAssertEqual(RecapSchedule.latestTab(week: nil, month: nil, year: nil, calendar: calendar), .week)
     }
 
     func testTodaysMonthCardShowsOnTheFirstAndSecond() {

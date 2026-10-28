@@ -49,3 +49,23 @@ struct RecapHeroCard: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+#Preview("Light") {
+    RecapHeroCard(ring: SegmentedDayRing(met: 19, total: 23, caption: "full days"), ringSummary: "19 of 23 full days",
+                  eyebrow: "September 2026", title: "123 of 127 goals met",
+                  summary: "In September you met 97% of your goals, with 19 full days. Vitamin D was your steadiest, "
+                      + "23 of 23 days. Protein slipped on 4 days.")
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+}
+
+#Preview("Dark") {
+    RecapHeroCard(ring: SegmentedDayRing(met: 201, total: 311, caption: "full days", showsTotal: false),
+                  ringSummary: "201 of 311 full days", eyebrow: "2026 so far", title: "3,960 of 5,400 goals met",
+                  summary: "So far in 2026 you've logged on 311 days and met 73% of your goals.")
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+        .preferredColorScheme(.dark)
+}

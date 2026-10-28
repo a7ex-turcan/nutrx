@@ -38,6 +38,8 @@ struct TodayView: View {
     @State private var weekRecap: WeeklyRecap?
     /// "Your October" on the 1st and 2nd (#136); it takes the week card's place.
     @State private var monthRecap: MonthlyRecap?
+    /// "Your 2026" from 1 to 7 January (#136); it takes the month's and the week's place.
+    @State private var yearRecap: YearlyRecap?
     /// The open recap sheet's tab, the card's period. An item rather than a flag and a tab: with a flag, the first
     /// open read the tab from before the tap.
     @State private var recapSheetTab: RecapTab?
@@ -46,6 +48,7 @@ struct TodayView: View {
     @State private var newStackName = ""
     @AppStorage("nutrx.dismissedRecapWeek") private var dismissedRecapWeek: Double = 0
     @AppStorage("nutrx.dismissedRecapMonth") private var dismissedRecapMonth: Double = 0
+    @AppStorage("nutrx.dismissedRecapYear") private var dismissedRecapYear: Double = 0
     /// The release whose "What's new" card was closed, or seen at onboarding, on this device (#148).
     @AppStorage(WhatsNew.hiddenVersionKey) private var whatsNewHiddenVersion = ""
     /// Apple Health insights (#102): the status, and whether its Today card was hidden while gathering / once ready.
@@ -134,18 +137,38 @@ struct TodayView: View {
         }
     }
 
-    /// The recap card's recap: the month's on the 1st and 2nd (`RecapSchedule.todayCardMonth`), else the week's
-    /// (`RecapSchedule.todayCardWeek`). The longer period wins on a day both would show.
+    /// The recap card's recap: the year's from 1 to 7 January (`RecapSchedule.todayCardYear`), else the month's on
+    /// the 1st and 2nd (`todayCardMonth`), else the week's (`todayCardWeek`). The longest period wins on a day more
+    /// than one would show.
     private func refreshWeekRecap() {
         var ignoresWindow = false
         var ignoresMonthWindow = false
+        var ignoresYearWindow = false
         #if DEBUG
         // Checking the cards on another day: `simctl spawn <UDID> defaults write nutrx-labs.nutrx
-        // nutrx.debug.showRecapCard -bool YES` (or `nutrx.debug.showMonthRecapCard`) (Debug builds only).
+        // nutrx.debug.showRecapCard -bool YES` (or `showMonthRecapCard`, `showYearRecapCard`) (Debug builds only).
         ignoresWindow = UserDefaults.standard.bool(forKey: "nutrx.debug.showRecapCard")
         ignoresMonthWindow = UserDefaults.standard.bool(forKey: "nutrx.debug.showMonthRecapCard")
+        ignoresYearWindow = UserDefaults.standard.bool(forKey: "nutrx.debug.showYearRecapCard")
         #endif
         let isPro = ProAccess.isStoreVisible && proAccess?.isPro == true
+        let year = RecapSchedule.todayCardYear(
+            at: .now, isPro: isPro,
+            dismissedYear: dismissedRecapYear > 0 ? Date(timeIntervalSince1970: dismissedRecapYear) : nil,
+            ignoresWindow: ignoresYearWindow)
+        yearRecap = year.flatMap { RecapViewModel.recap(forYear: $0, context: modelContext) }
+        #if DEBUG
+        // With nothing last year (the demo data starts in September), the flag shows this year so far instead.
+        let thisYear = YearlyRecap.yearStart(containing: .now, calendar: .current)
+        if ignoresYearWindow, isPro, yearRecap == nil, thisYear.timeIntervalSince1970 != dismissedRecapYear {
+            yearRecap = RecapViewModel.recap(forYear: thisYear, context: modelContext)
+        }
+        #endif
+        guard yearRecap == nil else {
+            monthRecap = nil
+            weekRecap = nil
+            return
+        }
         let month = RecapSchedule.todayCardMonth(
             at: .now, isPro: isPro,
             dismissedMonth: dismissedRecapMonth > 0 ? Date(timeIntervalSince1970: dismissedRecapMonth) : nil,
@@ -668,6 +691,15 @@ struct TodayView: View {
                     whatsNewHiddenVersion = whatsNew.version
                 }
             }
+        }
+
+        if let yearRecap {
+            RecapTodayCard(year: yearRecap, onOpen: { recapSheetTab = .year }, onDismiss: {
+                dismissedRecapYear = yearRecap.yearStart.timeIntervalSince1970
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                    self.yearRecap = nil
+                }
+            })
         }
 
         if let monthRecap {
