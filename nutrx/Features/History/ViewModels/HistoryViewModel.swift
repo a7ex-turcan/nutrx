@@ -11,11 +11,11 @@ final class HistoryViewModel {
     private(set) var log: HistoryLog?
     private(set) var recentDays: [HistoryDay] = []
     private(set) var streak: StreakResult?
-    /// For History's "Recaps" row.
-    private(set) var latestRecap: WeeklyRecap?
-    /// Last month's recap, when it has something in it and is newer than the latest week's (#136): the row names
-    /// it and opens on Month.
-    private(set) var latestMonthRecap: MonthlyRecap?
+    /// History's "Recaps" row: the recap out last (#136, `RecapSchedule.latestTab`), which it names and opens on.
+    /// Last month or last year only when it has something in it; else the latest week.
+    private(set) var latestRecapTab: RecapTab = .week
+    /// "Latest: 19 – 25 October · 38 of 38 goals", or "Your first recap arrives Sunday" before there's one.
+    private(set) var latestRecapLine = RecapText.firstTitle
     private(set) var month = MonthGrid(containing: .now)
 
     private var nutrientsByID: [UUID: Nutrient] = [:]
@@ -29,13 +29,36 @@ final class HistoryViewModel {
         self.log = log
         recentDays = log.recentDays(limit: Self.recentDayCount)
         streak = StreakService.compute(context: context)
-        latestRecap = Self.latestRecap(log: log, names: nutrientsByID.mapValues(\.name), now: now)
-        let lastMonth = MonthlyRecap.build(log: log, names: nutrientsByID.mapValues(\.name),
-                                           month: MonthlyRecap.latestMonth(at: now, calendar: log.calendar),
-                                           streaksEnabled: false)
-        latestMonthRecap = lastMonth.hasData
-            && RecapSchedule.monthIsNewer(lastMonth.monthStart, thanWeek: latestRecap?.weekStart, calendar: log.calendar)
-            ? lastMonth : nil
+        refreshLatestRecap(log: log, now: now)
+    }
+
+    /// Which recap the row names: dates first, so a year is only built in the week it leads.
+    private func refreshLatestRecap(log: HistoryLog, now: Date) {
+        let names = nutrientsByID.mapValues(\.name)
+        let calendar = log.calendar
+        let week = Self.latestRecap(log: log, names: names, now: now)
+        let lastMonth = MonthlyRecap.latestMonth(at: now, calendar: calendar)
+        let lastYear = YearlyRecap.latestYear(at: now, calendar: calendar)
+        var tab = RecapSchedule.latestTab(week: week?.weekStart, month: lastMonth, year: lastYear, calendar: calendar)
+        if tab == .year {
+            let recap = YearlyRecap.build(log: log, names: names, year: lastYear, streaksEnabled: false)
+            if recap.hasData {
+                latestRecapTab = .year
+                latestRecapLine = YearlyRecapText(recap).historyLine
+                return
+            }
+            tab = RecapSchedule.latestTab(week: week?.weekStart, month: lastMonth, year: nil, calendar: calendar)
+        }
+        if tab == .month {
+            let recap = MonthlyRecap.build(log: log, names: names, month: lastMonth, streaksEnabled: false)
+            if recap.hasData {
+                latestRecapTab = .month
+                latestRecapLine = MonthlyRecapText(recap).historyLine
+                return
+            }
+        }
+        latestRecapTab = .week
+        latestRecapLine = week.map { RecapText($0).historyLine } ?? RecapText.firstTitle
     }
 
     /// Every nutrient, entry and exclusion as a `HistoryLog`, with the nutrients in display order (also used by the

@@ -43,11 +43,11 @@ Built from the same log for a calendar year. From 1 January it's the whole past 
 |---|---|
 | **Goals met** and **full days** | As for the month, over the year: "3,960 of 5,400 goals met · 201 full days". |
 | **Month by month** | Twelve small bars of each month's goals-met rate (empty for months with nothing counted); the best month is highlighted. |
-| **Best month** | The highest rate among months with at least 10 counted days ("May, 92%"). |
+| **Best month** | The highest rate among months with at least 10 counted days ("May, 92%"), Only when two months qualify and no other month reads the same whole percent (a 97% beside another 97%, or a year of 100% months, says nothing). |
 | **Longest streak** | The longest run of full days inside the year (as for the month), so "2026 so far" includes the streak still running and December of the year before doesn't count. Left out with Streaks off. |
 | **Steadiest nutrient of the year** | The best hit rate among nutrients counted on at least 30 days. |
-| **Days logged** and **the month you logged most** | "Logged 311 days; most in March (31 of 31)". |
-| **Since you started** | Shown only in a nutrient's first year: "You started tracking Magnesium in April". |
+| **Days logged** and **the month you logged most** | "Logged 311 days; most in March (31 of 31)". Only when two months have something logged. |
+| **Since you started** | Shown only in a nutrient's first year: "You started tracking Magnesium in April" (two named, then "3 nutrients this year"). In the user's own first year, when everything tracked (removed nutrients too) was added that year: "You started tracking in September". |
 
 ## 4. Words (`RecapText`, `RecapPhrasing`)
 

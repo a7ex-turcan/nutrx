@@ -72,7 +72,7 @@ struct RecapText: RecapWording {
     // MARK: - Fact cards
 
     struct Card: Equatable {
-        enum Kind { case steadiest, slipped, weekday, streak, comparison }
+        enum Kind { case steadiest, slipped, weekday, streak, comparison, bestMonth, daysLogged, started }
         let kind: Kind
         let label: String
         let value: String

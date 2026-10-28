@@ -212,9 +212,7 @@ struct HistoryListView: View {
                 }
 
                 if ProAccess.isStoreVisible {
-                    RecapRow(latest: viewModel.latestRecap, latestMonth: viewModel.latestMonthRecap) {
-                        recapTab = viewModel.latestMonthRecap == nil ? .week : .month
-                    }
+                    RecapRow(line: viewModel.latestRecapLine) { recapTab = viewModel.latestRecapTab }
                 }
 
                 MonthCalendar(
@@ -330,12 +328,11 @@ private struct YourDataCard: View {
     }
 }
 
-/// "Recaps" (docs/pro/design/5-weekly-recap: history; months since #136): for Pro the line of the recap out last,
-/// last month's from the 1st until the next Sunday's recap, else the latest week's; for free users the PRO chip and
-/// "A short summary of each week and month" (the paywall).
+/// "Recaps" (docs/pro/design/5-weekly-recap: history; months and years since #136): for Pro the line of the recap
+/// out last (`HistoryViewModel.latestRecapLine`); for free users the PRO chip and "A short summary of each week,
+/// month and year" (the paywall).
 private struct RecapRow: View {
-    let latest: WeeklyRecap?
-    let latestMonth: MonthlyRecap?
+    let line: String
     let onOpen: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -353,9 +350,7 @@ private struct RecapRow: View {
                             .foregroundStyle(Theme.textPrimary)
                         if showsBadge { ProBadge() }
                     }
-                    Text(showsBadge ? "A short summary of each week and month"
-                         : latestMonth.map { MonthlyRecapText($0).historyLine }
-                         ?? latest.map { RecapText($0).historyLine } ?? RecapText.firstTitle)
+                    Text(showsBadge ? "A short summary of each week, month and year" : line)
                         .font(.subheadline)
                         .foregroundStyle(Theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)

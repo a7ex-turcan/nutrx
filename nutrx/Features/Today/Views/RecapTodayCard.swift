@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The recap card on Today (nutrx Pro, docs/pro/design/5-weekly-recap: today): "Your week" from Sunday evening through
-/// Monday, or "Your October" on the 1st and 2nd (#136). A small ring of goals met, "31 of 42 goals · Vitamin D
-/// steadiest", and a close button that hides it for that period.
+/// Monday, "Your October" on the 1st and 2nd, or "Your 2026" from 1 to 7 January (#136). A small ring of goals met,
+/// "31 of 42 goals · Vitamin D steadiest", and a close button that hides it for that period.
 struct RecapTodayCard: View {
     let title: String
     /// Markdown: the first number bold.
@@ -26,6 +26,13 @@ struct RecapTodayCard: View {
         let text = MonthlyRecapText(recap)
         self.init(title: "Your \(text.monthName)", line: text.todayLine, fraction: recap.rate ?? 0,
                   openHint: "Opens the monthly recap", hideLabel: "Hide \(text.monthName)'s recap",
+                  onOpen: onOpen, onDismiss: onDismiss)
+    }
+
+    init(year recap: YearlyRecap, onOpen: @escaping () -> Void, onDismiss: @escaping () -> Void) {
+        let text = YearlyRecapText(recap)
+        self.init(title: "Your \(text.yearName)", line: text.todayLine, fraction: recap.rate ?? 0,
+                  openHint: "Opens the yearly recap", hideLabel: "Hide \(text.yearName)'s recap",
                   onOpen: onOpen, onDismiss: onDismiss)
     }
 

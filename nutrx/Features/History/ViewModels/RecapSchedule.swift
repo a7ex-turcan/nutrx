@@ -63,12 +63,38 @@ enum RecapSchedule {
         return month
     }
 
-    /// Whether last month's recap came out after the latest week's (#136), so History's row names it and opens on
-    /// Month: from the 1st until the next Sunday's recap. On a Sunday 1st both come out at 18:00, and the month wins.
-    static func monthIsNewer(_ month: Date, thanWeek week: Date?, calendar: Calendar = .current) -> Bool {
-        guard let week else { return true }
-        return MonthlyRecap.releaseDate(ofMonthStarting: month, calendar: calendar)
-            >= WeeklyRecap.releaseDate(ofWeekStarting: week, calendar: calendar)
+    /// The recap History's row names and opens on (#136): the one out last. A month's comes out on the 1st and a
+    /// year's on 1 January, at 18:00 like the week's on Sunday, so last month's leads from the 1st until the next
+    /// Sunday's recap. On a tie (a Sunday 1st; 1 January's year and December) the longer period wins.
+    static func latestTab(week: Date?, month: Date?, year: Date?, calendar: Calendar = .current) -> RecapTab {
+        let releases: [(tab: RecapTab, date: Date)] = [
+            year.map { (.year, YearlyRecap.releaseDate(ofYearStarting: $0, calendar: calendar)) },
+            month.map { (.month, MonthlyRecap.releaseDate(ofMonthStarting: $0, calendar: calendar)) },
+            week.map { (.week, WeeklyRecap.releaseDate(ofWeekStarting: $0, calendar: calendar)) },
+        ].compactMap { $0 }
+        // Longest first, and only a later date replaces it.
+        let latest = releases.reduce(nil) { (best: (tab: RecapTab, date: Date)?, next) in
+            best.map { next.date > $0.date ? next : $0 } ?? next
+        }
+        return latest?.tab ?? .week
+    }
+
+    /// The year whose "Your 2026" card Today shows at `now` (#136): Pro only, from 1 to 7 January (or any day with
+    /// `ignoresWindow`, the Debug flag), and not hidden with ✕ for that year. It takes the month's and the week's
+    /// place. The year needs something in it too.
+    static func todayCardYear(at now: Date, isPro: Bool, dismissedYear: Date?, ignoresWindow: Bool = false,
+                              calendar: Calendar = .current) -> Date? {
+        let year = YearlyRecap.latestYear(at: now, calendar: calendar)
+        guard isPro, ignoresWindow || showsTodayCard(forYearStarting: year, at: now, calendar: calendar),
+              year != dismissedYear else { return nil }
+        return year
+    }
+
+    /// Today's "Your 2026" card shows from 1 to 7 January 2027.
+    static func showsTodayCard(forYearStarting year: Date, at now: Date, calendar: Calendar = .current) -> Bool {
+        let next = calendar.date(byAdding: .year, value: 1, to: year)!
+        let eighth = calendar.date(byAdding: .day, value: 7, to: next)!
+        return now >= next && now < eighth
     }
 
     /// Today's "Your October" card shows on 1 and 2 November.
