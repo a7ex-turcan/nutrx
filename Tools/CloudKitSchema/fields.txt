@@ -11,6 +11,8 @@ CD_LogStack CD_createdAt
 CD_LogStack CD_id
 CD_LogStack CD_lastLoggedAt
 CD_LogStack CD_name
+CD_LogStack CD_reminderMinutes
+CD_LogStack CD_remindsAtUsualTime
 CD_LogStack CD_sortOrder
 CD_LogStackEntry CD_amount
 CD_LogStackEntry CD_nutrient

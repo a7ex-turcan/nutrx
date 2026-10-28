@@ -107,6 +107,25 @@ final class TodayViewModelTests: XCTestCase {
                                                                    of: startOfToday)!)?.nutrientName, "Iron")
     }
 
+    func testAStacksReminderIsNamedUntilTheStackIsDone() throws {
+        // A stack reminder at 10:30 (#137): "Morning stack at 10:30" until it's logged.
+        let vitaminD = makeNutrient("Vitamin D", target: 1000, sortOrder: 0)
+        let stack = LogStack(name: "Morning", sortOrder: 0)
+        context.insert(stack)
+        let entry = LogStackEntry(nutrient: vitaminD, amount: 1000, sortOrder: 0)
+        entry.stack = stack
+        context.insert(entry)
+        stack.reminderMinutes = 10 * 60 + 30
+
+        let viewModel = try refreshedViewModel()
+        let next = viewModel.nextReminder(after: startOfToday, stacks: [stack])
+        XCTAssertEqual(next?.nutrientName, "Morning stack")
+        XCTAssertEqual(next?.time, Calendar.current.date(bySettingHour: 10, minute: 30, second: 0, of: startOfToday))
+
+        stack.lastLoggedAt = .now
+        XCTAssertNil(viewModel.nextReminder(after: startOfToday, stacks: [stack]), "done today")
+    }
+
     func testALogFromAnywhereHidesThatNutrientsReminderToday() throws {
         // Widget, Watch, Siri or another device: the record is what counts, and the scheduler skips the same
         // reminders on its next sync (#4).

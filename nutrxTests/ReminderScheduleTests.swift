@@ -51,6 +51,17 @@ final class ReminderScheduleTests: XCTestCase {
         XCTAssertEqual(ReminderSchedule.Time(minutes: 615), ReminderSchedule.Time(hour: 10, minute: 15))
     }
 
+    func testAStacksReminderOnlyOnItsDueDaysWithItsOwnIdentifiers() {
+        // A stack (#137): one a day at 9:00, only on the days something in it is due (here the 14th and 16th).
+        let morning = UUID(uuidString: "00000000-0000-0000-0000-0000000000AA")!
+        let due: Set<Date> = [calendar.startOfDay(for: date(day: 14, hour: 0)), calendar.startOfDay(for: date(day: 16, hour: 0))]
+        let stack = ReminderSchedule.Plan(nutrientID: morning, times: [.init(hour: 9, minute: 0)], loggedToday: false,
+                                          dueDays: due, isStack: true)
+        let occurrences = ReminderSchedule.occurrences(for: [stack], now: date(hour: 12), calendar: calendar)
+        XCTAssertEqual(occurrences.map(\.fireDate), [date(day: 14, hour: 9), date(day: 16, hour: 9)])
+        XCTAssertEqual(occurrences.first?.id, "stack-00000000-0000-0000-0000-0000000000AA-reminder-0900-20261014")
+    }
+
     func testLoggingSilencesOnlyTheRestOfToday() {
         let occurrences = ReminderSchedule.occurrences(for: [plan(vitaminD, hours: [9, 21], loggedToday: true)],
                                                        now: date(hour: 12), calendar: calendar)

@@ -41,6 +41,10 @@ enum ReminderSchedule {
         var doneWeekStart: Date? = nil
         /// On Saturdays and Sundays instead of `times`: a usual time learned apart for weekends (#137).
         var weekendTimes: [Time]? = nil
+        /// Only on these days (start of day), when set: a stack's reminder (#137), on days something in it is due.
+        var dueDays: Set<Date>? = nil
+        /// A stack's identifiers ("stack-<uuid>-reminder-…") rather than a nutrient's.
+        var isStack = false
     }
 
     /// One pending notification: its identifier and when it fires.
@@ -77,14 +81,16 @@ enum ReminderSchedule {
                 if let done = plan.doneWeekStart, NutrientSchedule.weekStart(of: day, calendar: calendar) == done {
                     return []
                 }
+                if let dueDays = plan.dueDays, !dueDays.contains(day) { return [] }
                 let times = calendar.isDateInWeekend(day) ? plan.weekendTimes ?? plan.times : plan.times
                 return times.compactMap { time in
                     guard let fireDate = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0,
                                                        of: day),
                           fireDate > now else { return nil }
+                    let prefix = plan.isStack ? stackPrefix(stackID: plan.nutrientID) : prefix(nutrientID: plan.nutrientID)
                     return Occurrence(nutrientID: plan.nutrientID,
-                                      id: identifier(nutrientID: plan.nutrientID, hour: time.hour,
-                                                     minute: time.minute, day: day, calendar: calendar),
+                                      id: identifier(prefix: prefix, hour: time.hour, minute: time.minute, day: day,
+                                                     calendar: calendar),
                                       fireDate: fireDate)
                 }
             }
@@ -96,11 +102,20 @@ enum ReminderSchedule {
         "nutrient-\(nutrientID.uuidString)-reminder-"
     }
 
+    /// Every request of one stack's reminder starts with this (#137).
+    static func stackPrefix(stackID: UUID) -> String {
+        "stack-\(stackID.uuidString)-reminder-"
+    }
+
     /// "nutrient-<uuid>-reminder-0900-20261013": the time, then the date it's for.
     static func identifier(nutrientID: UUID, hour: Int, minute: Int, day: Date, calendar: Calendar = .current)
         -> String {
+        identifier(prefix: prefix(nutrientID: nutrientID), hour: hour, minute: minute, day: day, calendar: calendar)
+    }
+
+    static func identifier(prefix: String, hour: Int, minute: Int, day: Date, calendar: Calendar = .current) -> String {
         let parts = calendar.dateComponents([.year, .month, .day], from: day)
         let date = String(format: "%04d%02d%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
-        return "\(prefix(nutrientID: nutrientID))\(String(format: "%02d%02d", hour, minute))-\(date)"
+        return "\(prefix)\(String(format: "%02d%02d", hour, minute))-\(date)"
     }
 }

@@ -53,6 +53,7 @@ From the last **28 completed days** (today never counts, as in recaps):
 - **When it's silent:** a stack that's **done today**. That's logged with Log (`StackLogging`'s rule, from any device), or every one of its due nutrients already logged today, as on Today's card. It's also silent on a day with nothing due in it.
 - **The notification:** "Time for your Morning stack", with the body "Vitamin D, Omega-3 and Magnesium". A tap opens Today with that stack's log sheet.
 - **Logging the stack** logs its nutrients, which silences their own reminders for the day too.
+- **Today's next-reminder line** names it like a nutrient's: "Morning stack at 9:00", while something in it is due and it isn't done.
 
 ## 5. Scheduling (`ReminderSchedule`, `NotificationService`)
 
