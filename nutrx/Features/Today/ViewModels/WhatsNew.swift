@@ -49,6 +49,12 @@ nonisolated struct WhatsNew: Equatable {
             Item(title: "Monthly and yearly recaps",
                  subtitle: "Your month on the 1st and your year on 1 January, beside the weekly recap in History's Recaps.",
                  symbolName: "calendar", tint: .indigo, isPro: true),
+            Item(title: "Reminders at your usual time",
+                 subtitle: "nutrx learns when you usually log and nudges you only when you're running late.",
+                 symbolName: "bell.badge", tint: .indigo, isPro: true),
+            Item(title: "Stack reminders",
+                 subtitle: "Give a stack a reminder of its own, from its screen in Stacks.",
+                 symbolName: "square.stack.3d.up", tint: .green),
         ]),
     ]
 
