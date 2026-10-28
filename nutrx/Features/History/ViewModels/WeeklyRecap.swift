@@ -96,67 +96,23 @@ struct WeeklyRecap: Equatable {
         let lastDay = min(sunday, yesterday)
         let weekDays = (0..<7).map { calendar.date(byAdding: .day, value: $0, to: weekStart)! }
 
-        var flags: [Bool] = []
-        var goalsMet = 0
-        var goalsCounted = 0
-        var daysLogged = 0
-        var counted: [UUID: Int] = [:]
-        var met: [UUID: Int] = [:]
-        var missed: [UUID: [Date]] = [:]
-        var over: [UUID: [Date]] = [:]
-        let byID = Dictionary(log.nutrients.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        // Under a weekly schedule on any day this week (#132): counted only on met days, so judged by the week.
-        let weeklyIDs = Set(log.nutrients.filter { nutrient in
-            weekDays.contains { nutrient.schedule.weeklyTimes(on: $0, calendar: calendar) != nil }
-        }.map(\.id))
-
+        let tally = RecapTally.make(log: log, names: names, days: weekDays, lastDay: lastDay)
         let daysLoggedSoFar = weekDays.filter { $0 <= log.today && log.day($0).hasEntries }.count
-        for date in weekDays {
-            guard date <= lastDay else {
-                flags.append(false)
-                continue
-            }
-            let day = log.day(date)
-            flags.append(day.hasEntries && !day.goals.isEmpty && !day.isRest && day.completion == .allMet)
-            if day.hasEntries { daysLogged += 1 }
-            goalsCounted += day.goals.count
-            // A day with nothing logged meets nothing, even an "at most" goal: not opening the app isn't a result.
-            goalsMet += day.goals.filter { weeklyIDs.contains($0.nutrientID) && $0.isMet }.count
-            for goal in day.goals where !weeklyIDs.contains(goal.nutrientID) {
-                counted[goal.nutrientID, default: 0] += 1
-                if day.hasEntries && goal.isMet {
-                    met[goal.nutrientID, default: 0] += 1
-                    goalsMet += 1
-                } else {
-                    missed[goal.nutrientID, default: []].append(date)
-                }
-                if let nutrient = byID[goal.nutrientID],
-                   GoalProgress(current: goal.total, goalType: nutrient.goalType, target: nutrient.target,
-                                upperBound: nutrient.upperBound).status == .overLimit {
-                    over[goal.nutrientID, default: []].append(date)
-                }
-            }
-        }
 
         let weekly = log.nutrients.compactMap { nutrient -> WeeklyGoal? in
-            guard weeklyIDs.contains(nutrient.id),
+            guard tally.weeklyIDs.contains(nutrient.id),
                   let result = log.weekResult(of: nutrient.id, weekStarting: weekStart, through: lastDay) else { return nil }
             return WeeklyGoal(id: nutrient.id, name: names[nutrient.id] ?? "", met: result.met, times: result.times)
         }
-
-        let weeks = log.nutrients.compactMap { nutrient -> NutrientWeek? in
-            guard let days = counted[nutrient.id], days > 0 else { return nil }
-            return NutrientWeek(id: nutrient.id, name: names[nutrient.id] ?? "", goalType: nutrient.goalType,
-                                daysCounted: days, daysMet: met[nutrient.id] ?? 0,
-                                missedDays: missed[nutrient.id] ?? [], overLimitDays: over[nutrient.id] ?? [])
-        }
+        let weeks = tally.nutrients
 
         let (steadiest, slipped, overLimit) = picks(weeks)
 
         return WeeklyRecap(
-            weekStart: weekStart, lastDay: lastDay, fullDayFlags: flags,
-            dayCount: weekDays.filter { !log.day($0).isRest }.count, goalsMet: goalsMet,
-            goalsCounted: goalsCounted, daysLogged: daysLogged, daysLoggedSoFar: daysLoggedSoFar, nutrients: weeks,
+            weekStart: weekStart, lastDay: lastDay, fullDayFlags: tally.fullDayFlags,
+            dayCount: weekDays.filter { !log.day($0).isRest }.count, goalsMet: tally.goalsMet,
+            goalsCounted: tally.goalsCounted, daysLogged: tally.daysLogged, daysLoggedSoFar: daysLoggedSoFar,
+            nutrients: weeks,
             steadiest: steadiest,
             slipped: slipped, overLimit: overLimit,
             weakestWeekday: lastDay >= weekStart ? weakestWeekday(log: log, through: lastDay) : nil,

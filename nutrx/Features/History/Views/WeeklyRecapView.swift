@@ -165,6 +165,8 @@ struct WeeklyRecapView: View {
             NutrientIconTile(tint: .indigo, symbolName: "calendar", size: 32)
         case .streak:
             NutrientIconTile(tint: .coral, symbolName: "flame", size: 32)
+        case .comparison:
+            NutrientIconTile(tint: .green, symbolName: "chart.line.uptrend.xyaxis", size: 32)
         }
     }
 

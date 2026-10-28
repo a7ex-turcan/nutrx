@@ -242,8 +242,11 @@ nutrx/
 │   │       ├── MonthGrid.swift              # Month layout: leading blanks, days, weekday symbols (pure).
 │   │       ├── HistoryText.swift            # "10 days", "4 of 6 goals", "Missed Omega-3 and Protein".
 │   │       ├── WeeklyRecap.swift            # Recap (Pro): a Monday–Sunday week's facts from a HistoryLog (pure).
+│   │       ├── RecapTally.swift             # The day-by-day sums a week's or a month's recap is built from (pure, #136).
+│   │       ├── MonthlyRecap.swift           # Recap (Pro): a calendar month's facts from a HistoryLog (pure, #136).
+│   │       ├── MonthlyRecapText.swift       # The month's words: range, headline, summary, cards, notification (#136).
 │   │       ├── RecapText.swift              # Recap copy: range, headline, template summary, cards, notification.
-│   │       ├── RecapPhrasing.swift          # On-device rewording of the summary, checked against the facts, cached per week.
+│   │       ├── RecapPhrasing.swift          # On-device rewording of a recap's summary (`RecapWording`), checked against the facts, cached per period.
 │   │       ├── DoctorReport.swift           # Report for your doctor (Pro): a period's facts from a HistoryLog (pure).
 │   │       ├── ReportText.swift             # The report's words: period, goals, percentages, footer, file name (pure).
 │   │       ├── ReportLayout.swift           # The report's pagination onto A4 / Letter pages (pure).
@@ -888,6 +891,18 @@ Mockups: `docs/pro/design/5-weekly-recap/`.
   - `ScreenshotDemoDataTests` builds the latest recap from the App Store demo set (a perfect week, Sunday as the day you tend to miss).
 - **`RecapText`** has every string: range ("5 – 11 October"), headline, ring, the template summary ("You hit Vitamin D 7 of 7 days. Omega-3 slipped on the weekend. Caffeine went over your limit on Monday. Your streak stood at 10 days." — past tense, since a past week's streak isn't today's; a perfect week reads "You met every goal on all 7 days." (the full days, so a nutrient added on Wednesday gives "all 5 days"), several nutrients at 100% "You hit Vitamin D and Omega-3 every day."), the four fact cards, the Today and History lines (each part joined with no-break spaces, so they wrap at the dot, never inside "Vitamin D"), the notification (a numbers-free body when set up before the week's facts are in) and the first-week copy. It describes and never advises.
 - **`RecapPhrasing`:** with Apple Intelligence, `FoundationRecapModel` rewords the template summary, prompted with those facts only. The result is used only if every number in it is one of the recap's (`RecapText.factNumbers`, including numbers in names like Omega-3), it contains no advice words, it keeps the steadiest nutrient's name when the template has it, and it's 20–420 characters; spelled-out numbers (one to twenty, once, twice) are checked too; otherwise the template stays. The result, a rewording or the template after a rejection or model error, is kept per week in UserDefaults (`nutrx.recapSummaries`, the last 12 weeks, never synced) and redone only when the facts change, so the recap reads the same each time it's opened.
+- **Monthly and yearly recaps** (#136, `docs/pro/RECAPS.md`, being built for 2.6):
+  - **Phase 1 (the month):** `RecapTally` holds the day-by-day sums. `WeeklyRecap` and `MonthlyRecap` both use it, so a goal counts the same in a week, a month and History.
+  - **`MonthlyRecap`** (`MonthlyRecapTests`) covers a calendar month: the month so far until the next 1st, with only completed days.
+    - The facts: goals met, full days out of the counted non-rest days, days logged, the best run inside the month, and the weekday missed most.
+    - Steadiest, slipped and over limit come from nutrients counted on at least 7 days.
+    - Last month's rate shows when it had 7 counted days and the gap is at least 3 points. Weekly nutrients count by weeks wholly inside the month.
+  - **`MonthlyRecapText`** has the words ("In October you met 76 % of your goals, with 18 full days. …", "Up from 68 % in September").
+  - **The rewording** takes any `RecapWording` (the week's or the month's).
+    - The model is told the period.
+    - "next month" and "next year" count as advice.
+    - A grouped number ("3,960") reads as one.
+    - The cache keys have a kind (`week-<epoch>`, `month-2026-10`, `year-2026`), and the newest 12 weeks, 12 months and 3 years are kept separately; old bare-epoch keys count as weeks.
 - **Screen** (`WeeklyRecapView`): large "Weekly recap", share (the range, headline and summary as text). A forest hero with `SegmentedDayRing(met: fullDays, total: 7, caption: "full days")`, the range, "31 of 42 goals met" and the summary (the template at once, the on-device rewording when ready, `RecapViewModel`). Fact cards in two columns (one, without icons, at accessibility sizes; the hero drops its ring there too). "Earlier weeks": the last eight weeks with something in them as mini rings (goals met), selectable. Before any week has data: "Your first recap arrives Sunday" with days logged so far and the explainer.
 - **History:** a "Weekly recaps" row under the streak card (indigo calendar tile, `RecapRow`, a `ProGatedButton`): Pro reads "Latest: 5 – 11 October · 31 of 42 goals" (`HistoryViewModel.latestRecap`, computed in `refresh`) and pushes the screen; free shows the PRO chip and "A short summary of each week", and opens the paywall.
 - **Today:** `RecapTodayCard` ("Your week", a goals ring, "**31** of 42 goals · Vitamin D steadiest", ✕) right under the day-score card, for Pro users from the recap's Sunday 18:00 through Monday when the week has data: `RecapSchedule.todayCardWeek` (pure, tested) picks the week, `RecapViewModel.recap(forWeek:…)` reads only that week's entries (`HistoryViewModel.loadLog(from:)`). ✕ hides it for that week (`@AppStorage("nutrx.dismissedRecapWeek")`). Tapping opens the recap in a sheet with Done. In Debug builds `simctl spawn <UDID> defaults write nutrx-labs.nutrx nutrx.debug.showRecapCard -bool YES` shows it on any day.
