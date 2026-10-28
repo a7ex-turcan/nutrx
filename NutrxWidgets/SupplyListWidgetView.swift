@@ -16,7 +16,7 @@ struct SupplyListWidgetView: View {
             case .unavailable:
                 message(SupplyWidgetSummary.unavailableTitle, showsPro: false)
             case .summary(let summary):
-                if summary.items.isEmpty { onTrack(summary) } else { list(summary.items) }
+                if summary.items.isEmpty { onTrack(summary) } else { list(summary) }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -29,10 +29,23 @@ struct SupplyListWidgetView: View {
             .lineLimit(1)
     }
 
-    private func list(_ items: [SupplyWidgetSummary.Item]) -> some View {
+    private func list(_ summary: SupplyWidgetSummary) -> some View {
+        let items = summary.items
         let shown = Array(items.prefix(isMedium ? 4 : 2))
-        return VStack(alignment: .leading, spacing: 10) {
-            title
+        return VStack(alignment: .leading, spacing: isMedium && shown.count <= 2 ? 12 : 10) {
+            if isMedium {
+                // "4 bottles, 1 course" on the right: what's tracked, beside what needs a look.
+                HStack(alignment: .firstTextBaseline) {
+                    title
+                    Spacer(minLength: 8)
+                    Text(summary.trackedLine)
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
+                }
+            } else {
+                title
+            }
             if isMedium && shown.count > 2 {
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
                     ForEach(Array(stride(from: 0, to: shown.count, by: 2)), id: \.self) { index in
@@ -45,9 +58,9 @@ struct SupplyListWidgetView: View {
                     }
                 }
             } else if isMedium {
-                // Two or fewer: one column, so they don't sit side by side over an empty half.
+                // Two or fewer: list rows across the widget, so they fill it rather than its left half (#301).
                 ForEach(shown) { item in
-                    Link(destination: AppLink.nutrient(item.nutrientID).url) { row(item) }
+                    Link(destination: AppLink.nutrient(item.nutrientID).url) { wideRow(item) }
                 }
             } else {
                 ForEach(shown) { row($0) }
@@ -71,14 +84,35 @@ struct SupplyListWidgetView: View {
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-                Text(item.detail)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(item.kind == .supply ? Theme.textAmberInk : Theme.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                detail(item, font: .caption.weight(.semibold))
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// The medium size with one or two items: a list row across the widget, the detail at the trailing edge (#301).
+    private func wideRow(_ item: SupplyWidgetSummary.Item) -> some View {
+        HStack(spacing: 10) {
+            NutrientIconTile(tint: item.tint, symbolName: item.symbolName, size: 38)
+                .accessibilityHidden(true)
+            Text(item.name)
+                .font(.headline)
+                .foregroundStyle(Theme.textPrimary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Spacer(minLength: 8)
+            detail(item, font: .subheadline.weight(.semibold))
+                .fixedSize()
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func detail(_ item: SupplyWidgetSummary.Item, font: Font) -> some View {
+        Text(item.detail)
+            .font(font)
+            .foregroundStyle(item.kind == .supply ? Theme.textAmberInk : Theme.textSecondary)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
     }
 
     private func onTrack(_ summary: SupplyWidgetSummary) -> some View {

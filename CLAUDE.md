@@ -750,7 +750,7 @@ The handlers fire on first appearance too, so a cold launch from a tap lands rig
   - bottles that are low or out (`supplyStatus()`, the Supply card's levels): "out", "6 days left", "runs out today";
   - courses within 7 days of their last day: "last day", "ends tomorrow", "ends in 3 days" (a nutrient can be listed twice);
   - out first, then the fewest days left (a course's last day is 0), a bottle before a course on the same day, then Today's order.
-  - Small shows two and "+2 more"; medium four, two by two, each a `Link` to its analytics; the Lock Screen one ("Running low" / "Ending soon", "Vitamin D · 6 days", "+2 more"). The small and Lock Screen taps open the first item's analytics, or My Nutrients with nothing listed.
+  - Small shows two and "+2 more"; medium four, two by two (with one or two, list rows across it, the detail at the trailing edge, #301), each a `Link` to its analytics, and "4 bottles, 1 course" on the header's right; the Lock Screen one ("Running low" / "Ending soon", "Vitamin D · 6 days", "+2 more"). The small and Lock Screen taps open the first item's analytics, or My Nutrients with nothing listed.
   - Nothing listed: a tick, "Supply and courses on track" and "4 bottles, 1 course". A store the extension can't open reads "Open nutrx to see your supply" (`SupplyWidgetEntry.Content.unavailable`), not "on track". Free: the PRO chip and "Know when a bottle runs out"; a tap opens the paywall. `NutrientIconTile` is compiled into the extension for the medium rows.
 
 ---
