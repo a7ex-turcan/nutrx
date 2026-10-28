@@ -10,6 +10,14 @@ final class ProFeatureGroupTests: XCTestCase {
         XCTAssertEqual(Set(grouped), Set(ProFeature.allCases))
     }
 
+    /// A row's words name every feature in it, so a group may only hold shipped ones; `listed` shows a group once any
+    /// of its features is listed, which is only safe while this holds.
+    func testGroupsOnlyHoldShippedFeatures() {
+        for group in ProFeatureGroup.allCases {
+            XCTAssertTrue(group.features.allSatisfy(\.isShipped), "\(group) names a feature that isn't shipped")
+        }
+    }
+
     func testFourRowsInOrder() {
         XCTAssertEqual(ProFeatureGroup.groups(listing: ProFeature.allCases), [.supply, .plans, .insights, .widgets])
         XCTAssertEqual(ProFeatureGroup.groups(listing: ProFeature.allCases).map(\.title),
@@ -32,5 +40,13 @@ final class ProFeatureGroupTests: XCTestCase {
                        "Simpler wording on this iPhone")
         XCTAssertNil(ProText.appleIntelligenceRowNote(ProFeatureGroup.plans, reading: .basic, device: "iPhone"))
         XCTAssertNil(ProText.appleIntelligenceRowNote(ProFeatureGroup.insights, reading: .model, device: "iPhone"))
+    }
+
+    /// Only listed features add a note: with label scanning unlisted, Supply & label scan has none.
+    func testAnUnlistedFeatureAddsNoNote() {
+        XCTAssertNil(ProText.appleIntelligenceRowNote(ProFeatureGroup.supply, listed: [.supply], reading: .basic,
+                                                      device: "iPhone"))
+        XCTAssertNotNil(ProText.appleIntelligenceRowNote(ProFeatureGroup.supply, listed: [.supply, .scan],
+                                                         reading: .basic, device: "iPhone"))
     }
 }

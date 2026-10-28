@@ -79,16 +79,20 @@ enum ProText {
 
     /// The note under a paywall row that Apple Intelligence improves, on a device without it: "Basic text reading
     /// on this iPhone" (scan), "Simpler wording on this iPhone" (recap).
-    static func appleIntelligenceRowNote(_ group: ProFeatureGroup, reading: ScanText.Reading, device: String) -> String? {
-        group.features.lazy.compactMap { appleIntelligenceRowNote($0, reading: reading, device: device) }.first
-    }
-
     static func appleIntelligenceRowNote(_ feature: ProFeature, reading: ScanText.Reading, device: String) -> String? {
         switch feature {
         case .scan: ScanText.paywallNote(reading, device: device)
         case .recap: reading.mentionsAppleIntelligence ? "Simpler wording on this \(device)" : nil
         case .supply, .health, .report, .courses, .schedules, .widgets: nil
         }
+    }
+
+    /// A grouped paywall row's note: the first of its listed features' notes (label scanning on Supply & label scan,
+    /// recaps on Recaps, trends & reports). Unlisted features add nothing, as in `appleIntelligenceNote`.
+    static func appleIntelligenceRowNote(_ group: ProFeatureGroup, listed: [ProFeature] = ProFeature.listed,
+                                         reading: ScanText.Reading, device: String) -> String? {
+        group.features.filter(listed.contains).lazy
+            .compactMap { appleIntelligenceRowNote($0, reading: reading, device: device) }.first
     }
 
     static func planTitle(_ plan: ProAccess.Plan) -> String {

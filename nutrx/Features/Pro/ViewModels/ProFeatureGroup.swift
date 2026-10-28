@@ -56,7 +56,9 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
         }
     }
 
-    /// The groups to show for `features` (the listed ones), in order: any with at least one of them.
+    /// The groups to show for `features` (the listed ones), in order: any with at least one of them. A group's title
+    /// and subtitle name all its features, so it only holds shipped ones (`ProFeatureGroupTests`): a feature that
+    /// isn't shipped yet waits outside the groups, or the paywall would advertise it.
     static func groups(listing features: [ProFeature]) -> [ProFeatureGroup] {
         allCases.filter { !Set($0.features).isDisjoint(with: features) }
     }
