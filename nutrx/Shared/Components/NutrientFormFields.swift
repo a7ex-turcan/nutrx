@@ -10,6 +10,8 @@ final class NutrientDraft {
     var dailyTarget: String = ""
     var notes: String = ""
     var pendingReminderTimes: [Date] = []
+    /// At the usual time (nutrx Pro, #137): its starting time in minutes after midnight, or -1 for the set times.
+    var usualReminderMinutes = -1
     var goalType: GoalType = .minimum
     var upperBound: String = ""
     var tint: NutrientTint = .green
@@ -67,6 +69,7 @@ final class NutrientDraft {
         let tint: NutrientTint
         let symbolName: String
         let pendingReminderTimes: [Date]
+        let usualReminderMinutes: Int
         let pendingStacks: [StackLogging.Choice]
         let endDate: Date?
         let scheduleKind: NutrientSchedule.Kind
@@ -75,7 +78,8 @@ final class NutrientDraft {
     var snapshot: Snapshot {
         Snapshot(name: name, unit: unit, step: step, dailyTarget: dailyTarget, notes: notes, upperBound: upperBound,
                  supplyServings: supplyServings, goalType: goalType, tint: tint, symbolName: symbolName,
-                 pendingReminderTimes: pendingReminderTimes, pendingStacks: pendingStacks, endDate: endDate,
+                 pendingReminderTimes: pendingReminderTimes, usualReminderMinutes: usualReminderMinutes,
+                 pendingStacks: pendingStacks, endDate: endDate,
                  scheduleKind: scheduleKind)
     }
 
@@ -119,6 +123,7 @@ final class NutrientDraft {
         dailyTarget = ""
         notes = ""
         pendingReminderTimes = []
+        usualReminderMinutes = -1
         goalType = .minimum
         upperBound = ""
         tint = .green

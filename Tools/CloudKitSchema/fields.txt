@@ -40,6 +40,7 @@ CD_Nutrient CD_symbolName
 CD_Nutrient CD_tintRaw
 CD_Nutrient CD_unit
 CD_Nutrient CD_upperBound
+CD_Nutrient CD_usualReminderMinutes
 CD_NutrientGroup CD_isCollapsed
 CD_NutrientGroup CD_isSystem
 CD_NutrientGroup CD_name

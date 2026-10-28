@@ -41,7 +41,8 @@ extension NutrientDraft {
         for time in pendingReminderTimes {
             context.insert(NutrientReminder(nutrient: nutrient, timeOfDay: time))
         }
-        if !pendingReminderTimes.isEmpty {
+        nutrient.usualReminderMinutes = usualReminderMinutes
+        if !pendingReminderTimes.isEmpty || nutrient.remindsAtUsualTime {
             NotificationService.refreshAllNutrientReminders(context: context)
         }
         // The stacks picked in the form, new ones created now (so a cancelled form leaves none behind).
