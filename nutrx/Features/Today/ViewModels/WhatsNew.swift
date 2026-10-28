@@ -47,7 +47,7 @@ nonisolated struct WhatsNew: Equatable {
         ]),
         WhatsNew(version: "2.6", items: [
             Item(title: "Monthly and yearly recaps",
-                 subtitle: "Your month on the 1st and your year on 1 January, beside the weekly recap in History's Recaps.",
+                 subtitle: "Your month on the 1st and your year on 1\u{00A0}January, beside the weekly recap in History's Recaps.",
                  symbolName: "calendar", tint: .indigo, isPro: true),
             Item(title: "Reminders at your usual time",
                  subtitle: "nutrx learns when you usually log and nudges you only when you're running late.",

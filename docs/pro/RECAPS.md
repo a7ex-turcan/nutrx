@@ -91,7 +91,7 @@ Built from the same log for a calendar year. From 1 January it's the whole past 
 - **Settings → Notifications:** "Weekly recap" becomes **Recaps** ("Weekly, monthly and yearly"). It keeps the per-device key `nutrx.weeklyRecapNotifications`, so an existing choice carries over.
 - **Paywall:**
   - `ProFeature.recap`: "Recaps", "Your week, month and year, summarised".
-  - The Recaps, trends & reports group reads "Your week, month and year summarised, Apple Health trends, and a PDF for your doctor".
+  - The Recaps, trends & reports group reads "Your week, month and year, Apple Health trends, and a PDF for your doctor".
   - The welcome name becomes "recaps".
 
 ## 7. Data and speed
