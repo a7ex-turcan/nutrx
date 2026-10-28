@@ -1,9 +1,9 @@
 import SwiftUI
 import SwiftData
 
-/// History tab (DESIGN.md §5.4): streak card, the weekly recaps row (nutrx Pro), month calendar, and the most recent
+/// History tab (DESIGN.md §5.4): streak card, the recaps row (nutrx Pro), month calendar, and the most recent
 /// days. Tapping a past day — in the calendar or the list — pushes `HistoryDayView`, and the recaps row (or a recap
-/// notification) pushes `WeeklyRecapView`; in the large-screen split view (#154) both open in the detail instead.
+/// notification) pushes `RecapsView`; in the large-screen split view (#154) both open in the detail instead.
 struct HistoryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
@@ -45,7 +45,7 @@ struct HistoryListView: View {
                         dayDetail
                             // The recap opens over the day, in the detail.
                             .navigationDestination(isPresented: $showRecap) {
-                                WeeklyRecapView().id(recapID)
+                                RecapsView().id(recapID)
                             }
                     }
                 }
@@ -56,7 +56,7 @@ struct HistoryListView: View {
                             HistoryDayView(date: date, viewModel: viewModel)
                         }
                         .navigationDestination(isPresented: $showRecap) {
-                            WeeklyRecapView().id(recapID)
+                            RecapsView().id(recapID)
                         }
                 }
             }
@@ -211,7 +211,7 @@ struct HistoryListView: View {
                 }
 
                 if ProAccess.isStoreVisible {
-                    RecapRow(latest: viewModel.latestRecap) { showRecap = true }
+                    RecapRow(latest: viewModel.latestRecap, latestMonth: viewModel.latestMonthRecap) { showRecap = true }
                 }
 
                 MonthCalendar(
@@ -327,10 +327,12 @@ private struct YourDataCard: View {
     }
 }
 
-/// "Weekly recaps" (docs/pro/design/5-weekly-recap: history): the latest week's line for Pro, or the PRO chip and
-/// "A short summary of each week" for free users (the paywall).
+/// "Recaps" (docs/pro/design/5-weekly-recap: history; months since #136): last month's line for Pro once there is
+/// one, else the latest week's; for free users the PRO chip and "A short summary of each week and month" (the
+/// paywall).
 private struct RecapRow: View {
     let latest: WeeklyRecap?
+    let latestMonth: MonthlyRecap?
     let onOpen: () -> Void
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -343,13 +345,14 @@ private struct RecapRow: View {
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 8) {
-                        Text("Weekly recaps")
+                        Text("Recaps")
                             .font(.headline)
                             .foregroundStyle(Theme.textPrimary)
                         if showsBadge { ProBadge() }
                     }
-                    Text(showsBadge ? "A short summary of each week"
-                         : latest.map { RecapText($0).historyLine } ?? RecapText.firstTitle)
+                    Text(showsBadge ? "A short summary of each week and month"
+                         : latestMonth.map { MonthlyRecapText($0).historyLine }
+                         ?? latest.map { RecapText($0).historyLine } ?? RecapText.firstTitle)
                         .font(.subheadline)
                         .foregroundStyle(Theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)

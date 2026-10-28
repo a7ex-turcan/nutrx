@@ -11,8 +11,10 @@ final class HistoryViewModel {
     private(set) var log: HistoryLog?
     private(set) var recentDays: [HistoryDay] = []
     private(set) var streak: StreakResult?
-    /// For History's "Weekly recaps" row.
+    /// For History's "Recaps" row.
     private(set) var latestRecap: WeeklyRecap?
+    /// Last month's recap, when it has something in it: the row names it once there is one (#136).
+    private(set) var latestMonthRecap: MonthlyRecap?
     private(set) var month = MonthGrid(containing: .now)
 
     private var nutrientsByID: [UUID: Nutrient] = [:]
@@ -27,6 +29,10 @@ final class HistoryViewModel {
         recentDays = log.recentDays(limit: Self.recentDayCount)
         streak = StreakService.compute(context: context)
         latestRecap = Self.latestRecap(log: log, names: nutrientsByID.mapValues(\.name), now: now)
+        let lastMonth = MonthlyRecap.build(log: log, names: nutrientsByID.mapValues(\.name),
+                                           month: MonthlyRecap.latestMonth(at: now, calendar: log.calendar),
+                                           streaksEnabled: false)
+        latestMonthRecap = lastMonth.hasData ? lastMonth : nil
     }
 
     /// Every nutrient, entry and exclusion as a `HistoryLog`, with the nutrients in display order (also used by the

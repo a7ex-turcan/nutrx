@@ -165,6 +165,33 @@ final class MonthlyRecapTests: XCTestCase {
         XCTAssertEqual(MonthlyRecap.latestMonth(at: day(10, 31, hour: 23), calendar: calendar), day(9, 1))
     }
 
+    func testMissesOnSaturdaysAndSundaysReadAsWeekends() {
+        var weekends = october
+        for weekend in [3, 4, 10, 11, 17, 18, 24, 25, 31] { weekends[day(10, weekend)]?[omega] = 0 }
+        let text = MonthlyRecapText(recap(weekends, today: day(11, 1)), calendar: calendar)
+        XCTAssertTrue(text.summary.contains("Omega-3 slipped on weekends."), text.summary)
+        XCTAssertEqual(text.cards.first { $0.kind == .slipped }?.detail, "Missed on weekends")
+    }
+
+    func testTodaysMonthCardShowsOnTheFirstAndSecond() {
+        // October's card: 1 and 2 November, all day (the month is over at midnight; 18:00 is the notification's).
+        XCTAssertEqual(RecapSchedule.todayCardMonth(at: day(11, 1, hour: 8), isPro: true, dismissedMonth: nil,
+                                                    calendar: calendar), day(10, 1))
+        XCTAssertEqual(RecapSchedule.todayCardMonth(at: day(11, 2, hour: 23), isPro: true, dismissedMonth: nil,
+                                                    calendar: calendar), day(10, 1))
+        XCTAssertNil(RecapSchedule.todayCardMonth(at: day(11, 3), isPro: true, dismissedMonth: nil, calendar: calendar))
+        XCTAssertNil(RecapSchedule.todayCardMonth(at: day(10, 31, hour: 23), isPro: true, dismissedMonth: nil,
+                                                  calendar: calendar))
+        XCTAssertNil(RecapSchedule.todayCardMonth(at: day(11, 1, hour: 8), isPro: false, dismissedMonth: nil,
+                                                  calendar: calendar), "Pro only")
+        XCTAssertNil(RecapSchedule.todayCardMonth(at: day(11, 1, hour: 8), isPro: true, dismissedMonth: day(10, 1),
+                                                  calendar: calendar), "hidden with ✕ for October")
+        XCTAssertEqual(RecapSchedule.todayCardMonth(at: day(11, 1, hour: 8), isPro: true, dismissedMonth: day(9, 1),
+                                                    calendar: calendar), day(10, 1), "September's ✕ doesn't hide it")
+        XCTAssertEqual(RecapSchedule.todayCardMonth(at: day(11, 15), isPro: true, dismissedMonth: nil,
+                                                    ignoresWindow: true, calendar: calendar), day(10, 1), "Debug flag")
+    }
+
     func testPicksNeedAWeekOfCountedDays() {
         let zinc = UUID()
         let late = HistoryNutrient(id: zinc, goalType: .minimum, target: 10, upperBound: nil, createdAt: day(10, 29),
@@ -208,8 +235,14 @@ final class MonthlyRecapTests: XCTestCase {
         let text = MonthlyRecapText(recap(october, today: day(10, 15)), calendar: calendar)
         XCTAssertEqual(text.range, "October so far")
         XCTAssertTrue(text.summary.hasPrefix("So far in October you've met"), text.summary)
+        XCTAssertTrue(text.summary.contains("Vitamin D is your steadiest"), text.summary)
+        XCTAssertTrue(text.summary.contains("Omega-3 has slipped on Sundays."), text.summary)
+        XCTAssertTrue(text.summary.contains("Caffeine has gone over your limit on 1 day."), text.summary)
+        XCTAssertTrue(text.summary.contains("Your best run is "), text.summary)
         XCTAssertEqual(MonthlyRecapText.firstTitle(nextMonthStart: day(11, 1), calendar: calendar),
                        "Your first monthly recap arrives on 1 November")
+        XCTAssertEqual(MonthlyRecapText.firstBody(daysLogged: 3),
+                       "You've logged 3 days so far. The recap on the 1st will cover the whole month.")
     }
 
     // MARK: - Rewording

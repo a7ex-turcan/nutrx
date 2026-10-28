@@ -38,26 +38,29 @@ struct MonthlyRecapText: RecapWording {
     var summary: String {
         guard recap.hasData else { return "Nothing was logged \(recap.isMonthOver ? "in" : "so far in") \(monthName)." }
         let full = recap.fullDays == 0 ? "no full days" : days(recap.fullDays, "full day")
-        var sentences = [recap.isMonthOver
+        // The month so far reads in the present (docs/pro/RECAPS.md §4).
+        let over = recap.isMonthOver
+        var sentences = [over
             ? "In \(monthName) you met \(percent) % of your goals, with \(full)."
             : "So far in \(monthName) you've met \(percent) % of your goals, with \(full)."]
         if let steadiest = recap.steadiest {
-            sentences.append("\(steadiest.name) was your steadiest, \(steadiest.daysMet) of \(steadiest.daysCounted) days.")
+            sentences.append("\(steadiest.name) \(over ? "was" : "is") your steadiest, "
+                + "\(steadiest.daysMet) of \(steadiest.daysCounted) days.")
         }
-        let over = recap.overLimit
-        if let slipped = recap.slipped, slipped.id != over?.id {
-            sentences.append("\(slipped.name) slipped \(when(slipped.missedDays)).")
+        let overLimit = recap.overLimit
+        if let slipped = recap.slipped, slipped.id != overLimit?.id {
+            sentences.append("\(slipped.name) \(over ? "slipped" : "has slipped") \(when(slipped.missedDays)).")
         }
-        if let over {
-            let limit = over.goalType == .range ? "its range" : "your limit"
-            sentences.append("\(over.name) went over \(limit) \(when(over.overLimitDays)).")
+        if let overLimit {
+            let limit = overLimit.goalType == .range ? "its range" : "your limit"
+            sentences.append("\(overLimit.name) \(over ? "went" : "has gone") over \(limit) \(when(overLimit.overLimitDays)).")
         }
         // Times a week (#132): judged by the week.
         for goal in recap.weekly {
             sentences.append("\(goal.name): \(goal.weeksMet) of \(days(goal.weeks, "week")).")
         }
         if let streak = recap.bestStreak {
-            sentences.append("Your best run was \(streak) days in a row.")
+            sentences.append("Your best run \(over ? "was" : "is") \(streak) days in a row.")
         }
         if let comparison = recap.comparison {
             sentences.append("\(comparisonLine(comparison)).")
@@ -132,11 +135,21 @@ struct MonthlyRecapText: RecapWording {
         return "Your first monthly recap arrives on 1 \(month)"
     }
 
+    static func firstBody(daysLogged: Int) -> String {
+        switch daysLogged {
+        case 0: "Log this month and the recap on the 1st will sum it up."
+        case 1: "You've logged 1 day so far. The recap on the 1st will cover the whole month."
+        default: "You've logged \(daysLogged) days so far. The recap on the 1st will cover the whole month."
+        }
+    }
+
     // MARK: - Pieces
 
-    /// "on Sundays" when every miss fell on one weekday (twice or more), else "on 4 days" / "on 1 day".
+    /// "on Sundays" when every miss fell on one weekday (twice or more), "on weekends" when on Saturdays and Sundays
+    /// only (three times or more, so more than one weekend), else "on 4 days" / "on 1 day".
     func when(_ dates: [Date]) -> String {
         let weekdays = Set(dates.map { calendar.component(.weekday, from: $0) })
+        if dates.count >= 3, weekdays == [1, 7] { return "on weekends" }
         if dates.count >= 2, weekdays.count == 1, let weekday = weekdays.first {
             return "on \(calendar.weekdaySymbols[weekday - 1])s"
         }

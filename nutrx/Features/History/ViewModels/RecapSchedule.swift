@@ -52,6 +52,24 @@ enum RecapSchedule {
         return week
     }
 
+    /// The month whose "Your October" card Today shows at `now` (#136): Pro only, on the next month's 1st and 2nd (or
+    /// any day with `ignoresWindow`, the Debug flag), and not hidden with ✕ for that month. When it shows, it takes the
+    /// week card's place (the longer period wins, docs/pro/RECAPS.md §6). The month needs something in it too.
+    static func todayCardMonth(at now: Date, isPro: Bool, dismissedMonth: Date?, ignoresWindow: Bool = false,
+                               calendar: Calendar = .current) -> Date? {
+        let month = MonthlyRecap.latestMonth(at: now, calendar: calendar)
+        guard isPro, ignoresWindow || showsTodayCard(forMonthStarting: month, at: now, calendar: calendar),
+              month != dismissedMonth else { return nil }
+        return month
+    }
+
+    /// Today's "Your October" card shows on 1 and 2 November.
+    static func showsTodayCard(forMonthStarting month: Date, at now: Date, calendar: Calendar = .current) -> Bool {
+        let next = calendar.date(byAdding: .month, value: 1, to: month)!
+        let third = calendar.date(byAdding: .day, value: 2, to: next)!
+        return now >= next && now < third
+    }
+
     /// Today's "Your week" card shows from the recap's Sunday 18:00 until Monday ends.
     static func showsTodayCard(forWeekStarting weekStart: Date, at now: Date, calendar: Calendar = .current) -> Bool {
         let release = WeeklyRecap.releaseDate(ofWeekStarting: weekStart, calendar: calendar)

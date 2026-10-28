@@ -36,11 +36,16 @@ struct TodayView: View {
     @State private var nutrientToRefill: Nutrient?
     /// Last week's recap, for the "Your week" card (nutrx Pro): Sunday 18:00 through Monday.
     @State private var weekRecap: WeeklyRecap?
+    /// "Your October" on the 1st and 2nd (#136); it takes the week card's place.
+    @State private var monthRecap: MonthlyRecap?
     @State private var showRecap = false
+    /// The tab the recap sheet opens on: the card's period.
+    @State private var recapTab: RecapTab = .week
     @AppStorage("nutrx.hidesStackSuggestion") private var hidesStackSuggestion = false
     @State private var showNewStack = false
     @State private var newStackName = ""
     @AppStorage("nutrx.dismissedRecapWeek") private var dismissedRecapWeek: Double = 0
+    @AppStorage("nutrx.dismissedRecapMonth") private var dismissedRecapMonth: Double = 0
     /// The release whose "What's new" card was closed, or seen at onboarding, on this device (#148).
     @AppStorage(WhatsNew.hiddenVersionKey) private var whatsNewHiddenVersion = ""
     /// Apple Health insights (#102): the status, and whether its Today card was hidden while gathering / once ready.
@@ -129,16 +134,29 @@ struct TodayView: View {
         }
     }
 
-    /// The "Your week" card's recap (`RecapSchedule.todayCardWeek`, `RecapViewModel.recap(forWeek:…)`).
+    /// The recap card's recap: the month's on the 1st and 2nd (`RecapSchedule.todayCardMonth`), else the week's
+    /// (`RecapSchedule.todayCardWeek`). The longer period wins on a day both would show.
     private func refreshWeekRecap() {
         var ignoresWindow = false
+        var ignoresMonthWindow = false
         #if DEBUG
-        // Checking the card on a weekday: `simctl spawn <UDID> defaults write nutrx-labs.nutrx
-        // nutrx.debug.showRecapCard -bool YES` (Debug builds only).
+        // Checking the cards on another day: `simctl spawn <UDID> defaults write nutrx-labs.nutrx
+        // nutrx.debug.showRecapCard -bool YES` (or `nutrx.debug.showMonthRecapCard`) (Debug builds only).
         ignoresWindow = UserDefaults.standard.bool(forKey: "nutrx.debug.showRecapCard")
+        ignoresMonthWindow = UserDefaults.standard.bool(forKey: "nutrx.debug.showMonthRecapCard")
         #endif
+        let isPro = ProAccess.isStoreVisible && proAccess?.isPro == true
+        let month = RecapSchedule.todayCardMonth(
+            at: .now, isPro: isPro,
+            dismissedMonth: dismissedRecapMonth > 0 ? Date(timeIntervalSince1970: dismissedRecapMonth) : nil,
+            ignoresWindow: ignoresMonthWindow)
+        monthRecap = month.flatMap { RecapViewModel.recap(forMonth: $0, context: modelContext) }
+        guard monthRecap == nil else {
+            weekRecap = nil
+            return
+        }
         let week = RecapSchedule.todayCardWeek(
-            at: .now, isPro: ProAccess.isStoreVisible && proAccess?.isPro == true,
+            at: .now, isPro: isPro,
             dismissedWeek: dismissedRecapWeek > 0 ? Date(timeIntervalSince1970: dismissedRecapWeek) : nil,
             ignoresWindow: ignoresWindow)
         weekRecap = week.flatMap { RecapViewModel.recap(forWeek: $0, context: modelContext) }
@@ -241,7 +259,7 @@ struct TodayView: View {
         }
         .sheet(isPresented: $showRecap) {
             NavigationStack {
-                WeeklyRecapView()
+                RecapsView(tab: recapTab)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
                             Button("Done") { showRecap = false }
@@ -652,8 +670,23 @@ struct TodayView: View {
             }
         }
 
+        if let monthRecap {
+            RecapTodayCard(month: monthRecap, onOpen: {
+                recapTab = .month
+                showRecap = true
+            }, onDismiss: {
+                dismissedRecapMonth = monthRecap.monthStart.timeIntervalSince1970
+                withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                    self.monthRecap = nil
+                }
+            })
+        }
+
         if let weekRecap {
-            RecapTodayCard(recap: weekRecap, onOpen: { showRecap = true }, onDismiss: {
+            RecapTodayCard(week: weekRecap, onOpen: {
+                recapTab = .week
+                showRecap = true
+            }, onDismiss: {
                 dismissedRecapWeek = weekRecap.weekStart.timeIntervalSince1970
                 withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
                     self.weekRecap = nil
