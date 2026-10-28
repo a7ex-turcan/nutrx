@@ -3,11 +3,12 @@ import XCTest
 
 /// The paywall's grouped rows.
 final class ProFeatureGroupTests: XCTestCase {
-    /// A new Pro feature has to join a group, or the paywall would never mention it.
-    func testEveryFeatureIsInExactlyOneGroup() {
+    /// A Pro feature joins a group once it ships, or the paywall would never mention it; before that it stays out
+    /// (the next test), so a case can be added ahead of shipping.
+    func testEveryShippedFeatureIsInExactlyOneGroup() {
         let grouped = ProFeatureGroup.allCases.flatMap(\.features)
         XCTAssertEqual(grouped.count, Set(grouped).count, "no feature in two groups")
-        XCTAssertEqual(Set(grouped), Set(ProFeature.allCases))
+        XCTAssertEqual(Set(grouped), Set(ProFeature.allCases.filter(\.isShipped)))
     }
 
     /// A row's words name every feature in it, so a group may only hold shipped ones; `listed` shows a group once any
