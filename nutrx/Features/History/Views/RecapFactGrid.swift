@@ -72,6 +72,7 @@ struct RecapFactGrid: View {
     }
 }
 
+#if DEBUG
 #Preview("Light") {
     RecapFactGrid(cards: YearlyRecapText(RecapPreviewSample.year).cards + MonthlyRecapText(RecapPreviewSample.month).cards,
                   nutrientsByID: [:])
@@ -87,3 +88,4 @@ struct RecapFactGrid: View {
         .background(Theme.surfaceGround)
         .preferredColorScheme(.dark)
 }
+#endif

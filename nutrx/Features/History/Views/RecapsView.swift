@@ -22,7 +22,11 @@ struct RecapsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Spacing.cardGap + 2) {
-                Picker("Recap", selection: $tab) {
+                // The years are built when their tab first shows, before it draws.
+                Picker("Recap", selection: Binding(get: { tab }, set: { newTab in
+                    if newTab == .year { viewModel.loadYears() }
+                    tab = newTab
+                })) {
                     ForEach(RecapTab.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
@@ -53,7 +57,10 @@ struct RecapsView: View {
                 }
             }
         }
-        .onAppear { viewModel.refresh(context: modelContext, streaksEnabled: streaksEnabled) }
+        .onAppear {
+            viewModel.refresh(context: modelContext, streaksEnabled: streaksEnabled)
+            if tab == .year { viewModel.loadYears() }
+        }
         // The recap is Pro already; the line needs Health connected (`load` is nil otherwise).
         .task { healthStatus = await HealthInsights.load(context: modelContext) }
         // Each tab's rewording runs only while it's shown: the week opened from Today needn't reword a month too.
@@ -207,8 +214,8 @@ struct RecapsView: View {
     }
 }
 
-/// "Earlier weeks" / "Earlier months" / "Earlier years": a row of small goals-met rings to switch between, spread across the card
-/// when they fit and scrolled to the newest when they don't.
+/// "Earlier weeks" / "Earlier months" / "Earlier years": a row of small goals-met rings to switch between, spread
+/// across the card when they fit and scrolled to the newest when they don't.
 private struct EarlierPicker: View {
     struct Item: Identifiable {
         let id: Date

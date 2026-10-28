@@ -53,6 +53,7 @@ struct RecapYearBars: View {
     }
 }
 
+#if DEBUG
 #Preview("Light") {
     RecapYearBars(recap: RecapPreviewSample.year)
         .padding()
@@ -67,3 +68,4 @@ struct RecapYearBars: View {
         .background(Theme.surfaceGround)
         .preferredColorScheme(.dark)
 }
+#endif

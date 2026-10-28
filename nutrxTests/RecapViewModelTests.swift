@@ -74,18 +74,47 @@ final class RecapViewModelTests: XCTestCase {
         let model = RecapViewModel()
 
         model.refresh(context: context, streaksEnabled: true, now: date(2026, 10, 28))
+        XCTAssertTrue(model.yearChoices.isEmpty, "built when the Year tab first shows")
+        model.loadYears()
         XCTAssertEqual(model.selectedYearRecap?.isYearOver, false, "2026 so far")
         XCTAssertEqual(model.yearChoices.count, 1)
 
         // In January the year just ended, with the new year so far after it once it has a completed day.
         model.refresh(context: context, streaksEnabled: true, now: date(2027, 1, 15))
+        model.loadYears()
         XCTAssertEqual(model.selectedYearRecap?.yearStart, calendar.startOfDay(for: date(2026, 1, 1)))
         XCTAssertEqual(model.selectedYearRecap?.isYearOver, true)
         XCTAssertEqual(model.yearChoices.map(\.isYearOver), [true, false])
 
         // On 1 January nothing of the new year has counted: only 2026.
         model.refresh(context: context, streaksEnabled: true, now: date(2027, 1, 1, hour: 9))
+        model.loadYears()
         XCTAssertEqual(model.yearChoices.count, 1)
         XCTAssertEqual(model.selectedYearRecap?.isYearOver, true)
+    }
+
+    func testTodaysYearCardCountsAWeeklyNutrientLikeTheYearTab() throws {
+        let context = ModelContext(try ModelContainer.inMemoryForTests())
+        let zinc = Nutrient(name: "Zinc", unit: "mg", step: 10, dailyTarget: 10, sortOrder: 0)
+        zinc.createdAt = calendar.startOfDay(for: date(2025, 12, 1))
+        zinc.scheduleRaw = NutrientSchedule().setting(.weekly(times: 2), from: zinc.createdAt, calendar: calendar)
+            .encode(calendar: calendar)
+        context.insert(zinc)
+        // Twice a week: Monday 29 and Tuesday 30 December do the week of New Year, so Friday 2 January doesn't count.
+        for day in [date(2025, 12, 29), date(2025, 12, 30), date(2026, 1, 2), date(2026, 1, 6), date(2026, 1, 8)] {
+            context.insert(IntakeRecord(nutrient: zinc, amount: 10, date: day))
+        }
+        try context.save()
+
+        let now = date(2026, 1, 20)
+        let model = RecapViewModel()
+        model.refresh(context: context, streaksEnabled: true, now: now)
+        model.loadYears()
+        let tab = model.yearChoices.first { $0.yearStart == calendar.startOfDay(for: date(2026, 1, 1)) }
+        let card = RecapViewModel.recap(forYear: calendar.startOfDay(for: date(2026, 1, 1)), context: context, now: now)
+        XCTAssertNotNil(tab)
+        XCTAssertEqual(card?.goalsMet, tab?.goalsMet)
+        XCTAssertEqual(card?.goalsCounted, tab?.goalsCounted)
+        XCTAssertEqual(card?.weekly, tab?.weekly)
     }
 }

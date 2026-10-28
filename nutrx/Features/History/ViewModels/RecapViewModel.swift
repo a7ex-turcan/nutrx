@@ -74,6 +74,10 @@ final class RecapViewModel {
     var selectedYear: Date?
     /// Whether it's January, when the Year tab opens on the year just ended.
     private(set) var isJanuary = false
+    /// Whether `years` is from the last refresh (`loadYears`).
+    private(set) var yearsLoaded = false
+    /// The last refresh's log, for `loadYears`.
+    private var loaded: (log: HistoryLog, names: [UUID: String], streaksEnabled: Bool, now: Date)?
 
     /// The Year tab's picker: whole years, then the year so far.
     var yearChoices: [YearlyRecap] { years + [runningYear].compactMap { $0 } }
@@ -115,6 +119,16 @@ final class RecapViewModel {
         monthLength = thisMonth.fullDayFlags.count
         if let selectedMonth, !monthChoices.contains(where: { $0.monthStart == selectedMonth }) { self.selectedMonth = nil }
 
+        loaded = (log, names, streaksEnabled, now)
+        yearsLoaded = false
+    }
+
+    /// The years, built from the last refresh's log the first time the Year tab shows after it: four years of
+    /// tallies are too much to build on every open of the week.
+    func loadYears() {
+        guard !yearsLoaded, let (log, names, streaksEnabled, now) = loaded else { return }
+        yearsLoaded = true
+        let calendar = log.calendar
         let lastYear = YearlyRecap.latestYear(at: now, calendar: calendar)
         years = (0..<Self.yearCount).reversed().compactMap { back in
             let year = calendar.date(byAdding: .year, value: -back, to: lastYear)!
@@ -131,7 +145,10 @@ final class RecapViewModel {
 
     /// One year's recap, or nil when it has nothing in it (Today's card).
     static func recap(forYear year: Date, context: ModelContext, now: Date = .now) -> YearlyRecap? {
-        let (log, nutrients) = HistoryViewModel.loadLog(context: context, now: now, from: year)
+        // From the Monday of 1 January's week: a weekly nutrient's met days before New Year decide which of its
+        // days in that week count, as in the Year tab's full log.
+        let from = NutrientSchedule.weekStart(of: year)
+        let (log, nutrients) = HistoryViewModel.loadLog(context: context, now: now, from: from)
         let names = Dictionary(nutrients.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
         let recap = YearlyRecap.build(log: log, names: names, year: year, streaksEnabled: true)
         return recap.hasData ? recap : nil
