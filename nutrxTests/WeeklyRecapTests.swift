@@ -272,7 +272,7 @@ final class WeeklyRecapTests: XCTestCase {
 
     private struct StubModel: RecapPhrasing.Model {
         let text: String?
-        func reword(_ facts: String) async throws -> String {
+        func reword(_ facts: String, period: RecapPhrasing.Period) async throws -> String {
             guard let text else { throw CancellationError() }
             return text
         }
@@ -338,7 +338,7 @@ final class WeeklyRecapTests: XCTestCase {
     func testTheOnDeviceModelRewordsARecap() async throws {
         guard LabelExtractor.isModelAvailable else { throw XCTSkip("Apple Intelligence isn't available here") }
         let text = RecapText(recap(designWeek, today: day(10, 12)), calendar: calendar)
-        guard let reworded = try? await FoundationRecapModel().reword(text.summary) else {
+        guard let reworded = try? await FoundationRecapModel().reword(text.summary, period: .week) else {
             throw XCTSkip("The model couldn't be loaded here")
         }
         // Whatever it says, what's shown is either an acceptable rewording or the template.

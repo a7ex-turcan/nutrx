@@ -3,7 +3,7 @@ import Foundation
 /// The weekly recap's words (docs/pro/design/5-weekly-recap), from `WeeklyRecap`'s facts only. The template summary
 /// runs everywhere; with Apple Intelligence `RecapPhrasing` may reword it, checked against these facts. It describes
 /// and never advises: no "try", no "should", no amounts to aim for.
-struct RecapText {
+struct RecapText: RecapWording {
     let recap: WeeklyRecap
     let calendar: Calendar
 
@@ -72,7 +72,7 @@ struct RecapText {
     // MARK: - Fact cards
 
     struct Card: Equatable {
-        enum Kind { case steadiest, slipped, weekday, streak }
+        enum Kind { case steadiest, slipped, weekday, streak, comparison }
         let kind: Kind
         let label: String
         let value: String
@@ -192,6 +192,10 @@ struct RecapText {
     private func dayMonth(_ date: Date) -> String {
         "\(calendar.component(.day, from: date)) \(calendar.standaloneMonthSymbols[calendar.component(.month, from: date) - 1])"
     }
+
+    let period = RecapPhrasing.Period.week
+    var steadiestName: String? { recap.steadiest?.name }
+    var cacheKey: String { "week-\(Int(recap.weekStart.timeIntervalSince1970))" }
 
     /// Every number the recap's words may use, for checking a reworded summary.
     var factNumbers: Set<Int> {
