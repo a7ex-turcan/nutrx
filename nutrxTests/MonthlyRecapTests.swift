@@ -164,6 +164,8 @@ final class MonthlyRecapTests: XCTestCase {
         let weekly = recap.weekly.first { $0.id == zinc }
         XCTAssertEqual(weekly?.weeks, 3, "5, 12 and 19 October; 26 October runs into November")
         XCTAssertEqual(weekly?.weeksMet, 3)
+        XCTAssertTrue(MonthlyRecapText(recap, calendar: calendar).summary.contains("met its weekly goal in 3 of 3 weeks."),
+                      "a sentence, not \"Zinc: 3 of 3 weeks.\" (#315)")
         XCTAssertFalse(recap.nutrients.contains { $0.id == zinc }, "judged by the week, not day by day")
     }
 

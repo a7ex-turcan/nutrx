@@ -658,7 +658,7 @@ final class NutrientScheduleTests: XCTestCase {
         XCTAssertEqual(recap.steadiest?.id, dailyID)
         XCTAssertEqual(recap.goalsMet, 9, "7 Magnesium days and Vitamin D's 2 counted days")
         XCTAssertEqual(recap.goalsCounted, 9)
-        XCTAssertTrue(RecapText(recap).summary.contains("Vitamin D: 2 of 2 this week."))
+        XCTAssertTrue(RecapText(recap).summary.contains("You hit Vitamin D 2 of 2 times this week."))
         XCTAssertTrue(RecapText(recap).factNumbers.isSuperset(of: [2]))
     }
 
@@ -729,7 +729,7 @@ final class NutrientScheduleTests: XCTestCase {
                                       streaksEnabled: false)
         let summary = RecapText(recap).summary
         XCTAssertFalse(summary.contains("every goal"), summary)
-        XCTAssertTrue(summary.contains("Omega-3: 1 of 3 this week."), summary)
+        XCTAssertTrue(summary.contains("Omega-3 1 of 3 times"), summary)
         XCTAssertTrue(RecapText(recap).factNumbers.contains(3), "the 3 in Omega-3 (and its count)")
 
         // A number that's only in a weekly nutrient's name: B12, twice a week.
