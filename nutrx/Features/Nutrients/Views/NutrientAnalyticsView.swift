@@ -187,11 +187,6 @@ private struct NutrientAnalyticsContent: View {
             HStack(spacing: 14) {
                 // At accessibility sizes the value goes under the label and the bell gives up its room: "Usually by
                 // 8:00" (#137) beside "Reminders" broke it into syllables.
-                if !dynamicTypeSize.isAccessibilitySize {
-                    Image(systemName: "bell")
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(Theme.textPrimary)
-                }
                 if dynamicTypeSize.isAccessibilitySize {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Reminders")
@@ -200,6 +195,9 @@ private struct NutrientAnalyticsContent: View {
                     }
                     Spacer(minLength: 0)
                 } else {
+                    Image(systemName: "bell")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(Theme.textPrimary)
                     Text("Reminders")
                         .foregroundStyle(Theme.textPrimary)
                     Spacer(minLength: 8)

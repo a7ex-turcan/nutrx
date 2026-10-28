@@ -144,6 +144,7 @@ enum NotificationService {
     static func refreshAllNutrientReminders(context: ModelContext, now: Date = .now) -> Task<Void, Never>? {
         let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isRemoved })
         guard let nutrients = try? context.fetch(descriptor) else { return nil }
+        usualTimes = [:]
         let totals = todayTotals(context: context, now: now)
         // A course that has ended (#99) has nothing left to remind about.
         let withReminders = nutrients.filter {
@@ -235,8 +236,8 @@ enum NotificationService {
     /// day, the learned time (weekends apart when learned apart), else its starting time: while learning, around
     /// midnight, and without Pro. An unknown entitlement (a cold background launch) uses the learned time; the next
     /// sync with it known puts it right.
-    private static func reminderTimes(for nutrient: Nutrient,
-                                      now: Date) -> (times: [ReminderSchedule.Time], weekend: [ReminderSchedule.Time]?) {
+    static func reminderTimes(for nutrient: Nutrient,
+                              now: Date) -> (times: [ReminderSchedule.Time], weekend: [ReminderSchedule.Time]?) {
         let set = (nutrient.reminders ?? []).map {
             ReminderSchedule.Time(hour: $0.timeComponents.hour, minute: $0.timeComponents.minute)
         }
@@ -246,8 +247,9 @@ enum NotificationService {
         return ([ReminderSchedule.Time(minutes: planned.weekdays)], [ReminderSchedule.Time(minutes: planned.weekends)])
     }
 
-    /// Usual times learned today, by nutrient: they change only when a day completes (§5), and the sync runs after
-    /// every log. Kept in memory, never stored.
+    /// Usual times learned, by nutrient, for the sheets and rows between syncs. Every sync starts afresh, since it
+    /// runs after logs, iCloud changes and edits, any of which can change a past day or which days are due. Kept in
+    /// memory, never stored.
     private static var usualTimes: [UUID: (day: Date, result: UsualTime.Result)] = [:]
 
     static func usualTime(of nutrient: Nutrient, now: Date = .now) -> UsualTime.Result {
