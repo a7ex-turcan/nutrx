@@ -149,7 +149,7 @@ Released on the App Store on 24 Oct 2026 (build 173, phased release; tag `v2.4`)
 
 ### v2.5 — Supply costs, widgets and controls
 
-Building (version 2.5).
+Submitted for App Review on 28 Oct 2026 (build 205, phased release). Main builds 2.6 from here.
 
 | Feature | Status |
 |---|---|
@@ -158,7 +158,13 @@ Building (version 2.5).
 | Doctor report: "Days counted" for weekly nutrients | ✅ Built (v2.5, #257) |
 | No "Fill to goal" on a day off | ✅ Built (v2.5, #256) |
 | Editing an amount without thousands separators | ✅ Built (v2.5, #258) |
-| Log clear of the Done bar with a hardware keyboard | ✅ Built (v2.5, #261) |
+| Log clear of the Done bar with a hardware keyboard | ✅ Built (v2.5, #261, #274) |
+| A shorter Pro page: features in four grouped rows | ✅ Built (v2.5, #304) |
+| "Out of supply" in amber on Today | ✅ Built (v2.5, #303) |
+| Supply and courses widget, medium: list rows with one or two items | ✅ Built (v2.5, #301) |
+| A nutrient opened from a link shows its own numbers | ✅ Built (v2.5, #295) |
+| Siri tip says "stack" once | ✅ Built (v2.5, #292) |
+| Group names at the largest text sizes | ✅ Built (v2.5, #273) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
