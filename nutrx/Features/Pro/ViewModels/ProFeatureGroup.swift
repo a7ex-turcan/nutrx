@@ -2,7 +2,8 @@ import Foundation
 
 /// The paywall's rows: related Pro features share one, so the list stays short enough for the plans to show (eight
 /// rows of their own pushed them below the fold). The Pro screen and "Enjoy nutrx Pro" keep a row per `ProFeature`.
-/// Every feature belongs to exactly one group (`ProFeatureGroupTests`), so a new one gets a place here too.
+/// Every shipped feature belongs to exactly one group (`ProFeatureGroupTests`), so a new one gets a place here once it
+/// ships.
 enum ProFeatureGroup: String, CaseIterable, Identifiable {
     case supply
     case plans
