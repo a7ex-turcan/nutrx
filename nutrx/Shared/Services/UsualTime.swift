@@ -121,15 +121,30 @@ extension Nutrient {
     /// Its usual time from its own records of the last `UsualTime.windowDays` completed days: the first log on each
     /// day it was running and due (§2).
     func usualTime(now: Date = .now, calendar: Calendar = .current) -> UsualTime.Result {
+        UsualTime.result(usualTimeSamples(now: now, calendar: calendar).samples, calendar: calendar)
+    }
+
+    /// Its samples, and the rule for which days it was due (a stack's usual time needs both).
+    func usualTimeSamples(now: Date = .now,
+                          calendar: Calendar = .current) -> (samples: [UsualTime.Sample], isDue: (Date) -> Bool) {
+        let schedule = schedule(calendar: calendar)
+        let isDue: (Date) -> Bool = { day in
+            self.isRunning(on: day, calendar: calendar) && schedule.isDoseDay(day, calendar: calendar)
+        }
         let today = calendar.startOfDay(for: now)
         guard let start = calendar.date(byAdding: .day, value: -UsualTime.windowDays, to: today) else {
-            return .learning(samples: 0)
+            return ([], isDue)
         }
         let logs = records(from: start, to: today).filter { $0.amount > 0 }.map(\.date)
-        let schedule = schedule(calendar: calendar)
-        let samples = UsualTime.samples(logs: logs, today: now, isDue: { day in
-            self.isRunning(on: day, calendar: calendar) && schedule.isDoseDay(day, calendar: calendar)
-        }, calendar: calendar)
+        return (UsualTime.samples(logs: logs, today: now, isDue: isDue, calendar: calendar), isDue)
+    }
+}
+
+extension LogStack {
+    /// Its usual time (§2): on each day every one of its due nutrients was logged, the latest of their first logs.
+    func usualTime(now: Date = .now, calendar: Calendar = .current) -> UsualTime.Result {
+        let nutrients = StackLogging.activeEntries(of: self, now: now).compactMap(\.nutrient)
+        let samples = UsualTime.stackSamples(nutrients.map { $0.usualTimeSamples(now: now, calendar: calendar) })
         return UsualTime.result(samples, calendar: calendar)
     }
 }

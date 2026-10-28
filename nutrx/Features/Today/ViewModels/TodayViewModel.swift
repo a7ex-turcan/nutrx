@@ -67,17 +67,29 @@ final class TodayViewModel {
 
     /// The next reminder still to come today: a shown nutrient's reminder, unless that nutrient is already
     /// logged today. The same rule and the same times `NotificationService.refreshAllNutrientReminders` schedules
-    /// by (#4): a nutrient at its usual time (#137) names the time that fires, its weekend one on a weekend.
-    func nextReminder(after now: Date = .now) -> UpcomingReminder? {
+    /// by (#4): a nutrient at its usual time (#137) names the time that fires, its weekend one on a weekend. A
+    /// stack's reminder too ("Morning stack"), while something in it is due and it isn't done.
+    func nextReminder(after now: Date = .now, stacks: [LogStack] = []) -> UpcomingReminder? {
         let calendar = Calendar.current
-        let candidates = groupSections
+        func dates(_ planned: (times: [ReminderSchedule.Time], weekend: [ReminderSchedule.Time]?)) -> [Date] {
+            (calendar.isDateInWeekend(now) ? planned.weekend ?? planned.times : planned.times).compactMap {
+                calendar.date(bySettingHour: $0.hour, minute: $0.minute, second: 0, of: now)
+            }
+        }
+        let stackCandidates = !UsualTime.isAvailable ? [] : stacks.filter { $0.reminderMinutes >= 0 }.flatMap { stack in
+            let due = StackLogging.dueEntries(of: stack, now: now).compactMap(\.nutrient)
+            guard !due.isEmpty, !StackLogging.isLoggedToday(stack, now: now),
+                  !due.allSatisfy({ total(for: $0) > 0 }) else { return [(nutrientName: String, timeOfDay: Date)]() }
+            return dates(NotificationService.reminderTimes(for: stack, now: now)).map {
+                (nutrientName: StackReminderText.fullName(stack.name), timeOfDay: $0)
+            }
+        }
+        let candidates = stackCandidates + groupSections
             .flatMap(\.intakes)
             .filter { $0.total <= 0 }
             .flatMap { intake in
-                let (times, weekend) = NotificationService.reminderTimes(for: intake.nutrient, now: now)
-                return (calendar.isDateInWeekend(now) ? weekend ?? times : times).compactMap { time in
-                    calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: now)
-                        .map { (nutrientName: intake.nutrient.name, timeOfDay: $0) }
+                dates(NotificationService.reminderTimes(for: intake.nutrient, now: now)).map {
+                    (nutrientName: intake.nutrient.name, timeOfDay: $0)
                 }
             }
         return UpcomingReminder.next(after: now, among: candidates)

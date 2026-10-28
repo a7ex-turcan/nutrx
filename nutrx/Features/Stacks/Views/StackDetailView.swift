@@ -2,13 +2,15 @@ import SwiftUI
 import SwiftData
 
 /// One stack (docs/pro/design/1-stacks-export: stack-detail): its name, its nutrients with the amount each one logs
-/// (− / + by the nutrient's step, drag to reorder, swipe to remove), Add nutrient, and Delete stack.
+/// (− / + by the nutrient's step, drag to reorder, swipe to remove), Add nutrient, its Reminder (#137, Debug-only until
+/// it ships), and Delete stack.
 struct StackDetailView: View {
     @Bindable var stack: LogStack
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @State private var showAddNutrient = false
+    @State private var showReminder = false
     @State private var confirmDelete = false
     /// Set by Delete stack: the stack is deleted once this screen is gone, so its body never reads a deleted model.
     @State private var deleteOnDisappear = false
@@ -75,6 +77,19 @@ struct StackDetailView: View {
             }
             .listRowBackground(Theme.surfaceCard)
 
+            // A reminder at a set time, or at its usual time (nutrx Pro, #137): in Debug builds until it ships.
+            if UsualTime.isAvailable {
+                Section {
+                    Button {
+                        showReminder = true
+                    } label: {
+                        reminderRow
+                    }
+                    .buttonStyle(.plain)
+                }
+                .listRowBackground(Theme.surfaceCard)
+            }
+
             if !hidesSiriTip && !entries.isEmpty {
                 Section {
                     StackSiriTip(stackName: stack.name) {
@@ -109,6 +124,9 @@ struct StackDetailView: View {
                 }
             }
         }
+        .sheet(isPresented: $showReminder) {
+            StackReminderSheet(stack: stack)
+        }
         .sheet(isPresented: $showAddNutrient) {
             AddStackNutrientSheet(stack: stack)
         }
@@ -142,6 +160,35 @@ struct StackDetailView: View {
         let trimmed = stack.name.trimmingCharacters(in: .whitespacesAndNewlines)
         stack.name = trimmed.isEmpty ? "Stack" : trimmed
         try? modelContext.save()
+    }
+
+    /// "Reminder" and "None", "9:00" or "Usually by 8:30"; the value goes under the label at accessibility sizes.
+    private var reminderRow: some View {
+        let value = Text(StackReminderText.summary(minutes: stack.reminderMinutes, atUsualTime: stack.remindsAtUsualTime,
+                                                   usual: NotificationService.usualTime(of: stack),
+                                                   isPro: proAccess?.isPro == true))
+            .monospacedDigit()
+            .foregroundStyle(Theme.textSecondary)
+        return HStack(spacing: 8) {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Reminder").foregroundStyle(Theme.textPrimary)
+                    value
+                }
+                Spacer(minLength: 0)
+            } else {
+                Text("Reminder").foregroundStyle(Theme.textPrimary)
+                Spacer(minLength: 8)
+                value.lineLimit(1)
+            }
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary)
+                .accessibilityHidden(true)
+        }
+        .frame(minHeight: Theme.minTouchTarget)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 
     private func entryRow(_ entry: LogStackEntry) -> some View {

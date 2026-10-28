@@ -108,6 +108,10 @@ struct MainTabView: View {
         .onChange(of: router?.showsRecap) { _, shows in
             if shows == true { route(to: .history) }
         }
+        // A stack reminder opens Today, which shows the stack's log sheet (#137).
+        .onChange(of: router?.stackID) { _, id in
+            if id != nil { route(to: .today) }
+        }
     }
 
     /// iPad only: shows My Nutrients and History once, under a cover, then goes back to where the app opened. The
@@ -167,7 +171,7 @@ struct MainTabView: View {
         if router?.supplyNutrientID != nil || router?.healthNutrientID != nil || router?.nutrientID != nil {
             return .nutrients
         }
-        if router?.showsPaywall == true { return .today }
+        if router?.showsPaywall == true || router?.stackID != nil { return .today }
         return nil
     }
 
