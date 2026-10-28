@@ -6,6 +6,8 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+## v2.5 — submitted for review 2026-10-28 (build 205)
+
 ### nutrx Pro
 - **Widgets and controls** — Log from outside the app. Two controls for Control Center, the Lock Screen and the Action button: **Log stack** logs a stack you pick, and **Log nutrient** logs one step of a nutrient. Once a stack is logged for the day its control shows a tick, and tapping it again opens Today, where Log again has Undo. A **Nutrient** widget shows one nutrient's ring and progress, with a + on the Home Screen, or as a ring on the Lock Screen. A **Supply and courses** widget lists what's running low or ending soonest, in small, medium and Lock Screen sizes. Without Pro they show what they do and open the paywall; the five widgets you already have stay free.
 - **What your supply costs** — Add a price per bottle in a nutrient's Supply settings to see what it costs a month on its Supply card, for each stack, and for everything at the end of My Nutrients. When a bottle runs low, **Add to list** puts it on a list of your choice, Apple's Reminders included, through the share sheet: nutrx asks for no access to your reminders.
