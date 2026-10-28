@@ -152,6 +152,8 @@ struct StackDetailView: View {
                 commitName()
             }
             StackShortcutLogging.stacksChanged()
+            // Its reminder (#137): gone with a deleted stack, renamed with a renamed one.
+            NotificationService.refreshAllNutrientReminders(context: modelContext)
         }
     }
 
@@ -245,6 +247,8 @@ struct StackDetailView: View {
     private func remove(_ entry: LogStackEntry) {
         modelContext.delete(entry)
         try? modelContext.save()
+        // A stack reminder (#137) names its nutrients and goes on the days they're due.
+        NotificationService.refreshAllNutrientReminders(context: modelContext)
     }
 }
 
@@ -346,6 +350,7 @@ private struct AddStackNutrientSheet: View {
                     ForEach(available, id: \.persistentModelID) { nutrient in
                         Button {
                             StackLogging.add(nutrient, to: stack, context: modelContext)
+                            NotificationService.refreshAllNutrientReminders(context: modelContext)
                             dismiss()
                         } label: {
                             HStack(spacing: 12) {

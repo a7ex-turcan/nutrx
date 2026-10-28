@@ -122,3 +122,29 @@ struct StackReminderSheet: View {
         NotificationService.refreshAllNutrientReminders(context: modelContext)
     }
 }
+
+private struct StackReminderPreview: View {
+    @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
+    var atUsualTime = false
+
+    var body: some View {
+        if let stack = stacks.first {
+            StackReminderSheet(stack: stack)
+                .onAppear {
+                    stack.reminderMinutes = atUsualTime ? 8 * 60 + 30 : -1
+                    stack.remindsAtUsualTime = atUsualTime
+                }
+        }
+    }
+}
+
+#Preview("Off") {
+    StackReminderPreview()
+        .modelContainer(previewContainer)
+}
+
+#Preview("At the usual time, dark") {
+    StackReminderPreview(atUsualTime: true)
+        .modelContainer(previewContainer)
+        .preferredColorScheme(.dark)
+}

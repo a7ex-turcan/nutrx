@@ -48,6 +48,7 @@ extension NutrientDraft {
         // The stacks picked in the form, new ones created now (so a cancelled form leaves none behind).
         if StackLogging.add(nutrient, toStacks: pendingStacks, context: context) {
             StackShortcutLogging.stacksChanged()
+            NotificationService.refreshAllNutrientReminders(context: context)  // a stack's reminder (#137)
         }
         return nutrient
     }

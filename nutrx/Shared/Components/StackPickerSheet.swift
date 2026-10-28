@@ -119,6 +119,7 @@ struct StackPickerSheet: View {
         case .nutrient(let nutrient):
             StackLogging.toggle(nutrient, in: stack, context: modelContext)
             StackShortcutLogging.stacksChanged()
+            NotificationService.refreshAllNutrientReminders(context: modelContext)  // a stack's reminder (#137)
         case .draft(let draft):
             if let index = draft.pendingStacks.firstIndex(of: .existing(stack.id)) {
                 draft.pendingStacks.remove(at: index)
@@ -141,6 +142,7 @@ struct StackPickerSheet: View {
             let stack = StackLogging.createStack(named: name, context: modelContext)
             StackLogging.add(nutrient, to: stack, context: modelContext)
             StackShortcutLogging.stacksChanged()
+            NotificationService.refreshAllNutrientReminders(context: modelContext)
         case .draft(let draft):
             // Created with the nutrient, so Cancel on the form leaves no empty stack behind.
             if !newNames(draft).contains(where: { $0.lowercased() == name.lowercased() }) {
