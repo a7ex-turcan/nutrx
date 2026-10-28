@@ -81,6 +81,6 @@ From the last **28 completed days** (today never counts, as in recaps):
 2. **Stack reminders:** the `LogStack` fields, with their CloudKit fields in development and production before merging, then the Reminder row and sheet (Debug-only as a whole), scheduling, the done-today rule, and the notification and its tap.
 3. **Shipping:** `ProFeature.reminders.isShipped` and its paywall group, What's New, and CHANGELOG, ROADMAP and CLAUDE.md.
 
-Each phase is checked on nutrx iPhone 17 with the demo data. Its log times need to vary enough for a usual time; the demo set gets per-day times, with a test that the demo data learns one. Light and dark, and a large text size.
+Each phase is checked on nutrx iPhone 17 with the demo data. The demo set logs Vitamin D first at 8:00 every day, so it learns "Usually by 8:00" as it is; a test checks that. Light and dark, and a large text size.
 
 **Not in this plan:** an action that logs the stack from the notification itself. It's possible later, through `StackLogging.log` from the notification handler, as refills do.

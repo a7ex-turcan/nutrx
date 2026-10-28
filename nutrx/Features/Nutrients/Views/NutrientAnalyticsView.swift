@@ -185,26 +185,44 @@ private struct NutrientAnalyticsContent: View {
             showReminders = true
         } label: {
             HStack(spacing: 14) {
-                Image(systemName: "bell")
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(Theme.textPrimary)
-                Text("Reminders")
-                    .foregroundStyle(Theme.textPrimary)
-                Spacer(minLength: 8)
-                Text(NutrientSummaryText.reminderSummary(for: nutrient))
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(1)
+                // At accessibility sizes the value goes under the label and the bell gives up its room: "Usually by
+                // 8:00" (#137) beside "Reminders" broke it into syllables.
+                if !dynamicTypeSize.isAccessibilitySize {
+                    Image(systemName: "bell")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(Theme.textPrimary)
+                }
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Reminders")
+                            .foregroundStyle(Theme.textPrimary)
+                        remindersValue
+                    }
+                    Spacer(minLength: 0)
+                } else {
+                    Text("Reminders")
+                        .foregroundStyle(Theme.textPrimary)
+                    Spacer(minLength: 8)
+                    remindersValue
+                        .lineLimit(1)
+                }
                 Image(systemName: "chevron.right")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(Theme.textSecondary)
             }
             .padding(.horizontal, cardPadding)
+            .padding(.vertical, dynamicTypeSize.isAccessibilitySize ? 12 : 0)
             .frame(minHeight: 56)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .cardStyle()
+    }
+
+    private var remindersValue: some View {
+        Text(NutrientSummaryText.reminderSummary(for: nutrient, isPro: proAccess?.isPro == true))
+            .monospacedDigit()
+            .foregroundStyle(Theme.textSecondary)
     }
 }
 

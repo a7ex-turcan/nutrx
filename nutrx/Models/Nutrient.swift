@@ -53,6 +53,12 @@ final class Nutrient {
     /// Which days it's taken on when not every day (nutrx Pro, #132, docs/pro/SCHEDULES.md): pieces of
     /// "yyyyMMdd=kind", each in effect from its day, ";"-separated; "" = every day. Read via `schedule(calendar:)`.
     var scheduleRaw: String = ""
+    /// Reminders at the usual time instead of set times (nutrx Pro, #137, docs/pro/REMINDERS.md §3): -1 = at the set
+    /// times; 0 or more = one reminder a day at the learned time (`UsualTime`), with this starting time (minutes after
+    /// midnight) until it's learned, around midnight and without Pro. The set times are kept for switching back.
+    var usualReminderMinutes: Int = -1
+
+    var remindsAtUsualTime: Bool { usualReminderMinutes >= 0 }
 
     var goalType: GoalType {
         get { GoalType(rawValue: goalTypeRaw) ?? .minimum }

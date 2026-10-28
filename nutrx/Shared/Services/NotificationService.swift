@@ -146,19 +146,21 @@ enum NotificationService {
         guard let nutrients = try? context.fetch(descriptor) else { return nil }
         let totals = todayTotals(context: context, now: now)
         // A course that has ended (#99) has nothing left to remind about.
-        let withReminders = nutrients.filter { !($0.reminders ?? []).isEmpty && !$0.hasEnded(by: now) }
+        let withReminders = nutrients.filter {
+            (!($0.reminders ?? []).isEmpty || $0.remindsAtUsualTime) && !$0.hasEnded(by: now)
+        }
 
         let plans = withReminders.map { nutrient in
-            ReminderSchedule.Plan(
+            let (times, weekendTimes) = reminderTimes(for: nutrient, now: now)
+            return ReminderSchedule.Plan(
                 nutrientID: nutrient.id,
-                times: (nutrient.reminders ?? []).map {
-                    ReminderSchedule.Time(hour: $0.timeComponents.hour, minute: $0.timeComponents.minute)
-                },
+                times: times,
                 loggedToday: (totals[nutrient.persistentModelID] ?? 0) > 0,
                 lastDay: nutrient.endDate,
                 schedule: nutrient.schedule(),
                 doneWeekStart: nutrient.weekProgress(including: now)?.isDone == true
-                    ? NutrientSchedule.weekStart(of: now) : nil
+                    ? NutrientSchedule.weekStart(of: now) : nil,
+                weekendTimes: weekendTimes
             )
         }
         let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }) { first, _ in first }
@@ -225,6 +227,35 @@ enum NotificationService {
             logger.info("Dose reminders synced: \(scheduled) of \(requests.count) scheduled, \(stale.count) removed")
         }
         return reminderSync
+    }
+
+    // MARK: - Usual time (nutrx Pro)
+
+    /// A nutrient's reminder times: its set times, or at its usual time (#137, docs/pro/REMINDERS.md §3, §5) one a
+    /// day, the learned time (weekends apart when learned apart), else its starting time: while learning, around
+    /// midnight, and without Pro. An unknown entitlement (a cold background launch) uses the learned time; the next
+    /// sync with it known puts it right.
+    private static func reminderTimes(for nutrient: Nutrient,
+                                      now: Date) -> (times: [ReminderSchedule.Time], weekend: [ReminderSchedule.Time]?) {
+        let set = (nutrient.reminders ?? []).map {
+            ReminderSchedule.Time(hour: $0.timeComponents.hour, minute: $0.timeComponents.minute)
+        }
+        guard nutrient.remindsAtUsualTime else { return (set, nil) }
+        let planned = UsualTime.planned(start: nutrient.usualReminderMinutes, result: usualTime(of: nutrient, now: now),
+                                        isPro: supplyRemindersEnabled)
+        return ([ReminderSchedule.Time(minutes: planned.weekdays)], [ReminderSchedule.Time(minutes: planned.weekends)])
+    }
+
+    /// Usual times learned today, by nutrient: they change only when a day completes (§5), and the sync runs after
+    /// every log. Kept in memory, never stored.
+    private static var usualTimes: [UUID: (day: Date, result: UsualTime.Result)] = [:]
+
+    static func usualTime(of nutrient: Nutrient, now: Date = .now) -> UsualTime.Result {
+        let day = Calendar.current.startOfDay(for: now)
+        if let cached = usualTimes[nutrient.id], cached.day == day { return cached.result }
+        let result = nutrient.usualTime(now: now)
+        usualTimes[nutrient.id] = (day, result)
+        return result
     }
 
     // MARK: - Recaps (nutrx Pro)

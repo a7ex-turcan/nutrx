@@ -55,6 +55,12 @@ final class ScreenshotDemoDataTests: XCTestCase {
         XCTAssertEqual(pattern.weakestWeekday, 1)
     }
 
+    /// The demo logs Vitamin D first at 8:00 every day: a usual time to show (#137, docs/pro/REMINDERS.md §7).
+    func testTheDemoLearnsAUsualTime() throws {
+        let vitaminD = try XCTUnwrap(try nutrients().first { $0.name == "Vitamin D" })
+        XCTAssertEqual(vitaminD.usualTime(), .learned(weekdays: 480, weekends: 480))
+    }
+
     func testLastWeeksRecapHasSomethingToSay() throws {
         let history = HistoryViewModel()
         history.refresh(context: context)

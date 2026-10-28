@@ -99,7 +99,10 @@ final class ProTextTests: XCTestCase {
     }
 
     func testShippedFeatures() {
-        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), ProFeature.allCases)
+        // Everything but reminders at your usual time, being built for 2.6 (#137).
+        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), ProFeature.allCases.filter { $0 != .reminders })
+        XCTAssertFalse(ProFeature.reminders.isShipped)
+        XCTAssertFalse(ProFeature.listed.contains(.reminders), "the paywall never advertises it before it ships")
         XCTAssertEqual(ProText.tagline(ProFeature.allCases.filter(\.isShipped)), "Supply, label scan, recaps and more")
     }
 
@@ -130,8 +133,8 @@ final class ProTextTests: XCTestCase {
     /// Widgets and controls (#138) ship in 2.5, last in the list: the eighth row.
     func testWidgetsIsListed() {
         XCTAssertTrue(ProFeature.listed.contains(.widgets))
-        XCTAssertEqual(ProFeature.allCases.last, .widgets)
-        XCTAssertEqual(ProFeature.allCases.count, 8)
+        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped).last, .widgets)
+        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped).count, 8)
         XCTAssertEqual(ProFeature.widgets.title, "Widgets and controls")
         XCTAssertEqual(ProFeature.widgets.subtitle, "Log from Control Center and the Home Screen")
         XCTAssertEqual(ProFeature.widgets.symbolName, "square.grid.2x2")
@@ -151,7 +154,7 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.welcome([.supply]), "Supply is on. Nothing you already use has changed.")
         XCTAssertEqual(ProText.welcome([.supply, .scan]),
                        "Supply and label scanning are on. Nothing you already use has changed.")
-        XCTAssertEqual(ProText.welcome(ProFeature.allCases),
+        XCTAssertEqual(ProText.welcome(ProFeature.listed),
                        "Supply, label scanning, recaps, Apple Health trends, doctor reports, courses, schedules and widgets are on. Nothing you already use has changed.")
     }
 

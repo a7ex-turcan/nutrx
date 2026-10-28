@@ -8,6 +8,7 @@ struct NutrientFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var allReminders: [NutrientReminder]
     @Query(sort: \NutrientGroup.sortOrder) private var allGroups: [NutrientGroup]
@@ -317,6 +318,14 @@ struct NutrientFormView: View {
     private static let formTop = "formTop"
 
     private var remindersSummary: String {
+        // At the usual time (nutrx Pro, #137): what it has learned, or a new nutrient's starting time.
+        if let nutrient, nutrient.remindsAtUsualTime {
+            return NutrientSummaryText.reminderSummary(for: nutrient, isPro: proAccess?.isPro == true)
+        }
+        if nutrient == nil, draft.usualReminderMinutes >= 0 {
+            return UsualTimeText.summary(.learning(samples: 0), start: UsualTimeText.time(draft.usualReminderMinutes),
+                                         isPro: proAccess?.isPro == true)
+        }
         let count: Int
         if let nutrient {
             count = allReminders.filter { $0.nutrient?.persistentModelID == nutrient.persistentModelID }.count
