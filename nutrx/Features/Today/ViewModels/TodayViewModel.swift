@@ -76,7 +76,7 @@ final class TodayViewModel {
                 calendar.date(bySettingHour: $0.hour, minute: $0.minute, second: 0, of: now)
             }
         }
-        let stackCandidates = !UsualTime.isAvailable ? [] : stacks.filter { $0.reminderMinutes >= 0 }.flatMap { stack in
+        let stackCandidates = stacks.filter { $0.reminderMinutes >= 0 }.flatMap { stack in
             guard !StackLogging.dueEntries(of: stack, now: now).isEmpty,
                   !StackLogging.isDoneForReminder(stack, now: now, isLogged: { total(for: $0) > 0 }) else {
                 return [(nutrientName: String, timeOfDay: Date)]()

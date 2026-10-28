@@ -33,7 +33,7 @@ struct NutrientRemindersSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                if ProAccess.isStoreVisible, UsualTime.isAvailable {
+                if ProAccess.isStoreVisible {
                     ReminderTimingSection(atUsualTime: Binding(get: { atUsualTime }, set: setUsualTime),
                                           explanation: atUsualTime ? usualExplanation : nil)
                 }
