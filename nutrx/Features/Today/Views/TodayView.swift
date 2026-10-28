@@ -214,7 +214,7 @@ struct TodayView: View {
                     CollapsingDayScoreOverlay(tracker: scoreCardTracker, score: viewModel.dayScore,
                                               streak: preferences.streaksEnabled ? streak?.current : nil,
                                               nextReminder: remindersShown
-                                                  ? viewModel.nextReminder(after: timeline.date) : nil)
+                                                  ? viewModel.nextReminder(after: timeline.date, stacks: stacks) : nil)
                 }
             }
         }
@@ -242,6 +242,12 @@ struct TodayView: View {
                 if let proAccess, !proAccess.hasCheckedEntitlements { await proAccess.refreshEntitlement() }
                 if proAccess?.isPro == true { showEnjoyPro = true } else { showPaywall = true }
             }
+        }
+        // A stack reminder tapped (#137): that stack's log sheet, if it's still there.
+        .onChange(of: router?.stackID, initial: true) { _, id in
+            guard let id else { return }
+            router?.stackID = nil
+            stackToLog = stacks.first { $0.id == id }
         }
         #if DEBUG
         .onChange(of: router?.screenshotRoute, initial: true) { _, route in
@@ -652,7 +658,7 @@ struct TodayView: View {
             DayScoreCard(
                 score: viewModel.dayScore,
                 streak: preferences.streaksEnabled ? streak?.current : nil,
-                nextReminder: remindersShown ? viewModel.nextReminder(after: timeline.date) : nil
+                nextReminder: remindersShown ? viewModel.nextReminder(after: timeline.date, stacks: stacks) : nil
             )
         }
         .tracksDayScoreCard(scoreCardTracker, isActive: collapsesScoreCard)
