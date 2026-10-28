@@ -77,9 +77,10 @@ final class TodayViewModel {
             }
         }
         let stackCandidates = !UsualTime.isAvailable ? [] : stacks.filter { $0.reminderMinutes >= 0 }.flatMap { stack in
-            let due = StackLogging.dueEntries(of: stack, now: now).compactMap(\.nutrient)
-            guard !due.isEmpty, !StackLogging.isLoggedToday(stack, now: now),
-                  !due.allSatisfy({ total(for: $0) > 0 }) else { return [(nutrientName: String, timeOfDay: Date)]() }
+            guard !StackLogging.dueEntries(of: stack, now: now).isEmpty,
+                  !StackLogging.isDoneForReminder(stack, now: now, isLogged: { total(for: $0) > 0 }) else {
+                return [(nutrientName: String, timeOfDay: Date)]()
+            }
             return dates(NotificationService.reminderTimes(for: stack, now: now)).map {
                 (nutrientName: StackReminderText.fullName(stack.name), timeOfDay: $0)
             }

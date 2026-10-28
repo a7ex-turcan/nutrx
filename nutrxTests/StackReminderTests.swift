@@ -62,4 +62,54 @@ final class StackReminderTests: XCTestCase {
         try context.save()
         XCTAssertEqual(stack.usualTime(), .learned(weekdays: 500, weekends: 500))
     }
+
+    /// A stack of Vitamin D (every day) and Magnesium (Mondays only), created 30 days ago.
+    private func mondayStack(context: ModelContext) -> (LogStack, Nutrient, Nutrient) {
+        let calendar = Calendar.current
+        let created = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: .now))!
+        let vitaminD = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 1000, sortOrder: 0)
+        let magnesium = Nutrient(name: "Magnesium", unit: "mg", step: 200, dailyTarget: 200, sortOrder: 1)
+        magnesium.scheduleRaw = NutrientSchedule().setting(.weekdays([2]), from: created).encode()
+        let stack = LogStack(name: "Morning", sortOrder: 0)
+        context.insert(stack)
+        for (index, nutrient) in [vitaminD, magnesium].enumerated() {
+            nutrient.createdAt = created
+            context.insert(nutrient)
+            let entry = LogStackEntry(nutrient: nutrient, amount: nutrient.step, sortOrder: index)
+            entry.stack = stack
+            context.insert(entry)
+        }
+        return (stack, vitaminD, magnesium)
+    }
+
+    func testDoneForItsReminderWhenLoggedOrEveryDueNutrientIs() throws {
+        let context = ModelContext(try ModelContainer.inMemoryForTests())
+        let (stack, vitaminD, magnesium) = mondayStack(context: context)
+        let isMonday = Calendar.current.component(.weekday, from: .now) == 2
+        // Only Vitamin D logged: done on any day but a Monday, when Magnesium is due too.
+        XCTAssertEqual(StackLogging.isDoneForReminder(stack, isLogged: { $0 === vitaminD }), !isMonday)
+        XCTAssertTrue(StackLogging.isDoneForReminder(stack, isLogged: { $0 === vitaminD || $0 === magnesium }))
+        XCTAssertFalse(StackLogging.isDoneForReminder(stack, isLogged: { _ in false }))
+        stack.lastLoggedAt = .now
+        XCTAssertTrue(StackLogging.isDoneForReminder(stack, isLogged: { _ in false }), "logged with Log")
+    }
+
+    func testItsDaysAndWhatItNamesEachDay() throws {
+        let calendar = Calendar.current
+        let context = ModelContext(try ModelContainer.inMemoryForTests())
+        let (stack, vitaminD, _) = mondayStack(context: context)
+        let today = calendar.startOfDay(for: .now)
+        XCTAssertEqual(StackLogging.dueDays(of: stack, from: .now, count: 7).count, 7, "Vitamin D every day")
+        let monday = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
+            .first { calendar.component(.weekday, from: $0) == 2 }!
+        let tuesday = calendar.date(byAdding: .day, value: 1, to: monday)!
+        XCTAssertEqual(StackLogging.dueNames(of: stack, on: monday), ["Vitamin D", "Magnesium"])
+        XCTAssertEqual(StackLogging.dueNames(of: stack, on: tuesday), ["Vitamin D"], "not Magnesium on a Tuesday")
+
+        // With Vitamin D gone, only Mondays are left.
+        vitaminD.isRemoved = true
+        let days = StackLogging.dueDays(of: stack, from: .now, count: 14)
+        XCTAssertFalse(days.isEmpty)
+        XCTAssertTrue(days.allSatisfy { calendar.component(.weekday, from: $0) == 2 })
+    }
 }

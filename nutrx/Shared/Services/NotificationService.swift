@@ -170,8 +170,9 @@ enum NotificationService {
             )
         }
         let stackReminders = stackReminderPlans(context: context, totals: totals, now: now)
-        let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }
-                                    + stackReminders.map { ($0.plan.nutrientID, $0.content) }) { first, _ in first }
+        let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }) { first, _ in first }
+        // A stack's content is per day: its body names what's due that day.
+        let stackContents = Dictionary(stackReminders.map { ($0.plan.nutrientID, $0.content) }) { first, _ in first }
         // Refill reminders first: they're one per bottle, and dose reminders share what's left of the budget.
         // Unknown entitlement: keep what's pending and set aside room for it.
         // Not Pro: nothing to schedule, but the records of reminders that already fired stay, so a lapse and renewal
@@ -191,7 +192,7 @@ enum NotificationService {
         let recapReserved = supplyRemindersEnabled == nil ? RecapSchedule.slots(at: now) : recapRequests.count
         let doseBudget = max(1, ReminderSchedule.budget - refillReserved - recapReserved)
         let requests = refillRequests + recapRequests + ReminderSchedule.occurrences(for: plans + stackReminders.map(\.plan), now: now, budget: doseBudget).compactMap { occurrence in
-            contents[occurrence.nutrientID].map { content in
+            (contents[occurrence.nutrientID] ?? stackContents[occurrence.nutrientID]?(occurrence.fireDate)).map { content in
                 let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute],
                                                             from: occurrence.fireDate)
                 return UNNotificationRequest(identifier: occurrence.id, content: content,
@@ -273,29 +274,32 @@ enum NotificationService {
     /// (as for a nutrient: the learned time with Pro or an unknown entitlement, else the starting time). Silent once
     /// the stack is done today, logged with Log or every due nutrient in it logged, and on days nothing in it is due.
     /// Not before they ship, outside Debug builds (`UsualTime.isAvailable`).
-    private static func stackReminderPlans(context: ModelContext, totals: [PersistentIdentifier: Double],
-                                           now: Date) -> [(plan: ReminderSchedule.Plan, content: UNNotificationContent)] {
+    private static func stackReminderPlans(
+        context: ModelContext, totals: [PersistentIdentifier: Double], now: Date
+    ) -> [(plan: ReminderSchedule.Plan, content: (Date) -> UNNotificationContent)] {
         guard UsualTime.isAvailable else { return [] }
-        let calendar = Calendar.current
         let stacks = ((try? context.fetch(FetchDescriptor<LogStack>())) ?? []).filter { $0.reminderMinutes >= 0 }
-        let today = calendar.startOfDay(for: now)
-        let window = (0..<ReminderSchedule.maxDays).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
         return stacks.compactMap { stack in
-            let entries = StackLogging.activeEntries(of: stack, now: now)
-            let dueDays = Set(window.filter { day in entries.contains { $0.nutrient?.isDue(on: day) ?? false } })
+            let dueDays = StackLogging.dueDays(of: stack, from: now, count: ReminderSchedule.maxDays)
             guard !dueDays.isEmpty else { return nil }
-            let dueToday = StackLogging.dueEntries(of: stack, now: now).compactMap(\.nutrient)
-            let doneToday = StackLogging.isLoggedToday(stack, now: now)
-                || (!dueToday.isEmpty && dueToday.allSatisfy { (totals[$0.persistentModelID] ?? 0) > 0 })
+            let doneToday = StackLogging.isDoneForReminder(stack, now: now) {
+                (totals[$0.persistentModelID] ?? 0) > 0
+            }
             let (times, weekend) = reminderTimes(for: stack, now: now)
             let plan = ReminderSchedule.Plan(nutrientID: stack.id, times: times, loggedToday: doneToday,
                                              weekendTimes: weekend, dueDays: dueDays, isStack: true)
-            let content = UNMutableNotificationContent()
-            content.title = StackReminderText.title(stackName: stack.name)
-            content.body = StackReminderText.body(names: entries.compactMap { $0.nutrient?.name })
-            content.sound = .default
-            content.userInfo = [stackIDKey: stack.id.uuidString]
-            return (plan, content)
+            let title = StackReminderText.title(stackName: stack.name)
+            let id = stack.id.uuidString
+            // What the stack logs that day, so a weekly nutrient isn't named on a day it's not due.
+            let names = Dictionary(dueDays.map { ($0, StackLogging.dueNames(of: stack, on: $0)) }) { first, _ in first }
+            return (plan, { fireDate in
+                let content = UNMutableNotificationContent()
+                content.title = title
+                content.body = StackReminderText.body(names: names[Calendar.current.startOfDay(for: fireDate)] ?? [])
+                content.sound = .default
+                content.userInfo = [stackIDKey: id]
+                return content
+            })
         }
     }
 

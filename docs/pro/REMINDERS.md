@@ -51,7 +51,8 @@ From the last **28 completed days** (today never counts, as in recaps):
 - **The model:** `LogStack.reminderMinutes: Int = -1` (minutes after midnight, -1 for none) and `LogStack.remindsAtUsualTime: Bool = false` (CloudKit `CD_reminderMinutes`, `CD_remindsAtUsualTime`). A stack has one time, so its set time is also its starting time.
 - **Its nutrients' own reminders** still come; the scheduler doesn't merge them. The sheet says so when any of them has reminders: "Vitamin D and Omega-3 have reminders of their own too." Someone who wants one nudge turns those off.
 - **When it's silent:** a stack that's **done today**. That's logged with Log (`StackLogging`'s rule, from any device), or every one of its due nutrients already logged today, as on Today's card. It's also silent on a day with nothing due in it.
-- **The notification:** "Time for your Morning stack", with the body "Vitamin D, Omega-3 and Magnesium". A tap opens Today with that stack's log sheet.
+- **The notification:** "Time for your Morning stack", with the body "Vitamin D, Omega-3 and Magnesium": what it logs **that day**, so a nutrient taken on Mondays isn't named on a Tuesday. A tap opens Today with that stack's log sheet.
+- **Kept in step:** deleting a stack, renaming it, or adding or removing its nutrients (stack detail, Add to Stack…, a new nutrient's stacks) reschedules, so a deleted stack's reminder never fires.
 - **Logging the stack** logs its nutrients, which silences their own reminders for the day too.
 - **Today's next-reminder line** names it like a nutrient's: "Morning stack at 9:00", while something in it is due and it isn't done.
 
