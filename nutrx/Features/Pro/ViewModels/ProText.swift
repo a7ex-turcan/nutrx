@@ -87,6 +87,14 @@ enum ProText {
         }
     }
 
+    /// A grouped paywall row's note: the first of its listed features' notes (label scanning on Supply & label scan,
+    /// recaps on Recaps, trends & reports). Unlisted features add nothing, as in `appleIntelligenceNote`.
+    static func appleIntelligenceRowNote(_ group: ProFeatureGroup, listed: [ProFeature] = ProFeature.listed,
+                                         reading: ScanText.Reading, device: String) -> String? {
+        group.features.filter(listed.contains).lazy
+            .compactMap { appleIntelligenceRowNote($0, reading: reading, device: device) }.first
+    }
+
     static func planTitle(_ plan: ProAccess.Plan) -> String {
         switch plan {
         case .yearly: "Yearly"

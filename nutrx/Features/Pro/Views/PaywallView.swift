@@ -184,21 +184,21 @@ struct PaywallView: View {
 
     private var features: some View {
         // Without Apple Intelligence the features still work, more simply: say so where it applies
-        // (docs/pro/design/2-paywall: no-apple-intelligence).
+        // (docs/pro/design/2-paywall: no-apple-intelligence). Related features share a row (`ProFeatureGroup`).
         let reading = ScanText.Reading.current
         let device = UIDevice.current.model
         return VStack(alignment: .leading, spacing: 10) {
-            ForEach(ProFeature.listed) { feature in
+            ForEach(ProFeatureGroup.listed) { group in
                 HStack(spacing: 14) {
-                    NutrientIconTile(tint: feature.tint, symbolName: feature.symbolName, size: 34)
+                    NutrientIconTile(tint: group.tint, symbolName: group.symbolName, size: 34)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(feature.title)
+                        Text(group.title)
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(Theme.textPrimary)
-                        Text(feature.subtitle)
+                        Text(group.subtitle)
                             .font(.footnote)
                             .foregroundStyle(Theme.textSecondary)
-                        if let note = ProText.appleIntelligenceRowNote(feature, reading: reading, device: device) {
+                        if let note = ProText.appleIntelligenceRowNote(group, reading: reading, device: device) {
                             Label(note, systemImage: "info.circle")
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(Theme.textSecondary)
