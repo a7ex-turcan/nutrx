@@ -142,6 +142,18 @@ struct YearlyRecapText: RecapWording {
         "Latest: \(yearName) · \(RecapText.together("\(number(recap.goalsMet)) of \(number(recap.goalsCounted)) \(GoalProgress.goals(recap.goalsCounted))"))"
     }
 
+    /// "Your 2026 in nutrx".
+    var notificationTitle: String { "Your \(yearName) in nutrx" }
+
+    /// "You met 73% of your goals in 2026. Vitamin D was your steadiest."
+    var notificationBody: String {
+        let goals = "You met \(percent)% of your goals in \(yearName)."
+        return recap.steadiest.map { "\(goals) \($0.name) was your steadiest." } ?? goals
+    }
+
+    /// Set up before the year's facts are in: no numbers that could be out of date.
+    var notificationBodyWithoutFacts: String { "See what you hit in \(yearName) and what slipped." }
+
     /// Before the first year has something in it: "Your first yearly recap arrives on 1 January".
     static func firstTitle(calendar: Calendar = .current) -> String {
         "Your first yearly recap arrives on 1 \(calendar.standaloneMonthSymbols[0])"

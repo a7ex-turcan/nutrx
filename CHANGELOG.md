@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### nutrx Pro
+- **Monthly and yearly recaps** — Beside the weekly recap, History's **Recaps** now sums up each month and each year, with a Week / Month / Year switch. A month shows your goals met and full days, a calendar of its full days, your steadiest nutrient, what slipped and on which days, your best run, and how it compares with the month before. A year shows its months side by side as bars, its best month, the month you logged most, your longest run and when you started. Both work for the month or year so far too. "Your October" shows on Today on the 1st and 2nd and "Your 2026" in the first week of January, and a notification arrives on the 1st (and on 1 January) at 18:00, only one a night. Settings → Notifications → **Recaps** turns all three off together. As with the week, the summary is reworded on your device with Apple Intelligence, and never leaves it.
+
 ## v2.5 — submitted for review 2026-10-28 (build 205)
 
 ### nutrx Pro

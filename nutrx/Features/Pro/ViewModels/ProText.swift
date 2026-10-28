@@ -43,7 +43,7 @@ enum ProText {
         return parts.map { $0.replacingOccurrences(of: " ", with: "\u{00A0}") }.joined(separator: "\u{00A0}· ")
     }
 
-    /// "Supply, label scanning, weekly recaps, Apple Health trends, doctor reports and courses are on. Nothing you
+    /// "Supply, label scanning, recaps, Apple Health trends, doctor reports and courses are on. Nothing you
     /// already use has changed." — no serial comma, as in the design; "Supply is on." for one.
     static func welcome(_ features: [ProFeature]) -> String {
         let names = features.map(\.welcomeName)

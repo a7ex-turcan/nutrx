@@ -40,12 +40,12 @@ enum SettingsSummary {
         return active ? "\(privacy) To delete nutrx's data from iCloud, turn sync off and reopen nutrx." : privacy
     }
 
-    /// `weeklyRecap`: the Pro recap will actually arrive (Pro, its switch on, notifications allowed).
+    /// `weeklyRecap`: the Pro recaps will actually arrive (Pro, their switch on, notifications allowed).
     static func notifications(dailyReminderEnabled: Bool, weeklyRecap: Bool = false) -> String {
         switch (dailyReminderEnabled, weeklyRecap) {
         case (true, true): "Check-in and recap"
         case (true, false): "Noon check-in"
-        case (false, true): "Weekly recap"
+        case (false, true): "Recaps"
         case (false, false): "Off"
         }
     }

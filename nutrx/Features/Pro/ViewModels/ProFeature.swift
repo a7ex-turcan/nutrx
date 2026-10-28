@@ -18,7 +18,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         switch self {
         case .supply: "Supply & refills"
         case .scan: "Scan a label"
-        case .recap: "Weekly recap"
+        case .recap: "Recaps"
         case .health: "Trends with Apple Health"
         case .report: "A report for your doctor"
         case .courses: "Courses"
@@ -36,7 +36,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         switch self {
         case .supply: "Know when a bottle runs out, and what it costs"
         case .scan: "Add a nutrient from its bottle"
-        case .recap: "Your week, summarised"
+        case .recap: "Your week, month and year, summarised"
         case .health: "Intake against sleep and workouts"
         case .report: "A PDF of any period"
         case .courses: "Take something for a set time"
@@ -59,12 +59,12 @@ enum ProFeature: String, CaseIterable, Identifiable {
         }
     }
 
-    /// In the welcome sentence: "supply, label scanning, weekly recaps… are on" (`ProText.welcome`).
+    /// In the welcome sentence: "supply, label scanning, recaps… are on" (`ProText.welcome`).
     var welcomeName: String {
         switch self {
         case .supply: "supply"
         case .scan: "label scanning"
-        case .recap: "weekly recaps"
+        case .recap: "recaps"
         case .health: "Apple Health trends"
         case .report: "doctor reports"
         case .courses: "courses"

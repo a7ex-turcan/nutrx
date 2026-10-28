@@ -12,8 +12,10 @@ final class NotificationRouter {
 
     /// The nutrient whose Supply card a refill reminder opened; cleared once it's been shown and left.
     var supplyNutrientID: UUID?
-    /// A recap notification was tapped: History opens the weekly recap, then clears it.
+    /// A recap notification was tapped: History opens the recap on `recapTab`, then clears it.
     var showsRecap = false
+    /// The tapped recap's period (#136).
+    var recapTab = RecapTab.week
     /// Today's stacks row asked for the Stacks tab (Edit); the tab bar switches and clears it.
     var showsStacks = false
     /// Today's Apple Health card asked to see where insights appear (#102): Nutrients pushes that nutrient's analytics,
@@ -64,8 +66,8 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
                                           icon: UNNotificationActionIcon(systemImageName: "clock"))
         let category = UNNotificationCategory(identifier: refillCategory, actions: [refilled, snooze],
                                               intentIdentifiers: [])
-        // The recap: tapping opens it; "Turn off weekly recaps" does what the Settings switch does.
-        let turnOff = UNNotificationAction(identifier: RecapSchedule.turnOffAction, title: "Turn off weekly recaps",
+        // The recaps: tapping opens one; "Turn off recaps" does what the Settings switch does (all three).
+        let turnOff = UNNotificationAction(identifier: RecapSchedule.turnOffAction, title: "Turn off recaps",
                                            icon: UNNotificationActionIcon(systemImageName: "bell.slash"))
         let recap = UNNotificationCategory(identifier: RecapSchedule.category, actions: [turnOff], intentIdentifiers: [])
         UNUserNotificationCenter.current().setNotificationCategories([category, recap])
@@ -82,7 +84,8 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
         let content = response.notification.request.content
         if content.categoryIdentifier == RecapSchedule.category {
             let action = response.actionIdentifier
-            await MainActor.run { handleRecap(action: action) }
+            let tab = (content.userInfo[RecapSchedule.periodKey] as? String).flatMap(RecapTab.init(rawValue:)) ?? .week
+            await MainActor.run { handleRecap(action: action, tab: tab) }
             return
         }
         guard content.categoryIdentifier == Self.refillCategory,
@@ -99,7 +102,7 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
     }
 
     @MainActor
-    private func handleRecap(action: String) {
+    private func handleRecap(action: String, tab: RecapTab) {
         switch action {
         case RecapSchedule.turnOffAction:
             UserDefaults.standard.set(false, forKey: RecapSchedule.enabledKey)
@@ -107,6 +110,7 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
         case UNNotificationDismissActionIdentifier:
             break
         default:
+            NotificationRouter.shared.recapTab = tab
             NotificationRouter.shared.showsRecap = true
         }
     }
