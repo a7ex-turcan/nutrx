@@ -61,7 +61,9 @@ struct RecapText: RecapWording {
         }
         // Times a week (#132): judged by the week, not day by day.
         for goal in recap.weekly {
-            sentences.append("\(goal.name): \(goal.met) of \(goal.times) \(recap.isWeekOver ? "this week" : "so far this week").")
+            let times = "\(goal.met) of \(goal.times) \(goal.times == 1 ? "time" : "times")"
+            sentences.append(recap.isWeekOver ? "You hit \(goal.name) \(times) this week."
+                                              : "You've hit \(goal.name) \(times) so far this week.")
         }
         if let streak = recap.streak, streak.now > 0 {
             sentences.append("Your streak stood at \(days(streak.now)).")
@@ -93,8 +95,16 @@ struct RecapText: RecapWording {
                               detail: "Missed \(dayList(slipped.missedDays, short: true))", nutrientID: slipped.id))
         }
         if let miss = recap.weakestWeekday {
+            // When this week's day of it was a full day, say so (#313): beside a perfect week, "2 of the last 4
+            // weeks" alone read as if this week slipped.
+            let heldThisWeek = recap.fullDayFlags.indices.contains { index in
+                recap.fullDayFlags[index]
+                    && calendar.component(.weekday, from: calendar.date(byAdding: .day, value: index, to: recap.weekStart)!)
+                        == miss.weekday
+            }
             cards.append(Card(kind: .weekday, label: "Day you tend to miss", value: weekdayName(miss.weekday),
-                              detail: "\(miss.missed) of the last \(miss.weeks) weeks", nutrientID: nil))
+                              detail: "\(miss.missed) of the last \(miss.weeks) weeks"
+                                  + (heldThisWeek ? ", but not this one" : ""), nutrientID: nil))
         }
         if let streak = recap.streak {
             cards.append(Card(kind: .streak, label: "Streak", value: days(streak.now),
@@ -107,8 +117,8 @@ struct RecapText: RecapWording {
         if streak.now == streak.previous { return "Same as last Sunday" }
         if streak.previous == 0 { return "Started this week" }
         if streak.now == 0 { return "Ended this week, after \(days(streak.previous))" }
-        return streak.now > streak.previous ? "Up from \(streak.previous) last Sunday"
-            : "Down from \(streak.previous) last Sunday"
+        return streak.now > streak.previous ? "Up from \(days(streak.previous)) last Sunday"
+            : "Down from \(days(streak.previous)) last Sunday"
     }
 
     // MARK: - Elsewhere

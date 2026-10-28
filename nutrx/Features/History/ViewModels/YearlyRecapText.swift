@@ -51,7 +51,8 @@ struct YearlyRecapText: RecapWording {
         }
         // Times a week (#132): judged by the week.
         for goal in recap.weekly {
-            sentences.append("\(goal.name): \(goal.weeksMet) of \(days(goal.weeks, "week")).")
+            sentences.append("\(goal.name) \(over ? "met" : "has met") its weekly goal in "
+                + "\(goal.weeksMet) of \(days(goal.weeks, "week")).")
         }
         if let streak = recap.longestStreak {
             sentences.append("Your longest run \(over ? "was" : "is") \(streak) days in a row.")

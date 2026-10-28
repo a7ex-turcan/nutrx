@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// A recap's fact cards in two columns (one, without icons, at accessibility sizes): steadiest, slipped, the day you
-/// tend to miss, the streak or best run, and the month's comparison; the year's best month, days logged and
-/// beginnings (#136).
+/// A recap's fact cards in two columns, a last one on its own across both (one column, without icons, at
+/// accessibility sizes): steadiest, slipped, the day you tend to miss, the streak or best run, and the month's
+/// comparison; the year's best month, days logged and beginnings (#136).
 struct RecapFactGrid: View {
     let cards: [RecapText.Card]
     /// For the steadiest and slipped cards' icon tiles.
@@ -11,13 +11,23 @@ struct RecapFactGrid: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        let columns = dynamicTypeSize.isAccessibilitySize
-            ? [GridItem(.flexible())]
-            : [GridItem(.flexible(), spacing: Theme.Spacing.cardGap), GridItem(.flexible())]
-        LazyVGrid(columns: columns, alignment: .leading, spacing: Theme.Spacing.cardGap) {
-            ForEach(cards, id: \.label) { card in
-                factCard(card)
+        let twoColumns = !dynamicTypeSize.isAccessibilitySize
+        let columns = twoColumns
+            ? [GridItem(.flexible(), spacing: Theme.Spacing.cardGap), GridItem(.flexible())]
+            : [GridItem(.flexible())]
+        // A last card alone on its row takes the width rather than leaving half of it empty (#317).
+        let lone = twoColumns && cards.count % 2 == 1 ? cards.last : nil
+        let paired = lone == nil ? cards : Array(cards.dropLast())
+        VStack(spacing: Theme.Spacing.cardGap) {
+            if !paired.isEmpty {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: Theme.Spacing.cardGap) {
+                    ForEach(paired, id: \.label) { card in
+                        factCard(card)
+                    }
+                }
             }
+            // Its natural height: `factCard` fills the height it's offered, for equal heights in a grid row.
+            if let lone { factCard(lone).fixedSize(horizontal: false, vertical: true) }
         }
     }
 

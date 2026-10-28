@@ -132,13 +132,14 @@ final class WeeklyRecapTests: XCTestCase {
         XCTAssertEqual(recap.streak, WeeklyRecap.StreakChange(now: 2, previous: 7))
         let text = RecapText(recap, calendar: calendar)
         XCTAssertTrue(text.summary.hasSuffix("Your streak stood at 2 days."))
-        XCTAssertEqual(text.cards.last?.detail, "Down from 7 last Sunday")
+        XCTAssertEqual(text.cards.last?.detail, "Down from 7 days last Sunday")
         XCTAssertNil(self.recap(all, today: day(10, 12), streaks: false).streak, "Streaks turned off")
     }
 
     func testStreakDetails() {
         let text = RecapText(recap(designWeek, today: day(10, 12)), calendar: calendar)
-        XCTAssertEqual(text.streakDetail(.init(now: 10, previous: 3)), "Up from 3 last Sunday")
+        XCTAssertEqual(text.streakDetail(.init(now: 10, previous: 3)), "Up from 3 days last Sunday")
+        XCTAssertEqual(text.streakDetail(.init(now: 4, previous: 1)), "Up from 1 day last Sunday")
         XCTAssertEqual(text.streakDetail(.init(now: 4, previous: 0)), "Started this week")
         XCTAssertEqual(text.streakDetail(.init(now: 0, previous: 5)), "Ended this week, after 5 days")
         XCTAssertEqual(text.streakDetail(.init(now: 7, previous: 7)), "Same as last Sunday")
@@ -153,6 +154,19 @@ final class WeeklyRecapTests: XCTestCase {
         let card = RecapText(recap, calendar: calendar).cards.first { $0.kind == .weekday }
         XCTAssertEqual(card?.value, "Sunday")
         XCTAssertEqual(card?.detail, "3 of the last 4 weeks")
+    }
+
+    func testTheDayYouTendToMissSaysWhenThisWeeksWasFull() {
+        // Sundays 20 September, 27 September and 4 October missed, this week's Sunday full (#313).
+        let all = totals(from: day(9, 14), through: day(10, 11),
+                         overrides: [day(9, 20): [omega: 0], day(9, 27): [omega: 0], day(10, 4): [omega: 0]])
+        let card = RecapText(recap(all, today: day(10, 12)), calendar: calendar).cards.first { $0.kind == .weekday }
+        XCTAssertEqual(card?.value, "Sunday")
+        XCTAssertEqual(card?.detail, "3 of the last 4 weeks, but not this one")
+        // On Sunday evening this week's Sunday hasn't counted yet: the plain detail (the four weeks to Saturday
+        // start on Sunday 13 September, before the data, so all four Sundays were missed).
+        let evening = RecapText(recap(all, today: day(10, 11)), calendar: calendar).cards.first { $0.kind == .weekday }
+        XCTAssertEqual(evening?.detail, "4 of the last 4 weeks")
     }
 
     func testNoWeekdayStandsOutWithoutARepeat() {

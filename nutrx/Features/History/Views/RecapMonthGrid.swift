@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The month's full days on a small calendar (#136, docs/pro/RECAPS.md §5): a full day in green, another day with
 /// something due outlined, and a day with nothing due (a rest day, before anything was tracked) or still to come
-/// faint. One VoiceOver element: "18 of 30 full days in October".
+/// faint. In the month so far, today has History's ring (#316). One VoiceOver element: "18 of 30 full days in October".
 struct RecapMonthGrid: View {
     let recap: MonthlyRecap
 
@@ -28,7 +28,8 @@ struct RecapMonthGrid: View {
                 ForEach((0..<grid.leadingBlanks).map { "blank-\($0)" }, id: \.self) { _ in Color.clear.frame(height: 1) }
                 ForEach(Array(grid.days.enumerated()), id: \.element) { index, day in
                     cell(day: index + 1, full: recap.fullDayFlags.indices.contains(index) && recap.fullDayFlags[index],
-                         counted: recap.dueDayFlags.indices.contains(index) && recap.dueDayFlags[index])
+                         counted: recap.dueDayFlags.indices.contains(index) && recap.dueDayFlags[index],
+                         isToday: !recap.isMonthOver && Calendar.current.isDateInToday(day))
                 }
             }
             .dynamicTypeSize(...DynamicTypeSize.xxxLarge)  // seven columns, as History's calendar
@@ -40,11 +41,12 @@ struct RecapMonthGrid: View {
         .accessibilityLabel("\(recap.fullDays) of \(recap.dayCount) full days in \(MonthlyRecapText(recap).monthName)")
     }
 
-    private func cell(day: Int, full: Bool, counted: Bool) -> some View {
+    private func cell(day: Int, full: Bool, counted: Bool, isToday: Bool) -> some View {
         Text("\(day)")
             .font(.caption.weight(full ? .bold : .regular))
             .monospacedDigit()
-            .foregroundStyle(full ? Theme.textOnTint : counted ? Theme.textPrimary : Theme.textSecondary.opacity(0.6))
+            .foregroundStyle(full ? Theme.textOnTint
+                             : counted || isToday ? Theme.textPrimary : Theme.textSecondary.opacity(0.6))
             .frame(maxWidth: .infinity)
             .frame(height: 28)
             .background {
@@ -52,6 +54,11 @@ struct RecapMonthGrid: View {
                     Circle().fill(Theme.green)
                 } else if counted {
                     Circle().stroke(Theme.surfaceChip, lineWidth: 1.5)
+                }
+            }
+            .overlay {
+                if isToday {
+                    Circle().strokeBorder(Theme.controlPrimary, lineWidth: 2)
                 }
             }
     }
@@ -63,6 +70,21 @@ struct RecapMonthGrid: View {
         .padding()
         .frame(maxHeight: .infinity)
         .background(Theme.surfaceGround)
+}
+
+#Preview("So far, light") {
+    RecapMonthGrid(recap: RecapPreviewSample.monthSoFar)
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+}
+
+#Preview("So far, dark") {
+    RecapMonthGrid(recap: RecapPreviewSample.monthSoFar)
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+        .preferredColorScheme(.dark)
 }
 
 #Preview("Dark") {
