@@ -34,6 +34,9 @@ enum RecapPreviewSample {
                            streaksEnabled: true)
     }
 
+    /// This month so far, with today ringed on its calendar.
+    static var monthSoFar: MonthlyRecap { MonthlyRecap.build(log: log, names: names, month: .now, streaksEnabled: true) }
+
     static var year: YearlyRecap { YearlyRecap.build(log: log, names: names, year: .now, streaksEnabled: true) }
 }
 #endif

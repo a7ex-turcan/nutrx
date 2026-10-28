@@ -26,7 +26,8 @@ struct RecapFactGrid: View {
                     }
                 }
             }
-            if let lone { factCard(lone) }
+            // Its natural height: `factCard` fills the height it's offered, for equal heights in a grid row.
+            if let lone { factCard(lone).fixedSize(horizontal: false, vertical: true) }
         }
     }
 

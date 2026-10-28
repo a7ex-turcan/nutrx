@@ -72,6 +72,21 @@ struct RecapMonthGrid: View {
         .background(Theme.surfaceGround)
 }
 
+#Preview("So far, light") {
+    RecapMonthGrid(recap: RecapPreviewSample.monthSoFar)
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+}
+
+#Preview("So far, dark") {
+    RecapMonthGrid(recap: RecapPreviewSample.monthSoFar)
+        .padding()
+        .frame(maxHeight: .infinity)
+        .background(Theme.surfaceGround)
+        .preferredColorScheme(.dark)
+}
+
 #Preview("Dark") {
     RecapMonthGrid(recap: RecapPreviewSample.month)
         .padding()
