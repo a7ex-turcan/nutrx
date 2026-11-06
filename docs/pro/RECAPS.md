@@ -1,6 +1,6 @@
 # Monthly and yearly recaps — spec (nutrx Pro, #136)
 
-The weekly recap, zoomed out: "Your October" at the start of each month, and a year in review. Same rules and the same parts as the weekly recap (CLAUDE.md, nutrx Pro: Weekly recap): facts from the `HistoryLog`, words from `RecapText`, an optional on-device rewording checked against the facts. Planned for 2.6.
+The weekly recap, zoomed out: "Your October" at the start of each month, and a year in review. Same rules and the same parts as the weekly recap (CLAUDE.md, nutrx Pro: Weekly recap): facts from the `HistoryLog`, words from `RecapText`, an optional on-device rewording checked against the facts. In 2.6.
 
 Decided with the user on 2026-10-28:
 - **Where:** the recap screen gets a **Week / Month / Year** switch. History's "Weekly recaps" row becomes **Recaps**.

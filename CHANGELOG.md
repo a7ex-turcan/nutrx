@@ -6,12 +6,16 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+## v2.6 — submitted for review 2026-11-07 (build 216)
+
 ### nutrx Pro
 - **Monthly and yearly recaps** — Beside the weekly recap, History's **Recaps** now sums up each month and each year, with a Week / Month / Year switch. A month shows your goals met and full days, a calendar of its full days, your steadiest nutrient, what slipped and on which days, your best run, and how it compares with the month before. A year shows its months side by side as bars, its best month, the month you logged most, your longest run and when you started. Both work for the month or year so far too. "Your October" shows on Today on the 1st and 2nd and "Your 2026" in the first week of January, and a notification arrives on the 1st (and on 1 January) at 18:00, only one a night. Settings → Notifications → **Recaps** turns all three off together. As with the week, the summary is reworded on your device with Apple Intelligence, and never leaves it.
 - **Reminders at your usual time** — A nutrient's Reminders can now be **At my usual time**: nutrx learns, on your device, when you usually log it (the time you've logged it by on about three days in four over the last four weeks, weekends apart when they differ), and reminds you then only if you haven't logged it, so it nudges only when you're running late. Until it has learned (seven logged days), it reminds you at a starting time you pick. Stacks can have it too. Your set times are kept for switching back, and without Pro the starting time is used.
 
 ### Improvements
 - **Stack reminders** — A stack can have a reminder of its own, once a day at a time you set, from its screen in Stacks. It names what the stack logs that day, says nothing once the stack is logged (or everything in it is), and tapping it opens the stack ready to log.
+- **Weekly recap polish** — A nutrient you take a few times a week is a sentence of its own in the summary ("You hit Magnesium 2 of 3 times this week."). The day you tend to miss says "but not this one" when this week's was a full day, and the streak card gives its unit ("Up from 3 days last Sunday"). A fact card alone on its last row spans both columns.
+- **The Pro page** — Its plans row is "Courses, schedules & reminders", and the recaps row reads "Your week, month and year, Apple Health trends, and a PDF for your doctor", short enough that the plans still start on an iPhone SE's screen.
 
 ## v2.5 — 2026-10-28
 
