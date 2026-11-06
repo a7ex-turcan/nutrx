@@ -147,24 +147,24 @@ Released on the App Store on 24 Oct 2026 (build 173, phased release; tag `v2.4`)
 | Weekly progress read with a date-bounded fetch | ✅ Shipped (v2.4, #249) |
 | `Tools/testflight` for manual TestFlight uploads | ✅ Shipped (v2.4, #144) |
 
-### v2.5 — Supply costs, widgets and controls
+### v2.5 — Supply costs, widgets and controls ✅
 
-Submitted for App Review on 28 Oct 2026 (build 205, phased release). Main builds 2.6 from here.
+Released on the App Store on 28 Oct 2026 (build 205, phased release; tag `v2.5`). Main builds 2.6 from here.
 
 | Feature | Status |
 |---|---|
-| Supply costs: a price per bottle, monthly costs, Add to list (Pro) | ✅ Built (v2.5, #134) |
-| Widgets and controls: Log stack and Log nutrient controls, a Nutrient widget, a Supply and courses widget (Pro) | ✅ Built (v2.5, #138) |
-| Doctor report: "Days counted" for weekly nutrients | ✅ Built (v2.5, #257) |
-| No "Fill to goal" on a day off | ✅ Built (v2.5, #256) |
-| Editing an amount without thousands separators | ✅ Built (v2.5, #258) |
-| Log clear of the Done bar with a hardware keyboard | ✅ Built (v2.5, #261, #274) |
-| A shorter Pro page: features in four grouped rows | ✅ Built (v2.5, #304) |
-| "Out of supply" in amber on Today | ✅ Built (v2.5, #303) |
-| Supply and courses widget, medium: list rows with one or two items | ✅ Built (v2.5, #301) |
-| A nutrient opened from a link shows its own numbers | ✅ Built (v2.5, #295) |
-| Siri tip says "stack" once | ✅ Built (v2.5, #292) |
-| Group names at the largest text sizes | ✅ Built (v2.5, #273) |
+| Supply costs: a price per bottle, monthly costs, Add to list (Pro) | ✅ Shipped (v2.5, #134) |
+| Widgets and controls: Log stack and Log nutrient controls, a Nutrient widget, a Supply and courses widget (Pro) | ✅ Shipped (v2.5, #138) |
+| Doctor report: "Days counted" for weekly nutrients | ✅ Shipped (v2.5, #257) |
+| No "Fill to goal" on a day off | ✅ Shipped (v2.5, #256) |
+| Editing an amount without thousands separators | ✅ Shipped (v2.5, #258) |
+| Log clear of the Done bar with a hardware keyboard | ✅ Shipped (v2.5, #261, #274) |
+| A shorter Pro page: features in four grouped rows | ✅ Shipped (v2.5, #304) |
+| "Out of supply" in amber on Today | ✅ Shipped (v2.5, #303) |
+| Supply and courses widget, medium: list rows with one or two items | ✅ Shipped (v2.5, #301) |
+| A nutrient opened from a link shows its own numbers | ✅ Shipped (v2.5, #295) |
+| Siri tip says "stack" once | ✅ Shipped (v2.5, #292) |
+| Group names at the largest text sizes | ✅ Shipped (v2.5, #273) |
 
 ### v2.6 — Monthly and yearly recaps
 
