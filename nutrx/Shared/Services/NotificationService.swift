@@ -21,6 +21,10 @@ extension Notification.Name {
 enum NotificationService {
     private static let dailyReminderID = "daily-checkin-reminder"
     private static let nutrientReminderPrefix = "nutrient-"
+    /// A stack's reminder requests (#137): "stack-<uuid>-reminder-HHmm-yyyyMMdd".
+    private static let stackReminderPrefix = "stack-"
+    /// A stack reminder's stack, so a tap opens its log sheet.
+    static let stackIDKey = "stackID"
 
     /// Refill reminders and the recaps are Pro features: set whenever the entitlement is checked. nil until
     /// then (a cold background launch — a notification action, Siri — syncs before it), which leaves pending refill
@@ -145,6 +149,7 @@ enum NotificationService {
         let descriptor = FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isRemoved })
         guard let nutrients = try? context.fetch(descriptor) else { return nil }
         usualTimes = [:]
+        stackUsualTimes = [:]
         let totals = todayTotals(context: context, now: now)
         // A course that has ended (#99) has nothing left to remind about.
         let withReminders = nutrients.filter {
@@ -164,7 +169,10 @@ enum NotificationService {
                 weekendTimes: weekendTimes
             )
         }
+        let stackReminders = stackReminderPlans(context: context, totals: totals, now: now)
         let contents = Dictionary(withReminders.map { ($0.id, reminderContent(for: $0)) }) { first, _ in first }
+        // A stack's content is per day: its body names what's due that day.
+        let stackContents = Dictionary(stackReminders.map { ($0.plan.nutrientID, $0.content) }) { first, _ in first }
         // Refill reminders first: they're one per bottle, and dose reminders share what's left of the budget.
         // Unknown entitlement: keep what's pending and set aside room for it.
         // Not Pro: nothing to schedule, but the records of reminders that already fired stay, so a lapse and renewal
@@ -183,8 +191,8 @@ enum NotificationService {
             : []
         let recapReserved = supplyRemindersEnabled == nil ? RecapSchedule.slots(at: now) : recapRequests.count
         let doseBudget = max(1, ReminderSchedule.budget - refillReserved - recapReserved)
-        let requests = refillRequests + recapRequests + ReminderSchedule.occurrences(for: plans, now: now, budget: doseBudget).compactMap { occurrence in
-            contents[occurrence.nutrientID].map { content in
+        let requests = refillRequests + recapRequests + ReminderSchedule.occurrences(for: plans + stackReminders.map(\.plan), now: now, budget: doseBudget).compactMap { occurrence in
+            (contents[occurrence.nutrientID] ?? stackContents[occurrence.nutrientID]?(occurrence.fireDate)).map { content in
                 let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute],
                                                             from: occurrence.fireDate)
                 return UNNotificationRequest(identifier: occurrence.id, content: content,
@@ -201,7 +209,7 @@ enum NotificationService {
             let stale = await center.pendingNotificationRequests()
                 .map(\.identifier)
                 .filter {
-                    ($0.hasPrefix(nutrientReminderPrefix)
+                    ($0.hasPrefix(nutrientReminderPrefix) || $0.hasPrefix(stackReminderPrefix)
                         || (refillPlan != nil && $0.hasPrefix(RefillSchedule.identifierPrefix))
                         || (supplyRemindersEnabled != nil
                             && RecapSchedule.identifierPrefixes.contains(where: $0.hasPrefix)))
@@ -257,6 +265,61 @@ enum NotificationService {
         if let cached = usualTimes[nutrient.id], cached.day == day { return cached.result }
         let result = nutrient.usualTime(now: now)
         usualTimes[nutrient.id] = (day, result)
+        return result
+    }
+
+    // MARK: - Stack reminders
+
+    /// Each stack with a reminder (#137, docs/pro/REMINDERS.md §4): one a day, at its set time or at its usual time
+    /// (as for a nutrient: the learned time with Pro or an unknown entitlement, else the starting time). Silent once
+    /// the stack is done today, logged with Log or every due nutrient in it logged, and on days nothing in it is due.
+    /// Not before they ship, outside Debug builds (`UsualTime.isAvailable`).
+    private static func stackReminderPlans(
+        context: ModelContext, totals: [PersistentIdentifier: Double], now: Date
+    ) -> [(plan: ReminderSchedule.Plan, content: (Date) -> UNNotificationContent)] {
+        guard UsualTime.isAvailable else { return [] }
+        let stacks = ((try? context.fetch(FetchDescriptor<LogStack>())) ?? []).filter { $0.reminderMinutes >= 0 }
+        return stacks.compactMap { stack in
+            let dueDays = StackLogging.dueDays(of: stack, from: now, count: ReminderSchedule.maxDays)
+            guard !dueDays.isEmpty else { return nil }
+            let doneToday = StackLogging.isDoneForReminder(stack, now: now) {
+                (totals[$0.persistentModelID] ?? 0) > 0
+            }
+            let (times, weekend) = reminderTimes(for: stack, now: now)
+            let plan = ReminderSchedule.Plan(nutrientID: stack.id, times: times, loggedToday: doneToday,
+                                             weekendTimes: weekend, dueDays: dueDays, isStack: true)
+            let title = StackReminderText.title(stackName: stack.name)
+            let id = stack.id.uuidString
+            // What the stack logs that day, so a weekly nutrient isn't named on a day it's not due.
+            let names = Dictionary(dueDays.map { ($0, StackLogging.dueNames(of: stack, on: $0)) }) { first, _ in first }
+            return (plan, { fireDate in
+                let content = UNMutableNotificationContent()
+                content.title = title
+                content.body = StackReminderText.body(names: names[Calendar.current.startOfDay(for: fireDate)] ?? [])
+                content.sound = .default
+                content.userInfo = [stackIDKey: id]
+                return content
+            })
+        }
+    }
+
+    /// A stack reminder's time (§4): its set time, or at its usual time the planned one (weekends apart when learned
+    /// apart), as for a nutrient. Today's next-reminder line uses it too.
+    static func reminderTimes(for stack: LogStack,
+                              now: Date) -> (times: [ReminderSchedule.Time], weekend: [ReminderSchedule.Time]?) {
+        guard stack.remindsAtUsualTime else { return ([ReminderSchedule.Time(minutes: stack.reminderMinutes)], nil) }
+        let planned = UsualTime.planned(start: stack.reminderMinutes, result: usualTime(of: stack, now: now),
+                                        isPro: supplyRemindersEnabled)
+        return ([ReminderSchedule.Time(minutes: planned.weekdays)], [ReminderSchedule.Time(minutes: planned.weekends)])
+    }
+
+    /// A stack's usual time, kept like a nutrient's until the next sync.
+    private static var stackUsualTimes: [UUID: UsualTime.Result] = [:]
+
+    static func usualTime(of stack: LogStack, now: Date = .now) -> UsualTime.Result {
+        if let cached = stackUsualTimes[stack.id] { return cached }
+        let result = stack.usualTime(now: now)
+        stackUsualTimes[stack.id] = result
         return result
     }
 

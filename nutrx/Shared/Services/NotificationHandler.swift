@@ -16,6 +16,8 @@ final class NotificationRouter {
     var showsRecap = false
     /// The tapped recap's period (#136).
     var recapTab = RecapTab.week
+    /// A stack reminder was tapped (#137): Today opens that stack's log sheet, then clears it.
+    var stackID: UUID?
     /// Today's stacks row asked for the Stacks tab (Edit); the tab bar switches and clears it.
     var showsStacks = false
     /// Today's Apple Health card asked to see where insights appear (#102): Nutrients pushes that nutrient's analytics,
@@ -86,6 +88,12 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
             let action = response.actionIdentifier
             let tab = (content.userInfo[RecapSchedule.periodKey] as? String).flatMap(RecapTab.init(rawValue:)) ?? .week
             await MainActor.run { handleRecap(action: action, tab: tab) }
+            return
+        }
+        // A stack reminder (#137): a tap opens the stack's log sheet on Today.
+        if let stack = (content.userInfo[NotificationService.stackIDKey] as? String).flatMap(UUID.init(uuidString:)),
+           response.actionIdentifier == UNNotificationDefaultActionIdentifier {
+            await MainActor.run { NotificationRouter.shared.stackID = stack }
             return
         }
         guard content.categoryIdentifier == Self.refillCategory,

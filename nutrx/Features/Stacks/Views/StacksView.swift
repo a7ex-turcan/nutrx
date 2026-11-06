@@ -283,6 +283,8 @@ struct StacksView: View {
         try? modelContext.save()
         stackToDelete = nil
         StackShortcutLogging.stacksChanged()
+        // Its reminder (#137) goes with it.
+        NotificationService.refreshAllNutrientReminders(context: modelContext)
     }
 }
 

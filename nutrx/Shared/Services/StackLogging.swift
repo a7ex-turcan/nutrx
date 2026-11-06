@@ -26,6 +26,26 @@ enum StackLogging {
         activeEntries(of: stack, now: now).filter { $0.nutrient?.isDue(on: now) ?? false }
     }
 
+    /// Done for its reminder today (#137, docs/pro/REMINDERS.md §4): logged with Log, or every nutrient due in it
+    /// logged today however (`isLogged`). Not done with nothing due: a stack reminder skips those days anyway.
+    static func isDoneForReminder(_ stack: LogStack, now: Date = .now, isLogged: (Nutrient) -> Bool) -> Bool {
+        let due = dueEntries(of: stack, now: now).compactMap(\.nutrient)
+        return isLoggedToday(stack, now: now) || (!due.isEmpty && due.allSatisfy(isLogged))
+    }
+
+    /// The days from `day` (`count` of them) on which something in the stack is due: its reminder's days (#137).
+    static func dueDays(of stack: LogStack, from day: Date, count: Int, calendar: Calendar = .current) -> Set<Date> {
+        let start = calendar.startOfDay(for: day)
+        let entries = activeEntries(of: stack, now: day)
+        return Set((0..<count).compactMap { calendar.date(byAdding: .day, value: $0, to: start) }
+            .filter { date in entries.contains { $0.nutrient?.isDue(on: date, calendar: calendar) ?? false } })
+    }
+
+    /// The names of what it logs on `day`: the due nutrients, in the stack's order (its reminder's body, #137).
+    static func dueNames(of stack: LogStack, on day: Date) -> [String] {
+        dueEntries(of: stack, now: day).compactMap { $0.nutrient?.name }
+    }
+
     /// Logged on `now`'s calendar day, from any device.
     static func isLoggedToday(_ stack: LogStack, now: Date = .now, calendar: Calendar = .current) -> Bool {
         stack.lastLoggedAt.map { calendar.isDate($0, inSameDayAs: now) } ?? false
