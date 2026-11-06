@@ -13,7 +13,7 @@ All notable changes to nutrx are documented in this file.
 ### Improvements
 - **Stack reminders** — A stack can have a reminder of its own, once a day at a time you set, from its screen in Stacks. It names what the stack logs that day, says nothing once the stack is logged (or everything in it is), and tapping it opens the stack ready to log.
 
-## v2.5 — submitted for review 2026-10-28 (build 205)
+## v2.5 — 2026-10-28
 
 ### nutrx Pro
 - **Widgets and controls** — Log from outside the app. Two controls for Control Center, the Lock Screen and the Action button: **Log stack** logs a stack you pick, and **Log nutrient** logs one step of a nutrient. Once a stack is logged for the day its control shows a tick, and tapping it again opens Today, where Log again has Undo. A **Nutrient** widget shows one nutrient's ring and progress, with a + on the Home Screen, or as a ring on the Lock Screen. A **Supply and courses** widget lists what's running low or ending soonest, in small, medium and Lock Screen sizes. Without Pro they show what they do and open the paywall; the five widgets you already have stay free.
