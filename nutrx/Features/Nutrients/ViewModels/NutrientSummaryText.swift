@@ -35,7 +35,10 @@ enum NutrientSummaryText {
         }
     }
 
-    static func reminderSummary(for nutrient: Nutrient) -> String {
-        reminderSummary(times: (nutrient.reminders ?? []).map(\.timeOfDay))
+    /// At its usual time (nutrx Pro, #137): "Usually by 8:30", "Learning (9:00)" (`UsualTimeText.summary`).
+    static func reminderSummary(for nutrient: Nutrient, isPro: Bool) -> String {
+        guard nutrient.remindsAtUsualTime else { return reminderSummary(times: (nutrient.reminders ?? []).map(\.timeOfDay)) }
+        return UsualTimeText.summary(NotificationService.usualTime(of: nutrient),
+                                     start: UsualTimeText.time(nutrient.usualReminderMinutes), isPro: isPro)
     }
 }

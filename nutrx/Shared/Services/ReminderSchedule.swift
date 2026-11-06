@@ -9,9 +9,21 @@ import Foundation
 /// notifications (the daily check-in takes one more).
 enum ReminderSchedule {
     /// A reminder's time of day.
-    struct Time: Equatable {
+    struct Time: Equatable, Comparable {
         let hour: Int
         let minute: Int
+
+        init(hour: Int, minute: Int) {
+            self.hour = hour
+            self.minute = minute
+        }
+
+        /// From minutes after midnight (a learned usual time, #137).
+        init(minutes: Int) {
+            self.init(hour: minutes / 60, minute: minutes % 60)
+        }
+
+        static func < (lhs: Time, rhs: Time) -> Bool { (lhs.hour, lhs.minute) < (rhs.hour, rhs.minute) }
     }
 
     /// A nutrient's reminders as the scheduler sees them.
@@ -27,6 +39,8 @@ enum ReminderSchedule {
         var schedule = NutrientSchedule()
         /// Monday of a week whose weekly count is already reached (today's logs included): nothing more that week.
         var doneWeekStart: Date? = nil
+        /// On Saturdays and Sundays instead of `times`: a usual time learned apart for weekends (#137).
+        var weekendTimes: [Time]? = nil
     }
 
     /// One pending notification: its identifier and when it fires.
@@ -63,7 +77,8 @@ enum ReminderSchedule {
                 if let done = plan.doneWeekStart, NutrientSchedule.weekStart(of: day, calendar: calendar) == done {
                     return []
                 }
-                return plan.times.compactMap { time in
+                let times = calendar.isDateInWeekend(day) ? plan.weekendTimes ?? plan.times : plan.times
+                return times.compactMap { time in
                     guard let fireDate = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0,
                                                        of: day),
                           fireDate > now else { return nil }

@@ -38,6 +38,19 @@ final class ReminderScheduleTests: XCTestCase {
         XCTAssertEqual(occurrences.count, 14 * 2 - 1)
     }
 
+    func testWeekendsCanHaveTheirOwnTime() {
+        // A usual time learned apart for weekends (#137): 8:30 on weekdays, 10:15 on Saturday 17 and Sunday 18.
+        let usual = ReminderSchedule.Plan(nutrientID: vitaminD, times: [.init(minutes: 510)], loggedToday: false,
+                                          weekendTimes: [.init(minutes: 615)])
+        let fires = ReminderSchedule.occurrences(for: [usual], now: date(hour: 12), calendar: calendar).map(\.fireDate)
+        XCTAssertTrue(fires.contains(date(day: 16, hour: 8, minute: 30)), "Friday")
+        XCTAssertTrue(fires.contains(date(day: 17, hour: 10, minute: 15)), "Saturday")
+        XCTAssertTrue(fires.contains(date(day: 18, hour: 10, minute: 15)), "Sunday")
+        XCTAssertTrue(fires.contains(date(day: 19, hour: 8, minute: 30)), "Monday")
+        XCTAssertFalse(fires.contains(date(day: 17, hour: 8, minute: 30)))
+        XCTAssertEqual(ReminderSchedule.Time(minutes: 615), ReminderSchedule.Time(hour: 10, minute: 15))
+    }
+
     func testLoggingSilencesOnlyTheRestOfToday() {
         let occurrences = ReminderSchedule.occurrences(for: [plan(vitaminD, hours: [9, 21], loggedToday: true)],
                                                        now: date(hour: 12), calendar: calendar)

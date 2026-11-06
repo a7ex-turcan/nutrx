@@ -66,13 +66,19 @@ final class TodayViewModel {
     }
 
     /// The next reminder still to come today: a shown nutrient's reminder, unless that nutrient is already
-    /// logged today. The same rule `NotificationService.refreshAllNutrientReminders` schedules by (#4).
+    /// logged today. The same rule and the same times `NotificationService.refreshAllNutrientReminders` schedules
+    /// by (#4): a nutrient at its usual time (#137) names the time that fires, its weekend one on a weekend.
     func nextReminder(after now: Date = .now) -> UpcomingReminder? {
+        let calendar = Calendar.current
         let candidates = groupSections
             .flatMap(\.intakes)
             .filter { $0.total <= 0 }
             .flatMap { intake in
-                (intake.nutrient.reminders ?? []).map { (nutrientName: intake.nutrient.name, timeOfDay: $0.timeOfDay) }
+                let (times, weekend) = NotificationService.reminderTimes(for: intake.nutrient, now: now)
+                return (calendar.isDateInWeekend(now) ? weekend ?? times : times).compactMap { time in
+                    calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: now)
+                        .map { (nutrientName: intake.nutrient.name, timeOfDay: $0) }
+                }
             }
         return UpcomingReminder.next(after: now, among: candidates)
     }

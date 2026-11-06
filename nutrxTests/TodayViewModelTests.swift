@@ -90,6 +90,23 @@ final class TodayViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Vitamin D")
     }
 
+    func testANutrientAtItsUsualTimeNamesTheTimeThatFires() throws {
+        // Set at 9:00 but at its usual time (#137), still learning from a 10:30 start: 10:30 is what fires.
+        let zinc = makeNutrient("Zinc", target: 10, reminderHours: [9], sortOrder: 0)
+        zinc.usualReminderMinutes = 10 * 60 + 30
+        // And one at its usual time with no set reminders at all.
+        let iron = makeNutrient("Iron", target: 18, reminderHours: [], sortOrder: 1)
+        iron.usualReminderMinutes = 11 * 60
+
+        let viewModel = try refreshedViewModel()
+        let calendar = Calendar.current
+        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.time,
+                       calendar.date(bySettingHour: 10, minute: 30, second: 0, of: startOfToday))
+        XCTAssertEqual(viewModel.nextReminder(after: startOfToday)?.nutrientName, "Zinc")
+        XCTAssertEqual(viewModel.nextReminder(after: calendar.date(bySettingHour: 10, minute: 45, second: 0,
+                                                                   of: startOfToday)!)?.nutrientName, "Iron")
+    }
+
     func testALogFromAnywhereHidesThatNutrientsReminderToday() throws {
         // Widget, Watch, Siri or another device: the record is what counts, and the scheduler skips the same
         // reminders on its next sync (#4).

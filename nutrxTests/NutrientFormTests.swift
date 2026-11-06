@@ -94,6 +94,19 @@ final class NutrientFormTests: XCTestCase {
         XCTAssertEqual(nutrient.sortOrder, 3)
     }
 
+    func testANewNutrientKeepsItsUsualTimeStart() throws {
+        let draft = NutrientDraft()
+        draft.name = "Zinc"
+        draft.unit = "mg"
+        draft.step = "10"
+        draft.dailyTarget = "10"
+        draft.usualReminderMinutes = 510
+        let nutrient = try XCTUnwrap(draft.insertNutrient(into: context, group: nil, sortOrder: 0))
+        XCTAssertEqual(nutrient.usualReminderMinutes, 510, "at its usual time from 8:30, with no set reminders (#137)")
+        XCTAssertTrue(nutrient.remindsAtUsualTime)
+        XCTAssertNotEqual(draft.snapshot, NutrientDraft().snapshot)
+    }
+
     func testResetRestoresDefaults() {
         let draft = NutrientDraft()
         draft.tint = .pink
