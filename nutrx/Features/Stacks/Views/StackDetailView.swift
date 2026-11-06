@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 /// One stack (docs/pro/design/1-stacks-export: stack-detail): its name, its nutrients with the amount each one logs
-/// (− / + by the nutrient's step, drag to reorder, swipe to remove), Add nutrient, its Reminder (#137, Debug-only until
-/// it ships), and Delete stack.
+/// (− / + by the nutrient's step, drag to reorder, swipe to remove), Add nutrient, its Reminder (#137), and Delete
+/// stack.
 struct StackDetailView: View {
     @Bindable var stack: LogStack
 
@@ -77,18 +77,16 @@ struct StackDetailView: View {
             }
             .listRowBackground(Theme.surfaceCard)
 
-            // A reminder at a set time, or at its usual time (nutrx Pro, #137): in Debug builds until it ships.
-            if UsualTime.isAvailable {
-                Section {
-                    Button {
-                        showReminder = true
-                    } label: {
-                        reminderRow
-                    }
-                    .buttonStyle(.plain)
+            // A reminder at a set time, or at its usual time (nutrx Pro, #137).
+            Section {
+                Button {
+                    showReminder = true
+                } label: {
+                    reminderRow
                 }
-                .listRowBackground(Theme.surfaceCard)
+                .buttonStyle(.plain)
             }
+            .listRowBackground(Theme.surfaceCard)
 
             if !hidesSiriTip && !entries.isEmpty {
                 Section {

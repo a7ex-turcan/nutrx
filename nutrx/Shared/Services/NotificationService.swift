@@ -273,11 +273,9 @@ enum NotificationService {
     /// Each stack with a reminder (#137, docs/pro/REMINDERS.md §4): one a day, at its set time or at its usual time
     /// (as for a nutrient: the learned time with Pro or an unknown entitlement, else the starting time). Silent once
     /// the stack is done today, logged with Log or every due nutrient in it logged, and on days nothing in it is due.
-    /// Not before they ship, outside Debug builds (`UsualTime.isAvailable`).
     private static func stackReminderPlans(
         context: ModelContext, totals: [PersistentIdentifier: Double], now: Date
     ) -> [(plan: ReminderSchedule.Plan, content: (Date) -> UNNotificationContent)] {
-        guard UsualTime.isAvailable else { return [] }
         let stacks = ((try? context.fetch(FetchDescriptor<LogStack>())) ?? []).filter { $0.reminderMinutes >= 0 }
         return stacks.compactMap { stack in
             let dueDays = StackLogging.dueDays(of: stack, from: now, count: ReminderSchedule.maxDays)

@@ -4,15 +4,6 @@ import Foundation
 /// on about 3 days in 4 over the last 28 completed days, so a reminder then only nudges when you're running late.
 /// Pure. Learned from the store's own record times, recomputed, never stored or synced.
 enum UsualTime {
-    /// Whether the reminders sheets offer it (§6): once `ProFeature.reminders` ships, and in Debug builds before.
-    static var isAvailable: Bool {
-        #if DEBUG
-        true
-        #else
-        ProFeature.reminders.isShipped
-        #endif
-    }
-
     /// The starting time when switching with no set reminder to start from: 9:00.
     static let defaultStartMinutes = 9 * 60
 

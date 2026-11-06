@@ -172,7 +172,9 @@ In progress on main.
 
 | Feature | Status |
 |---|---|
-| Monthly and yearly recaps: Week / Month / Year on Recaps, Today cards, notifications (Pro) | ✅ Built (v2.6, #136: #308–#311, phase 4) |
+| Monthly and yearly recaps: Week / Month / Year on Recaps, Today cards, notifications (Pro) | ✅ Built (v2.6, #136: #308–#312) |
+| Recap polish: the weekday card, the streak unit, weekly sentences, today's ring, lone cards | ✅ Built (v2.6, #313–#317: #318) |
+| Reminders at your usual time (Pro), and stack reminders | ✅ Built (v2.6, #137: #319–#322) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
