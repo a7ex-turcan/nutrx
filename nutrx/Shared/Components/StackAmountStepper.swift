@@ -1,13 +1,18 @@
 import SwiftUI
 
 /// The chip-tinted − amount + capsule of a stack entry (docs/pro/design/1-stacks-export): 44pt tall, the amount in
-/// rounded bold at its natural width, − stops at one step. One adjustable element for VoiceOver ("Vitamin D,
-/// 2,000 IU", swipe up / down). Used by the stack log sheet (Today) and the stack detail (Settings).
+/// rounded bold at its natural width (or `amountWidth`), − stops at one step. One adjustable element for VoiceOver
+/// ("Vitamin D, 2,000 IU", swipe up / down). Used by the stack log sheet (Today) and the stack detail (Settings).
 struct StackAmountStepper: View {
     let amount: Double
     let step: Double
     let unit: String
     let nutrientName: String
+    /// A width for the amount wider than its own: the stack log sheet gives every stepper its widest amount's, so the
+    /// − buttons line up and the totals beside them get the same room (#288).
+    var amountWidth: CGFloat? = nil
+    /// The amount's own width, measured before `amountWidth` widens it, so it can't feed back.
+    var reportsAmountWidth: ((CGFloat) -> Void)? = nil
     let onChange: (Double) -> Void
 
     private var amountText: String {
@@ -23,6 +28,8 @@ struct StackAmountStepper: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .fixedSize()
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { reportsAmountWidth?($0) }
+                .frame(minWidth: amountWidth)
             stepButton(systemName: "plus", up: true)
         }
         .foregroundStyle(Theme.textPrimary)
