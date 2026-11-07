@@ -70,7 +70,7 @@ enum StreakService {
             // As in HistoryLog: only days it was tracked (created, in its course), so a met day in a course gap
             // doesn't take a slot.
             let metDays = intakeByDayNutrient.compactMap { day, totals -> Date? in
-                guard let total = totals[id], GoalProgress(nutrient: nutrient, current: total).countsAsMet,
+                guard let total = totals[id], GoalProgress(nutrient: nutrient, current: total, on: day).countsAsMet,
                       !exclusionSet.contains("\(day.timeIntervalSince1970)-\(id)"),
                       calendar.startOfDay(for: nutrient.createdAt) <= day,
                       NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[id] ?? [],
@@ -111,7 +111,8 @@ enum StreakService {
             // Every non-excluded nutrient must meet its goal
             let allMet = nonExcluded.allSatisfy { nutrient in
                 let total = dayTotals[nutrient.persistentModelID] ?? 0
-                return GoalProgress(nutrient: nutrient, current: total).countsAsMet
+                // That day's own goal: a dose plan's step then (#135), never today's.
+                return GoalProgress(nutrient: nutrient, current: total, on: day).countsAsMet
             }
             return allMet ? .streak : .broken
         }
