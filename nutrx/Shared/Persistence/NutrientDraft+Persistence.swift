@@ -24,6 +24,13 @@ extension NutrientDraft {
         nutrient.endDate = endDate
         // A schedule (#132) from today; every day stores nothing.
         nutrient.scheduleRaw = NutrientSchedule().setting(scheduleKind, from: .now).encode()
+        // A dose plan (#135) from the day it's added, the days before it on the goal just set.
+        if let dosePlan {
+            nutrient.dosePlanRaw = NutrientDosePlan()
+                .creating(steps: dosePlan.steps, end: dosePlan.end, start: dosePlan.start, base: nutrient.baseGoal,
+                          today: .now)
+                .encode()
+        }
 
         if let group {
             nutrient.group = group
@@ -59,12 +66,19 @@ extension NutrientDraft {
         guard let stepValue = step.parsedDouble,
               let targetValue = dailyTarget.parsedDouble else { return }
 
+        // The dose plan (#135) first, from today: a base goal changed after a plan existed keeps the days before
+        // today on the old one, and removing a kept or held plan makes its goal the base, so nothing jumps.
+        let newBase = NutrientGoal(target: targetValue, upperBound: goalType == .range ? upperBound.parsedDouble : nil)
+        let update = nutrient.dosePlan().applying(dosePlan, oldBase: nutrient.baseGoal, newBase: newBase, today: .now)
+        let base = update.newBase ?? newBase
+        nutrient.dosePlanRaw = update.plan.encode()
+
         nutrient.name = name.trimmingCharacters(in: .whitespaces)
         nutrient.unit = unit.trimmingCharacters(in: .whitespaces)
         nutrient.step = stepValue
-        nutrient.dailyTarget = targetValue
+        nutrient.dailyTarget = base.target
         nutrient.goalType = goalType
-        nutrient.upperBound = goalType == .range ? upperBound.parsedDouble : nil
+        nutrient.upperBound = goalType == .range ? base.upperBound : nil
         nutrient.notes = trimmedNotes
         nutrient.tint = tint
         nutrient.symbolName = symbolName

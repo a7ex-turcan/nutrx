@@ -82,14 +82,16 @@ struct NutrientPreviewRow: View {
 
 extension NutrientPreviewRow {
     init(draft: NutrientDraft) {
+        // Today's goal: a dose plan's while it sets one (#135), else the form's.
+        let planGoal = draft.dosePlanGoal()
         self.init(
             name: draft.name,
             unit: draft.unit,
             tint: draft.tint,
             symbolName: draft.symbolName,
             goalType: draft.goalType,
-            target: draft.dailyTarget.parsedDouble,
-            upperBound: draft.upperBound.parsedDouble,
+            target: planGoal?.target ?? draft.dailyTarget.parsedDouble,
+            upperBound: planGoal.map(\.upperBound) ?? draft.upperBound.parsedDouble,
             step: draft.step.parsedDouble
         )
     }

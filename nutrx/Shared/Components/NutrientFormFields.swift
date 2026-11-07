@@ -31,6 +31,11 @@ final class NutrientDraft {
     var endDate: Date?
     /// The schedule in effect today (nutrx Pro, #132). Saving sets it from today on, so earlier days keep theirs.
     var scheduleKind: NutrientSchedule.Kind = .everyDay
+    /// The dose plan as set in the form (nutrx Pro, #135), nil for none. Saving creates, edits or removes the
+    /// nutrient's plan from today (`NutrientDosePlan.applying`), so past days keep their goals.
+    var dosePlan: NutrientDosePlan.Plan?
+    /// The saved plan's start: once it has started, the sheet shows it read-only.
+    private(set) var savedDosePlanStart: Date?
     /// A scanned label's ingredient rows ("Also on this label"), and the ones already added from it.
     var labelIngredients: [LabelIngredient] = []
     var addedFromLabel: [String] = []
@@ -73,6 +78,7 @@ final class NutrientDraft {
         let pendingStacks: [StackLogging.Choice]
         let endDate: Date?
         let scheduleKind: NutrientSchedule.Kind
+        let dosePlan: NutrientDosePlan.Plan?
     }
 
     var snapshot: Snapshot {
@@ -80,7 +86,29 @@ final class NutrientDraft {
                  supplyServings: supplyServings, goalType: goalType, tint: tint, symbolName: symbolName,
                  pendingReminderTimes: pendingReminderTimes, usualReminderMinutes: usualReminderMinutes,
                  pendingStacks: pendingStacks, endDate: endDate,
-                 scheduleKind: scheduleKind)
+                 scheduleKind: scheduleKind, dosePlan: dosePlan)
+    }
+
+    /// The dose plan sheet's Done or Remove Plan (#135). A plan that stops sets the Duration's last day, and a change
+    /// or removal lifts the one it set before. A new nutrient's goal fields give way to a plan from its start, so a
+    /// goal not typed yet becomes the first step's: the base goal, for the days the plan doesn't set.
+    func setDosePlan(_ plan: NutrientDosePlan.Plan?, calendar: Calendar = .current) {
+        if let old = dosePlan, old.end == .stop, let endDate,
+           calendar.startOfDay(for: endDate) == old.lastDay(calendar: calendar) {
+            self.endDate = nil
+        }
+        dosePlan = plan
+        guard let plan else { return }
+        if plan.end == .stop { endDate = plan.lastDay(calendar: calendar) }
+        if !hasValidBaseGoal, let first = plan.steps.first {
+            dailyTarget = Self.editableText(first.goal.target)
+            upperBound = first.goal.upperBound.map { Self.editableText($0) } ?? ""
+        }
+    }
+
+    /// Today's goal from the dose plan, while it sets one: the goal card shows it in place of the amount fields.
+    func dosePlanGoal(today: Date = .now) -> NutrientGoal? {
+        dosePlan?.goal(on: today)
     }
 
     /// Shown under the Schedule row when times a week (#132) meets a goal it doesn't fit.
@@ -107,6 +135,11 @@ final class NutrientDraft {
               let upper = upperBound.parsedDouble,
               upper <= lower else { return nil }
         return "The maximum has to be more than the minimum."
+    }
+
+    /// The goal fields hold a goal the form would save: above zero, and a range's maximum above its minimum.
+    var hasValidBaseGoal: Bool {
+        (dailyTarget.parsedDouble ?? 0) > 0 && rangeIsValid
     }
 
     private var rangeIsValid: Bool {
@@ -136,6 +169,8 @@ final class NutrientDraft {
         pendingStacks = []
         endDate = nil
         scheduleKind = .everyDay
+        dosePlan = nil
+        savedDosePlanStart = nil
         labelIngredients = []
         addedFromLabel = []
         labelIngredientName = nil
@@ -153,6 +188,8 @@ final class NutrientDraft {
         symbolName = nutrient.symbolName
         endDate = nutrient.endDate
         scheduleKind = nutrient.schedule().kind(on: .now)
+        dosePlan = nutrient.dosePlan().plan
+        savedDosePlanStart = dosePlan?.start
     }
 
     /// Adds a reminder time for a not-yet-saved nutrient, keeping the list sorted by time of day.
@@ -198,6 +235,8 @@ enum NutrientFormField: Hashable {
 struct NutrientFormFields<BeforeNotes: View>: View {
     @Bindable var draft: NutrientDraft
     var focusedField: FocusState<NutrientFormField?>.Binding
+    /// Opens the dose plan (#135): while a plan sets today's goal, the goal card shows it with Edit plan.
+    var onEditDosePlan: (() -> Void)? = nil
     /// Rows the container wants between the goal and the notes (the form sheet's Group / Reminders).
     @ViewBuilder var beforeNotes: BeforeNotes
 
@@ -222,7 +261,14 @@ struct NutrientFormFields<BeforeNotes: View>: View {
             .background(Theme.surfaceCard, in: cardShape)
 
             sectionHeader("Daily goal")
-            GoalTypePicker(selection: $draft.goalType, tint: draft.tint)
+            // A dose plan's steps are in its goal type's shape, so the type waits until the plan is removed (#135).
+            GoalTypePicker(selection: $draft.goalType, tint: draft.tint, isLocked: draft.dosePlan != nil)
+            if draft.dosePlan != nil {
+                Text(DosePlanText.typeLocked)
+                    .font(.caption)
+                    .foregroundStyle(Theme.textSecondary)
+                    .padding(.horizontal, 4)
+            }
             goalFields
 
             if let rangeError {
@@ -271,7 +317,15 @@ struct NutrientFormFields<BeforeNotes: View>: View {
 
     private var goalFields: some View {
         VStack(spacing: 0) {
-            if draft.goalType == .range {
+            if let plan = draft.dosePlan, let summary = DosePlanText(goalType: draft.goalType, unit: draft.unit)
+                .goalCard(plan, today: .now) {
+                // While a dose plan sets today's goal (#135), it's edited in the plan; each tap stays the user's.
+                dosePlanGoal(summary)
+                rowDivider
+                labelled("Each tap adds", id: .step) {
+                    amountField($draft.step, focus: .step, label: "Each tap adds")
+                }
+            } else if draft.goalType == .range {
                 fieldPair(
                     labelled("Minimum, per day", id: .dailyTarget) {
                         amountField($draft.dailyTarget, focus: .dailyTarget, label: "Minimum, per day")
@@ -314,6 +368,34 @@ struct NutrientFormFields<BeforeNotes: View>: View {
             }
         }
         .background(Theme.surfaceCard, in: cardShape)
+    }
+
+    private func dosePlanGoal(_ summary: String) -> some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+        return layout {
+            Label {
+                Text(summary)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } icon: {
+                Image(systemName: ProFeature.dosePlans.symbolName)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+            if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
+            if let onEditDosePlan {
+                Button(DosePlanText.editPlan, action: onEditDosePlan)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.textGreenInk)
+                    .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, Theme.Spacing.cardPadding)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .id(NutrientFormField.dailyTarget)
     }
 
     // MARK: - Scanned label
