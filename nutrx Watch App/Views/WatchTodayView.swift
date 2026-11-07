@@ -61,7 +61,7 @@ struct WatchTodayView: View {
 /// The list itself, separate from the data so previews can show it.
 struct WatchTodayList: View {
     let sections: [WatchTodayViewModel.GroupSection]
-    /// False before the first sync brings any nutrients over; true when they're all excluded today.
+    /// False before the first sync brings any nutrients over; true when none of them is due today.
     let hasNutrients: Bool
     let showsGroupHeaders: Bool
     let metCount: Int

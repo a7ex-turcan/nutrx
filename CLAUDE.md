@@ -1173,7 +1173,7 @@ Single instance. App-wide settings.
 
 ### Exclusion
 
-Nutrient excluded from a specific day's Today view. Created by "Exclude for today", auto-cleared next day.
+A nutrient excluded on a specific day, from the early builds' "Exclude for today". **Nothing creates one any more** (#302): the only `Exclusion(` call is `ModelContainerFactory` copying existing ones in the local-to-iCloud upgrade, and Today, the widgets, the Watch and the complications no longer read them. Past exclusions still count where past days are judged (`HistoryLog`, `StreakService`, recaps, the doctor report), so an old store's history reads as it always did. The model stays: it's in the CloudKit schema, which can't drop a record type. Planned days off are schedules' "Not today" (#132).
 
 | Field | Type | Notes |
 |---|---|---|

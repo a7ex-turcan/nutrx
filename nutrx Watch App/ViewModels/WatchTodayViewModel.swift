@@ -31,7 +31,7 @@ final class WatchTodayViewModel {
     }
 
     private(set) var sections: [GroupSection] = []
-    /// Any non-deleted nutrients, excluded today or not.
+    /// Any running nutrients, due today or not.
     private(set) var hasNutrients = false
     private(set) var hasCustomGroups = false
     /// Set after a + tap; the view shows it until it's cleared.
@@ -62,13 +62,6 @@ final class WatchTodayViewModel {
         let generalGroup = allGroups.first(where: { $0.isSystem })
         hasCustomGroups = allGroups.contains(where: { !$0.isSystem })
 
-        // Fetch today's exclusions
-        let exclusionDescriptor = FetchDescriptor<Exclusion>(
-            predicate: #Predicate<Exclusion> { $0.date >= startOfDay && $0.date < endOfDay }
-        )
-        let exclusions = (try? context.fetch(exclusionDescriptor)) ?? []
-        let excludedIDs = Set(exclusions.compactMap { $0.nutrient?.persistentModelID })
-
         // Fetch today's intake records
         let intakeDescriptor = FetchDescriptor<IntakeRecord>(
             predicate: #Predicate<IntakeRecord> { $0.date >= startOfDay && $0.date < endOfDay }
@@ -82,11 +75,9 @@ final class WatchTodayViewModel {
             }
         }
 
-        let activeNutrients = nutrients.filter { !excludedIDs.contains($0.persistentModelID) }
-
         var result: [GroupSection] = []
         for group in allGroups {
-            let groupNutrients = activeNutrients
+            let groupNutrients = nutrients
                 .filter { ($0.group ?? generalGroup)?.persistentModelID == group.persistentModelID }
                 .sorted {
                     if $0.groupSortOrder != $1.groupSortOrder {

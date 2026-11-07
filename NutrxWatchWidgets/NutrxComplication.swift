@@ -58,12 +58,6 @@ struct ComplicationProvider: TimelineProvider {
         // As on Today: a nutrient whose course has ended (#99), or that isn't due today (#132), doesn't count.
         let nutrients = ((try? context.fetch(nutrientDescriptor)) ?? []).filter { $0.isDue(on: startOfDay) }
 
-        let exclusionDescriptor = FetchDescriptor<Exclusion>(
-            predicate: #Predicate<Exclusion> { $0.date >= startOfDay && $0.date < endOfDay }
-        )
-        let exclusions = (try? context.fetch(exclusionDescriptor)) ?? []
-        let excludedIDs = Set(exclusions.compactMap { $0.nutrient?.persistentModelID })
-
         let intakeDescriptor = FetchDescriptor<IntakeRecord>(
             predicate: #Predicate<IntakeRecord> { $0.date >= startOfDay && $0.date < endOfDay }
         )
@@ -76,15 +70,14 @@ struct ComplicationProvider: TimelineProvider {
             }
         }
 
-        let active = nutrients.filter { !excludedIDs.contains($0.persistentModelID) }
-        let metCount = active.filter { nutrient in
+        let metCount = nutrients.filter { nutrient in
             GoalProgress(nutrient: nutrient, current: totalsByID[nutrient.persistentModelID] ?? 0).countsAsMet
         }.count
 
         let streaksEnabled = (try? context.fetch(FetchDescriptor<UserPreferences>()))?.first?.streaksEnabled ?? true
         let streak = streaksEnabled ? StreakService.compute(context: context).current : 0
 
-        return ComplicationEntry(date: .now, metCount: metCount, totalCount: active.count,
+        return ComplicationEntry(date: .now, metCount: metCount, totalCount: nutrients.count,
                                  currentStreak: streak, streaksEnabled: streaksEnabled)
     }
 }

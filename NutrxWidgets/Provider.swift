@@ -65,13 +65,6 @@ struct NutrxTimelineProvider: TimelineProvider {
         let running = ((try? context.fetch(nutrientDescriptor)) ?? []).filter { $0.isRunning(on: startOfDay) }
         let nutrients = running.filter { $0.isDue(on: startOfDay) }
 
-        // Fetch today's exclusions
-        let exclusionDescriptor = FetchDescriptor<Exclusion>(
-            predicate: #Predicate<Exclusion> { $0.date >= startOfDay && $0.date < endOfDay }
-        )
-        let exclusions = (try? context.fetch(exclusionDescriptor)) ?? []
-        let excludedIDs = Set(exclusions.compactMap { $0.nutrient?.persistentModelID })
-
         // Fetch today's intake
         let intakeDescriptor = FetchDescriptor<IntakeRecord>(
             predicate: #Predicate<IntakeRecord> { $0.date >= startOfDay && $0.date < endOfDay }
@@ -86,7 +79,6 @@ struct NutrxTimelineProvider: TimelineProvider {
 
         // Sort nutrients by group order, then groupSortOrder
         let activeNutrients = nutrients
-            .filter { !excludedIDs.contains($0.persistentModelID) }
             .sorted { a, b in
                 let aGroupOrder = (a.group ?? generalGroup)?.sortOrder ?? Int.max
                 let bGroupOrder = (b.group ?? generalGroup)?.sortOrder ?? Int.max
