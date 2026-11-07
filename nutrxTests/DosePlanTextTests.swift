@@ -94,6 +94,9 @@ final class DosePlanTextTests: XCTestCase {
         XCTAssertEqual(plain(text.sentence(plan(), today: day(11, 10), courseEnd: day(11, 20))),
                        "200 mg until Mon 16 Nov, then 400 mg from Tue 17 Nov, and keeps 400 mg. "
                        + "Its course ends on Fri 20 Nov, so the plan stops there.")
+        XCTAssertEqual(plain(text.sentence(plan(.stop), today: day(11, 10), courseEnd: day(12, 4))),
+                       "200 mg until Mon 16 Nov, then 400 mg from Tue 17 Nov, and stops after Mon 30 Nov. "
+                       + "This replaces the course's end on Fri 4 Dec.")
         XCTAssertEqual(plain(text.sentence(plan(), today: day(11, 10), courseEnd: day(12, 20))),
                        "200 mg until Mon 16 Nov, then 400 mg from Tue 17 Nov, and keeps 400 mg.",
                        "a course ending after the steps doesn't cut the plan short")

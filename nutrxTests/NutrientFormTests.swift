@@ -174,12 +174,26 @@ final class NutrientFormTests: XCTestCase {
         XCTAssertEqual(draft.dosePlan, nutrient.dosePlan().plan)
         XCTAssertEqual(draft.dosePlanGoal()?.target, 400, "today's goal, from the plan")
 
-        draft.dosePlan = nil
+        draft.setDosePlan(nil)
+        XCTAssertEqual(draft.dailyTarget.parsedDouble, 400, "the form shows the kept goal the confirmation names")
         draft.apply(to: nutrient)
         XCTAssertNil(nutrient.dosePlan().plan)
         XCTAssertEqual(nutrient.dailyTarget, 400, "removing a kept plan keeps its goal")
         XCTAssertEqual(nutrient.goal(on: Calendar.current.date(byAdding: .day, value: 2, to: start)!).target, 200,
                        "past days keep their goals")
+    }
+
+    func testRemovingAPlanThenTypingAGoalSavesTheTypedGoal() {
+        let (nutrient, start) = plannedNutrient()
+        let draft = NutrientDraft()
+        draft.populate(from: nutrient)
+        draft.setDosePlan(nil)
+        draft.dailyTarget = "500"
+        draft.apply(to: nutrient)
+        XCTAssertEqual(nutrient.dailyTarget, 500, "what the form holds, not the plan's kept goal")
+        XCTAssertEqual(nutrient.goal(on: Calendar.current.date(byAdding: .day, value: 2, to: start)!).target, 200,
+                       "past days keep their goals")
+        XCTAssertEqual(nutrient.goal().target, 500)
     }
 
     func testANewNutrientStartsItsPlanTheDayItsAdded() throws {
@@ -219,5 +233,22 @@ final class NutrientFormTests: XCTestCase {
         draft.setDosePlan(nil)
         XCTAssertNil(draft.endDate)
         XCTAssertNil(draft.dosePlan)
+    }
+
+    func testAStoppingPlanGivesBackTheCourseEndItReplaced() {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let ownEnd = calendar.date(byAdding: .day, value: 20, to: today)!
+        let draft = NutrientDraft()
+        draft.dailyTarget = "100"
+        draft.endDate = ownEnd
+        let stops = NutrientDosePlan.Plan(
+            start: today, steps: [.init(goal: NutrientGoal(target: 200), days: 3), .init(goal: NutrientGoal(target: 100), days: 4)],
+            end: .stop, appliesFrom: today)
+        draft.setDosePlan(stops)
+        XCTAssertEqual(draft.endDate, calendar.date(byAdding: .day, value: 6, to: today))
+        XCTAssertEqual(draft.courseEndOutsideDosePlan(), ownEnd, "the end it replaced, for the sheet's sentence")
+        draft.setDosePlan(nil)
+        XCTAssertEqual(draft.endDate, ownEnd, "removing the plan brings the course's own end back")
     }
 }

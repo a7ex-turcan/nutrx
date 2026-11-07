@@ -36,6 +36,8 @@ final class NutrientDraft {
     var dosePlan: NutrientDosePlan.Plan?
     /// The saved plan's start: once it has started, the sheet shows it read-only.
     private(set) var savedDosePlanStart: Date?
+    /// A course end set in Duration that a plan that stops replaced: it comes back if the plan stops no more.
+    private var endDateBeforeDosePlan: Date?
     /// A scanned label's ingredient rows ("Also on this label"), and the ones already added from it.
     var labelIngredients: [LabelIngredient] = []
     var addedFromLabel: [String] = []
@@ -89,21 +91,50 @@ final class NutrientDraft {
                  scheduleKind: scheduleKind, dosePlan: dosePlan)
     }
 
-    /// The dose plan sheet's Done or Remove Plan (#135). A plan that stops sets the Duration's last day, and a change
-    /// or removal lifts the one it set before. A new nutrient's goal fields give way to a plan from its start, so a
-    /// goal not typed yet becomes the first step's: the base goal, for the days the plan doesn't set.
-    func setDosePlan(_ plan: NutrientDosePlan.Plan?, calendar: Calendar = .current) {
-        if let old = dosePlan, old.end == .stop, let endDate,
-           calendar.startOfDay(for: endDate) == old.lastDay(calendar: calendar) {
-            self.endDate = nil
+    /// The dose plan sheet's Done or Remove Plan (#135).
+    /// - A plan that stops sets the Duration's last day. A change or removal lifts it, bringing back an end set in
+    ///   Duration before.
+    /// - Removing a plan that keeps (or holds) its goal fills the goal fields with that goal, the one the
+    ///   confirmation names: Save writes what the form holds.
+    /// - A new nutrient's goal fields give way to a plan from its start, so a goal not typed yet becomes the first
+    ///   step's: the base goal, for the days the plan doesn't set.
+    func setDosePlan(_ plan: NutrientDosePlan.Plan?, today: Date = .now, calendar: Calendar = .current) {
+        if let old = dosePlan {
+            if old.end == .stop, let endDate, calendar.startOfDay(for: endDate) == old.lastDay(calendar: calendar) {
+                self.endDate = endDateBeforeDosePlan
+                endDateBeforeDosePlan = nil
+            }
+            if plan == nil, let kept = old.goalIfRemoved(on: today, calendar: calendar) { setGoalFields(kept) }
         }
         dosePlan = plan
         guard let plan else { return }
-        if plan.end == .stop { endDate = plan.lastDay(calendar: calendar) }
-        if !hasValidBaseGoal, let first = plan.steps.first {
-            dailyTarget = Self.editableText(first.goal.target)
-            upperBound = first.goal.upperBound.map { Self.editableText($0) } ?? ""
+        if plan.end == .stop {
+            let stopDay = plan.lastDay(calendar: calendar)
+            if let endDate, calendar.startOfDay(for: endDate) != stopDay { endDateBeforeDosePlan = endDate }
+            endDate = stopDay
         }
+        if !hasValidBaseGoal, let first = plan.steps.first { setGoalFields(first.goal) }
+    }
+
+    private func setGoalFields(_ goal: NutrientGoal) {
+        dailyTarget = Self.editableText(goal.target)
+        upperBound = goal.upperBound.map { Self.editableText($0) } ?? ""
+    }
+
+    /// The course end that isn't the plan's: Duration's, or the one a stopping plan replaced. The sheet's sentence
+    /// says how the plan meets it.
+    func courseEndOutsideDosePlan(calendar: Calendar = .current) -> Date? {
+        guard let plan = dosePlan, plan.end == .stop, let endDate,
+              calendar.startOfDay(for: endDate) == plan.lastDay(calendar: calendar) else { return endDate }
+        return endDateBeforeDosePlan
+    }
+
+    /// The goal from today if the plan were removed now (`Plan.goalIfRemoved`), else the form's: what Remove Plan's
+    /// confirmation names.
+    func goalIfDosePlanRemoved(today: Date = .now, calendar: Calendar = .current) -> NutrientGoal {
+        dosePlan?.goalIfRemoved(on: today, calendar: calendar)
+            ?? NutrientGoal(target: dailyTarget.parsedDouble ?? 0,
+                            upperBound: goalType == .range ? upperBound.parsedDouble : nil)
     }
 
     /// Today's goal from the dose plan, while it sets one: the goal card shows it in place of the amount fields.
@@ -171,6 +202,7 @@ final class NutrientDraft {
         scheduleKind = .everyDay
         dosePlan = nil
         savedDosePlanStart = nil
+        endDateBeforeDosePlan = nil
         labelIngredients = []
         addedFromLabel = []
         labelIngredientName = nil
@@ -190,6 +222,7 @@ final class NutrientDraft {
         scheduleKind = nutrient.schedule().kind(on: .now)
         dosePlan = nutrient.dosePlan().plan
         savedDosePlanStart = dosePlan?.start
+        endDateBeforeDosePlan = nil
     }
 
     /// Adds a reminder time for a not-yet-saved nutrient, keeping the list sorted by time of day.

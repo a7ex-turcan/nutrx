@@ -257,6 +257,16 @@ final class NutrientDosePlanTests: XCTestCase {
         XCTAssertEqual(saved.plan.goal(on: day(11, 20), calendar: calendar)?.target, 600)
     }
 
+    func testTheGoalARemovalLeaves() {
+        let kept = plan().plan!
+        XCTAssertEqual(kept.goalIfRemoved(on: day(12, 5), calendar: calendar), NutrientGoal(target: 400), "kept")
+        XCTAssertNil(kept.goalIfRemoved(on: day(11, 12), calendar: calendar), "moving: the base goal is back")
+        XCTAssertNil(plan(end: .stop).plan!.goalIfRemoved(on: day(12, 5), calendar: calendar), "stopped")
+        XCTAssertEqual(plan().holding(from: day(11, 12), calendar: calendar).plan!.goalIfRemoved(on: day(11, 14),
+                                                                                                calendar: calendar),
+                       NutrientGoal(target: 200), "held")
+    }
+
     func testSavingWithoutAKeptPlanMakesItsGoalTheBase() {
         let saved = plan().applying(nil, oldBase: base, newBase: base, today: day(12, 5), calendar: calendar)
         XCTAssertEqual(saved.newBase, NutrientGoal(target: 400))

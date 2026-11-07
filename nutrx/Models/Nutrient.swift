@@ -612,8 +612,7 @@ nonisolated struct NutrientDosePlan: Equatable, Sendable {
     func removing(today: Date, calendar: Calendar = .current) -> (plan: NutrientDosePlan, newBase: NutrientGoal?) {
         guard let plan else { return (self, nil) }
         let day = calendar.startOfDay(for: today)
-        let settled = plan.end == .keep && day >= plan.start && Self.stepIndex(of: plan, on: day, calendar: calendar) == nil
-        let newBase = settled || isHeld(on: day, calendar: calendar) ? goal(on: day, calendar: calendar) : nil
+        let newBase = day >= plan.appliesFrom ? plan.goalIfRemoved(on: day, calendar: calendar) : nil
         var result = frozen(through: day, base: nil, calendar: calendar)
         result.plan = nil
         result.history.append(Piece(from: day, goal: nil))
@@ -856,6 +855,17 @@ extension NutrientDosePlan.Plan {
     /// The last step's last day: a plan that stops ends its course there.
     func lastDay(calendar: Calendar = .current) -> Date {
         NutrientDosePlan.lastDay(ofStep: max(0, steps.count - 1), in: self, calendar: calendar)
+    }
+
+    /// The goal the base takes when the plan is removed on `day` (§3, §6), so nothing jumps: its kept last goal, or
+    /// the held one. Nil while it's moving, before its start, or when there's no goal to keep, since the base goal
+    /// is back then.
+    func goalIfRemoved(on day: Date, calendar: Calendar = .current) -> NutrientGoal? {
+        let start = calendar.startOfDay(for: day)
+        let held = heldFrom.map { start >= $0 } ?? false
+        let settled = end == .keep && start >= self.start
+            && NutrientDosePlan.stepIndex(of: self, on: start, calendar: calendar) == nil
+        return settled || held ? goal(on: start, calendar: calendar) : nil
     }
 }
 

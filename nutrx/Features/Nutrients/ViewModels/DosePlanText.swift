@@ -121,6 +121,9 @@ struct DosePlanText {
         if let courseEnd, plan.end == .keep, calendar.startOfDay(for: courseEnd) < plan.lastDay(calendar: calendar) {
             text += " Its course ends on \(date(courseEnd, weekday: true)), so the plan stops there."
         }
+        if let courseEnd, plan.end == .stop, calendar.startOfDay(for: courseEnd) != plan.lastDay(calendar: calendar) {
+            text += " This replaces the course's end on \(date(courseEnd, weekday: true))."
+        }
         return text
     }
 

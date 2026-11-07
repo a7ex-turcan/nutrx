@@ -144,7 +144,8 @@ struct DosePlanSheet: View {
 
     private var stepsSection: some View {
         Section {
-            ForEach(Array(rows.indices), id: \.self) { index in
+            // By each step's own id, so deleting one animates that row and the focus stays with its fields.
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, _ in
                 stepRow(index)
                     .deleteDisabled(rows.count <= NutrientDosePlan.stepCounts.lowerBound)
             }
@@ -165,7 +166,7 @@ struct DosePlanSheet: View {
             Text("Steps")
         } footer: {
             if let plan {
-                Text(text.sentence(plan, today: today, courseEnd: draft.endDate))
+                Text(text.sentence(plan, today: today, courseEnd: draft.courseEndOutsideDosePlan(calendar: calendar)))
             }
         }
         .listRowBackground(Theme.surfaceCard)
@@ -304,30 +305,68 @@ struct DosePlanSheet: View {
 
     private func save() {
         guard let plan else { return }
-        draft.setDosePlan(plan, calendar: calendar)
+        draft.setDosePlan(plan, today: today, calendar: calendar)
         dismiss()
     }
 
     private func remove() {
-        draft.setDosePlan(nil, calendar: calendar)
+        draft.setDosePlan(nil, today: today, calendar: calendar)
         dismiss()
     }
 
     /// "Past days keep the goals they had. From today Magnesium's goal is 400 mg a day." A plan keeping its last goal
     /// (or held) leaves that goal as the base; one that would stop leaves the nutrient with no end.
     private var removeMessage: String {
-        let base = NutrientGoal(target: draft.dailyTarget.parsedDouble ?? 0,
-                                upperBound: draft.goalType == .range ? draft.upperBound.parsedDouble : nil)
         guard let saved = draft.dosePlan else { return "" }
-        let held = saved.heldFrom.map { today >= $0 } ?? false
-        let settled = saved.end == .keep && today >= saved.start && saved.position(on: today, calendar: calendar) == nil
-        let goal = settled || held ? saved.goal(on: today, calendar: calendar) ?? base : base
         let stops = saved.end == .stop && today <= saved.lastDay(calendar: calendar)
         let name = draft.name.trimmingCharacters(in: .whitespaces)
-        return text.removeMessage(name: name.isEmpty ? "The nutrient" : name, goalFromToday: goal, endsWithPlan: stops)
+        return text.removeMessage(name: name.isEmpty ? "The nutrient" : name,
+                                  goalFromToday: draft.goalIfDosePlanRemoved(today: today, calendar: calendar),
+                                  endsWithPlan: stops)
     }
 }
 
 private extension Array {
     subscript(safe index: Int) -> Element? { indices.contains(index) ? self[index] : nil }
 }
+
+#if DEBUG
+/// The sheet's states: a new plan, a saved plan that has started, a range's steps, and a plan that stops.
+private func previewDraft(goalType: GoalType = .minimum, plan: NutrientDosePlan.Plan? = nil) -> NutrientDraft {
+    let draft = NutrientDraft()
+    draft.name = "Magnesium"
+    draft.unit = goalType == .range ? "g" : "mg"
+    draft.goalType = goalType
+    draft.dailyTarget = goalType == .range ? "120" : "200"
+    draft.upperBound = goalType == .range ? "160" : ""
+    draft.step = "100"
+    draft.dosePlan = plan
+    return draft
+}
+
+private func previewPlan(_ goals: [NutrientGoal], startedDaysAgo: Int, end: NutrientDosePlan.End) -> NutrientDosePlan.Plan {
+    let start = Calendar.current.date(byAdding: .day, value: -startedDaysAgo, to: Calendar.current.startOfDay(for: .now))!
+    return NutrientDosePlan.Plan(start: start, steps: goals.map { .init(goal: $0, days: 14) }, end: end, appliesFrom: start)
+}
+
+#Preview("New plan") {
+    DosePlanSheet(draft: previewDraft()).environment(ProAccess.previewPro())
+}
+#Preview("Started, keeps") {
+    DosePlanSheet(draft: previewDraft(plan: previewPlan([NutrientGoal(target: 200), NutrientGoal(target: 400)],
+                                                        startedDaysAgo: 5, end: .keep)))
+        .environment(ProAccess.previewPro())
+}
+#Preview("Range, stops") {
+    DosePlanSheet(draft: previewDraft(goalType: .range,
+                                      plan: previewPlan([NutrientGoal(target: 140, upperBound: 180),
+                                                         NutrientGoal(target: 120, upperBound: 160)],
+                                                        startedDaysAgo: 0, end: .stop)))
+        .environment(ProAccess.previewPro())
+}
+#Preview("Dark, largest text") {
+    DosePlanSheet(draft: previewDraft()).environment(ProAccess.previewPro())
+        .preferredColorScheme(.dark)
+        .dynamicTypeSize(.accessibility5)
+}
+#endif
