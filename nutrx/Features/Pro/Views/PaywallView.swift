@@ -127,8 +127,12 @@ struct PaywallView: View {
                 }
                 .headerFrame()
                 .ignoresSafeArea(edges: .top)
+                // VoiceOver reads it first, as in a sheet's bar: as an overlay it would otherwise come after every
+                // plan, the terms and the pinned button.
+                .accessibilitySortPriority(1)
             }
         }
+        .accessibilityElement(children: .contain)
         .background(Theme.surfaceGround)
     }
 
@@ -551,7 +555,7 @@ extension View {
         .dynamicTypeSize(.xLarge)
 }
 
-// The large-screen branch (#205) without an iPad: only the button pinned, the plan summary above it, a 640 pt column.
+// A large width (#205) without an iPad: the 640 pt column, with the header and the ✕ lined up with it.
 #Preview("Paywall, large screen") {
     PaywallView()
         .environment(ProAccess())
