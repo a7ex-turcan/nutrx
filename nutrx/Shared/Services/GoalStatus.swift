@@ -86,9 +86,14 @@ struct GoalProgress: Equatable {
     }
 
     /// Against the nutrient's goal on `day` (#135): today's, by default, so a dose plan's step applies everywhere
-    /// today's progress shows; a past day's own for a day that's gone.
-    init(nutrient: Nutrient, current: Double, on day: Date = .now) {
-        let goal = nutrient.goal(on: day)
+    /// today's progress shows; a past day's own for a day that's gone. Days are matched in `calendar`, the caller's.
+    init(nutrient: Nutrient, current: Double, on day: Date = .now, calendar: Calendar = .current) {
+        self.init(nutrient: nutrient, current: current, goal: nutrient.goal(on: day, calendar: calendar))
+    }
+
+    /// Against a goal already worked out: loops over many days decode the nutrient's plan once
+    /// (`NutrientDosePlan.goal(on:)`) rather than for every day.
+    init(nutrient: Nutrient, current: Double, goal: NutrientGoal) {
         self.init(
             current: current,
             goalType: nutrient.goalType,

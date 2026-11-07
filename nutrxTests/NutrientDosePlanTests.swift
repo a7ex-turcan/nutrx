@@ -1,3 +1,4 @@
+import SwiftData
 import XCTest
 @testable import nutrx
 
@@ -192,6 +193,31 @@ final class NutrientDosePlanTests: XCTestCase {
     }
 
     // MARK: The nutrient
+
+    /// A plan starting today doesn't re-judge past days by its step: the streak counts them by the goal they had (the
+    /// demo streak went from 10 to 11 days while past days took today's goal).
+    func testAPlanStartingTodayDoesntChangeTheStreak() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: .now)
+        func daysAgo(_ n: Int) -> Date { cal.date(byAdding: .day, value: -n, to: today)!.addingTimeInterval(9 * 3600) }
+        let vitaminD = Nutrient(name: "Vitamin D", unit: "IU", step: 1000, dailyTarget: 4000, sortOrder: 0)
+        vitaminD.createdAt = daysAgo(5)
+        context.insert(vitaminD)
+        for n in [1, 2, 4, 5] { context.insert(IntakeRecord(nutrient: vitaminD, amount: 4000, date: daysAgo(n))) }
+        context.insert(IntakeRecord(nutrient: vitaminD, amount: 2000, date: daysAgo(3)))  // short of 4,000 that day
+        try context.save()
+        XCTAssertEqual(StreakService.compute(context: context).current, 2)
+
+        let steps = [NutrientDosePlan.Step(goal: NutrientGoal(target: 1000), days: 7),
+                     NutrientDosePlan.Step(goal: NutrientGoal(target: 6000), days: 7)]
+        vitaminD.dosePlanRaw = NutrientDosePlan().creating(steps: steps, end: .keep, start: today,
+                                                           base: vitaminD.baseGoal, today: today).encode()
+        try context.save()
+        XCTAssertEqual(StreakService.compute(context: context).current, 2,
+                       "three days ago still missed 4,000, though today's goal is 1,000")
+    }
 
     func testTheNutrientsGoalOnADay() {
         let nutrient = Nutrient(name: "Magnesium", unit: "mg", step: 100, dailyTarget: 100, sortOrder: 0)

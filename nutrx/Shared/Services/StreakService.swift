@@ -61,6 +61,13 @@ enum StreakService {
                                     uniquingKeysWith: { first, _ in first })
         let schedules = Dictionary(nutrients.map { ($0.persistentModelID, $0.schedule(calendar: calendar)) },
                                    uniquingKeysWith: { first, _ in first })
+        // Each day by its own goal, a dose plan's step then (#135); plans decoded once, not for every day.
+        let plans = Dictionary(nutrients.map { ($0.persistentModelID, $0.dosePlan(calendar: calendar)) },
+                               uniquingKeysWith: { first, _ in first })
+        func isMet(_ nutrient: Nutrient, _ total: Double, on day: Date) -> Bool {
+            let goal = plans[nutrient.persistentModelID]?.goal(on: day, calendar: calendar) ?? nutrient.baseGoal
+            return GoalProgress(nutrient: nutrient, current: total, goal: goal).countsAsMet
+        }
 
         // Under a weekly schedule (#132) a day counts only once met, among its week's first few.
         var weeklyCounted: [PersistentIdentifier: Set<Date>] = [:]
@@ -70,7 +77,7 @@ enum StreakService {
             // As in HistoryLog: only days it was tracked (created, in its course), so a met day in a course gap
             // doesn't take a slot.
             let metDays = intakeByDayNutrient.compactMap { day, totals -> Date? in
-                guard let total = totals[id], GoalProgress(nutrient: nutrient, current: total, on: day).countsAsMet,
+                guard let total = totals[id], isMet(nutrient, total, on: day),
                       !exclusionSet.contains("\(day.timeIntervalSince1970)-\(id)"),
                       calendar.startOfDay(for: nutrient.createdAt) <= day,
                       NutrientCourse.includes(nutrient.endDate, gaps: courseGaps[id] ?? [],
@@ -111,8 +118,7 @@ enum StreakService {
             // Every non-excluded nutrient must meet its goal
             let allMet = nonExcluded.allSatisfy { nutrient in
                 let total = dayTotals[nutrient.persistentModelID] ?? 0
-                // That day's own goal: a dose plan's step then (#135), never today's.
-                return GoalProgress(nutrient: nutrient, current: total, on: day).countsAsMet
+                return isMet(nutrient, total, on: day)
             }
             return allMet ? .streak : .broken
         }
