@@ -42,6 +42,8 @@ struct ReportLayout: Equatable {
     static let summaryHeaderHeight: CGFloat = 60
     static let summaryRowHeight: CGFloat = 28
     static let sectionHeight: CGFloat = 240
+    /// A section's dose plan line, under its title (#135): up to two lines.
+    static let planLineHeight: CGFloat = 28
     /// "With Apple Health · last 28 days" above a section's trend lines.
     static let trendHeaderHeight: CGFloat = 20
     static let trendLineHeight: CGFloat = 30
@@ -65,8 +67,9 @@ struct ReportLayout: Equatable {
     }
 
     static func blockHeight(_ section: DoctorReport.Section) -> CGFloat {
-        guard !section.trends.isEmpty else { return sectionHeight }
-        return sectionHeight + trendHeaderHeight + CGFloat(section.trends.count) * trendLineHeight
+        let base = sectionHeight + (section.hasSteps ? planLineHeight : 0)
+        guard !section.trends.isEmpty else { return base }
+        return base + trendHeaderHeight + CGFloat(section.trends.count) * trendLineHeight
     }
 
     init(report: DoctorReport, paper: Paper) {

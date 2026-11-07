@@ -2,7 +2,8 @@ import Charts
 import SwiftUI
 
 /// Daily totals as bars in the nutrient's tint (DESIGN.md §4.8): met days full tint, missed days tint @ 35%,
-/// today as a dashed outline (it isn't over yet), and the goal as a dashed rule.
+/// today as a dashed outline (it isn't over yet), and the goal as a dashed rule. Under a dose plan (#135) the rule is
+/// stepped, one segment per goal across its days, and the labels are today's goal.
 struct DailyIntakeChart: View {
     let days: [AnalyticsDay]
     let goal: AnalyticsGoal
@@ -29,8 +30,33 @@ struct DailyIntakeChart: View {
 
     /// Top of the y-axis: the tallest bar or goal line, plus headroom for the goal label.
     private var yMax: Double {
-        let goalTop = goal.goalType == .range ? (goal.upperBound ?? goal.target) : goal.target
+        let goalTop = goalRuns.map { goal.goalType == .range ? ($0.goal.upperBound ?? $0.goal.target) : $0.goal.target }
+            .max() ?? goal.target
         return max(days.map(\.total).max() ?? 0, goalTop, 1) * 1.18
+    }
+
+    /// Days in a row with the same goal: one for a steady goal, one per dose plan step (#135). Oldest first.
+    private struct GoalRun {
+        let goal: NutrientGoal
+        let first: Date
+        let last: Date
+    }
+
+    private var goalRuns: [GoalRun] {
+        var runs: [GoalRun] = []
+        for day in days {
+            if let run = runs.last, run.goal == day.goal {
+                runs[runs.count - 1] = GoalRun(goal: run.goal, first: run.first, last: day.date)
+            } else {
+                runs.append(GoalRun(goal: day.goal, first: day.date, last: day.date))
+            }
+        }
+        return runs
+    }
+
+    /// The goal the labels name: today's, the last segment's.
+    private var labelledGoal: NutrientGoal {
+        days.last?.goal ?? NutrientGoal(target: goal.target, upperBound: goal.upperBound)
     }
 
     /// Today's bar is at least a sliver tall so its outline is visible before anything is logged.
@@ -169,28 +195,54 @@ struct DailyIntakeChart: View {
         let isAbove: Bool
     }
 
-    /// "Goal 4,000" for at-least goals, "Limit 400" for at-most, "Min" / "Max" for a range.
+    /// "Goal 4,000" for at-least goals, "Limit 400" for at-most, "Min" / "Max" for a range: today's goal.
     private var goalLabels: [GoalLabel] {
-        func label(_ name: String, _ value: Double, above: Bool = true) -> GoalLabel {
-            GoalLabel(value: value, text: "\(name) \(value.formattedAmount())", isAbove: above)
+        lines(of: labelledGoal).map { line in
+            GoalLabel(value: line.value, text: "\(line.name) \(line.value.formattedAmount())", isAbove: line.isAbove)
         }
+    }
+
+    private struct GoalLine {
+        let name: String
+        let value: Double
+        let isAbove: Bool
+    }
+
+    /// A goal's rules: its amount or limit, or a range's minimum and maximum.
+    private func lines(of dayGoal: NutrientGoal) -> [GoalLine] {
         switch goal.goalType {
         case .minimum:
-            return [label("Goal", goal.target)]
+            return [GoalLine(name: "Goal", value: dayGoal.target, isAbove: true)]
         case .maximum:
-            return [label("Limit", goal.target)]
+            return [GoalLine(name: "Limit", value: dayGoal.target, isAbove: true)]
         case .range:
-            guard let upper = goal.upperBound else { return [label("Goal", goal.target)] }
-            return [label("Min", goal.target, above: false), label("Max", upper)]
+            guard let upper = dayGoal.upperBound else {
+                return [GoalLine(name: "Goal", value: dayGoal.target, isAbove: true)]
+            }
+            return [GoalLine(name: "Min", value: dayGoal.target, isAbove: false),
+                    GoalLine(name: "Max", value: upper, isAbove: true)]
         }
     }
 
     @ChartContentBuilder
     private var goalRules: some ChartContent {
-        ForEach(goalLabels, id: \.text) { label in
-            RuleMark(y: .value("Goal", label.value))
-                .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
-                .foregroundStyle(Theme.textSecondary.opacity(0.6))
+        let runs = goalRuns
+        if runs.count > 1 {
+            // Stepped (#135): each goal across its own days, from the first one's start to the day after the last.
+            ForEach(Array(runs.enumerated()), id: \.offset) { _, run in
+                let end = Calendar.current.date(byAdding: .day, value: 1, to: run.last) ?? run.last
+                ForEach(lines(of: run.goal), id: \.name) { line in
+                    RuleMark(xStart: .value("Day", run.first), xEnd: .value("Day", end), y: .value("Goal", line.value))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                        .foregroundStyle(Theme.textSecondary.opacity(0.6))
+                }
+            }
+        } else {
+            ForEach(goalLabels, id: \.text) { label in
+                RuleMark(y: .value("Goal", label.value))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                    .foregroundStyle(Theme.textSecondary.opacity(0.6))
+            }
         }
     }
 
@@ -280,6 +332,13 @@ private struct DailyIntakeChartPreview: View {
     DailyIntakeChartPreview(days: 7, goal: AnalyticsGoal(goalType: .range, target: 3000, upperBound: 4500))
 }
 #Preview("90 days") { DailyIntakeChartPreview(days: 90) }
+#Preview("Dose plan, 30 days") {
+    // 2,000 IU until 11 days ago, then 4,000 (#135).
+    let calendar = Calendar.current
+    let start = StoredDay.string(calendar.date(byAdding: .day, value: -20, to: .now)!, calendar: calendar)
+    let plan = NutrientDosePlan.decode("h=*:2000;p=\(start),\(start),keep|2000x10,4000x30", calendar: calendar)
+    DailyIntakeChartPreview(days: 30, goal: AnalyticsGoal(goalType: .minimum, target: 4000, upperBound: nil, plan: plan))
+}
 #Preview("7 days, largest text") { DailyIntakeChartPreview(days: 7).dynamicTypeSize(.accessibility5) }
 #Preview("30 days, largest text") { DailyIntakeChartPreview(days: 30).dynamicTypeSize(.accessibility5) }
 #Preview("Range, largest text") {

@@ -359,4 +359,20 @@ final class WeeklyRecapTests: XCTestCase {
         let shown = await RecapPhrasing.summary(for: text, model: StubModel(text: reworded), store: freshStore())
         XCTAssertTrue(shown == text.summary || RecapPhrasing.isAcceptable(shown, for: text), shown)
     }
+
+    // MARK: - Dose plans (#135)
+
+    func testOverTheLimitIsTheDaysOwnLimit() {
+        // Caffeine's limit falls from 400 mg to 300 on Thursday 8 October.
+        var list = nutrients
+        list[2].dosePlan = NutrientDosePlan().creating(
+            steps: [.init(goal: NutrientGoal(target: 400), days: 3), .init(goal: NutrientGoal(target: 300), days: 4)],
+            end: .keep, start: day(10, 5), base: NutrientGoal(target: 400), today: day(10, 5), calendar: calendar)
+        let log = HistoryLog(nutrients: list,
+                             totals: totals(from: day(10, 5), through: day(10, 11),
+                                            overrides: [day(10, 6): [caffeine: 350], day(10, 9): [caffeine: 350]]),
+                             today: day(10, 12), calendar: calendar)
+        let recap = WeeklyRecap.build(log: log, names: names, week: day(10, 5), streaksEnabled: true)
+        XCTAssertEqual(recap.overLimit?.overLimitDays, [day(10, 9)], "350 mg was within Tuesday's 400 mg")
+    }
 }
