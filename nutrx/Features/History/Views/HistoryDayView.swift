@@ -106,7 +106,7 @@ struct HistoryDayView: View {
     @ViewBuilder
     private func row(_ goal: HistoryDay.Goal, showsStatus: Bool) -> some View {
         if let nutrient = viewModel.nutrient(goal.nutrientID) {
-            HistoryNutrientRow(nutrient: nutrient, total: goal.total, isMet: showsStatus ? goal.isMet : nil) {
+            HistoryNutrientRow(nutrient: nutrient, day: date, total: goal.total, isMet: showsStatus ? goal.isMet : nil) {
                 selectedNutrient = nutrient
             }
         }
@@ -116,6 +116,8 @@ struct HistoryDayView: View {
 /// Icon tile, name, "**4,000** / 4,000 IU", an 8pt bar in the tint, and a met / missed badge.
 private struct HistoryNutrientRow: View {
     let nutrient: Nutrient
+    /// The day shown: its goal is that day's own (a dose plan's step then, #135).
+    let day: Date
     let total: Double
     /// nil hides the badge (nutrients that didn't count that day).
     let isMet: Bool?
@@ -124,7 +126,7 @@ private struct HistoryNutrientRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        let progress = GoalProgress(nutrient: nutrient, current: total)
+        let progress = GoalProgress(nutrient: nutrient, current: total, on: day)
 
         Button(action: onTap) {
             HStack(spacing: 14) {
