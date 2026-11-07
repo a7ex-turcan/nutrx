@@ -57,6 +57,13 @@ final class Nutrient {
     /// times; 0 or more = one reminder a day at the learned time (`UsualTime`), with this starting time (minutes after
     /// midnight) until it's learned, around midnight and without Pro. The set times are kept for switching back.
     var usualReminderMinutes: Int = -1
+    /// A goal that follows steps (nutrx Pro, #135, docs/pro/DOSE-PLANS.md): the plan and the goals it gave past days,
+    /// read via `dosePlan(calendar:)`; "" = never had one.
+    var dosePlanRaw: String = ""
+    /// The last day a device knew Pro was active with this plan ("yyyyMMdd", docs/pro/DOSE-PLANS.md §6): a device
+    /// without Pro holds the plan only when it's more than a day old. Its own field, so writing it never rewrites
+    /// the plan. Nothing reads it to unlock anything.
+    var dosePlanSeenWithPro: String = ""
 
     var remindsAtUsualTime: Bool { usualReminderMinutes >= 0 }
 
@@ -98,8 +105,8 @@ final class Nutrient {
 // MARK: - Calendar days in stored strings
 
 /// A calendar day as "yyyyMMdd", rebuilt in the reading calendar, so a time zone change never moves it (course gaps,
-/// schedules).
-nonisolated private enum StoredDay {
+/// schedules, dose plans).
+nonisolated enum StoredDay {
     static func string(_ date: Date, calendar: Calendar) -> String {
         let parts = calendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d%02d%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
@@ -448,8 +455,10 @@ extension Nutrient {
             totals[calendar.startOfDay(for: record.date), default: 0] += record.amount
         }
         let gaps = courseGaps(calendar: calendar)
+        let plan = dosePlan(calendar: calendar)  // each day's own goal (#135), decoded once
         let metDays = totals.compactMap { date, total -> Date? in
-            GoalProgress(nutrient: self, current: max(0, total)).countsAsMet
+            GoalProgress(nutrient: self, current: max(0, total),
+                         goal: plan.goal(on: date, calendar: calendar) ?? baseGoal).countsAsMet
                 && NutrientCourse.includes(endDate, gaps: gaps, day: date, calendar: calendar) ? date : nil
         }
         return schedule.weekProgress(on: start, metDays: metDays, calendar: calendar)
@@ -475,5 +484,336 @@ extension Nutrient {
     func isDue(on day: Date = .now, calendar: Calendar = .current) -> Bool {
         isRunning(on: day, calendar: calendar) && schedule(calendar: calendar).isDoseDay(day, calendar: calendar)
             && weekProgress(before: day, calendar: calendar)?.isDone != true
+    }
+}
+
+// MARK: - Dose plans (#135)
+
+/// A day's goal: the target (an "at least" amount, an "at most" limit, a range's minimum) and a range's maximum.
+nonisolated struct NutrientGoal: Equatable, Sendable {
+    var target: Double
+    var upperBound: Double? = nil
+}
+
+/// A goal that follows steps the user sets (nutrx Pro, docs/pro/DOSE-PLANS.md), shared by the app, the widgets and
+/// the Watch: "200 mg for a week, then 400 mg, and keep it", or a taper that stops. Past days keep the goal they had
+/// (§3): creating a plan pins the days before it to the base goal, and what a plan gave before it was edited or
+/// removed is frozen as pieces, each from its day. Tested in `NutrientDosePlanTests`.
+nonisolated struct NutrientDosePlan: Equatable, Sendable {
+    struct Step: Equatable, Sendable {
+        var goal: NutrientGoal
+        /// 1–90 (`stepDays`).
+        var days: Int
+    }
+
+    /// After the last step: keep its goal, or stop (the nutrient's course ends on the last step's last day).
+    enum End: String, Equatable, Sendable { case keep, stop }
+
+    /// The plan in effect from `appliesFrom`.
+    struct Plan: Equatable, Sendable {
+        /// The first step's first day (a start of day).
+        var start: Date
+        var steps: [Step]
+        var end: End
+        /// Days from this one (a start of day) follow the plan; earlier ones are in `history`.
+        var appliesFrom: Date
+        /// Held without Pro from this day (§6): from it on, the goal stays at the step in effect that day.
+        var heldFrom: Date? = nil
+    }
+
+    /// A frozen goal, from its day until the next piece or the plan. A nil goal is the base goal, as it is then.
+    struct Piece: Equatable, Sendable {
+        /// A start of day, or `.distantPast` for "from the start of the nutrient's history".
+        let from: Date
+        let goal: NutrientGoal?
+    }
+
+    /// Where a day falls in the plan, for "Step 2 of 3 · until Fri".
+    struct Position: Equatable, Sendable {
+        /// From 1.
+        let step: Int
+        let count: Int
+        /// The step's last day.
+        let lastDay: Date
+    }
+
+    static let stepCounts = 2...6
+    static let stepDays = 1...90
+
+    /// Oldest first.
+    private(set) var history: [Piece] = []
+    /// The plan in effect, or nil when there's none (never had one, or removed; its past stays in `history`).
+    private(set) var plan: Plan?
+
+    /// The plan's goal on `day`, or nil for the base goal (no plan, before its start, or after it was removed).
+    func goal(on day: Date, calendar: Calendar = .current) -> NutrientGoal? {
+        let start = calendar.startOfDay(for: day)
+        if let plan, start >= plan.appliesFrom { return Self.goal(of: plan, on: start, calendar: calendar) }
+        return history.last { $0.from <= start }?.goal
+    }
+
+    /// Where `day` falls in the plan's steps; nil outside them (before the start, after the last step), with no plan
+    /// in effect that day, and while held, when the steps aren't moving.
+    func position(on day: Date, calendar: Calendar = .current) -> Position? {
+        let start = calendar.startOfDay(for: day)
+        guard let plan, start >= plan.appliesFrom, !isHeld(on: start, calendar: calendar),
+              let index = Self.stepIndex(of: plan, on: start, calendar: calendar) else { return nil }
+        return Position(step: index + 1, count: plan.steps.count,
+                        lastDay: Self.lastDay(ofStep: index, in: plan, calendar: calendar))
+    }
+
+    /// Held without Pro on `day`.
+    func isHeld(on day: Date, calendar: Calendar = .current) -> Bool {
+        guard let heldFrom = plan?.heldFrom else { return false }
+        return calendar.startOfDay(for: day) >= heldFrom
+    }
+
+    /// A plan that stops: its last step's last day, the course's end (nil while held, or for one that keeps).
+    func stopDay(calendar: Calendar = .current) -> Date? {
+        guard let plan, plan.end == .stop, plan.heldFrom == nil, !plan.steps.isEmpty else { return nil }
+        return Self.lastDay(ofStep: plan.steps.count - 1, in: plan, calendar: calendar)
+    }
+
+    /// Still moving on `day`: not started yet, or within its steps. A plan keeping its last goal, or past its stop
+    /// day, is settled: holding it would change nothing.
+    func isMoving(on day: Date, calendar: Calendar = .current) -> Bool {
+        let start = calendar.startOfDay(for: day)
+        guard let plan, start >= plan.appliesFrom else { return false }
+        return start < plan.start || Self.stepIndex(of: plan, on: start, calendar: calendar) != nil
+    }
+
+    // MARK: Changes
+
+    /// A new plan, from `start` (today or later). The days before it are pinned to the goal they have now (the base
+    /// goal, or what an earlier plan left), so neither a later change to the base goal nor removing this plan
+    /// re-judges them.
+    func creating(steps: [Step], end: End, start: Date, base: NutrientGoal, today: Date,
+                  calendar: Calendar = .current) -> NutrientDosePlan {
+        let day = calendar.startOfDay(for: today)
+        var result = frozen(through: day, base: base, calendar: calendar)
+        // Days since an earlier plan was removed were judged by this base goal: pin them to it too.
+        result.history = result.history.map { $0.goal == nil ? Piece(from: $0.from, goal: base) : $0 }
+        if result.history.isEmpty { result.history.append(Piece(from: .distantPast, goal: base)) }
+        result.plan = Plan(start: max(calendar.startOfDay(for: start), day), steps: steps, end: end, appliesFrom: day)
+        return result
+    }
+
+    /// The plan with new steps or a new end, from `today`: the days before keep what the plan gave them.
+    func editing(steps: [Step], end: End, today: Date, calendar: Calendar = .current) -> NutrientDosePlan {
+        guard let plan else { return self }
+        let day = calendar.startOfDay(for: today)
+        var result = frozen(through: day, base: nil, calendar: calendar)
+        result.plan = Plan(start: plan.start, steps: steps, end: end, appliesFrom: day, heldFrom: nil)
+        return result
+    }
+
+    /// No plan from `today`; the days before keep what it gave them. The goal the base should take from today, so
+    /// nothing jumps (§3, §6): a kept last goal, or the held goal; nil to keep the base goal as it is.
+    func removing(today: Date, calendar: Calendar = .current) -> (plan: NutrientDosePlan, newBase: NutrientGoal?) {
+        guard let plan else { return (self, nil) }
+        let day = calendar.startOfDay(for: today)
+        let settled = plan.end == .keep && day >= plan.start && Self.stepIndex(of: plan, on: day, calendar: calendar) == nil
+        let newBase = settled || isHeld(on: day, calendar: calendar) ? goal(on: day, calendar: calendar) : nil
+        var result = frozen(through: day, base: nil, calendar: calendar)
+        result.plan = nil
+        result.history.append(Piece(from: day, goal: nil))
+        return (result, newBase)
+    }
+
+    /// The base goal is about to change from `today`: its pieces before today keep `oldBase`, the value they were
+    /// judged by, and the new base applies from today (§3).
+    func pinningBase(_ oldBase: NutrientGoal, today: Date, calendar: Calendar = .current) -> NutrientDosePlan {
+        guard !history.isEmpty else { return self }
+        let day = calendar.startOfDay(for: today)
+        // A plan not started yet gave its days so far the base goal: freeze them with the old one first.
+        var result = frozen(through: day, base: oldBase, calendar: calendar)
+        result.history = result.history.map { $0.goal == nil && $0.from < day ? Piece(from: $0.from, goal: oldBase) : $0 }
+        if let appliesFrom = result.plan?.appliesFrom {
+            result.plan?.appliesFrom = max(appliesFrom, day)
+        } else {
+            result.history.removeAll { $0.from >= day }
+            result.history.append(Piece(from: day, goal: nil))
+        }
+        return result
+    }
+
+    /// May a device that knows Pro isn't active hold the plan on `today` (§6)? Only a moving plan, not held already,
+    /// and only when the Pro marker (`seenWithPro`, the last day a device knew Pro was active) is more than a day old:
+    /// a device with Pro keeps it current, so two devices that disagree can't hold and resume back and forth.
+    func canHold(on today: Date, seenWithPro: Date?, calendar: Calendar = .current) -> Bool {
+        let day = calendar.startOfDay(for: today)
+        guard plan?.heldFrom == nil, isMoving(on: day, calendar: calendar) else { return false }
+        guard let seenWithPro, let yesterday = calendar.date(byAdding: .day, value: -1, to: day) else { return true }
+        return calendar.startOfDay(for: seenWithPro) < yesterday
+    }
+
+    /// Held from `day` (the day the device found out), so days already gone by keep their steps.
+    func holding(from day: Date, calendar: Calendar = .current) -> NutrientDosePlan {
+        guard plan?.heldFrom == nil else { return self }
+        var result = self
+        result.plan?.heldFrom = calendar.startOfDay(for: day)
+        return result
+    }
+
+    /// Pro is back on `today`: the plan goes on where it held. The held step (or, held before the start, the start)
+    /// moves later by the days it was held, so those days keep the held goal and the later steps follow.
+    func resuming(today: Date, calendar: Calendar = .current) -> NutrientDosePlan {
+        guard var plan, let heldFrom = plan.heldFrom else { return self }
+        let day = calendar.startOfDay(for: today)
+        let held = max(0, calendar.dateComponents([.day], from: heldFrom, to: day).day ?? 0)
+        if heldFrom < plan.start {
+            plan.start = calendar.date(byAdding: .day, value: held, to: plan.start) ?? plan.start
+        } else if let index = Self.stepIndex(of: plan, on: heldFrom, calendar: calendar) {
+            plan.steps[index].days += held
+        }
+        plan.heldFrom = nil
+        var result = self
+        result.plan = plan
+        return result
+    }
+
+    /// `history` with what the plan gave from `appliesFrom` up to (not including) `day` frozen as pieces. With no
+    /// plan, a nil `base` piece is left as it is.
+    private func frozen(through day: Date, base: NutrientGoal?, calendar: Calendar) -> NutrientDosePlan {
+        var result = self
+        guard let plan, plan.appliesFrom < day else { return result }
+        result.history.removeAll { $0.from >= plan.appliesFrom }
+        var date = plan.appliesFrom
+        var last: NutrientGoal?? = .none
+        while date < day {
+            let goal = Self.goal(of: plan, on: date, calendar: calendar)
+            if last != .some(goal) {
+                // Before the plan's start its goal is the base goal; once frozen, the base goal it had.
+                result.history.append(Piece(from: date, goal: goal ?? (base ?? history.last { $0.from <= date }?.goal)))
+                last = .some(goal)
+            }
+            guard let next = calendar.date(byAdding: .day, value: 1, to: date) else { break }
+            date = next
+        }
+        return result
+    }
+
+    // MARK: The steps
+
+    private static func goal(of plan: Plan, on day: Date, calendar: Calendar) -> NutrientGoal? {
+        let effective = plan.heldFrom.map { min(day, $0) } ?? day
+        guard effective >= plan.start else { return nil }
+        guard let index = stepIndex(of: plan, on: effective, calendar: calendar) else { return plan.steps.last?.goal }
+        return plan.steps[index].goal
+    }
+
+    private static func stepIndex(of plan: Plan, on day: Date, calendar: Calendar) -> Int? {
+        guard let offset = calendar.dateComponents([.day], from: plan.start, to: day).day, offset >= 0 else { return nil }
+        var end = 0
+        for (index, step) in plan.steps.enumerated() {
+            end += step.days
+            if offset < end { return index }
+        }
+        return nil
+    }
+
+    private static func lastDay(ofStep index: Int, in plan: Plan, calendar: Calendar) -> Date {
+        let days = plan.steps.prefix(index + 1).reduce(0) { $0 + $1.days }
+        return calendar.date(byAdding: .day, value: days - 1, to: plan.start) ?? plan.start
+    }
+
+    // MARK: Stored form
+
+    /// "h=" the frozen pieces ("*" for the start of history, then "yyyyMMdd"; a goal "200", "120~160" or "base"),
+    /// ";", then "p=" the plan: start, appliesFrom, keep or stop and an optional "held:yyyyMMdd", "|", the steps as
+    /// goal "x" days. "h=*:200;p=20261110,20261110,keep|200x7,400x14".
+    func encode(calendar: Calendar = .current) -> String {
+        var parts: [String] = []
+        if !history.isEmpty {
+            parts.append("h=" + history.map { piece in
+                let day = piece.from == .distantPast ? "*" : StoredDay.string(piece.from, calendar: calendar)
+                return day + ":" + (piece.goal.map(Self.text) ?? "base")
+            }.joined(separator: ","))
+        }
+        if let plan {
+            var head = [StoredDay.string(plan.start, calendar: calendar), StoredDay.string(plan.appliesFrom, calendar: calendar),
+                        plan.end.rawValue]
+            if let heldFrom = plan.heldFrom { head.append("held:" + StoredDay.string(heldFrom, calendar: calendar)) }
+            parts.append("p=" + head.joined(separator: ",") + "|"
+                         + plan.steps.map { Self.text($0.goal) + "x\($0.days)" }.joined(separator: ","))
+        }
+        return parts.joined(separator: ";")
+    }
+
+    /// What it can't read is skipped: a damaged plan falls back to the base goal rather than failing.
+    static func decode(_ raw: String, calendar: Calendar = .current) -> NutrientDosePlan {
+        var result = NutrientDosePlan()
+        for section in raw.split(separator: ";") {
+            if section.hasPrefix("h=") {
+                result.history = section.dropFirst(2).split(separator: ",").compactMap { text in
+                    let halves = text.split(separator: ":", maxSplits: 1)
+                    guard halves.count == 2 else { return nil }
+                    let from = halves[0] == "*" ? Date.distantPast : StoredDay.date(halves[0], calendar: calendar)
+                    guard let from else { return nil }
+                    if halves[1] == "base" { return Piece(from: from, goal: nil) }
+                    guard let goal = goal(halves[1]) else { return nil }
+                    return Piece(from: from, goal: goal)
+                }
+                .sorted { $0.from < $1.from }
+            } else if section.hasPrefix("p=") {
+                result.plan = plan(section.dropFirst(2), calendar: calendar)
+            }
+        }
+        return result
+    }
+
+    private static func plan(_ text: Substring, calendar: Calendar) -> Plan? {
+        let halves = text.split(separator: "|", maxSplits: 1)
+        guard halves.count == 2 else { return nil }
+        let head = halves[0].split(separator: ",")
+        guard head.count >= 3, let start = StoredDay.date(head[0], calendar: calendar),
+              let appliesFrom = StoredDay.date(head[1], calendar: calendar),
+              let end = End(rawValue: String(head[2])) else { return nil }
+        let heldFrom = head.dropFirst(3).first { $0.hasPrefix("held:") }
+            .flatMap { StoredDay.date($0.dropFirst(5), calendar: calendar) }
+        let steps = halves[1].split(separator: ",").compactMap { text -> Step? in
+            let pair = text.split(separator: "x")
+            // Any length from 1: the sheet offers 1–90, but a resume lengthens the held step by the days it waited.
+            guard pair.count == 2, let goal = goal(pair[0]), let days = Int(pair[1]), days > 0 else {
+                return nil
+            }
+            return Step(goal: goal, days: days)
+        }
+        guard !steps.isEmpty else { return nil }
+        return Plan(start: start, steps: steps, end: end, appliesFrom: appliesFrom, heldFrom: heldFrom)
+    }
+
+    private static func goal(_ text: Substring) -> NutrientGoal? {
+        let values = text.split(separator: "~").compactMap { Double($0) }
+        guard let target = values.first, target > 0 else { return nil }
+        if values.count == 2 { return values[1] > target ? NutrientGoal(target: target, upperBound: values[1]) : nil }
+        return values.count == 1 ? NutrientGoal(target: target) : nil
+    }
+
+    private static func text(_ goal: NutrientGoal) -> String {
+        number(goal.target) + (goal.upperBound.map { "~" + number($0) } ?? "")
+    }
+
+    private static func number(_ value: Double) -> String {
+        value == value.rounded() && abs(value) < 1e15 ? String(Int(value)) : String(value)
+    }
+}
+
+extension Nutrient {
+    /// Read in the same calendar the caller matches days in.
+    func dosePlan(calendar: Calendar = .current) -> NutrientDosePlan {
+        NutrientDosePlan.decode(dosePlanRaw, calendar: calendar)
+    }
+
+    /// The goal set in the form: the target and, for a range, its maximum.
+    var baseGoal: NutrientGoal {
+        NutrientGoal(target: dailyTarget, upperBound: upperBound)
+    }
+
+    /// The goal on `day` (#135): its dose plan's goal when it has one for that day, else the base goal. Every goal
+    /// reader goes through it (docs/pro/DOSE-PLANS.md §2): today's for Today, the widgets and the Watch, each past
+    /// day's own for History, streaks, analytics, recaps and the report.
+    func goal(on day: Date = .now, calendar: Calendar = .current) -> NutrientGoal {
+        dosePlanRaw.isEmpty ? baseGoal : dosePlan(calendar: calendar).goal(on: day, calendar: calendar) ?? baseGoal
     }
 }
