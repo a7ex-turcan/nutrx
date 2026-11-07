@@ -95,16 +95,19 @@ struct RecapText: RecapWording {
                               detail: "Missed \(dayList(slipped.missedDays, short: true))", nutrientID: slipped.id))
         }
         if let miss = recap.weakestWeekday {
-            // When this week's day of it was a full day, say so (#313): beside a perfect week, "2 of the last 4
-            // weeks" alone read as if this week slipped.
+            // When this week's day of it was a full day, say so (#313): beside a perfect week, the count alone read as
+            // if this week slipped. The weekday is the card's value right above, so it isn't repeated there.
             let heldThisWeek = recap.fullDayFlags.indices.contains { index in
                 recap.fullDayFlags[index]
                     && calendar.component(.weekday, from: calendar.date(byAdding: .day, value: index, to: recap.weekStart)!)
                         == miss.weekday
             }
-            cards.append(Card(kind: .weekday, label: "Day you tend to miss", value: weekdayName(miss.weekday),
-                              detail: "\(miss.missed) of the last \(miss.weeks) weeks"
-                                  + (heldThisWeek ? ", but not this one" : ""), nutrientID: nil))
+            let weekday = weekdayName(miss.weekday)
+            cards.append(Card(kind: .weekday, label: "Day you tend to miss", value: weekday,
+                              detail: heldThisWeek
+                                  ? "\(Self.together("Missed \(miss.missed) of \(miss.weeks)")), but not this one"
+                                  : Self.weekdayMissDetail(missed: miss.missed, of: miss.weeks, weekday: weekday),
+                              nutrientID: nil))
         }
         if let streak = recap.streak {
             cards.append(Card(kind: .streak, label: "Streak", value: days(streak.now),
@@ -137,6 +140,13 @@ struct RecapText: RecapWording {
 
     /// No-break spaces, and word joiners around a dash (a line may otherwise break after "5 –"), so the phrase
     /// wraps as one piece.
+    /// "Missed 3 of 4 Sundays": the day you tend to miss, the same on the week's and the month's cards (#327). Only
+    /// "Missed 3 of 4" is kept on one line, so in a half-width card the weekday can wrap rather than leaving
+    /// "Missed" alone above the rest.
+    static func weekdayMissDetail(missed: Int, of count: Int, weekday: String) -> String {
+        "\(together("Missed \(missed) of \(count)")) \(weekday)s"
+    }
+
     static func together(_ phrase: String) -> String {
         phrase.replacingOccurrences(of: " ", with: "\u{00A0}")
             .replacingOccurrences(of: "–", with: "\u{2060}–\u{2060}")

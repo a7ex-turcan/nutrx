@@ -92,7 +92,7 @@ struct MonthlyRecapText: RecapWording {
         if let miss = recap.weakestWeekday {
             let weekday = calendar.weekdaySymbols[miss.weekday - 1]
             cards.append(.init(kind: .weekday, label: "Day you tend to miss", value: weekday,
-                               detail: "Missed \(RecapText.together("\(miss.missed) of \(miss.weeks) \(weekday)s"))",
+                               detail: RecapText.weekdayMissDetail(missed: miss.missed, of: miss.weeks, weekday: weekday),
                                nutrientID: nil))
         }
         if let streak = recap.bestStreak {

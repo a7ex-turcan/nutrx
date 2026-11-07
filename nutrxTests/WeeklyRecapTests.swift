@@ -153,7 +153,7 @@ final class WeeklyRecapTests: XCTestCase {
         XCTAssertEqual(recap.weakestWeekday, WeeklyRecap.WeekdayMiss(weekday: 1, missed: 3, weeks: 4))
         let card = RecapText(recap, calendar: calendar).cards.first { $0.kind == .weekday }
         XCTAssertEqual(card?.value, "Sunday")
-        XCTAssertEqual(card?.detail, "3 of the last 4 weeks")
+        XCTAssertEqual(card?.detail, "Missed\u{00A0}3\u{00A0}of\u{00A0}4 Sundays")
     }
 
     func testTheDayYouTendToMissSaysWhenThisWeeksWasFull() {
@@ -162,11 +162,11 @@ final class WeeklyRecapTests: XCTestCase {
                          overrides: [day(9, 20): [omega: 0], day(9, 27): [omega: 0], day(10, 4): [omega: 0]])
         let card = RecapText(recap(all, today: day(10, 12)), calendar: calendar).cards.first { $0.kind == .weekday }
         XCTAssertEqual(card?.value, "Sunday")
-        XCTAssertEqual(card?.detail, "3 of the last 4 weeks, but not this one")
+        XCTAssertEqual(card?.detail, "Missed\u{00A0}3\u{00A0}of\u{00A0}4, but not this one")
         // On Sunday evening this week's Sunday hasn't counted yet: the plain detail (the four weeks to Saturday
         // start on Sunday 13 September, before the data, so all four Sundays were missed).
         let evening = RecapText(recap(all, today: day(10, 11)), calendar: calendar).cards.first { $0.kind == .weekday }
-        XCTAssertEqual(evening?.detail, "4 of the last 4 weeks")
+        XCTAssertEqual(evening?.detail, "Missed\u{00A0}4\u{00A0}of\u{00A0}4 Sundays")
     }
 
     func testNoWeekdayStandsOutWithoutARepeat() {
