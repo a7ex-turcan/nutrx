@@ -235,15 +235,24 @@ struct DailyIntakeChart: View {
                     RuleMark(xStart: .value("Day", run.first), xEnd: .value("Day", end), y: .value("Goal", line.value))
                         .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
                         .foregroundStyle(Theme.textSecondary.opacity(0.6))
+                        // "Goal", "400 mg, 23 Oct to 7 Nov": left to Charts, it read the segment's two dates.
+                        .accessibilityLabel(line.name)
+                        .accessibilityValue("\(line.value.formattedAmount()) \(unit), \(dayText(run.first)) to \(dayText(run.last))")
                 }
             }
         } else {
-            ForEach(goalLabels, id: \.text) { label in
-                RuleMark(y: .value("Goal", label.value))
+            ForEach(lines(of: labelledGoal), id: \.name) { line in
+                RuleMark(y: .value("Goal", line.value))
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
                     .foregroundStyle(Theme.textSecondary.opacity(0.6))
+                    .accessibilityLabel(line.name)
+                    .accessibilityValue("\(line.value.formattedAmount()) \(unit)")
             }
         }
+    }
+
+    private func dayText(_ date: Date) -> String {
+        date.formatted(.dateTime.day().month(.abbreviated))
     }
 
     /// Today isn't over, so its bar is a dashed outline drawn over the faint placeholder bar.
