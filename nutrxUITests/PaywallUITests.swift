@@ -33,6 +33,11 @@ final class PaywallUITests: XCTestCase {
 
     private var window: CGRect { app.windows.firstMatch.frame }
 
+    /// The paywall's own scroll view, the one holding its links: Today's, under the sheet, are scroll views too.
+    private var sheet: XCUIElement {
+        app.scrollViews.containing(.button, identifier: "Privacy").firstMatch
+    }
+
     override func setUp() async throws {
         continueAfterFailure = false
     }
@@ -55,7 +60,7 @@ final class PaywallUITests: XCTestCase {
     /// `PlanLine.margin` (10 pt) above the pinned button's top.
     private func isInView(_ card: XCUIElement) -> Bool {
         let middle = card.frame.midY
-        return middle > app.scrollViews.firstMatch.frame.minY && middle < purchaseButton.frame.minY - 10
+        return middle > sheet.frame.minY && middle < purchaseButton.frame.minY - 10
     }
 
     /// The plan line follows the card: absent while it's in view, above the button while it isn't. The line fades, so
@@ -84,7 +89,6 @@ final class PaywallUITests: XCTestCase {
     /// A slow drag up the sheet, a step at a time, until `element` is clear of the pinned button (a swipe's momentum
     /// overshoots).
     private func scroll(until element: XCUIElement) {
-        let sheet = app.scrollViews.firstMatch
         for _ in 0..<8 {
             if element.exists, element.isHittable, element.frame.maxY <= purchaseButton.frame.minY {
                 return
