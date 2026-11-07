@@ -230,7 +230,8 @@ struct DailyIntakeChart: View {
         if runs.count > 1 {
             // Stepped (#135): each goal across its own days, from the first one's start to the day after the last.
             ForEach(Array(runs.enumerated()), id: \.offset) { _, run in
-                let end = Calendar.current.date(byAdding: .day, value: 1, to: run.last) ?? run.last
+                // In the plan's own calendar, which matched its days.
+                let end = goal.calendar.date(byAdding: .day, value: 1, to: run.last) ?? run.last
                 ForEach(lines(of: run.goal), id: \.name) { line in
                     RuleMark(xStart: .value("Day", run.first), xEnd: .value("Day", end), y: .value("Goal", line.value))
                         .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
@@ -252,7 +253,9 @@ struct DailyIntakeChart: View {
     }
 
     private func dayText(_ date: Date) -> String {
-        date.formatted(.dateTime.day().month(.abbreviated))
+        var style = Date.FormatStyle.dateTime.day().month(.abbreviated)
+        style.timeZone = goal.calendar.timeZone
+        return date.formatted(style)
     }
 
     /// Today isn't over, so its bar is a dashed outline drawn over the faint placeholder bar.
