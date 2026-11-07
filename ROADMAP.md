@@ -192,7 +192,7 @@ In progress on main.
 | A stack's steppers line up | ✅ Built (v2.7, #288: #333) |
 | One wording for the day you tend to miss; Done on the right in every reminders sheet | ✅ Built (v2.7, #327, #326: #332, #331) |
 | UI tests: the sheets' Log buttons on the SE; the dry runs' reminder to run them | ✅ Built (v2.7, #222, #340: #337, #343) |
-| UI tests: the paywall | 📋 Planned (#339) |
+| UI tests: the paywall on the SE and the iPhone 17 | ✅ Built (v2.7, #339) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 

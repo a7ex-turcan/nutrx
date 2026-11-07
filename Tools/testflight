@@ -40,7 +40,9 @@ import tempfile
 import time
 
 # The UI tests to run before a release (CLAUDE.md, Build & Run; #222). The plan reminds; nothing here runs them.
-UI_TESTS = "xcodebuild test -scheme nutrxUITests -destination 'platform=iOS Simulator,name=nutrx SE' -parallel-testing-enabled NO"
+UI_TESTS = ("xcodebuild test -scheme nutrxUITests -destination 'platform=iOS Simulator,name=nutrx SE' "
+            "-destination 'platform=iOS Simulator,name=nutrx iPhone 17' -disable-concurrent-destination-testing "
+            "-parallel-testing-enabled NO")
 
 APP_ID = "6760843478"
 TEAM_ID = "6396A6L9J3"
@@ -257,7 +259,7 @@ def main():
         for index, step in enumerate(steps, 1):
             print(f"  {index}. {step}")
         print("Dry run: nothing was built, uploaded, written or tagged. Add --apply to do it.")
-        print(f"Before a release, run the UI tests on this commit (#222, #340):\n  {UI_TESTS}")
+        print(f"Before a release, run the UI tests on this commit (#222, #339, #340):\n  {UI_TESTS}")
         return
 
     try:
