@@ -102,8 +102,10 @@ Without a plan, the base goal behaves as it does now: editing it re-judges the n
 
 ## 6. Without Pro
 
-- **The marker:** any device that knows Pro is active records the day in the plan, at most once a day ("seen with Pro on 20 Nov"). It's the plan's own progress marker: nothing reads it to unlock anything, and Pro is still read from StoreKit every launch, never stored.
-- **The hold:** a device that knows Pro **isn't** active holds the plan from the day after the marker, but only when the marker is more than a day old.
+- **The marker:** any device that knows Pro is active records the day, at most once a day ("seen with Pro on 20 Nov"). It's the plan's own progress marker: nothing reads it to unlock anything, and Pro is still read from StoreKit every launch, never stored.
+  - **Its own field** (`dosePlanSeenWithPro`), not part of the plan's string. A device writing it before its CloudKit import lands can then only refresh the marker, and can't overwrite another device's edit or removal of the plan with a stale copy.
+- **The hold:** a device that knows Pro **isn't** active holds the plan, but only when the marker is more than a day old.
+  - **It holds from the day it finds out,** not from the day after the marker. Days already gone by keep the steps they had, so a step change while the app wasn't opened isn't re-judged (§3).
   - "Knows" means `ProAccess.refreshEntitlement` came back false, never an unknown entitlement such as a cold background launch.
   - **Why the marker:** if two devices disagree (an iPad on another App Store account, with Family Sharing off), the one with Pro keeps the marker current. The other then never holds, so the plan can't be held and resumed back and forth, with each resume pushing the steps later.
   - **The hold day is stored in the plan,** so it syncs, and every device, widget and the Watch holds the same way. The goal stays at the step in effect on that day, and later steps wait.
@@ -122,13 +124,14 @@ Without a plan, the base goal behaves as it does now: editing it re-judges the n
 - **What it stores:**
   - the goal pieces, each from its day, with an upper bound for a range;
   - the plan's definition, for editing: the start day, the steps' goals and lengths, and keep or stop;
-  - the Pro marker's day, and the hold day when there is one.
+  - the hold day, when there is one.
+- **The Pro marker** is a second field, `Nutrient.dosePlanSeenWithPro: String = ""` (a `yyyyMMdd` day, §6), so writing it never rewrites the plan.
 
   The exact encoding is settled in phase 1, with round-trip tests, in the style of `scheduleRaw`'s pieces (`20261110=200;20261117=400`).
-- **CloudKit:** it's a CloudKit-safe scalar with a default. **Its field (`CD_dosePlanRaw`) must be in the production schema before the first TestFlight build with it:**
+- **CloudKit:** both are CloudKit-safe scalars with defaults. **Their fields (`CD_dosePlanRaw`, `CD_dosePlanSeenWithPro`) must be in the production schema before the first TestFlight build with them:**
   - development is imported with `cktool`;
   - production is the user's Console deploy;
-  - `Tools/CloudKitSchema/fields.txt` gets the field, and `Tools/check-cloudkit-schema` checks it.
+  - `Tools/CloudKitSchema/fields.txt` gets the fields, and `Tools/check-cloudkit-schema` checks them.
 - **No change to `IntakeRecord`.** Logs are logs, whatever the goal.
 
 ## 8. Rules it keeps (docs/pro/PLAN.md §0)
@@ -142,11 +145,11 @@ Without a plan, the base goal behaves as it does now: editing it re-judges the n
 
 1. **The rule and today's goal:**
    - `NutrientDosePlan` (encode / decode, `goal(on:)`, `step(on:)`, edits from today, removal, hold and resume) and its tests;
-   - `Nutrient.dosePlanRaw`, `Nutrient.goal(on:)` and `GoalProgress(nutrient:current:on:)`;
+   - `Nutrient.dosePlanRaw`, `Nutrient.dosePlanSeenWithPro`, `Nutrient.goal(on:)` and `GoalProgress(nutrient:current:on:)`;
    - **today's readers** move to it: Today, the log sheet, the stack sheet, the widgets, the controls, the Watch, the complications, the Siri answers and the supply fallback;
    - a Debug-only way to set a plan, like `ScheduleDebug`;
    - `ProFeature.dosePlans`, not shipped;
-   - the CloudKit field in development, and the production deploy (the user's) before merging.
+   - the CloudKit fields in development, and the production deploy (the user's) before merging.
 2. **Past days:** `HistoryNutrient` gets a goal per day, so `HistoryLog`, `StreakService`, History, the recaps, `AnalyticsSummary`, `WeekdayPattern` and the report judge each day by its goal. Also the stepped goal rule in the chart, and the report's plan line.
 3. **The sheet:**
    - the Dose plan row, `DosePlanSheet` and `DosePlanText`;
