@@ -280,10 +280,11 @@ nutrx/
 │   │
 │   ├── Settings/
 │   │   ├── Views/
-│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups; Apple Health; Rate nutrx, Suggest a feature, About) with values, privacy footer.
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups, Siri & Shortcuts; Apple Health; Rate nutrx, Suggest a feature, About) with values, privacy footer.
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
+│   │   │   ├── SiriSettingsView.swift       # Siri & Shortcuts (#127): each Today nutrient's and stack's phrase, and ShortcutsLink.
 │   │   │   ├── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
 │   │   │   ├── AppleHealthSettingsView.swift # Settings → Apple Health (Pro): switch, what's read (data found?), privacy, Disconnect.
 │   │   │   └── ProSettingsCard.swift        # Settings' nutrx Pro card (free: Learn more → paywall; Pro: status → ProStatusView).
@@ -467,7 +468,8 @@ Built in phase 2 of the Pro plan (free). Everything lives in `Shared/Intents/` a
 - **`LogStack.id` and migration:** adding a property with a `UUID()` default to an existing store gives every existing row the *same* value (checked: stacks from a #54 build all got one id). `StackLogging.repairDuplicateIDs` gives duplicates new ids (keeping the oldest stack's). `nutrxApp` runs it at launch, because Siri can launch the app in the background, and whenever the app becomes active, because a synced device can bring duplicates. Any future UUID field on an existing model needs the same.
 - **`StackEntity` / `StackEntityQuery`** — stacks by name (`LogStack.id`, a UUID, is only an identifier), suggested in Today's order and only when they have something to log; an empty stack still resolves by id. Stack names change, so `StackShortcutLogging.stacksChanged()` refreshes the phrase parameters after a stack is created, renamed or deleted (the Stacks tab, the detail screen), besides the refresh when the app becomes active.
 - **Siri phrases always name the app**, so the Siri tip says “Log my Morning stack **with nutrx**”, not the design's “Log my Morning stack”. A stack whose name's last word is already “stack” gets “Log the \(stack) with nutrx”, a second phrase registered for it, so the tip never says “Morning stack stack” (#292). Never “Log my \(stack) with nutrx”: that's the nutrient phrase, and a stack named like a nutrient would clash.
-- Tests: `NutrientShortcutTests`, `StackShortcutTests`. Not built yet: a Settings → Siri screen (#127), and the Watch (the App Shortcuts are the iPhone app's, #57).
+- **Settings → Siri & Shortcuts** (#127, `SiriSettingsView`): the phrases as they are, with no setup. One row per nutrient on Today, in Today's order (`NutrientEntityQuery.activeNutrients`), reads "Log my Vitamin D with nutrx" (`NutrientShortcutLogging.siriPhrase`), and one per stack Siri takes today (`StackEntityQuery.loggableStacks`: something due) reads `StackShortcutLogging.siriPhrase`. Each is beside its tile, and a long press (or VoiceOver's Copy action) copies the whole phrase. `NutrxShortcuts.shortcutTileColor` is `.grayGreen`, so nutrx's tiles in the Shortcuts app aren't the default blue. Apple's `ShortcutsLink` opens nutrx's actions in the Shortcuts app. The footer says Siri logs one step and Shortcuts can log an amount.
+- Tests: `NutrientShortcutTests`, `StackShortcutTests`. Not built yet: the Watch (the App Shortcuts are the iPhone app's, #57).
 
 ---
 
