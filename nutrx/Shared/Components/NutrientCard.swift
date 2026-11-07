@@ -16,6 +16,8 @@ struct NutrientCard: View {
     var isLastDay: Bool = false
     /// Under a weekly schedule (nutrx Pro, #132): "2 of 3 this week" on the third line, first of the hints.
     var weekly: NutrientSchedule.WeekProgress? = nil
+    /// A dose plan's step (nutrx Pro, #135): "Step 2 of 3 · until Fri" on the third line, after the other hints.
+    var dosePlanLine: DosePlanText.TodayLine? = nil
     /// A VoiceOver "Edit Nutrient" action, for layouts without swipe actions (Today's grid on large screens, #152).
     var onEdit: (() -> Void)? = nil
 
@@ -129,6 +131,12 @@ struct NutrientCard: View {
         if let supply, !supply.isOut {
             return LineHint(symbol: "waterbottle", text: supply.text, shortText: supply.shortText,
                             compactText: supply.compactText, color: Theme.textAmberInk)
+        }
+        // After a low bottle, which asks for something; "Step 2 of 3" only says where the plan is.
+        if let dosePlanLine {
+            return LineHint(symbol: ProFeature.dosePlans.symbolName, text: dosePlanLine.text,
+                            shortText: dosePlanLine.shortText, compactText: dosePlanLine.compactText,
+                            color: Theme.textSecondary)
         }
         return nil
     }
@@ -253,6 +261,8 @@ struct NutrientCard: View {
                 parts.append(CourseText.lastDaySpoken)
             } else if let supply {
                 parts.append(supply.text)
+            } else if let dosePlanLine {
+                parts.append(dosePlanLine.text)
             }
         }
         return parts.joined(separator: ", ")
@@ -320,6 +330,8 @@ private struct NutrientCardPreviewGallery: View {
                 card("Vitamin D", unit: "IU", target: 4000, current: 2000, tint: .amber, symbol: "sun.max")
                 card("Omega-3", unit: "mg", target: 2000, current: 2000, tint: .teal, symbol: "fish")
                 card("Water", unit: "L", target: 2.5, current: 0, tint: .blue, symbol: "drop")
+                card("Magnesium", unit: "mg", target: 200, current: 0, tint: .indigo, symbol: "pills",
+                     dosePlan: .init(text: "Step 1 of 2 · until Fri", shortText: "Step 1 of 2", compactText: "1 of 2"))
                 card("Caffeine", unit: "mg", target: 400, current: 320, tint: .brown, symbol: "cup.and.saucer", goal: .maximum)
                 card("Protein", unit: "g", target: 120, upper: 160, current: 92, tint: .coral, symbol: "dumbbell", goal: .range)
                 card("Zinc", unit: "mg", target: 25, current: 10, tint: .green, symbol: "pills", lastDay: true)
@@ -336,12 +348,13 @@ private struct NutrientCardPreviewGallery: View {
 
     private func card(_ name: String, unit: String, target: Double, upper: Double? = nil, current: Double,
                       tint: NutrientTint, symbol: String, goal: GoalType = .minimum, lastDay: Bool = false,
-                      supply: NutrientCard.SupplyHint? = nil) -> some View {
+                      supply: NutrientCard.SupplyHint? = nil, dosePlan: DosePlanText.TodayLine? = nil) -> some View {
         let nutrient = Nutrient(name: name, unit: unit, step: 1, dailyTarget: target, sortOrder: 0,
                                 goalType: goal, upperBound: upper)
         nutrient.tint = tint
         nutrient.symbolName = symbol
-        return NutrientCard(nutrient: nutrient, currentIntake: current, supply: supply, isLastDay: lastDay)
+        return NutrientCard(nutrient: nutrient, currentIntake: current, supply: supply, isLastDay: lastDay,
+                            dosePlanLine: dosePlan)
     }
 }
 

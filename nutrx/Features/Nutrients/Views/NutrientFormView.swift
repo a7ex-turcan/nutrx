@@ -29,6 +29,7 @@ struct NutrientFormView: View {
     @State private var showSupply = false
     @State private var showDuration = false
     @State private var showSchedule = false
+    @State private var showDosePlan = false
     @State private var showPendingReminders = false
     @State private var showGroupChooser = false
     @State private var showNewGroupAlert = false
@@ -87,7 +88,8 @@ struct NutrientFormView: View {
 
                         NutrientPreviewRow(draft: draft)
 
-                        NutrientFormFields(draft: draft, focusedField: $focusedField) {
+                        NutrientFormFields(draft: draft, focusedField: $focusedField,
+                                           onEditDosePlan: offersDosePlan ? { showDosePlan = true } : nil) {
                             settingsRows
                         }
 
@@ -261,11 +263,13 @@ struct NutrientFormView: View {
             }
             .buttonStyle(.plain)
 
-            // Duration (nutrx Pro, #99): ongoing, or a set number of days / until a date.
+            // Duration (nutrx Pro, #99): ongoing, or a set number of days / until a date. A dose plan that stops sets
+            // it, so then it opens the plan (#135).
             if ProAccess.isStoreVisible {
                 Rectangle().fill(Theme.lineHairline).frame(height: 1)
-                ProGatedButton(action: { showDuration = true }) { showsBadge in
-                    settingsRow("Duration", value: showsBadge ? "" : CourseText().summary(endDate: draft.endDate, now: .now),
+                ProGatedButton(action: { if endsWithDosePlan { showDosePlan = true } else { showDuration = true } }) { showsBadge in
+                    settingsRow("Duration", value: showsBadge ? "" : durationSummary,
+                                shortValue: endsWithDosePlan ? draft.dosePlan.map(dosePlanText.shortDurationSummary) : nil,
                                 badge: showsBadge)
                 }
                 .buttonStyle(.plain)
@@ -291,6 +295,18 @@ struct NutrientFormView: View {
                 }
             }
 
+            // Dose plan (nutrx Pro, #135): a goal that follows steps, right after Schedule. In the edit form and the
+            // new-nutrient form, not onboarding's.
+            if offersDosePlan {
+                Rectangle().fill(Theme.lineHairline).frame(height: 1)
+                ProGatedButton(action: { showDosePlan = true }) { showsBadge in
+                    settingsRow("Dose plan", value: showsBadge ? "" : dosePlanText.summary(draft.dosePlan, today: .now),
+                                shortValue: dosePlanText.shortSummary(draft.dosePlan, today: .now), badge: showsBadge)
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showDosePlan) { DosePlanSheet(draft: draft) }
+            }
+
             // Supply (nutrx Pro): a saved nutrient only, since it reads the nutrient's own log.
             if let nutrient, ProAccess.isStoreVisible {
                 Rectangle().fill(Theme.lineHairline).frame(height: 1)
@@ -303,6 +319,27 @@ struct NutrientFormView: View {
             }
         }
         .background(Theme.surfaceCard, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+    }
+
+    /// The Dose plan row: in the edit form and the new-nutrient form (the one with a group picker), never
+    /// onboarding's, and only once dose plans are in the app.
+    private var offersDosePlan: Bool {
+        ProAccess.isStoreVisible && ProFeature.dosePlans.isAvailable && (nutrient != nil || showGroupPicker)
+    }
+
+    private var dosePlanText: DosePlanText {
+        DosePlanText(goalType: draft.goalType, unit: draft.unit.trimmingCharacters(in: .whitespaces))
+    }
+
+    /// A dose plan that stops ends the course on its last step's last day.
+    private var endsWithDosePlan: Bool {
+        guard offersDosePlan, let plan = draft.dosePlan, plan.end == .stop, let endDate = draft.endDate else { return false }
+        return Calendar.current.startOfDay(for: endDate) == plan.lastDay()
+    }
+
+    private var durationSummary: String {
+        if endsWithDosePlan, let plan = draft.dosePlan { return dosePlanText.durationSummary(plan) }
+        return CourseText().summary(endDate: draft.endDate, now: .now)
     }
 
     /// The draft's stacks by name, in the order picked.
@@ -339,7 +376,10 @@ struct NutrientFormView: View {
         }
     }
 
-    private func settingsRow(_ title: String, value: String, badge: Bool = false) -> some View {
+    /// `shortValue` takes the value's place when it doesn't fit beside the title ("Step 1 of 2" for
+    /// "2,000 → 4,000 IU · step 1 of 2").
+    private func settingsRow(_ title: String, value: String, shortValue: String? = nil,
+                             badge: Bool = false) -> some View {
         HStack(spacing: 10) {
             if dynamicTypeSize.isAccessibilitySize {
                 // Value under the title, so neither is cut short or broken mid-word.
@@ -358,9 +398,11 @@ struct NutrientFormView: View {
                     .foregroundStyle(Theme.textPrimary)
                 if badge { ProBadge() }
                 Spacer(minLength: 8)
-                Text(value)
-                    .foregroundStyle(Theme.textSecondary)
-                    .lineLimit(1)
+                ViewThatFits(in: .horizontal) {
+                    Text(value).lineLimit(1)
+                    if let shortValue { Text(shortValue).lineLimit(1) }
+                }
+                .foregroundStyle(Theme.textSecondary)
             }
             Image(systemName: "chevron.right")
                 .font(.footnote.weight(.semibold))

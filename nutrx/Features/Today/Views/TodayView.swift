@@ -810,6 +810,12 @@ struct TodayView: View {
                                        compactText: SupplyText.compactHint(status), isOut: status.level == .out)
     }
 
+    /// Where a nutrient's dose plan is today (#135): "Step 2 of 3 · until Fri", or nil.
+    private func dosePlanLine(for nutrient: Nutrient) -> DosePlanText.TodayLine? {
+        guard !nutrient.dosePlanRaw.isEmpty else { return nil }
+        return DosePlanText(goalType: nutrient.goalType, unit: nutrient.unit).todayLine(nutrient.dosePlan(), today: .now)
+    }
+
     private func nutrientCard(_ entry: TodayViewModel.NutrientIntake, inGrid: Bool) -> some View {
         NutrientCard(
             nutrient: entry.nutrient,
@@ -833,6 +839,7 @@ struct TodayView: View {
             onRefill: { nutrientToRefill = entry.nutrient },
             isLastDay: NutrientCourse.isLastDay(entry.nutrient.endDate, on: .now),
             weekly: entry.weekly,
+            dosePlanLine: dosePlanLine(for: entry.nutrient),
             // In the list the swipe action covers it; the grid has none.
             onEdit: inGrid ? { edit(entry.nutrient) } : nil
         )

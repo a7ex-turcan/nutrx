@@ -25,6 +25,9 @@ final class NutrientDraftSnapshotTests: XCTestCase {
             { $0.notes = "with food" }, { $0.goalType = .range }, { $0.tint = .coral }, { $0.symbolName = "drop" },
             { $0.pendingReminderTimes = [Date(timeIntervalSince1970: 0)] }, { $0.endDate = Date(timeIntervalSince1970: 0) },
             { $0.upperBound = "40" }, { $0.supplyServings = "120" }, { $0.pendingStacks = [.new("Morning")] },
+            { $0.dosePlan = NutrientDosePlan.Plan(start: Date(timeIntervalSince1970: 0),
+                                                  steps: [.init(goal: NutrientGoal(target: 1), days: 7)], end: .keep,
+                                                  appliesFrom: Date(timeIntervalSince1970: 0)) },
         ]
         for edit in edits {
             let edited = NutrientDraft()
