@@ -24,6 +24,11 @@ struct PaywallView: View {
     @State private var restoring = false
     @State private var welcomed = false
     @State private var message: Message?
+    /// Where each plan card's middle, the pinned button's top and the sheet's top are on screen, for the plan line
+    /// (#338). Cards by their plan's name.
+    @State private var planCardMidY: [String: CGFloat] = [:]
+    @State private var pinnedButtonTop: CGFloat?
+    @State private var scrollTop: CGFloat = 0
 
     private struct Message: Identifiable {
         let title: String
@@ -71,6 +76,17 @@ struct PaywallView: View {
         dynamicTypeSize.isAccessibilitySize ? .scrolls : .buttonPinned
     }
 
+    /// The plan line above the pinned button names the selected plan, so it shows only while that plan's card is out
+    /// of view (#338). With it always there, Lifetime's card sat half behind the footer on an iPhone 17. Measured
+    /// against the button, which stays put when the line comes and goes, so showing it can't hide the card and keep
+    /// itself showing. From xLarge and on large widths the plans start below the fold: it always shows there (#189,
+    /// #205). Not measured yet (the first frame after the plans load), it stays hidden.
+    private var showsPlanLine: Bool {
+        guard dynamicTypeSize < .xLarge, widthClass == .compact else { return true }
+        guard let midY = planCardMidY[ProText.planTitle(selected)], let buttonTop = pinnedButtonTop else { return false }
+        return !(midY > scrollTop && midY < buttonTop - 10)
+    }
+
     private var paywall: some View {
         let layout = footerLayout
         return ScrollViewReader { proxy in
@@ -97,15 +113,22 @@ struct PaywallView: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .ignoresSafeArea(edges: .top)
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { scrollTop = $0 }
             .safeAreaInset(edge: .bottom) {
                 if layout == .buttonPinned {
                     VStack(spacing: 8) {
-                        planSummary {
-                            withAnimation(.unlessReduceMotion(reduceMotion, .default)) {
-                                proxy.scrollTo(Self.plansID, anchor: .top)
+                        if showsPlanLine {
+                            planSummary {
+                                withAnimation(.unlessReduceMotion(reduceMotion, .default)) {
+                                    proxy.scrollTo(Self.plansID, anchor: .top)
+                                }
                             }
+                            .transition(.opacity)
                         }
                         purchaseButton
+                            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: {
+                                pinnedButtonTop = $0
+                            }
                     }
                     .padding(.bottom, 8)
                     .padding(.horizontal, Theme.Spacing.screenMargin)
@@ -113,10 +136,16 @@ struct PaywallView: View {
                     .frame(maxWidth: ReadableColumn.maxWidth)
                     .frame(maxWidth: .infinity)
                     .background(Theme.surfaceGround)
+                    // The plan line fades where it was laid out while the footer's top edge moves past it: clipped
+                    // to the footer, it's never drawn over the cards behind.
+                    .clipped()
                     // The plans scroll under the button: a hairline marks the edge.
                     .overlay(alignment: .top) {
                         Rectangle().fill(Theme.lineHairline).frame(height: 1)
                     }
+                    // The whole footer, background and hairline too: animated inside them only, the background
+                    // snapped short while the line was still fading, over the card behind it.
+                    .animation(.unlessReduceMotion(reduceMotion, .default), value: showsPlanLine)
                 }
             }
             // The ✕ stays put while the header scrolls away under it (#325), where the header's row has room for it.
@@ -328,6 +357,9 @@ struct PaywallView: View {
                 .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
             }
             .buttonStyle(.plain)
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).midY } action: {
+                planCardMidY[ProText.planTitle(plan)] = $0
+            }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
         }
