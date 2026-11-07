@@ -21,6 +21,8 @@ CD_LogStackEntry CD_stack
 CD_Nutrient CD_courseGapsRaw
 CD_Nutrient CD_createdAt
 CD_Nutrient CD_dailyTarget
+CD_Nutrient CD_dosePlanRaw
+CD_Nutrient CD_dosePlanSeenWithPro
 CD_Nutrient CD_endDate
 CD_Nutrient CD_goalTypeRaw
 CD_Nutrient CD_group

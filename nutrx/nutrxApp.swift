@@ -30,6 +30,7 @@ struct nutrxApp: App {
             ScreenshotDemoData.replaceStore(in: modelContainer.mainContext)
         }
         ScheduleDebug.apply(to: modelContainer.mainContext)  // until the Schedule sheet exists (#132)
+        DosePlanDebug.apply(to: modelContainer.mainContext)  // until the Dose plan sheet exists (#135)
         #endif
     }
 

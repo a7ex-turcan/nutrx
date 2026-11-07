@@ -12,6 +12,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
     case schedules
     case widgets
     case reminders
+    case dosePlans
 
     var id: Self { self }
 
@@ -26,6 +27,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .schedules: "Schedules"
         case .widgets: "Widgets and controls"
         case .reminders: "Reminders at your usual time"
+        case .dosePlans: "Dose plans"
         }
     }
 
@@ -45,6 +47,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .schedules: "Take something on set days"
         case .widgets: "Log from Control Center and the Home Screen"
         case .reminders: "A nudge only when you're running late"
+        case .dosePlans: "A goal that follows steps you set"
         }
     }
 
@@ -60,6 +63,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .schedules: "schedules"
         case .widgets: "widgets"
         case .reminders: "smarter reminders"
+        case .dosePlans: "dose plans"
         }
     }
 
@@ -75,6 +79,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .schedules: "schedules"
         case .widgets: "widgets"  // "…, schedules and widgets are on": "and controls" doubled the "and"
         case .reminders: "reminders at your usual time"
+        case .dosePlans: "dose plans"
         }
     }
 
@@ -83,7 +88,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         switch self {
         case .scan: "label scanning"
         case .recap: "recaps"
-        case .supply, .health, .report, .courses, .schedules, .widgets, .reminders: nil
+        case .supply, .health, .report, .courses, .schedules, .widgets, .reminders, .dosePlans: nil
         }
     }
 
@@ -98,6 +103,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .schedules: "calendar.badge.clock"
         case .widgets: "square.grid.2x2"
         case .reminders: "bell.badge"
+        case .dosePlans: "stairs"
         }
     }
 
@@ -112,13 +118,15 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .schedules: .pink
         case .widgets: .brown
         case .reminders: .indigo
+        case .dosePlans: .green
         }
     }
 
     /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, courses since 2.2,
-    /// schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6: all nine).
+    /// schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6). Dose plans are
+    /// being built for 2.7 (#135, docs/pro/DOSE-PLANS.md §9): they ship in phase 4.
     var isShipped: Bool {
-        true
+        self != .dosePlans
     }
 
     /// What the paywall and the Pro screen list: the shipped features — or, in Debug builds before any has
