@@ -7,14 +7,11 @@ import SwiftUI
 /// the only place a phrase showed.
 struct SiriSettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
     /// Today's nutrients in Today's order, as Siri suggests them (`NutrientEntityQuery`).
     @State private var nutrients: [Nutrient] = []
-
-    /// Stacks with something to log: the ones Siri suggests.
-    private var loggableStacks: [LogStack] {
-        stacks.filter { !StackLogging.activeEntries(of: $0).isEmpty }
-    }
+    /// The stacks Siri suggests and matches: those with something due today (`StackEntityQuery`), so the page never
+    /// lists a phrase Siri won't take, as on a scheduled stack's day off.
+    @State private var loggableStacks: [LogStack] = []
 
     var body: some View {
         List {
@@ -66,7 +63,10 @@ struct SiriSettingsView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Theme.surfaceGround)
-        .onAppear { nutrients = NutrientEntityQuery.activeNutrients(in: modelContext) }
+        .onAppear {
+            nutrients = NutrientEntityQuery.activeNutrients(in: modelContext)
+            loggableStacks = StackEntityQuery.loggableStacks(in: modelContext)
+        }
     }
 
     /// A phrase in quotes beside its tile. A long press copies the whole phrase (selectable text picked a single word).
