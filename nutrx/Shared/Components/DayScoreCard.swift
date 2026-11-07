@@ -41,13 +41,17 @@ struct DayScoreCard: View {
                 }
 
                 if let nextReminder {
-                    Label {
-                        Text("\(nextReminder.nutrientName) at \(nextReminder.time, format: .dateTime.hour().minute())")
-                    } icon: {
+                    // Its own row, not a `Label`: in Today's list a row restyles a label (an indented icon, a wider
+                    // gap, the text wrapping under the icon at the largest sizes) and the collapsing copy outside the
+                    // list doesn't, so the line snapped to another layout as one handed over to the other (#358).
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Image(systemName: "bell")
+                        Text("\(nextReminder.nutrientName) at \(nextReminder.time, format: .dateTime.hour().minute())")
                     }
                     .font(.footnote)
                     .foregroundStyle(Theme.onForestSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityElement(children: .ignore)
                     .accessibilityLabel("Next reminder: \(nextReminder.nutrientName) at \(nextReminder.time.formatted(date: .omitted, time: .shortened))")
                 }
             }
@@ -73,6 +77,9 @@ struct DayScoreCard: View {
             Text("\(days)-day streak")
                 .monospacedDigit()
                 .foregroundStyle(Theme.onForestPrimary)
+                // Like the headline: with the reminder line under it at the largest sizes, the chip was the text
+                // SwiftUI shortened ("10-day str…") instead of growing the card (#358).
+                .fixedSize(horizontal: false, vertical: true)
         }
         .font(.system(.footnote, design: .rounded, weight: .semibold))
         .padding(.vertical, 6)
@@ -117,4 +124,10 @@ private struct DayScoreCardPreviewGallery: View {
 #Preview("Accessibility 3") {
     DayScoreCardPreviewGallery()
         .environment(\.dynamicTypeSize, .accessibility3)
+}
+
+// The largest size: the streak chip wrapping above the reminder line, which was cut off there (#358).
+#Preview("Accessibility 5") {
+    DayScoreCardPreviewGallery()
+        .environment(\.dynamicTypeSize, .accessibility5)
 }
