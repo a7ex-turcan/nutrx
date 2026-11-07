@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### Improvements
+- **The Pro page's footer and close button** — At the bottom, only the button and the plan line above it stay pinned, as they already did at larger text sizes and on iPad, so on an iPhone 17 "or pay once" and the top of the Lifetime plan show instead of hiding behind the footer; the terms and Restore · Terms · Privacy follow the plans. The ✕ stays at the top right while you scroll, on tinted glass, instead of scrolling away with the header.
+
 ## v2.6 — submitted for review 2026-11-07 (build 216)
 
 ### nutrx Pro

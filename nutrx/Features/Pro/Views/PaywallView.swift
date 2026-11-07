@@ -60,17 +60,15 @@ struct PaywallView: View {
         }
     }
 
-    /// From xLarge up (below accessibility sizes), and on large screens at any size, the whole pinned footer hid the
-    /// plans behind it (#189, #205): only the button stays pinned, with a line naming the selected plan that scrolls
-    /// to the plans; the terms and links scroll after them. At accessibility sizes everything scrolls (pinned, it
-    /// covered a third of the screen).
-    private enum FooterLayout { case pinned, buttonPinned, scrolls }
+    /// Only the button stays pinned, with a line naming the selected plan that scrolls to the plans; the terms and
+    /// links scroll after them. With the terms and links pinned too, the footer hid the plans: from xLarge (#189), on
+    /// large screens (#205), and at the default size on an iPhone 17, where Lifetime sat behind it with nothing to say
+    /// there was a third plan (#325). At accessibility sizes everything scrolls (pinned, it covered a third of the
+    /// screen).
+    private enum FooterLayout { case buttonPinned, scrolls }
 
     private var footerLayout: FooterLayout {
-        if dynamicTypeSize.isAccessibilitySize { return .scrolls }
-        // On large screens the paywall is a sheet shorter than the screen (a landscape iPhone is short too), and with
-        // the whole footer pinned the plans started below the fold even at the default size (#205).
-        return dynamicTypeSize >= .xLarge || widthClass != .compact ? .buttonPinned : .pinned
+        dynamicTypeSize.isAccessibilitySize ? .scrolls : .buttonPinned
     }
 
     private var paywall: some View {
@@ -86,7 +84,6 @@ struct PaywallView: View {
                         switch layout {
                         case .scrolls: VStack(spacing: 10) { purchaseButton; purchaseDetails }
                         case .buttonPinned: purchaseDetails
-                        case .pinned: EmptyView()
                         }
                     }
                     .padding(.horizontal, Theme.Spacing.screenMargin)
@@ -101,36 +98,41 @@ struct PaywallView: View {
             .scrollBounceBehavior(.basedOnSize)
             .ignoresSafeArea(edges: .top)
             .safeAreaInset(edge: .bottom) {
-                if layout != .scrolls {
-                    Group {
-                        if layout == .pinned {
-                            VStack(spacing: 10) { purchaseButton; purchaseDetails }
-                        } else {
-                            VStack(spacing: 8) {
-                                planSummary {
-                                    withAnimation(.unlessReduceMotion(reduceMotion, .default)) {
-                                        proxy.scrollTo(Self.plansID, anchor: .top)
-                                    }
-                                }
-                                purchaseButton
+                if layout == .buttonPinned {
+                    VStack(spacing: 8) {
+                        planSummary {
+                            withAnimation(.unlessReduceMotion(reduceMotion, .default)) {
+                                proxy.scrollTo(Self.plansID, anchor: .top)
                             }
-                            .padding(.bottom, 8)
                         }
+                        purchaseButton
                     }
+                    .padding(.bottom, 8)
                     .padding(.horizontal, Theme.Spacing.screenMargin)
                     .padding(.top, 10)
                     .frame(maxWidth: ReadableColumn.maxWidth)
                     .frame(maxWidth: .infinity)
                     .background(Theme.surfaceGround)
-                    // With only the button pinned, the plans scroll under it: a hairline marks the edge.
+                    // The plans scroll under the button: a hairline marks the edge.
                     .overlay(alignment: .top) {
-                        if layout == .buttonPinned {
-                            Rectangle().fill(Theme.lineHairline).frame(height: 1)
-                        }
+                        Rectangle().fill(Theme.lineHairline).frame(height: 1)
                     }
                 }
             }
+            // The ✕ stays put while the header scrolls away under it (#325), where the header's row has room for it.
+            .overlay(alignment: .top) {
+                HStack {
+                    Spacer()
+                    closeButton
+                }
+                .headerFrame()
+                .ignoresSafeArea(edges: .top)
+                // VoiceOver reads it first, as in a sheet's bar: as an overlay it would otherwise come after every
+                // plan, the terms and the pinned button.
+                .accessibilitySortPriority(1)
+            }
         }
+        .accessibilityElement(children: .contain)
         .background(Theme.surfaceGround)
     }
 
@@ -138,24 +140,36 @@ struct PaywallView: View {
 
     // MARK: - Header
 
+    private static let closeButtonSize = Theme.minTouchTarget
+
+    /// Forest-tinted glass with a white ✕, so it reads on the forest header and on the light plans scrolling under it
+    /// alike (#325). Untinted, the glass went pale on the forest, with a dark ✕.
+    private var closeButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Theme.onForestPrimary)
+                .frame(width: Self.closeButtonSize, height: Self.closeButtonSize)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.tint(Theme.forest.opacity(0.6)).interactive(), in: Circle())
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
+        .accessibilityLabel("Close")
+    }
+
     private var header: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
                 ProWordmark()
                     .padding(.top, 6)
                 Spacer(minLength: 12)
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Theme.onForestPrimary)
-                        .frame(width: Theme.minTouchTarget, height: Theme.minTouchTarget)
-                        .background(Theme.onForestTrack, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
-                .accessibilityLabel("Close")
+                // The ✕'s place: it floats over the scroll view (`paywall`) rather than scrolling with the header.
+                Color.clear
+                    .frame(width: Self.closeButtonSize, height: Self.closeButtonSize)
+                    .accessibilityHidden(true)
             }
             Text("More around your tracking. Private like everything else — it all runs on your \(UIDevice.current.model).")
                 .font(.body)
@@ -163,13 +177,8 @@ struct PaywallView: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.trailing, 64)  // clear of the rings, as in the design (three lines)
         }
-        .padding(.top, 26 + 20)  // the sheet's top inset, then the design's 26
-        .padding(.horizontal, 22)
         .padding(.bottom, 22)
-        // Lined up with the 640 pt column below in a wide sheet (its screen margins are narrower than these 22);
-        // the forest and the rings still span the sheet.
-        .frame(maxWidth: ReadableColumn.maxWidth + 2 * (22 - Theme.Spacing.screenMargin), alignment: .leading)
-        .frame(maxWidth: .infinity)
+        .headerFrame()
         .background(alignment: .topTrailing) {
             // Centred about 50pt in from the right and 40pt down, so the green arc lands near the header's bottom.
             ProRingMotif(lineWidth: 26)
@@ -505,6 +514,18 @@ struct PaywallView: View {
     }
 }
 
+private extension View {
+    /// The header's insets and width, shared with the ✕ floating over it so it stays in the header's row: the
+    /// sheet's top inset, then the design's 26; 22 in from the sides; and in a wide sheet lined up with the 640 pt
+    /// column below (its screen margins are narrower than these 22), while the forest and the rings span the sheet.
+    func headerFrame() -> some View {
+        padding(.top, 26 + 20)
+            .padding(.horizontal, 22)
+            .frame(maxWidth: ReadableColumn.maxWidth + 2 * (22 - Theme.Spacing.screenMargin), alignment: .leading)
+            .frame(maxWidth: .infinity)
+    }
+}
+
 extension View {
     /// Presents the nutrx Pro paywall. Every Pro entry point goes through this.
     func proPaywall(isPresented: Binding<Bool>) -> some View {
@@ -520,15 +541,21 @@ extension View {
         .environment(ProAccess())
 }
 
-// Inline rather than in a sheet: preview snapshots don't capture presented sheets. Shows the button pinned with
-// the plan summary above it (#189).
+// Inline rather than in a sheet: preview snapshots don't capture presented sheets. Only the button is pinned, with
+// the plan summary above it, so Lifetime is in view; the ✕ floats over the header (#325).
+#Preview("Paywall, inline") {
+    PaywallView()
+        .environment(ProAccess())
+}
+
+// The plan summary at xLarge, where it needs every point (#189).
 #Preview("Paywall, xLarge") {
     PaywallView()
         .environment(ProAccess())
         .dynamicTypeSize(.xLarge)
 }
 
-// The large-screen branch (#205) without an iPad: only the button pinned, the plan summary above it, a 640 pt column.
+// A large width (#205) without an iPad: the 640 pt column, with the header and the ✕ lined up with it.
 #Preview("Paywall, large screen") {
     PaywallView()
         .environment(ProAccess())
