@@ -2,18 +2,20 @@ import Foundation
 
 /// One-line summaries of a nutrient's setup for the analytics screen (DESIGN.md §5.3).
 enum NutrientSummaryText {
-    /// "At least 4,000 IU a day · Morning stack" — the group only when there is one besides General.
-    static func goalLine(goalType: GoalType, goalAmount: String, groupName: String?) -> String {
+    /// "At least 4,000 IU a day · Morning stack" — the group only when there is one besides General. A dose plan's
+    /// step goes after the goal: "At least 400 mg a day · Step 2 of 3, until 20 Nov · Morning stack" (#135).
+    static func goalLine(goalType: GoalType, goalAmount: String, planPart: String? = nil, groupName: String?) -> String {
         let goal = "\(GoalTypePicker.label(for: goalType)) \(goalAmount) a day"
-        guard let groupName else { return goal }
-        return "\(goal) · \(groupName)"
+        return ([goal] + [planPart, groupName].compactMap { $0 }).joined(separator: " · ")
     }
 
-    static func goalLine(for nutrient: Nutrient) -> String {
+    static func goalLine(for nutrient: Nutrient, now: Date = .now) -> String {
         let group = nutrient.group.flatMap { $0.isSystem ? nil : $0.name }
+        let planPart = nutrient.dosePlanRaw.isEmpty ? nil
+            : DosePlanText(goalType: nutrient.goalType, unit: nutrient.unit).headerPart(nutrient.dosePlan(), today: now)
         return goalLine(goalType: nutrient.goalType,
-                        goalAmount: GoalProgress(nutrient: nutrient, current: 0).goalAmountText,
-                        groupName: group)
+                        goalAmount: GoalProgress(nutrient: nutrient, current: 0, on: now).goalAmountText,
+                        planPart: planPart, groupName: group)
     }
 
     /// Reminder times in time-of-day order: "None", "13:00", "8:00, 20:00", or "3 a day" once they stop fitting.

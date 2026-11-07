@@ -612,8 +612,7 @@ nonisolated struct NutrientDosePlan: Equatable, Sendable {
     func removing(today: Date, calendar: Calendar = .current) -> (plan: NutrientDosePlan, newBase: NutrientGoal?) {
         guard let plan else { return (self, nil) }
         let day = calendar.startOfDay(for: today)
-        let settled = plan.end == .keep && day >= plan.start && Self.stepIndex(of: plan, on: day, calendar: calendar) == nil
-        let newBase = settled || isHeld(on: day, calendar: calendar) ? goal(on: day, calendar: calendar) : nil
+        let newBase = day >= plan.appliesFrom ? plan.goalIfRemoved(on: day, calendar: calendar) : nil
         var result = frozen(through: day, base: nil, calendar: calendar)
         result.plan = nil
         result.history.append(Piece(from: day, goal: nil))
@@ -635,6 +634,37 @@ nonisolated struct NutrientDosePlan: Equatable, Sendable {
             result.history.append(Piece(from: day, goal: nil))
         }
         return result
+    }
+
+    /// What the form's Save does (§3, §5): the plan as set there (`setup`, nil for none) from `today`. A base goal
+    /// that changes once a plan has existed is pinned first; then the plan is created, edited or removed. A saved plan
+    /// that hasn't started yet takes a new start (nothing was judged by it). Returns the goal the base should take, for
+    /// a removed plan that was keeping or holding its goal, else nil.
+    func applying(_ setup: Plan?, oldBase: NutrientGoal, newBase: NutrientGoal, today: Date,
+                  calendar: Calendar = .current) -> (plan: NutrientDosePlan, newBase: NutrientGoal?) {
+        let day = calendar.startOfDay(for: today)
+        var result = self
+        if newBase != oldBase, !history.isEmpty || plan != nil {
+            result = result.pinningBase(oldBase, today: day, calendar: calendar)
+        }
+        switch (result.plan, setup) {
+        case (nil, let setup?):
+            return (result.creating(steps: setup.steps, end: setup.end, start: setup.start, base: newBase, today: day,
+                                    calendar: calendar), nil)
+        case (let current?, let setup?):
+            if current.start > day, setup.start != current.start {
+                return (result.removing(today: day, calendar: calendar).plan
+                    .creating(steps: setup.steps, end: setup.end, start: setup.start, base: newBase, today: day,
+                              calendar: calendar), nil)
+            }
+            guard setup.steps != current.steps || setup.end != current.end else { return (result, nil) }
+            return (result.editing(steps: setup.steps, end: setup.end, today: day, calendar: calendar), nil)
+        case (_?, nil):
+            let removed = result.removing(today: day, calendar: calendar)
+            return (removed.plan, removed.newBase)
+        case (nil, nil):
+            return (result, nil)
+        }
     }
 
     /// May a device that knows Pro isn't active hold the plan on `today` (§6)? Only a moving plan, not held already,
@@ -695,14 +725,14 @@ nonisolated struct NutrientDosePlan: Equatable, Sendable {
 
     // MARK: The steps
 
-    private static func goal(of plan: Plan, on day: Date, calendar: Calendar) -> NutrientGoal? {
+    fileprivate static func goal(of plan: Plan, on day: Date, calendar: Calendar) -> NutrientGoal? {
         let effective = plan.heldFrom.map { min(day, $0) } ?? day
         guard effective >= plan.start else { return nil }
         guard let index = stepIndex(of: plan, on: effective, calendar: calendar) else { return plan.steps.last?.goal }
         return plan.steps[index].goal
     }
 
-    private static func stepIndex(of plan: Plan, on day: Date, calendar: Calendar) -> Int? {
+    fileprivate static func stepIndex(of plan: Plan, on day: Date, calendar: Calendar) -> Int? {
         guard let offset = calendar.dateComponents([.day], from: plan.start, to: day).day, offset >= 0 else { return nil }
         var end = 0
         for (index, step) in plan.steps.enumerated() {
@@ -712,7 +742,7 @@ nonisolated struct NutrientDosePlan: Equatable, Sendable {
         return nil
     }
 
-    private static func lastDay(ofStep index: Int, in plan: Plan, calendar: Calendar) -> Date {
+    fileprivate static func lastDay(ofStep index: Int, in plan: Plan, calendar: Calendar) -> Date {
         let days = plan.steps.prefix(index + 1).reduce(0) { $0 + $1.days }
         return calendar.date(byAdding: .day, value: days - 1, to: plan.start) ?? plan.start
     }
@@ -796,6 +826,46 @@ nonisolated struct NutrientDosePlan: Equatable, Sendable {
 
     private static func number(_ value: Double) -> String {
         value == value.rounded() && abs(value) < 1e15 ? String(Int(value)) : String(value)
+    }
+}
+
+extension NutrientDosePlan.Plan {
+    /// Its goal on `day` (held: the step in effect when it held), or nil before its start.
+    func goal(on day: Date, calendar: Calendar = .current) -> NutrientGoal? {
+        NutrientDosePlan.goal(of: self, on: calendar.startOfDay(for: day), calendar: calendar)
+    }
+
+    /// Where `day` falls in its steps, held or not; nil before the start and after the last step.
+    func position(on day: Date, calendar: Calendar = .current) -> NutrientDosePlan.Position? {
+        guard let index = NutrientDosePlan.stepIndex(of: self, on: calendar.startOfDay(for: day), calendar: calendar)
+        else { return nil }
+        return NutrientDosePlan.Position(step: index + 1, count: steps.count,
+                                         lastDay: NutrientDosePlan.lastDay(ofStep: index, in: self, calendar: calendar))
+    }
+
+    /// Each step's first and last day, in order.
+    func stepDays(calendar: Calendar = .current) -> [ClosedRange<Date>] {
+        steps.indices.map { index in
+            let last = NutrientDosePlan.lastDay(ofStep: index, in: self, calendar: calendar)
+            let first = calendar.date(byAdding: .day, value: 1 - steps[index].days, to: last) ?? last
+            return first...last
+        }
+    }
+
+    /// The last step's last day: a plan that stops ends its course there.
+    func lastDay(calendar: Calendar = .current) -> Date {
+        NutrientDosePlan.lastDay(ofStep: max(0, steps.count - 1), in: self, calendar: calendar)
+    }
+
+    /// The goal the base takes when the plan is removed on `day` (§3, §6), so nothing jumps: its kept last goal, or
+    /// the held one. Nil while it's moving, before its start, or when there's no goal to keep, since the base goal
+    /// is back then.
+    func goalIfRemoved(on day: Date, calendar: Calendar = .current) -> NutrientGoal? {
+        let start = calendar.startOfDay(for: day)
+        let held = heldFrom.map { start >= $0 } ?? false
+        let settled = end == .keep && start >= self.start
+            && NutrientDosePlan.stepIndex(of: self, on: start, calendar: calendar) == nil
+        return settled || held ? goal(on: start, calendar: calendar) : nil
     }
 }
 

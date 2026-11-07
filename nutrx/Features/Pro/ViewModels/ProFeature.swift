@@ -129,6 +129,15 @@ enum ProFeature: String, CaseIterable, Identifiable {
         self != .dosePlans
     }
 
+    /// Its way in shows in the app: once shipped, and in Debug builds while it's being built, to check it.
+    var isAvailable: Bool {
+        #if DEBUG
+        true
+        #else
+        isShipped
+        #endif
+    }
+
     /// What the paywall and the Pro screen list: the shipped features — or, in Debug builds before any has
     /// shipped, all of them, so the screens can be checked against the design.
     static var listed: [ProFeature] {

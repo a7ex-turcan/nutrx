@@ -5,6 +5,8 @@ import SwiftUI
 struct GoalTypePicker: View {
     @Binding var selection: GoalType
     let tint: NutrientTint
+    /// A dose plan (#135) holds the type: the cards show it, and the others can't be picked.
+    var isLocked = false
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -76,6 +78,8 @@ struct GoalTypePicker: View {
         }
         .buttonStyle(.plain)
         .animation(.easeInOut(duration: 0.15), value: isSelected)
+        .disabled(isLocked && !isSelected)
+        .opacity(isLocked && !isSelected ? 0.45 : 1)
         .accessibilityLabel(Self.label(for: goalType))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
