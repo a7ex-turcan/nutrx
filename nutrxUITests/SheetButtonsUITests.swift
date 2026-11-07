@@ -10,6 +10,13 @@ final class SheetButtonsUITests: XCTestCase {
     /// "Log Morning" behind the sheet.
     private let sheetLogButton = NSPredicate(format: "label MATCHES %@", ".*Log [0-9].*")
 
+    /// `isHittable` only looks at the button's centre, so a button cut off at the bottom with its centre still showing
+    /// would pass: its whole frame has to be inside the window too.
+    private func assertWhollyOnScreen(_ element: XCUIElement, in app: XCUIApplication, _ message: String,
+                                      file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertLessThanOrEqual(element.frame.maxY, app.windows.firstMatch.frame.maxY, message, file: file, line: line)
+    }
+
     private func launchOnToday() -> XCUIApplication {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -38,6 +45,7 @@ final class SheetButtonsUITests: XCTestCase {
         let log = app.buttons.matching(sheetLogButton).firstMatch
         XCTAssertTrue(log.waitForExistence(timeout: 5), "The log sheet didn't open")
         XCTAssertTrue(log.isHittable, "The log sheet's Log button isn't tappable at half height")
+        assertWhollyOnScreen(log, in: app, "The log sheet's Log button is cut off at half height")
     }
 
     /// A stack's Log opens its sheet, with the pinned Log button tappable at the height it opens at.
@@ -50,5 +58,6 @@ final class SheetButtonsUITests: XCTestCase {
         let log = app.buttons.matching(sheetLogButton).firstMatch
         XCTAssertTrue(log.waitForExistence(timeout: 5), "The stack sheet didn't open")
         XCTAssertTrue(log.isHittable, "The stack sheet's Log button isn't tappable when it opens")
+        assertWhollyOnScreen(log, in: app, "The stack sheet's Log button is cut off when it opens")
     }
 }
