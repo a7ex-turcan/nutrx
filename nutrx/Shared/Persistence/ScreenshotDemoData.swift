@@ -36,7 +36,9 @@ enum ScreenshotDemoData {
 
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: now)
-        let created = calendar.date(byAdding: .day, value: -50, to: today) ?? today
+        // How far back the demo goes: the nutrients were added then, and the log starts the day after.
+        let demoDays = 50
+        let created = calendar.date(byAdding: .day, value: -demoDays, to: today) ?? today
 
         let profile = UserProfile(name: "Alex", birthdate: .distantPast, weight: 0, height: 0, onboardingCompleted: true)
         profile.createdAt = created
@@ -97,7 +99,7 @@ enum ScreenshotDemoData {
         // The recap's "day you tend to miss" needs Sunday missed more often than any other weekday in the four weeks
         // it looks at, which can hold only two of those Sundays (Monday to Wednesday). So the other misses (d 11, 12,
         // 20) are on three different weekdays: d 11 and a d 18 used to share one and tied with Sunday (#164).
-        for daysAgo in 1...50 {
+        for daysAgo in 1...demoDays {
             guard let day = calendar.date(byAdding: .day, value: -daysAgo, to: today) else { continue }
             let weekday = calendar.component(.weekday, from: day)
             let inGap = (11...28).contains(daysAgo)
@@ -108,8 +110,8 @@ enum ScreenshotDemoData {
                 day: day, hours: [8, 13])
             log(omega3, daysAgo.isMultiple(of: 4) ? [1000, 1500] : [1000, 1000], day: day, hours: [8, 20])
             // Its first step's days (d 16–50), at that step's 200 mg.
-            log(magnesium, [daysAgo > 50 - magnesiumFirstStep.days ? magnesiumFirstStep.goal.target : 400], day: day,
-                hours: [21])
+            log(magnesium, [daysAgo > demoDays - magnesiumFirstStep.days ? magnesiumFirstStep.goal.target : 400],
+                day: day, hours: [21])
             let waterTotal: Double = [12, 20].contains(daysAgo) ? 1.75 : (daysAgo.isMultiple(of: 3) ? 2.75 : 2.5)
             log(water, [0.75, 1, waterTotal - 1.75], day: day, hours: [9, 13, 18])
             let proteinTotal: Double = daysAgo > 42 && !daysAgo.isMultiple(of: 2) ? 100 : [130, 140, 150][daysAgo % 3]
