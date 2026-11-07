@@ -37,6 +37,9 @@ LOCALE = "en-US"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASC = os.path.join(ROOT, "Tools", "asc")
 
+# The UI tests to run before a release (CLAUDE.md, Build & Run; #222). The dry run reminds; nothing here runs them.
+UI_TESTS = "xcodebuild test -scheme nutrxUITests -destination 'platform=iOS Simulator,name=nutrx SE' -parallel-testing-enabled NO"
+
 # Version states this script submits from: not submitted yet, or taken back out of review by the developer.
 EDITABLE_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED"}
 # A version App Review rejected: its submission waits in UNRESOLVED_ISSUES for a reply, which this doesn't cover.
@@ -119,6 +122,14 @@ class Run:
 def item_version_id(item):
     """The App Store version a review submission item holds, if any."""
     return (((item.get("relationships") or {}).get("appStoreVersion") or {}).get("data") or {}).get("id")
+
+
+def tagged(tag):
+    """Whether this repo has the tag: Tools/testflight tags its uploads; an Xcode Cloud build is tagged only once its
+    version has shipped, so at submission it usually isn't."""
+    result = subprocess.run(["git", "-C", ROOT, "rev-parse", "-q", "--verify", f"refs/tags/{tag}"],
+                            capture_output=True, text=True)
+    return result.returncode == 0
 
 
 def read_text(path):
@@ -299,6 +310,10 @@ def main():
         print(f"Submitted: {data['data']['attributes']['state']}")
     elif not args.apply:
         print(f"{run.writes} write(s) to make. Run again with --apply once the user has said go for this release.")
+        print(f"Before --apply, run the UI tests on the build's commit (#222, #340):\n  {UI_TESTS}")
+        tag = f"v{args.version}-b{args.build}"  # what Tools/testflight tags its uploads with
+        if tagged(tag):
+            print(f"  Build {args.build} is tagged: git checkout {tag}")
 
 
 if __name__ == "__main__":
