@@ -125,3 +125,9 @@ private struct DayScoreCardPreviewGallery: View {
     DayScoreCardPreviewGallery()
         .environment(\.dynamicTypeSize, .accessibility3)
 }
+
+// The largest size: the streak chip wrapping above the reminder line, which was cut off there (#358).
+#Preview("Accessibility 5") {
+    DayScoreCardPreviewGallery()
+        .environment(\.dynamicTypeSize, .accessibility5)
+}
