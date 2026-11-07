@@ -18,6 +18,8 @@ struct DosePlanText {
     static let editPlan = "Edit plan"
     static let viewPlan = "View plan"
     static let needsPro = "Changing a dose plan is part of nutrx Pro. Removing it isn't."
+    /// A plan held before its start: its first day moves later by the days it waits.
+    static let startsWhenProIsBack = "When nutrx Pro is back"
 
     /// A held plan's footer: "It stays at 200 mg a day, then goes on where it left off when nutrx Pro is back."
     func heldSentence(_ goal: NutrientGoal) -> String {
