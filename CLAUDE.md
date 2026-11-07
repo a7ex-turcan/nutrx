@@ -213,7 +213,7 @@ nutrx/
 │   │   │   ├── LabelScannerView.swift           # Full-screen VisionKit scanner (or a photo), reading pill, ScanFailCard.
 │   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics, pushed on row tap: header, period picker, stats + chart card, heatmap, Reminders row, Edit.
 │   │   │   ├── StatTriplet.swift                # Hit rate / Daily avg / Best day columns (stack at accessibility sizes).
-│   │   │   ├── DailyIntakeChart.swift           # Swift Charts bars in the tint, dashed today outline, dashed goal rule(s) + labels.
+│   │   │   ├── DailyIntakeChart.swift           # Swift Charts bars in the tint, dashed today outline, dashed goal rule(s) + labels (stepped under a dose plan).
 │   │   │   └── WeekdayHeatmap.swift             # 7 squares by 4-week hit rate + "Sundays are your weakest day."
 │   │   └── ViewModels/
 │   │       ├── NutrientAnalyticsViewModel.swift # Fetches day totals for the nutrient; exposes goal, summary, stats, weekdayPattern for the selected period.
@@ -1054,8 +1054,14 @@ A goal that follows steps the user sets: "200 mg for a week, then 400 mg", or a 
     - **Without Pro:** `canHold(on:seenWithPro:)` (only when the marker is more than a day old), `holding(from:)`, and `resuming(today:)`, which lengthens the held step by the held days.
     - **Stored form:** `h=*:100;p=20261110,20261110,keep|200x7,400x14`. Decoding skips what it can't read.
   - **`Nutrient.goal(on:)`** is the plan's goal for the day, else `baseGoal` (`dailyTarget` / `upperBound`). `GoalProgress(nutrient:current:on:calendar:)` uses it, with today as the default, so today's readers follow the plan: Today, the log and stack sheets, the widgets (`Provider`'s snapshots), the Watch, the complications, the controls, the Siri answers and the supply cost fallback. Loops over many days decode the plan once and pass the goal (`GoalProgress(nutrient:current:goal:)`).
-  - **Each day's own goal already:** `StreakService`, a weekly schedule's week progress, and History's day rows (their value and bar).
-  - **Not yet (phase 2):** `HistoryLog`, and so History's calendar, a day's score and its met badges, the recaps, analytics and the report, still judge every day by the base goal. On a plan day in phase 1, a History row's bar can read full beside a missed badge.
+  - **Each day's own goal already:** `StreakService` and a weekly schedule's week progress.
+- **Phase 2 (past days):** every past day is judged by its own goal.
+  - **`HistoryNutrient.dosePlan`** (decoded in the log's calendar) gives `goal(on:calendar:)`, and `HistoryDay.Goal.goal` is the goal a day was judged by. So History's calendar, a day's score, its rows (the bar, the value and the badge from one goal), the recaps (over-limit days by the day's own limit, `RecapTally`) and the report all follow the plan.
+  - **Analytics:** `AnalyticsGoal` carries the plan and its calendar (`goal(on:)`, `isMet(_:on:)`). `AnalyticsDay.goal` is each day's, which `AnalyticsSummary`, `WeekdayPattern` and Health trends judge by. Days before the nutrient was added take its first day's goal, since a plan pins them to the base goal they never had.
+  - **The chart's goal rule is stepped** (`DailyIntakeChart`): one dashed `RuleMark(xStart:xEnd:y:)` per run of days with one goal (a range's Min and Max per run). The labels name today's goal, the last run's. A steady goal keeps the full-width rule.
+  - **Health trends:** the "goal met" split is by each day's goal. An "at most" sleep threshold is today's limit × 0.75 (`sleepThreshold(_:on:)`), since the finding names one amount.
+  - **The report:** `DoctorReport.Day.goal` is each day's, and `Section.target` / `upperBound` are the period's last day's. `Section.goalRuns` gives the steps: the goal reads "At least 200 → 400 mg" (every step up to three, else the first and the last; `ReportText.goal`), a line under the title lists them ("Dose plan: 200 mg until 21 Oct, then 400 mg", `ReportText.planLine`, `ReportLayout.planLineHeight` more), and the chart's dashed lines step too. `ReportPageView`'s "Dose plans" previews show a ramp-up and a taper.
+  - **Demo data:** Magnesium has a plan from the day it was added: 200 mg for five weeks (logged at 200 mg), then 400 mg, kept. History shows "**200** / 200 mg" on those days, and the 30-day chart's rule steps (`ScreenshotDemoDataTests`).
   - **`ProFeature.dosePlans`** ("Dose plans", "A goal that follows steps you set", green `stairs`) isn't shipped (`isShipped` is false), so it's in no paywall group yet.
   - **Debug:** `DosePlanDebug` (`nutrx.debug.dosePlans`, by name: `"Magnesium" "200x7,400x14|keep"`, or `"none"`) sets a plan at launch, once per value.
 

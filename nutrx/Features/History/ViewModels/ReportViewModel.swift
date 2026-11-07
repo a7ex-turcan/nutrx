@@ -142,7 +142,8 @@ final class ReportViewModel {
         let health = await HealthReader.recentDays(HealthTrends.windowDays, now: now, calendar: calendar)
         var result: [UUID: [String]] = [:]
         for nutrient in log.nutrients {
-            let goal = AnalyticsGoal(goalType: nutrient.goalType, target: nutrient.target, upperBound: nutrient.upperBound)
+            let goal = AnalyticsGoal(goalType: nutrient.goalType, target: nutrient.target, upperBound: nutrient.upperBound,
+                                     plan: nutrient.dosePlan, calendar: log.calendar)
             let state = HealthTrends.state(totals: totals[nutrient.id] ?? [:], loggedDays: loggedDays, health: health,
                                            goal: goal, createdAt: nutrient.createdAt, schedule: nutrient.schedule,
                                            today: now, calendar: calendar)

@@ -39,7 +39,7 @@ final class NutrientAnalyticsViewModel {
     /// Re-reads the nutrient's goal and intake — call after an edit or when the screen reappears.
     func refresh(now: Date = .now) {
         let calendar = Calendar.current
-        goal = AnalyticsGoal(nutrient: nutrient)
+        goal = AnalyticsGoal(nutrient: nutrient, calendar: calendar)
         // Six more days than the period: a weekly schedule's first judged week can start up to six days before it, and
         // its first met days decide which ones count (#132).
         let lookback = max(selectedPeriod.days + 6, WeekdayPattern.windowDays + 1)

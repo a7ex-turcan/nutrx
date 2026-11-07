@@ -9,6 +9,15 @@ struct DoctorReport: Equatable {
         /// The day's total, floored at 0; nil when the day doesn't count (not logged, or before the nutrient).
         let total: Double?
         let isMet: Bool
+        /// That day's goal, a dose plan's step then (#135).
+        var goal: NutrientGoal? = nil
+    }
+
+    /// Days in a row with the same goal, by index into a section's `days`.
+    struct GoalRun: Equatable {
+        let goal: NutrientGoal
+        let first: Int
+        let last: Int
     }
 
     struct Section: Equatable {
@@ -16,6 +25,7 @@ struct DoctorReport: Equatable {
         let name: String
         let unit: String
         let goalType: GoalType
+        /// The goal on the period's last day; each day has its own in `days` (a dose plan, #135).
         let target: Double
         let upperBound: Double?
         /// Every day of the period, oldest first.
@@ -38,6 +48,23 @@ struct DoctorReport: Equatable {
             if let weeks { return weeks.total > 0 ? Double(weeks.met) / Double(weeks.total) : nil }
             return countedDays > 0 ? Double(metDays) / Double(countedDays) : nil
         }
+
+        /// The goal's runs over the period, oldest first: one for a steady goal, one per dose plan step (#135).
+        var goalRuns: [GoalRun] {
+            var runs: [GoalRun] = []
+            for (index, day) in days.enumerated() {
+                let goal = day.goal ?? NutrientGoal(target: target, upperBound: upperBound)
+                if let run = runs.last, run.goal == goal {
+                    runs[runs.count - 1] = GoalRun(goal: goal, first: run.first, last: index)
+                } else {
+                    runs.append(GoalRun(goal: goal, first: index, last: index))
+                }
+            }
+            return runs
+        }
+
+        /// The goal changed in the period: the section lists the steps.
+        var hasSteps: Bool { goalRuns.count > 1 }
     }
 
     struct Note: Equatable {
@@ -100,18 +127,22 @@ struct DoctorReport: Equatable {
             var counted = 0, met = 0, daysLogged = 0, sum = 0.0
             for result in results {
                 let goal = result.goals.first { $0.nutrientID == id }
+                // Before the nutrient was added, its first day's goal (as in analytics).
+                let dayGoal = nutrient.goal(on: max(result.date, calendar.startOfDay(for: nutrient.createdAt)),
+                                            calendar: calendar)
                 if log.loggedNutrients(on: result.date).contains(id) { daysLogged += 1 }
                 guard let goal, result.hasEntries else {
-                    days.append(Day(date: result.date, total: nil, isMet: false))
+                    days.append(Day(date: result.date, total: nil, isMet: false, goal: dayGoal))
                     continue
                 }
                 counted += 1
                 sum += goal.total
                 if goal.isMet { met += 1 }
-                days.append(Day(date: result.date, total: goal.total, isMet: goal.isMet))
+                days.append(Day(date: result.date, total: goal.total, isMet: goal.isMet, goal: dayGoal))
             }
+            let lastGoal = nutrient.goal(on: last, calendar: calendar)
             var section = Section(id: id, name: names[id] ?? "", unit: units[id] ?? "", goalType: nutrient.goalType,
-                                  target: nutrient.target, upperBound: nutrient.upperBound, days: days,
+                                  target: lastGoal.target, upperBound: lastGoal.upperBound, days: days,
                                   countedDays: counted, metDays: met, daysLogged: daysLogged,
                                   average: counted > 0 ? sum / Double(counted) : nil)
             if let times = nutrient.schedule.weeklyTimes(on: last, calendar: calendar) {

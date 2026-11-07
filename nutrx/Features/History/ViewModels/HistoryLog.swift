@@ -18,6 +18,7 @@ enum DayCompletion: Equatable {
 struct HistoryNutrient: Identifiable, Equatable {
     let id: UUID
     let goalType: GoalType
+    /// The base goal (the form's): every day's goal without a dose plan, else the days its plan doesn't set.
     let target: Double
     let upperBound: Double?
     let createdAt: Date
@@ -28,6 +29,13 @@ struct HistoryNutrient: Identifiable, Equatable {
     var courseGaps: [ClosedRange<Date>] = []
     /// Which days it's due (#132); off days don't count.
     var schedule = NutrientSchedule()
+    /// Its dose plan (#135), decoded in the log's calendar: each day is judged by the goal it gave that day.
+    var dosePlan = NutrientDosePlan()
+
+    /// The goal on `day`: its dose plan's, else the base goal.
+    func goal(on day: Date, calendar: Calendar) -> NutrientGoal {
+        dosePlan.goal(on: day, calendar: calendar) ?? NutrientGoal(target: target, upperBound: upperBound)
+    }
 }
 
 /// One past (or the current) day in History.
@@ -36,6 +44,8 @@ struct HistoryDay: Identifiable, Equatable {
         let nutrientID: UUID
         /// The day's total, floored at 0.
         let total: Double
+        /// The goal it was judged by: that day's own, a dose plan's step then (#135).
+        let goal: NutrientGoal
         let isMet: Bool
 
         var id: UUID { nutrientID }
@@ -93,8 +103,7 @@ struct HistoryLog {
                 guard let total = byID[nutrient.id], !(exclusions[day]?.contains(nutrient.id) ?? false),
                       calendar.startOfDay(for: nutrient.createdAt) <= day,
                       NutrientCourse.includes(nutrient.endDate, gaps: nutrient.courseGaps, day: day, calendar: calendar),
-                      GoalProgress(current: max(0, total), goalType: nutrient.goalType, target: nutrient.target,
-                                   upperBound: nutrient.upperBound).countsAsMet
+                      Self.isMet(max(0, total), nutrient.goalType, nutrient.goal(on: day, calendar: calendar))
                 else { return nil }
                 return day
             }
@@ -109,9 +118,9 @@ struct HistoryLog {
 
         func goal(_ nutrient: HistoryNutrient) -> HistoryDay.Goal {
             let total = max(0, dayTotals[nutrient.id] ?? 0)
-            let met = GoalProgress(current: total, goalType: nutrient.goalType, target: nutrient.target,
-                                   upperBound: nutrient.upperBound).countsAsMet
-            return HistoryDay.Goal(nutrientID: nutrient.id, total: total, isMet: met)
+            let dayGoal = nutrient.goal(on: start, calendar: calendar)
+            return HistoryDay.Goal(nutrientID: nutrient.id, total: total, goal: dayGoal,
+                                   isMet: Self.isMet(total, nutrient.goalType, dayGoal))
         }
 
         let due = nutrients.filter { nutrient in
@@ -144,6 +153,10 @@ struct HistoryLog {
         let last = through.map { calendar.startOfDay(for: $0) } ?? week[6]
         let met = week.filter { $0 <= last && weeklyCounted[nutrientID]?.contains($0) == true }.count
         return NutrientSchedule.WeekProgress(met: met, times: times)
+    }
+
+    private static func isMet(_ total: Double, _ goalType: GoalType, _ goal: NutrientGoal) -> Bool {
+        GoalProgress(current: total, goalType: goalType, target: goal.target, upperBound: goal.upperBound).countsAsMet
     }
 
     /// The most recent completed days with something logged, newest first. Rest days aren't results, so they're left

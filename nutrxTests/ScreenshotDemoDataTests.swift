@@ -55,6 +55,22 @@ final class ScreenshotDemoDataTests: XCTestCase {
         XCTAssertEqual(pattern.weakestWeekday, 1)
     }
 
+    /// Magnesium's dose plan (#135): 200 mg for its first five weeks, met at 200 mg, then 400 mg, today's goal.
+    func testMagnesiumsHistoryShowsBothGoals() throws {
+        let magnesium = try XCTUnwrap(try nutrients().first { $0.name == "Magnesium" })
+        let (log, _) = HistoryViewModel.loadLog(context: context)
+        let calendar = Calendar.current
+        let goals = (1...50).compactMap { offset -> HistoryDay.Goal? in
+            let date = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: .now))!
+            return log.day(date).goals.first { $0.nutrientID == magnesium.id }
+        }
+        XCTAssertEqual(goals.count, 50)
+        XCTAssertEqual(Set(goals.map(\.goal.target)), [200, 400])
+        XCTAssertEqual(goals.filter { $0.goal.target == 200 }.count, 35)
+        XCTAssertTrue(goals.allSatisfy(\.isMet))
+        XCTAssertEqual(magnesium.goal().target, 400)
+    }
+
     /// The demo logs Vitamin D first at 8:00 every day: a usual time to show (#137, docs/pro/REMINDERS.md §7).
     func testTheDemoLearnsAUsualTime() throws {
         let vitaminD = try XCTUnwrap(try nutrients().first { $0.name == "Vitamin D" })

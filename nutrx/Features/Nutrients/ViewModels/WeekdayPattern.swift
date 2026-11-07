@@ -39,7 +39,7 @@ struct WeekdayPattern: Equatable {
             else { continue }
             let weekday = calendar.component(.weekday, from: date)
             counted[weekday, default: 0] += 1
-            if goal.isMet(max(0, totals[date] ?? 0)) { met[weekday, default: 0] += 1 }
+            if goal.isMet(max(0, totals[date] ?? 0), on: date) { met[weekday, default: 0] += 1 }
         }
 
         let order = (0..<7).map { (calendar.firstWeekday - 1 + $0) % 7 + 1 }

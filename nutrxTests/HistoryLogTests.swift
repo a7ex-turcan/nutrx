@@ -124,4 +124,30 @@ final class HistoryLogTests: XCTestCase {
         let empty = HistoryLog(nutrients: [nutrient], totals: [:], today: today, calendar: .current)
         XCTAssertFalse(empty.hasEntries)
     }
+
+    // MARK: - Dose plans (#135)
+
+    /// Vitamin D at 2,000 IU for 5 days from 10 days ago, then 4,000 IU for 5 (kept), with 1,000 IU pinned before it.
+    private func planned() -> [HistoryNutrient] {
+        var list = nutrients()
+        list[0].dosePlan = NutrientDosePlan().creating(
+            steps: [.init(goal: NutrientGoal(target: 2000), days: 5), .init(goal: NutrientGoal(target: 4000), days: 5)],
+            end: .keep, start: day(10), base: NutrientGoal(target: 1000), today: day(10), calendar: calendar)
+        return list
+    }
+
+    func testEachDayIsJudgedByItsOwnGoal() throws {
+        let log = log([12: [vitaminD: 1000], 8: [vitaminD: 2000], 3: [vitaminD: 2000]], nutrients: planned())
+        func vitaminDGoal(_ offset: Int) throws -> HistoryDay.Goal {
+            try XCTUnwrap(log.day(day(offset)).goals.first { $0.nutrientID == vitaminD })
+        }
+        XCTAssertEqual(try vitaminDGoal(12).goal, NutrientGoal(target: 1000), "before the plan: the goal it pinned")
+        XCTAssertTrue(try vitaminDGoal(12).isMet)
+        XCTAssertEqual(try vitaminDGoal(8).goal, NutrientGoal(target: 2000), "the first step")
+        XCTAssertTrue(try vitaminDGoal(8).isMet)
+        XCTAssertEqual(try vitaminDGoal(3).goal, NutrientGoal(target: 4000), "the second step")
+        XCTAssertFalse(try vitaminDGoal(3).isMet)
+        XCTAssertEqual(log.day(day(3)).goals.first { $0.nutrientID == omega }?.goal, NutrientGoal(target: 2000),
+                       "no plan: the base goal")
+    }
 }
