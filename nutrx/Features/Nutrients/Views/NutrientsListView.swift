@@ -83,6 +83,8 @@ struct NutrientsListView: View {
     @State private var path: [PersistentIdentifier] = []
     /// The nutrient whose analytics fill the detail pane on large screens (#153).
     @State private var selectedID: PersistentIdentifier?
+    /// The sidebar has the keyboard's focus, for ↑ / ↓ (#195).
+    @FocusState private var sidebarFocused: Bool
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @Environment(\.widthClass) private var widthClass
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -165,7 +167,7 @@ struct NutrientsListView: View {
             if nutrients.isEmpty {
                 emptyState
             } else {
-                nutrientList
+                arrowKeys(nutrientList)
             }
         }
         .background(Theme.surfaceGround)
@@ -705,6 +707,7 @@ struct NutrientsListView: View {
         if usesSplitView {
             Button {
                 selectedID = nutrient.persistentModelID
+                sidebarFocused = true  // then ↑ / ↓ go on from here (#195)
             } label: {
                 nutrientRow(nutrient)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -717,6 +720,38 @@ struct NutrientsListView: View {
                 nutrientRow(nutrient)
             }
         }
+    }
+
+    /// ↑ / ↓ on a hardware keyboard move the selection through the sidebar, as in a system sidebar, scrolling the row
+    /// into view (#195). The rows are buttons rather than the list's own selection, which carries Select mode's set,
+    /// so the list doesn't do it by itself. Only in the split view and outside Select mode; the sidebar takes the
+    /// focus when it appears and when a row is tapped.
+    private func arrowKeys(_ list: some View) -> some View {
+        let handlesKeys = usesSplitView && !isSelecting
+        return ScrollViewReader { proxy in
+            list
+                .focusable(handlesKeys)
+                .focused($sidebarFocused)
+                .focusEffectDisabled()
+                .onKeyPress(.downArrow) { step(by: 1, proxy) }
+                .onKeyPress(.upArrow) { step(by: -1, proxy) }
+                .onAppear { if handlesKeys { sidebarFocused = true } }
+        }
+    }
+
+    private func step(by offset: Int, _ proxy: ScrollViewProxy) -> KeyPress.Result {
+        guard usesSplitView, !isSelecting,
+              let next = SidebarStep.next(in: sidebarOrder, from: selectedID, by: offset) else { return .ignored }
+        selectedID = next
+        proxy.scrollTo(next)
+        return .handled
+    }
+
+    /// The sidebar's rows in the order they show: the groups' nutrients, then the finished ones while that section is
+    /// open.
+    private var sidebarOrder: [PersistentIdentifier] {
+        groupedSections.flatMap { $0.nutrients.map(\.persistentModelID) }
+            + (showsFinished ? finishedNutrients.map(\.persistentModelID) : [])
     }
 
     /// Select mode in the split view's sidebar: a circle like the list's own (forest with a tick when selected), and
