@@ -85,12 +85,15 @@ struct GoalProgress: Equatable {
         }
     }
 
-    init(nutrient: Nutrient, current: Double) {
+    /// Against the nutrient's goal on `day` (#135): today's, by default, so a dose plan's step applies everywhere
+    /// today's progress shows; a past day's own for a day that's gone.
+    init(nutrient: Nutrient, current: Double, on day: Date = .now) {
+        let goal = nutrient.goal(on: day)
         self.init(
             current: current,
             goalType: nutrient.goalType,
-            target: nutrient.dailyTarget,
-            upperBound: nutrient.upperBound,
+            target: goal.target,
+            upperBound: goal.upperBound,
             unit: nutrient.unit
         )
     }

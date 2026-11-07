@@ -287,13 +287,13 @@ struct SupplySheet: View {
 
     private var sentence: String {
         SupplyText.bottleSentence(servings: Double(servings), servingAmount: servingAmount, unit: nutrient.unit,
-                                  dailyUse: usualDailyUse, goal: nutrient.goalType == .maximum ? nil : nutrient.dailyTarget,
+                                  dailyUse: usualDailyUse, goal: nutrient.goalType == .maximum ? nil : nutrient.goal().target,
                                   doseShare: doseShare)
     }
 
     /// What the bottle as set here costs a month, once there's a price.
     private var monthlyCost: Double? {
-        let use = SupplyCost.dailyUse(estimate: usualDailyUse, goalType: nutrient.goalType, target: nutrient.dailyTarget,
+        let use = SupplyCost.dailyUse(estimate: usualDailyUse, goalType: nutrient.goalType, target: nutrient.goal().target,
                                       doseShare: doseShare)
         return SupplyCost.monthly(price: price, bottleAmount: Double(servings) * servingAmount, dailyUse: use)
     }

@@ -49,7 +49,7 @@ extension Nutrient {
     func monthlySupplyCost(now: Date = .now, calendar: Calendar = .current) -> Double? {
         guard supplyPrice != nil, let status = supplyStatus(now: now, calendar: calendar) else { return nil }
         let share = SupplyCost.doseShare(schedule(calendar: calendar).kind(on: now, calendar: calendar))
-        let use = SupplyCost.dailyUse(estimate: status.dailyUse, goalType: goalType, target: dailyTarget,
+        let use = SupplyCost.dailyUse(estimate: status.dailyUse, goalType: goalType, target: goal(on: now).target,
                                       doseShare: share)
         return SupplyCost.monthly(price: supplyPrice, bottleAmount: status.totalAmount, dailyUse: use)
     }
