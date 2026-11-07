@@ -116,4 +116,10 @@ final class NutrientShortcutTests: XCTestCase {
         XCTAssertEqual(NutrientEntity(id: UUID(), name: "Eggs", unit: "", step: 2).stepSubtitle(locale: enUS),
                        "2 a step")
     }
+
+    /// Settings → Siri & Shortcuts lists this phrase (#127): the "Log my <nutrient> with nutrx" one, trimmed.
+    func testSiriPhraseUsesTheLogMyPhrase() {
+        XCTAssertEqual(NutrientShortcutLogging.siriPhrase(for: "Vitamin D"), "Log my Vitamin D with nutrx")
+        XCTAssertEqual(NutrientShortcutLogging.siriPhrase(for: " Omega-3 "), "Log my Omega-3 with nutrx")
+    }
 }

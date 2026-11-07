@@ -4,6 +4,9 @@ import AppIntents
 /// Every phrase has to name the app. The nutrient and stack phrases use the user's own names, so they're refreshed
 /// (`updateAppShortcutParameters()`) whenever the app becomes active and after stacks change.
 struct NutrxShortcuts: AppShortcutsProvider {
+    /// nutrx's tiles in the Shortcuts app: grey-green, nearest to the forest brand, rather than the default blue.
+    static let shortcutTileColor: ShortcutTileColor = .grayGreen
+
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
             intent: LogNutrientShortcutIntent(),

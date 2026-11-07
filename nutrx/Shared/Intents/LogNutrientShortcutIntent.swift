@@ -58,6 +58,12 @@ extension Notification.Name {
 
 /// The logging behind `LogNutrientShortcutIntent`, kept apart from App Intents so it can be tested.
 enum NutrientShortcutLogging {
+    /// What to say to Siri for a nutrient: the second "Log Nutrient" phrase in `NutrxShortcuts` with its name, the one
+    /// Settings → Siri & Shortcuts lists (#127). "my" keeps it apart from a stack's "Log the <stack> with nutrx".
+    static func siriPhrase(for nutrientName: String) -> String {
+        "Log my \(nutrientName.trimmingCharacters(in: .whitespaces)) with nutrx"
+    }
+
     struct Logged: Equatable {
         let amount: Double
         /// "Logged 1,000 IU of Vitamin D. 3,000 of 4,000 IU today."

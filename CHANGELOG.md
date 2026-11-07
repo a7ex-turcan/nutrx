@@ -7,6 +7,7 @@ All notable changes to nutrx are documented in this file.
 ## Unreleased
 
 ### Improvements
+- **Siri & Shortcuts in Settings** — A new Settings page lists what to say to Siri for each of your nutrients and stacks ("Log my Vitamin D with nutrx", "Log my Morning stack with nutrx"). They work as they are, with no setup, and a button opens nutrx's actions in the Shortcuts app.
 - **The Pro page's footer and close button** — At the bottom, only the button stays pinned, with the line naming your plan above it while that plan is out of view (as at larger text sizes and on iPad, where it always shows), so on an iPhone 17 all three plans, Lifetime included, show above the button instead of Lifetime hiding behind the footer; the terms and Restore · Terms · Privacy follow the plans. The ✕ stays at the top right while you scroll, on tinted glass, instead of scrolling away with the header.
 - **The weekday pattern at the largest text sizes** — From the first accessibility size, a nutrient's weekday pattern puts its week on two rows, four days and then three, so each square is about twice as wide and its percentage grows with your text size instead of staying small under much larger weekday letters. At the very largest sizes the number sits over the % sign.
 - **Arrow keys in My Nutrients on iPad** — With a hardware keyboard, ↑ and ↓ move through the nutrients in the sidebar, as in other iPad sidebars, and the analytics beside it follow.
