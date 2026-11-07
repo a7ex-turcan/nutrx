@@ -14,7 +14,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Improvements
 - **Stack reminders** — A stack can have a reminder of its own, once a day at a time you set, from its screen in Stacks. It names what the stack logs that day, says nothing once the stack is logged (or everything in it is), and tapping it opens the stack ready to log.
-- **Weekly recap polish** — A nutrient you take a few times a week is a sentence of its own in the summary ("You hit Magnesium 2 of 3 times this week."). The day you tend to miss says "but not this one" when this week's was a full day, and the streak card gives its unit ("Up from 3 days last Sunday"). A fact card alone on its last row spans both columns.
+- **Recap polish** — A nutrient you take a few times a week is a sentence of its own in every recap's summary ("You hit Magnesium 2 of 3 times this week."). In the weekly recap, the day you tend to miss says "but not this one" when this week's was a full day, and the streak card gives its unit ("Up from 3 days last Sunday"). The month so far rings today in its calendar, as History does, and a fact card alone on its last row spans both columns.
 - **The Pro page** — Its plans row is "Courses, schedules & reminders", and the recaps row reads "Your week, month and year, Apple Health trends, and a PDF for your doctor", short enough that the plans still start on an iPhone SE's screen.
 
 ## v2.5 — 2026-10-28
