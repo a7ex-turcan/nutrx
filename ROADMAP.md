@@ -177,6 +177,22 @@ Submitted for App Review on 7 Nov 2026 (build 216, phased release). Main builds 
 | Reminders at your usual time (Pro), and stack reminders | ✅ Built (v2.6, #137: #319–#322) |
 | The Pro page: "Courses, schedules & reminders", a shorter recaps row | ✅ Built (v2.6, #322) |
 
+### v2.7 — Dose plans
+
+In progress on main.
+
+| Feature | Status |
+|---|---|
+| Dose plans: a goal that follows steps you set, then keeps or stops (Pro) | 📝 Spec (#135, docs/pro/DOSE-PLANS.md) |
+| Alternate app icons (Pro) | Planned (#139) |
+| Settings → Siri screen | Planned (#127) |
+| The paywall's footer: only the button pinned, the plan line while your plan is out of view, a ✕ that stays | ✅ Built (v2.7, #325, #338: #330, #341) |
+| The weekday pattern in two rows from AX1 | ✅ Built (v2.7, #289: #334) |
+| Arrow keys in My Nutrients on iPad | ✅ Built (v2.7, #195: #336) |
+| A stack's steppers line up | ✅ Built (v2.7, #288: #333) |
+| One wording for the day you tend to miss; Done on the right in every reminders sheet | ✅ Built (v2.7, #327, #326: #332, #331) |
+| UI tests: the sheets' Log buttons on the SE; paywall checks and a submit reminder planned | ✅ Built (#222: #337); planned (#339, #340) |
+
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
 ---
