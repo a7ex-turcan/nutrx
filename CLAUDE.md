@@ -1082,7 +1082,7 @@ A goal that follows steps the user sets: "200 mg for a week, then 400 mg", or a 
   - **Today:** `NutrientCard.dosePlanLine` (`DosePlanText.TodayLine`: "Step 2 of 3 · until Fri", "· last day"; a stairs icon) shares the third line after a weekly count, a course's last day and a low bottle. Beside the goal status it shortens to "Step 2 of 3", then "2 of 3", as a bottle's hint does. On the last day of a plan that stops, the course's "Last day" says it.
   - **The analytics header:** "At least 400 mg a day · Step 2 of 3, until 20 Nov · Morning stack" (`NutrientSummaryText.goalLine(planPart:)`).
 - **Phase 4 (without Pro, and shipping):**
-  - **`DosePlanHold.sync(isPro:context:)`** runs after each foreground entitlement check (`nutrxApp.syncDosePlans`: at launch, on becoming active, and when `isPro` changes), never on an unknown one. Tested in `DosePlanHoldTests`.
+  - **`DosePlanHold.sync(isPro:context:)`** runs after each foreground entitlement check (`nutrxApp.syncDosePlans`: at launch, on becoming active, and when `isPro` changes), never on an unknown one. When it changes anything, the reminders are rebuilt, since a stopping plan's hold or resume moves the course end they stop at. Tested in `DosePlanHoldTests`.
     - **With Pro:** a moving or held plan's marker (`dosePlanSeenWithPro`) becomes today, once a day, and a held plan resumes (`resuming`): the held step runs longer by the days held, and a stopping plan's course end is set again.
     - **Without Pro:** a moving plan holds from today (`holding`), only when the marker is more than a day old, and a stopping plan's course end is lifted while held. A finished or kept plan never holds.
   - **"Plan paused"** on Today and in the analytics header, and "Paused" in the form's row.

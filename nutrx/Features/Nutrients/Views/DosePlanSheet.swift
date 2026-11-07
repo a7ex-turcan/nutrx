@@ -153,8 +153,13 @@ struct DosePlanSheet: View {
                 LabeledContent("Started", value: startedOn.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
             } else if isReadOnly {
                 let first = draft.dosePlan?.start ?? start
-                LabeledContent(first <= today ? "Started" : "Starts",
-                               value: first.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+                if let heldFrom = draft.dosePlan?.heldFrom, first > heldFrom {
+                    // Held before it started: resuming moves the start later by the days it waited.
+                    LabeledContent("Starts", value: DosePlanText.startsWhenProIsBack)
+                } else {
+                    LabeledContent(first <= today ? "Started" : "Starts",
+                                   value: first.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+                }
             } else {
                 Picker("Starts", selection: $startsToday) {
                     Text("Today").tag(true)

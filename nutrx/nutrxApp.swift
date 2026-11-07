@@ -79,8 +79,11 @@ struct nutrxApp: App {
     }
 
     /// Dose plans hold without Pro and resume with it (#135, `DosePlanHold`), only after a check that knows which.
+    /// A stopping plan's hold or resume moves its course end, the reminders' last day, so they're rebuilt then.
     private func syncDosePlans() {
         guard ProAccess.isStoreVisible, proAccess.hasCheckedEntitlements else { return }
-        DosePlanHold.sync(isPro: proAccess.isPro, context: modelContainer.mainContext)
+        if DosePlanHold.sync(isPro: proAccess.isPro, context: modelContainer.mainContext) {
+            NotificationService.refreshAllNutrientReminders(context: modelContainer.mainContext)
+        }
     }
 }
