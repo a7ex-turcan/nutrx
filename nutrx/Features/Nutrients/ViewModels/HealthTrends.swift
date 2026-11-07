@@ -108,10 +108,10 @@ enum HealthTrends {
         var findings: [Finding] = []
 
         // Sleep the night after: days over the threshold vs the rest.
-        let threshold = sleepThreshold(goal)
+        let threshold = sleepThreshold(goal, on: startOfToday)
         let withSleep = paired.filter { health[$0]?.sleepMinutes != nil }
-        let over = withSleep.filter { isOver(intake($0), threshold: threshold, goal: goal) }
-        let others = withSleep.filter { !isOver(intake($0), threshold: threshold, goal: goal) }
+        let over = withSleep.filter { isOver(intake($0), on: $0, threshold: threshold, goal: goal) }
+        let others = withSleep.filter { !isOver(intake($0), on: $0, threshold: threshold, goal: goal) }
         if over.count >= minimumGroupDays, others.count >= minimumGroupDays {
             let sleep: ([Date]) -> Double = { days in days.compactMap { health[$0]?.sleepMinutes }.reduce(0, +) / Double(days.count) }
             let finding = Finding(kind: .sleep, first: .init(average: sleep(over), days: over.count),
@@ -146,14 +146,16 @@ enum HealthTrends {
     }
 
     /// The intake that splits days for the sleep comparison: three quarters of an "at most" limit (nearing it), the
-    /// goal for "at least", the minimum of a range.
-    static func sleepThreshold(_ goal: AnalyticsGoal) -> Double {
-        goal.goalType == .maximum ? goal.target * 0.75 : goal.target
+    /// goal for "at least", the minimum of a range. Today's, under a dose plan (#135): an amount the finding names
+    /// ("over 300 mg"), so one for every day.
+    static func sleepThreshold(_ goal: AnalyticsGoal, on today: Date) -> Double {
+        let target = goal.goal(on: today).target
+        return goal.goalType == .maximum ? target * 0.75 : target
     }
 
-    /// Over the threshold: past three quarters of an "at most" limit, or the goal met (`GoalProgress`, so a day above
-    /// a range's maximum isn't "goal met").
-    private static func isOver(_ total: Double, threshold: Double, goal: AnalyticsGoal) -> Bool {
-        goal.goalType == .maximum ? total > threshold : goal.isMet(total)
+    /// Over the threshold: past three quarters of an "at most" limit, or the day's goal met (`GoalProgress`, so a day
+    /// above a range's maximum isn't "goal met").
+    private static func isOver(_ total: Double, on day: Date, threshold: Double, goal: AnalyticsGoal) -> Bool {
+        goal.goalType == .maximum ? total > threshold : goal.isMet(total, on: day)
     }
 }

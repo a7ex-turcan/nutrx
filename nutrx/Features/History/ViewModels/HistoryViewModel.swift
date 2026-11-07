@@ -87,7 +87,8 @@ final class HistoryViewModel {
             nutrients: nutrients.map {
                 HistoryNutrient(id: $0.id, goalType: $0.goalType, target: $0.dailyTarget, upperBound: $0.upperBound,
                                 createdAt: $0.createdAt, isRemoved: $0.isRemoved, endDate: $0.endDate,
-                                courseGaps: $0.courseGaps(calendar: calendar), schedule: $0.schedule(calendar: calendar))
+                                courseGaps: $0.courseGaps(calendar: calendar), schedule: $0.schedule(calendar: calendar),
+                                dosePlan: $0.dosePlan(calendar: calendar))
             },
             totals: totals, exclusions: excluded, today: now, calendar: calendar
         )

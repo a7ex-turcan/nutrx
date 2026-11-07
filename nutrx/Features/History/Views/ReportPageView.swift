@@ -213,6 +213,15 @@ struct ReportPageView: View {
                     .lineLimit(1)
             }
             .frame(height: 26)
+            // The steps of a goal that changed in the period (a dose plan, #135).
+            if let planLine = text.planLine(section) {
+                Text(planLine)
+                    .font(.system(size: 9.5))
+                    .foregroundStyle(Ink.secondary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                    .frame(width: contentWidth, height: ReportLayout.planLineHeight, alignment: .topLeading)
+            }
             Spacer().frame(height: 8)
             HStack(spacing: 9) {
                 // A weekly schedule (#132) is judged by the week.
@@ -322,8 +331,8 @@ struct ReportBarChart: View {
             ZStack(alignment: .bottomLeading) {
                 Bars(section: section, met: false, scale: scale).fill(ReportPageView.Ink.barMissed)
                 Bars(section: section, met: true, scale: scale).fill(ReportPageView.Ink.barMet)
-                ForEach(goalLines, id: \.self) { value in
-                    GoalLine(fraction: value / scale)
+                ForEach(Array(goalLines.enumerated()), id: \.offset) { _, line in
+                    GoalLine(fraction: line.value / scale, from: line.from, to: line.to)
                         .stroke(ReportPageView.Ink.primary, style: StrokeStyle(lineWidth: 0.6, dash: [2, 2]))
                 }
                 Rectangle().fill(ReportPageView.Ink.primary).frame(height: 0.75)
@@ -347,13 +356,24 @@ struct ReportBarChart: View {
 
     /// The value at the top of the plot: the highest day or goal, with a little headroom.
     private var scale: Double {
-        let highest = ([section.target, section.upperBound ?? 0] + section.days.compactMap(\.total)).max() ?? 1
+        let goals = goalLines.map(\.value)
+        let highest = ([section.target, section.upperBound ?? 0] + goals + section.days.compactMap(\.total)).max() ?? 1
         return max(highest * 1.08, 0.0001)
     }
 
-    private var goalLines: [Double] {
-        if section.goalType == .range, let upper = section.upperBound { return [section.target, upper] }
-        return [section.target]
+    /// The goal's dashed lines (both bounds for a range), each across its days' share of the width: stepped under a
+    /// dose plan (#135).
+    private var goalLines: [(value: Double, from: Double, to: Double)] {
+        let count = Double(max(1, section.days.count))
+        let runs = section.goalRuns.isEmpty
+            ? [DoctorReport.GoalRun(goal: NutrientGoal(target: section.target, upperBound: section.upperBound),
+                                    first: 0, last: max(0, section.days.count - 1))]
+            : section.goalRuns
+        return runs.flatMap { run in
+            let values = section.goalType == .range && run.goal.upperBound != nil
+                ? [run.goal.target, run.goal.upperBound ?? run.goal.target] : [run.goal.target]
+            return values.map { ($0, Double(run.first) / count, Double(run.last + 1) / count) }
+        }
     }
 
     private struct Bars: Shape {
@@ -378,13 +398,62 @@ struct ReportBarChart: View {
 
     private struct GoalLine: Shape {
         let fraction: Double
+        /// Where it starts and ends, as shares of the width.
+        var from = 0.0
+        var to = 1.0
 
         func path(in rect: CGRect) -> Path {
             let y = rect.maxY - rect.height * CGFloat(min(1, fraction))
             var path = Path()
-            path.move(to: CGPoint(x: rect.minX, y: y))
-            path.addLine(to: CGPoint(x: rect.maxX, y: y))
+            path.move(to: CGPoint(x: rect.minX + rect.width * from, y: y))
+            path.addLine(to: CGPoint(x: rect.minX + rect.width * to, y: y))
             return path
         }
     }
+}
+
+/// Two sections whose goals change over the month (#135): a ramp-up and a taper.
+private enum DosePlanPreviewReport {
+    static func make(calendar: Calendar = .current) -> DoctorReport {
+        let today = calendar.startOfDay(for: .now)
+        let start = calendar.date(byAdding: .day, value: -30, to: today)!
+        let magnesium = UUID(), caffeine = UUID()
+        func plan(_ goals: [Double], days: Int) -> NutrientDosePlan {
+            NutrientDosePlan().creating(steps: goals.map { .init(goal: NutrientGoal(target: $0), days: days) },
+                                        end: .keep, start: start, base: NutrientGoal(target: goals[0]), today: start,
+                                        calendar: calendar)
+        }
+        var nutrients = [
+            HistoryNutrient(id: magnesium, goalType: .minimum, target: 400, upperBound: nil, createdAt: start,
+                            isRemoved: false),
+            HistoryNutrient(id: caffeine, goalType: .maximum, target: 400, upperBound: nil, createdAt: start,
+                            isRemoved: false),
+        ]
+        nutrients[0].dosePlan = plan([200, 400], days: 14)
+        nutrients[1].dosePlan = plan([400, 300, 200], days: 10)
+        var totals: [Date: [UUID: Double]] = [:]
+        for offset in 1...30 {
+            let day = calendar.date(byAdding: .day, value: -offset, to: today)!
+            totals[day] = [magnesium: offset > 16 ? 200 : (offset.isMultiple(of: 5) ? 200 : 400),
+                           caffeine: offset.isMultiple(of: 3) ? 350 : 180]
+        }
+        let log = HistoryLog(nutrients: nutrients, totals: totals, today: today, calendar: calendar)
+        return DoctorReport.build(log: log, names: [magnesium: "Magnesium", caffeine: "Caffeine"],
+                                  units: [magnesium: "mg", caffeine: "mg"], start: start, end: today)
+    }
+}
+
+#Preview("Dose plans") {
+    let report = DosePlanPreviewReport.make()
+    // A whole A4 page on a phone's screen.
+    ReportPageView(report: report, layout: ReportLayout(report: report, paper: .a4), index: 1, generatedOn: .now)
+        .scaleEffect(0.6)
+        .frame(width: 357, height: 505)
+}
+
+#Preview("Dose plans, cover") {
+    let report = DosePlanPreviewReport.make()
+    ReportPageView(report: report, layout: ReportLayout(report: report, paper: .a4), index: 0, generatedOn: .now)
+        .scaleEffect(0.6)
+        .frame(width: 357, height: 505)
 }

@@ -68,19 +68,39 @@ struct ReportText {
     var longestStreak: String { report.longestStreak == 1 ? "1 day" : "\(report.longestStreak) days" }
 
     /// "At least 4,000 IU", "At most 400 mg", "Between 120–160 g"; a weekly one adds ", 3 times a week" (#248).
+    /// A goal that changed in the period (a dose plan, #135) reads "At least 200 → 400 mg": every step up to three,
+    /// else the first and the last.
     func goal(_ section: DoctorReport.Section) -> String {
+        let runs = section.goalRuns
+        let goals = runs.isEmpty ? [NutrientGoal(target: section.target, upperBound: section.upperBound)]
+            : runs.count <= 3 ? runs.map(\.goal) : [runs[0].goal, runs[runs.count - 1].goal]
+        let isRange = section.goalType == .range && goals.allSatisfy { $0.upperBound != nil }
+        let values = goals.map { isRange ? rangeNumbers($0) : number($0.target) }.joined(separator: " → ")
         let goal = switch section.goalType {
-        case .minimum: "At least \(amount(section.target, section.unit))"
-        case .maximum: "At most \(amount(section.target, section.unit))"
-        case .range:
-            if let upper = section.upperBound {
-                "Between \(number(section.target))–\(number(upper)) \(section.unit)"
-            } else {
-                "At least \(amount(section.target, section.unit))"
-            }
+        case .minimum: "At least \(values) \(section.unit)"
+        case .maximum: "At most \(values) \(section.unit)"
+        case .range: isRange ? "Between \(values) \(section.unit)" : "At least \(values) \(section.unit)"
         }
         guard let times = section.weeklyTimes else { return goal }
         return goal + (times == 1 ? ", once a week" : ", \(times) times a week")
+    }
+
+    /// The steps, when the goal changed in the period (#135): "Dose plan: 200 mg until 16 Nov, then 400 mg". Nil
+    /// for a steady goal.
+    func planLine(_ section: DoctorReport.Section) -> String? {
+        let runs = section.goalRuns
+        guard runs.count > 1 else { return nil }
+        let steps = runs.enumerated().map { index, run in
+            let goal = section.goalType == .range && run.goal.upperBound != nil
+                ? "\(rangeNumbers(run.goal)) \(section.unit)" : amount(run.goal.target, section.unit)
+            guard index < runs.count - 1 else { return goal }
+            return "\(goal) until \(noteDate(section.days[run.last].date))"
+        }
+        return "Dose plan: " + steps.joined(separator: ", then ")
+    }
+
+    private func rangeNumbers(_ goal: NutrientGoal) -> String {
+        "\(number(goal.target))–\(number(goal.upperBound ?? goal.target))"
     }
 
     func average(_ section: DoctorReport.Section) -> String {

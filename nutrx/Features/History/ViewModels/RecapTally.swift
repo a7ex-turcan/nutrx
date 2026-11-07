@@ -57,9 +57,10 @@ struct RecapTally {
                 } else {
                     missed[goal.nutrientID, default: []].append(date)
                 }
+                // Over that day's own limit (a dose plan's step, #135).
                 if let nutrient = byID[goal.nutrientID],
-                   GoalProgress(current: goal.total, goalType: nutrient.goalType, target: nutrient.target,
-                                upperBound: nutrient.upperBound).status == .overLimit {
+                   GoalProgress(current: goal.total, goalType: nutrient.goalType, target: goal.goal.target,
+                                upperBound: goal.goal.upperBound).status == .overLimit {
                     over[goal.nutrientID, default: []].append(date)
                 }
             }
