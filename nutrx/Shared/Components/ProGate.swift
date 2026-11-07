@@ -5,6 +5,9 @@ import SwiftUI
 /// lock, a blur or a wall, and the free version of anything stays where it is.
 struct ProGatedButton<Label: View>: View {
     let action: () -> Void
+    /// For a free user, in place of the paywall, when there's something free to do there: removing a dose plan
+    /// (#135), which never needs Pro.
+    var freeAction: (() -> Void)? = nil
     @ViewBuilder let label: (_ showsBadge: Bool) -> Label
 
     @Environment(ProAccess.self) private var proAccess: ProAccess?
@@ -19,7 +22,13 @@ struct ProGatedButton<Label: View>: View {
                 if let proAccess, !proAccess.hasCheckedEntitlements {
                     await proAccess.refreshEntitlement()
                 }
-                if proAccess?.isPro ?? false { action() } else { showPaywall = true }
+                if proAccess?.isPro ?? false {
+                    action()
+                } else if let freeAction {
+                    freeAction()
+                } else {
+                    showPaywall = true
+                }
             }
         } label: {
             label(!isPro)

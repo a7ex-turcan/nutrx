@@ -3,11 +3,13 @@ import SwiftUI
 /// A goal that follows steps (nutrx Pro, #135, docs/pro/DOSE-PLANS.md §5): when it starts, 2–6 steps of a goal and a
 /// length, then keep the last goal or stop. Writes the plan to the draft, and a plan that stops sets the Duration's
 /// last day; the form's Save or Add applies it from today, so past days keep their goals. The steps start at the
-/// nutrient's own goal: nutrx never suggests one.
+/// nutrient's own goal: nutrx never suggests one. Without Pro it opens read-only, with Remove Plan (§6): removing a
+/// plan never needs Pro.
 struct DosePlanSheet: View {
     @Bindable var draft: NutrientDraft
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
     @State private var startsToday = true
     @State private var startDate = Date.now
     @State private var rows: [StepRow] = []
@@ -26,6 +28,8 @@ struct DosePlanSheet: View {
     enum Field: Hashable {
         case target(UUID), upper(UUID)
     }
+
+    private var isReadOnly: Bool { !(proAccess?.isPro ?? false) }
 
     private var calendar: Calendar { .current }
     private var today: Date { calendar.startOfDay(for: .now) }
@@ -64,9 +68,12 @@ struct DosePlanSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                if isReadOnly { readOnlyNote }
                 startSection
                 stepsSection
+                    .disabled(isReadOnly)
                 endSection
+                    .disabled(isReadOnly)
                 Section {
                     Text(DosePlanText.noAdvice)
                         .font(.footnote)
@@ -97,12 +104,14 @@ struct DosePlanSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(isReadOnly ? "Close" : "Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", action: save)
-                        .fontWeight(.semibold)
-                        .confirmButton(enabled: plan != nil)
+                if !isReadOnly {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done", action: save)
+                            .fontWeight(.semibold)
+                            .confirmButton(enabled: plan != nil)
+                    }
                 }
                 // Done for the return-less amount fields, at the toolbar's root like the form's.
                 ToolbarItemGroup(placement: .keyboard) {
@@ -119,11 +128,31 @@ struct DosePlanSheet: View {
 
     // MARK: - Sections
 
+    /// Without Pro: why it can't be changed, and since when a held plan has waited.
+    private var readOnlyNote: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 4) {
+                if let heldFrom = draft.dosePlan?.heldFrom {
+                    Text(text.pausedSince(heldFrom))
+                        .font(.headline)
+                        .foregroundStyle(Theme.textPrimary)
+                }
+                Text(DosePlanText.needsPro)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+            .padding(.vertical, 2)
+        }
+        .listRowBackground(Theme.surfaceCard)
+    }
+
     @ViewBuilder
     private var startSection: some View {
         Section {
             if let startedOn {
                 LabeledContent("Started", value: startedOn.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+            } else if isReadOnly {
+                LabeledContent("Starts", value: start.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
             } else {
                 Picker("Starts", selection: $startsToday) {
                     Text("Today").tag(true)
@@ -147,13 +176,13 @@ struct DosePlanSheet: View {
             // By each step's own id, so deleting one animates that row and the focus stays with its fields.
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, _ in
                 stepRow(index)
-                    .deleteDisabled(rows.count <= NutrientDosePlan.stepCounts.lowerBound)
+                    .deleteDisabled(isReadOnly || rows.count <= NutrientDosePlan.stepCounts.lowerBound)
             }
             .onDelete { offsets in
                 guard rows.count - offsets.count >= NutrientDosePlan.stepCounts.lowerBound else { return }
                 rows.remove(atOffsets: offsets)
             }
-            if rows.count < NutrientDosePlan.stepCounts.upperBound {
+            if rows.count < NutrientDosePlan.stepCounts.upperBound, !isReadOnly {
                 Button {
                     let last = rows.last
                     rows.append(StepRow(target: last?.target ?? draft.dailyTarget, upper: last?.upper ?? draft.upperBound,
