@@ -275,6 +275,7 @@ struct NutrientFormFields<BeforeNotes: View>: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -419,7 +420,8 @@ struct NutrientFormFields<BeforeNotes: View>: View {
             }
             if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: 0) }
             if let onEditDosePlan {
-                Button(DosePlanText.editPlan, action: onEditDosePlan)
+                // Without Pro the plan opens read-only, to look at or remove (§6).
+                Button(proAccess?.isPro == true ? DosePlanText.editPlan : DosePlanText.viewPlan, action: onEditDosePlan)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.textGreenInk)
                     .buttonStyle(.plain)

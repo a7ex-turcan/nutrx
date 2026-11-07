@@ -122,6 +122,12 @@ final class DosePlanTextTests: XCTestCase {
         XCTAssertNil(text.shortSummary(plan(.stop), today: day(12, 5)), "\"Ended 30 Nov\" is short already")
     }
 
+    func testWithoutPro() {
+        XCTAssertEqual(plain(text.pausedSince(day(11, 20))), "Paused without nutrx Pro since 20 Nov")
+        XCTAssertEqual(text.heldSentence(NutrientGoal(target: 200)),
+                       "It stays at 200 mg a day, then goes on where it left off when nutrx Pro is back.")
+    }
+
     func testAmountsLengthsAndRemoving() {
         XCTAssertEqual(text.goals(steps([400, 300, 200, 100], days: 7)), "400 → 100 mg")
         XCTAssertEqual(text.goals(steps([400, 300, 200], days: 7)), "400 → 300 → 200 mg")

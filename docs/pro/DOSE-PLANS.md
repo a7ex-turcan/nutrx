@@ -1,6 +1,6 @@
 # Dose plans — spec (nutrx Pro, #135)
 
-A nutrient's goal can follow a plan of steps that the user, or their doctor, sets: "200 mg for a week, then 400 mg", or a taper down ("400 mg, 300 mg, 200 mg, then stop"). nutrx never suggests the steps. Planned for 2.7.
+A nutrient's goal can follow a plan of steps that the user, or their doctor, sets: "200 mg for a week, then 400 mg", or a taper down ("400 mg, 300 mg, 200 mg, then stop"). nutrx never suggests the steps. Built for 2.7 in four phases (§9): #345, #346, #348 and the phase 4 PR. CLAUDE.md's "nutrx Pro: Dose plans" says where each part lives and where the build differs from this spec: the goal type is locked whenever there's a plan, not only while it sets today's goal; Today's step line comes after a low bottle's hint; a free user with a plan opens the sheet read-only, even before it holds.
 
 Decided with the user on 2026-11-07:
 - **The end is chosen per plan:** after the last step the plan either keeps its last goal (a ramp-up that settles), or stops, which ends the nutrient's course as a course's end does.
