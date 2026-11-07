@@ -228,4 +228,59 @@ final class NutrientDosePlanTests: XCTestCase {
         XCTAssertEqual(GoalProgress(nutrient: nutrient, current: 250, on: day(11, 12)).countsAsMet,
                        GoalProgress(current: 250, goalType: .minimum, target: 200).countsAsMet)
     }
+
+    // MARK: - The form's Save (#135 phase 3)
+
+    private func setup(_ steps: [NutrientDosePlan.Step]? = nil, end: NutrientDosePlan.End = .keep,
+                       start: Date? = nil) -> NutrientDosePlan.Plan {
+        let first = start ?? day(11, 10)
+        return NutrientDosePlan.Plan(start: first, steps: steps ?? rampUp, end: end, appliesFrom: first)
+    }
+
+    func testSavingANewPlanCreatesIt() {
+        let saved = NutrientDosePlan().applying(setup(), oldBase: base, newBase: base, today: day(11, 10), calendar: calendar)
+        XCTAssertNil(saved.newBase)
+        XCTAssertEqual(saved.plan.goal(on: day(11, 12), calendar: calendar)?.target, 200)
+        XCTAssertEqual(saved.plan.goal(on: day(11, 9), calendar: calendar), base, "the days before pinned")
+    }
+
+    func testSavingAnUnchangedPlanChangesNothing() {
+        let current = plan()
+        let saved = current.applying(current.plan, oldBase: base, newBase: base, today: day(11, 20), calendar: calendar)
+        XCTAssertEqual(saved.plan, current)
+    }
+
+    func testSavingNewStepsAppliesFromToday() {
+        let edited = setup([.init(goal: NutrientGoal(target: 200), days: 7), .init(goal: NutrientGoal(target: 600), days: 14)])
+        let saved = plan().applying(edited, oldBase: base, newBase: base, today: day(11, 20), calendar: calendar)
+        XCTAssertEqual(saved.plan.goal(on: day(11, 19), calendar: calendar)?.target, 400, "yesterday keeps its goal")
+        XCTAssertEqual(saved.plan.goal(on: day(11, 20), calendar: calendar)?.target, 600)
+    }
+
+    func testSavingWithoutAKeptPlanMakesItsGoalTheBase() {
+        let saved = plan().applying(nil, oldBase: base, newBase: base, today: day(12, 5), calendar: calendar)
+        XCTAssertEqual(saved.newBase, NutrientGoal(target: 400))
+        XCTAssertNil(saved.plan.plan)
+        XCTAssertEqual(saved.plan.goal(on: day(11, 12), calendar: calendar)?.target, 200, "past days keep their goals")
+        XCTAssertNil(plan().applying(nil, oldBase: base, newBase: base, today: day(11, 12), calendar: calendar).newBase,
+                     "mid-step: the base goal is back")
+    }
+
+    func testANewBaseGoalAfterAPlanLeavesThePastAlone() {
+        let removed = plan().applying(nil, oldBase: base, newBase: base, today: day(12, 5), calendar: calendar).plan
+        let rebased = removed.applying(nil, oldBase: NutrientGoal(target: 400), newBase: NutrientGoal(target: 500),
+                                       today: day(12, 10), calendar: calendar).plan
+        XCTAssertEqual(rebased.goal(on: day(12, 7), calendar: calendar)?.target, 400, "judged by the old base")
+        XCTAssertNil(rebased.goal(on: day(12, 10), calendar: calendar), "from today, the new base")
+    }
+
+    func testAPlanThatHasntStartedTakesANewStart() {
+        let current = NutrientDosePlan().creating(steps: rampUp, end: .keep, start: day(11, 10), base: base,
+                                                  today: day(11, 7), calendar: calendar)
+        let saved = current.applying(setup(start: day(11, 12)), oldBase: base, newBase: base, today: day(11, 8),
+                                     calendar: calendar).plan
+        XCTAssertNil(saved.goal(on: day(11, 10), calendar: calendar), "the old start: the base goal")
+        XCTAssertEqual(saved.goal(on: day(11, 12), calendar: calendar)?.target, 200)
+        XCTAssertEqual(saved.plan?.start, day(11, 12))
+    }
 }

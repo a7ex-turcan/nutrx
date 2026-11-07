@@ -214,6 +214,7 @@ nutrx/
 │   │   │   ├── SupplySheet.swift                # Supply (Pro): servings, each serving, remind me, sentence, Refilled today.
 │   │   │   ├── DurationSheet.swift              # Duration (Pro, #99): Ongoing / For days / Until a date → the draft's last day.
 │   │   │   ├── ScheduleSheet.swift              # Schedule (Pro, #132): Every day / On certain days / Every few days / On and off.
+│   │   │   ├── DosePlanSheet.swift              # Dose plan (Pro, #135): start, 2–6 steps (goal + length), keep or stop, sentence, Remove plan.
 │   │   │   ├── SupplyCard.swift                 # Analytics Supply card: free teaser / Set up / days left, gauge, Refilled.
 │   │   │   ├── HealthTrendsCard.swift           # Analytics "With Apple Health" (Pro): findings with two bars, or the state.
 │   │   │   ├── ScanLabelEntry.swift             # Scan a label (Pro): entry card + reading note + divider; ScanReviewBanner.
@@ -238,6 +239,7 @@ nutrx/
 │   │       ├── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │       ├── CourseText.swift                 # Courses (Pro, #99): "Until Fri 24 Oct · 5 days", "Last day today", "Ended 24 Oct".
 │   │       ├── ScheduleText.swift               # Schedules (Pro, #132): the row's summary, the sheet's next days, Not today's "Next: Sunday".
+│   │       ├── DosePlanText.swift               # Dose plans (Pro, #135): the row, Today's "Step 2 of 3 · until Fri", the header, the sheet's sentence.
 │   │       └── SidebarStep.swift                # iPad sidebar (#195): the row ↑ / ↓ move the selection to, held at the ends (pure).
 │   │
 │   ├── History/                 # Tab 4 — read-only log of past days.
@@ -1069,6 +1071,21 @@ A goal that follows steps the user sets: "200 mg for a week, then 400 mg", or a 
   - **Health trends:** the "goal met" split is by each day's goal. An "at most" sleep threshold is today's limit × 0.75 (`sleepThreshold(_:on:)`), since the finding names one amount.
   - **The report:** `DoctorReport.Day.goal` is each day's, and `Section.target` / `upperBound` are the period's last day's. `Section.goalRuns` gives the steps: the goal reads "At least 200 → 400 mg" (every step up to three, else the first and the last; `ReportText.goal`), a line under the title lists them ("Dose plan: 200 mg until 21 Oct, then 400 mg", `ReportText.planLine`, `ReportLayout.planLineHeight` more), and the chart's dashed lines step too. `ReportPageView`'s "Dose plans" previews show a ramp-up and a taper.
   - **Demo data:** Magnesium has a plan from the day it was added: 200 mg for five weeks (logged at 200 mg), then 400 mg, kept. History shows "**200** / 200 mg" on those days, and the 30-day chart's rule steps (`ScreenshotDemoDataTests`).
+- **Phase 3 (the sheet):** the plan is set in the form; free users can't see it until phase 4 ships it.
+  - **The Dose plan row** comes right after Schedule, in the edit form and the new-nutrient form (the one with a group picker), never onboarding's. It's a `ProGatedButton`, shown while `ProFeature.dosePlans.isAvailable` (shipped, or any Debug build). It reads `DosePlanText.summary`: "None", "200 → 400 mg · from Mon 16 Nov", "· step 1 of 2", "400 mg · plan kept", "Ended 6 Dec".
+  - **`DosePlanSheet`:**
+    - **Starting:** Today or a date. A saved plan that has started shows its start.
+    - **The steps:** each has the goal type's amount fields and a length ("for 7 days", a stepper with a Days / Weeks switch). Add Step goes up to 6, and swipe deletes down to 2. A new plan starts with two steps at the nutrient's goal.
+    - **Then:** Keep the last goal, or Stop.
+    - **The footer:** `DosePlanText.sentence` ("200 mg until Sun 15 Nov, then 400 mg from Mon 16 Nov, and keeps 400 mg.", plus a course that cuts a kept plan short), then the no-advice line.
+    - **Remove Plan:** a confirmation that past days keep their goals, and what the goal is from today.
+    - **Done** writes `NutrientDraft.setDosePlan`: a plan that stops sets `endDate` to its last day (a change or removal lifts it), and an empty base goal takes the first step's.
+  - **Saving:** `NutrientDosePlan.applying(_:oldBase:newBase:today:)` (pure, `NutrientDosePlanTests`) turns the form's plan into a create, edit or remove from today. A base goal that changes once a plan has existed is pinned first, and a saved plan that hasn't started takes a new start. Removing a kept (or held) plan returns its goal as the new base, which `apply(to:)` writes to `dailyTarget` / `upperBound`. `insertNutrient` creates a new nutrient's plan from the day it's added.
+  - **The form's goal card** while the plan sets today's goal (`DosePlanText.goalCard`): "Set by your dose plan: 400 mg a day until Fri" with **Edit plan**, and "Each tap adds" stays. With any plan, `GoalTypePicker(isLocked:)` dims the other types, with "Remove the dose plan to change the goal type." The preview row shows today's plan goal.
+  - **Duration:** with a plan that stops, the row reads "Ends with the dose plan · Sun 6 Dec" and opens the plan sheet.
+  - **Today:** `NutrientCard.dosePlanLine` (`DosePlanText.TodayLine`: "Step 2 of 3 · until Fri", "· last day"; a stairs icon) shares the third line after a weekly count, a course's last day and a low bottle. Beside the goal status it shortens to "Step 2 of 3", then "2 of 3", as a bottle's hint does. On the last day of a plan that stops, the course's "Last day" says it.
+  - **The analytics header:** "At least 400 mg a day · Step 2 of 3, until 20 Nov · Morning stack" (`NutrientSummaryText.goalLine(planPart:)`).
+  - **Not yet (phase 4):** the hold and resume. Until then a free user with a plan (synced from a Pro device) sees the PRO chip on the row, and can't open the sheet to remove it.
   - **`ProFeature.dosePlans`** ("Dose plans", "A goal that follows steps you set", green `stairs`) isn't shipped (`isShipped` is false), so it's in no paywall group yet.
   - **Debug:** `DosePlanDebug` (`nutrx.debug.dosePlans`, by name: `"Magnesium" "200x7,400x14|keep"`, or `"none"`) sets a plan at launch, once per value.
 

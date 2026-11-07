@@ -169,4 +169,72 @@ final class NutrientFormTests: XCTestCase {
         XCTAssertFalse(context.hasChanges, "Save saves too")
         XCTAssertEqual(iron.dailyTarget, 27)
     }
+
+    // MARK: - Dose plans (#135)
+
+    /// A plan from 30 days ago: 200 mg for a week, then 400 mg for a week, kept since.
+    private func plannedNutrient() -> (Nutrient, start: Date) {
+        let calendar = Calendar.current
+        let start = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: .now))!
+        let nutrient = Nutrient(name: "Magnesium", unit: "mg", step: 200, dailyTarget: 100, sortOrder: 0)
+        nutrient.dosePlanRaw = NutrientDosePlan().creating(
+            steps: [.init(goal: NutrientGoal(target: 200), days: 7), .init(goal: NutrientGoal(target: 400), days: 7)],
+            end: .keep, start: start, base: NutrientGoal(target: 100), today: start).encode()
+        context.insert(nutrient)
+        return (nutrient, start)
+    }
+
+    func testTheFormFillsAndSavesTheDosePlan() {
+        let (nutrient, start) = plannedNutrient()
+        let draft = NutrientDraft()
+        draft.populate(from: nutrient)
+        XCTAssertEqual(draft.dosePlan, nutrient.dosePlan().plan)
+        XCTAssertEqual(draft.dosePlanGoal()?.target, 400, "today's goal, from the plan")
+
+        draft.dosePlan = nil
+        draft.apply(to: nutrient)
+        XCTAssertNil(nutrient.dosePlan().plan)
+        XCTAssertEqual(nutrient.dailyTarget, 400, "removing a kept plan keeps its goal")
+        XCTAssertEqual(nutrient.goal(on: Calendar.current.date(byAdding: .day, value: 2, to: start)!).target, 200,
+                       "past days keep their goals")
+    }
+
+    func testANewNutrientStartsItsPlanTheDayItsAdded() throws {
+        let draft = NutrientDraft()
+        draft.name = "Magnesium"
+        draft.unit = "mg"
+        draft.step = "100"
+        draft.dailyTarget = "100"
+        let today = Calendar.current.startOfDay(for: .now)
+        draft.dosePlan = NutrientDosePlan.Plan(
+            start: today, steps: [.init(goal: NutrientGoal(target: 200), days: 7), .init(goal: NutrientGoal(target: 400), days: 7)],
+            end: .keep, appliesFrom: today)
+        let nutrient = try XCTUnwrap(draft.insertNutrient(into: context, group: nil, sortOrder: 0))
+        XCTAssertEqual(nutrient.goal().target, 200)
+        XCTAssertEqual(nutrient.dailyTarget, 100, "the base goal is the form's")
+        XCTAssertEqual(nutrient.dosePlan().plan?.steps.count, 2)
+    }
+
+    func testTheSheetsDoneSetsTheDurationAndAMissingGoal() {
+        let today = Calendar.current.startOfDay(for: .now)
+        let draft = NutrientDraft()
+        let stops = NutrientDosePlan.Plan(
+            start: today, steps: [.init(goal: NutrientGoal(target: 200), days: 3), .init(goal: NutrientGoal(target: 100), days: 4)],
+            end: .stop, appliesFrom: today)
+        draft.setDosePlan(stops)
+        XCTAssertEqual(draft.endDate, Calendar.current.date(byAdding: .day, value: 6, to: today), "ends with the plan")
+        XCTAssertEqual(draft.dailyTarget.parsedDouble, 200, "no goal typed yet: the first step's")
+
+        var keeps = stops
+        keeps.end = .keep
+        draft.dailyTarget = "150"
+        draft.setDosePlan(keeps)
+        XCTAssertNil(draft.endDate, "the end it set is lifted")
+        XCTAssertEqual(draft.dailyTarget.parsedDouble, 150, "a typed goal stays")
+
+        draft.setDosePlan(stops)
+        draft.setDosePlan(nil)
+        XCTAssertNil(draft.endDate)
+        XCTAssertNil(draft.dosePlan)
+    }
 }
