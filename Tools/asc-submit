@@ -37,6 +37,9 @@ LOCALE = "en-US"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ASC = os.path.join(ROOT, "Tools", "asc")
 
+# The UI tests to run before a release (CLAUDE.md, Build & Run; #222). The dry run reminds; nothing here runs them.
+UI_TESTS = "xcodebuild test -scheme nutrxUITests -destination 'platform=iOS Simulator,name=nutrx SE' -parallel-testing-enabled NO"
+
 # Version states this script submits from: not submitted yet, or taken back out of review by the developer.
 EDITABLE_STATES = {"PREPARE_FOR_SUBMISSION", "DEVELOPER_REJECTED"}
 # A version App Review rejected: its submission waits in UNRESOLVED_ISSUES for a reply, which this doesn't cover.
@@ -299,6 +302,7 @@ def main():
         print(f"Submitted: {data['data']['attributes']['state']}")
     elif not args.apply:
         print(f"{run.writes} write(s) to make. Run again with --apply once the user has said go for this release.")
+        print(f"Before --apply, run the UI tests on the build's commit (#222, #340):\n  {UI_TESTS}")
 
 
 if __name__ == "__main__":
