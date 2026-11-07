@@ -1,17 +1,31 @@
-// Composes the App Store "Header and Search Results" creative asset: one universal 5244×2950 image (16:9) that
-// App Store Connect crops to the 21:9 product page header and the 3:2 search result. The headline sits on the left
-// and the real Today screen in an iPhone, with the Watch app beside it, on the right — all inside the area both
-// crops keep (x 410–4834, y 352–2598).
+// Composes the App Store "Header and Search Results" creative asset: one universal 5244×2950 image (16:9) for the
+// product page header and the search result. The headline and the real Today screen in an iPhone, with the Watch
+// app at its side, all sit inside `safe` (x 1800–3450, y 560–1760), the middle the App Store keeps on an iPhone.
+//
+// The App Store crops far tighter than the nominal 21:9 and 3:2 (the first version used those and lost the headline's
+// left half). Measured on an iPhone on 2026-11-07:
+// - The search result showed about x 1485–3722, y 420–1908.
+// - The product page header showed about x 1045–4214, from the top down to y 1875, with the back and share buttons
+//   over its top corners.
+// Template makers' safe areas (storeheader: x 1921–3323, y 660–1622) sit inside those too.
 //
 //   swift Tools/AppStoreScreenshots/compose-header.swift <iPhone capture> <Watch capture> <output.png> [--guides]
 //
-// --guides draws the two crops (red: header, blue: search) for review; never upload that version. The Watch
-// simulator can't fake its status-bar time, so its clock is redrawn as 9:41 to match the iPhone capture.
-// Dependency-free (AppKit / Core Graphics); the output is an opaque PNG.
+// --guides draws the measured crops (red: header, blue: search) and `safe` (green) for review; never upload that
+// version. The Watch simulator can't fake its status-bar time, so its clock is redrawn as 9:41 to match the iPhone
+// capture. Dependency-free (AppKit / Core Graphics); the output is an opaque PNG.
 
 import AppKit
 
 let width: CGFloat = 5244, height: CGFloat = 2950
+/// The crops measured on an iPhone on 2026-11-07 (see the top of this file).
+let headerCrop = CGRect(x: 1045, y: 0, width: 4214 - 1045, height: 1875)
+let searchCrop = CGRect(x: 1485, y: 420, width: 3722 - 1485, height: 1908 - 420)
+/// Where everything that matters goes: inside every crop measured on an iPhone.
+let safe = CGRect(x: 1800, y: 560, width: 1650, height: 1200)
+guard headerCrop.contains(safe), searchCrop.contains(safe) else {
+    print("`safe` has to sit inside both measured crops"); exit(1)
+}
 
 func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
     NSColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
@@ -107,34 +121,55 @@ let cg = makeContext(width: Int(width), height: Int(height))
 background.draw(in: CGRect(x: 0, y: 0, width: width, height: height), from: .zero, operation: .copy, fraction: 1,
                 respectFlipped: true, hints: [.interpolation: NSImageInterpolation.high])
 
-// Headline, left, vertically centred.
+// iPhone at the right of `safe`, as tall as it allows less its bezel.
+let phoneHeight = safe.height - 50, phoneWidth = phoneHeight * phone.size.width / phone.size.height
+let phoneScreen = CGRect(x: safe.maxX - 22 - phoneWidth, y: safe.midY - phoneHeight / 2, width: phoneWidth,
+                         height: phoneHeight)
+
+// The Watch at the phone's lower left, overlapping only its edge.
+let watchWidth: CGFloat = 270, watchHeight = watchWidth * watch.size.height / watch.size.width
+let watchScreen = CGRect(x: phoneScreen.minX - watchWidth * 1.02, y: phoneScreen.maxY - watchHeight - 70,
+                         width: watchWidth, height: watchHeight)
+
+// Headline on the left of `safe`, as wide as fits before the phone, centred on it, or higher where that would reach
+// the Watch.
 let paragraph = NSMutableParagraphStyle()
 paragraph.lineHeightMultiple = 0.9
-let headline = NSMutableAttributedString(string: "Track what\nyou take.\n", attributes: [
-    .font: roundedHeavy(250), .foregroundColor: NSColor.white, .paragraphStyle: paragraph, .kern: -4])
-headline.append(NSAttributedString(string: "Nothing else.", attributes: [
-    .font: roundedHeavy(250), .foregroundColor: color(0x7BE3A0), .paragraphStyle: paragraph, .kern: -4]))
-let textBounds = headline.boundingRect(with: CGSize(width: 2300, height: 2000), options: [.usesLineFragmentOrigin])
-headline.draw(with: CGRect(x: 760, y: (height - textBounds.height) / 2 - 40, width: 2300,
-                           height: textBounds.height + 40), options: [.usesLineFragmentOrigin])
+func headline(size: CGFloat) -> NSAttributedString {
+    let text = NSMutableAttributedString(string: "Track what\nyou take.\n", attributes: [
+        .font: roundedHeavy(size), .foregroundColor: NSColor.white, .paragraphStyle: paragraph, .kern: -size / 60])
+    text.append(NSAttributedString(string: "Nothing else.", attributes: [
+        .font: roundedHeavy(size), .foregroundColor: color(0x7BE3A0), .paragraphStyle: paragraph, .kern: -size / 60]))
+    return text
+}
+let textWidth = phoneScreen.minX - 22 - 90 - safe.minX
+var fontSize: CGFloat = 260
+while headline(size: fontSize).boundingRect(with: CGSize(width: 4000, height: 4000),
+                                            options: [.usesLineFragmentOrigin]).width > textWidth {
+    fontSize -= 2
+    // A wider capture (landscape, an iPad) leaves no room: say so rather than shrink the headline to nothing.
+    guard fontSize > 60 else { print("no room for the headline: is the iPhone capture portrait?"); exit(1) }
+}
+let text = headline(size: fontSize)
+let textBounds = text.boundingRect(with: CGSize(width: textWidth, height: 2000), options: [.usesLineFragmentOrigin])
+let textTop = max(safe.minY, min(phoneScreen.midY - textBounds.height / 2,
+                                 watchScreen.minY - 40 - 70 - textBounds.height))
+text.draw(with: CGRect(x: safe.minX, y: textTop, width: textWidth, height: textBounds.height + 40),
+          options: [.usesLineFragmentOrigin])
 
-// iPhone on the right; the Watch to its left, overlapping only the phone's edge.
-let phoneHeight: CGFloat = 1960, phoneWidth = phoneHeight * phone.size.width / phone.size.height
-let phoneScreen = CGRect(x: 3560 - phoneWidth / 2, y: (height - phoneHeight) / 2, width: phoneWidth,
-                         height: phoneHeight)
 drawDevice(phone, screen: phoneScreen, cornerRatio: 0.145, bezel: 22, island: true, crown: false)
-let watchWidth: CGFloat = 470, watchHeight = watchWidth * watch.size.height / watch.size.width
-drawDevice(watch, screen: CGRect(x: phoneScreen.minX - watchWidth * 1.02, y: phoneScreen.maxY - watchHeight - 120,
-                                 width: watchWidth, height: watchHeight),
-           cornerRatio: 0.24, bezel: 40, island: false, crown: true)
+drawDevice(watch, screen: watchScreen, cornerRatio: 0.24, bezel: 40, island: false, crown: true)
 
 if args.count == 5 {
-    color(0xFF3B30, 0.9).setStroke()
-    let header = NSBezierPath(rect: CGRect(x: 0, y: (height - width * 9 / 21) / 2, width: width, height: width * 9 / 21))
-    header.lineWidth = 8; header.stroke()
-    color(0x0A84FF, 0.9).setStroke()
-    let search = NSBezierPath(rect: CGRect(x: (width - height * 1.5) / 2, y: 0, width: height * 1.5, height: height))
-    search.lineWidth = 8; search.stroke()
+    func guide(_ rect: CGRect, _ hex: UInt32) {
+        color(hex, 0.9).setStroke()
+        let path = NSBezierPath(rect: rect)
+        path.lineWidth = 8
+        path.stroke()
+    }
+    guide(headerCrop, 0xFF3B30)
+    guide(searchCrop, 0x0A84FF)
+    guide(safe, 0x34C759)
 }
 
 let url = URL(fileURLWithPath: args[3]) as CFURL
