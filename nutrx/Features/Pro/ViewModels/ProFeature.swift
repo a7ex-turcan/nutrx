@@ -126,7 +126,8 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .widgets: .brown
         case .reminders: .indigo
         case .dosePlans: .green
-        case .appIcons: .green
+        // Not green: on the Pro screen it comes right after dose plans.
+        case .appIcons: .teal
         }
     }
 

@@ -62,7 +62,7 @@ nonisolated struct WhatsNew: Equatable {
                  symbolName: "stairs", tint: .green, isPro: true),
             Item(title: "App icons",
                  subtitle: "Six more icons for your Home Screen, in Settings → App icon.",
-                 symbolName: "app.badge.checkmark", tint: .green, isPro: true),
+                 symbolName: "app.badge.checkmark", tint: .teal, isPro: true),
             Item(title: "Siri & Shortcuts in Settings",
                  subtitle: "What to say to Siri for each nutrient and stack, with no setup.",
                  symbolName: "waveform", tint: .indigo),

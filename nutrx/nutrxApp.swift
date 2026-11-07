@@ -88,8 +88,17 @@ struct nutrxApp: App {
         if DosePlanHold.sync(isPro: proAccess.isPro, context: modelContainer.mainContext) {
             NotificationService.refreshAllNutrientReminders(context: modelContainer.mainContext)
         }
-        if AppIconChoice.shouldReset(alternateIconName: UIApplication.shared.alternateIconName, isPro: proAccess.isPro) {
-            Task { try? await UIApplication.shared.setAlternateIconName(nil) }
+        // Once: a lapse found on becoming active runs this from the check and from `onChange(of: isPro)`.
+        if !Self.resettingAppIcon,
+           AppIconChoice.shouldReset(alternateIconName: UIApplication.shared.alternateIconName, isPro: proAccess.isPro) {
+            Self.resettingAppIcon = true
+            Task {
+                try? await UIApplication.shared.setAlternateIconName(nil)
+                Self.resettingAppIcon = false
+            }
         }
     }
+
+    /// An app icon reset in flight (#139).
+    private static var resettingAppIcon = false
 }
