@@ -152,4 +152,21 @@ final class NutrientFormTests: XCTestCase {
         XCTAssertNil(NutrientGroup.create(named: "   ", among: [], in: context))
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<NutrientGroup>()), 0)
     }
+
+    // MARK: - Saving (#347)
+
+    func testAddAndSaveWriteTheStoreStraightAway() throws {
+        let draft = NutrientDraft()
+        draft.name = "Iron"
+        draft.unit = "mg"
+        draft.step = "9"
+        draft.dailyTarget = "18"
+        let iron = try XCTUnwrap(draft.insertNutrient(into: context, group: nil, sortOrder: 0))
+        XCTAssertFalse(context.hasChanges, "Add saves, rather than waiting for the autosave")
+
+        draft.dailyTarget = "27"
+        draft.apply(to: iron)
+        XCTAssertFalse(context.hasChanges, "Save saves too")
+        XCTAssertEqual(iron.dailyTarget, 27)
+    }
 }
