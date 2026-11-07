@@ -29,7 +29,7 @@ struct WeeklyRecap: Equatable {
         let times: Int
     }
 
-    /// The weekday missed most over the last four weeks ("Sunday · 3 of the last 4 weeks").
+    /// The weekday missed most over the last four weeks ("Sunday · Missed 3 of 4 Sundays").
     struct WeekdayMiss: Equatable {
         /// `Calendar` weekday, 1 = Sunday … 7 = Saturday.
         let weekday: Int

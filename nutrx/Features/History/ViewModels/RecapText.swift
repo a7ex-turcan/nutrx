@@ -138,8 +138,6 @@ struct RecapText: RecapWording {
         "Latest: \(Self.together(range)) · \(Self.together("\(recap.goalsMet) of \(recap.goalsCounted) \(GoalProgress.goals(recap.goalsCounted))"))"
     }
 
-    /// No-break spaces, and word joiners around a dash (a line may otherwise break after "5 –"), so the phrase
-    /// wraps as one piece.
     /// "Missed 3 of 4 Sundays": the day you tend to miss, the same on the week's and the month's cards (#327). Only
     /// "Missed 3 of 4" is kept on one line, so in a half-width card the weekday can wrap rather than leaving
     /// "Missed" alone above the rest.
@@ -147,6 +145,8 @@ struct RecapText: RecapWording {
         "\(together("Missed \(missed) of \(count)")) \(weekday)s"
     }
 
+    /// No-break spaces, and word joiners around a dash (a line may otherwise break after "5 –"), so the phrase
+    /// wraps as one piece.
     static func together(_ phrase: String) -> String {
         phrase.replacingOccurrences(of: " ", with: "\u{00A0}")
             .replacingOccurrences(of: "–", with: "\u{2060}–\u{2060}")
