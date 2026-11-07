@@ -1053,8 +1053,9 @@ A goal that follows steps the user sets: "200 mg for a week, then 400 mg", or a 
     - **Changing it:** `creating`, `editing` and `removing` (each freezes what the plan gave up to today; removing returns the goal the base should take, for a kept or held plan), and `pinningBase` (before the base goal changes).
     - **Without Pro:** `canHold(on:seenWithPro:)` (only when the marker is more than a day old), `holding(from:)`, and `resuming(today:)`, which lengthens the held step by the held days.
     - **Stored form:** `h=*:100;p=20261110,20261110,keep|200x7,400x14`. Decoding skips what it can't read.
-  - **`Nutrient.goal(on:)`** is the plan's goal for the day, else `baseGoal` (`dailyTarget` / `upperBound`). `GoalProgress(nutrient:current:on:)` uses it, with today as the default, so today's readers follow the plan: Today, the log and stack sheets, the widgets (`Provider`'s snapshots), the Watch, the complications, the controls, the Siri answers, the supply cost fallback, and the week progress of a weekly schedule (each day's own goal).
-  - **Not yet:** History, streaks, analytics, the recaps and the report still judge every day by the base goal, which is phase 2.
+  - **`Nutrient.goal(on:)`** is the plan's goal for the day, else `baseGoal` (`dailyTarget` / `upperBound`). `GoalProgress(nutrient:current:on:calendar:)` uses it, with today as the default, so today's readers follow the plan: Today, the log and stack sheets, the widgets (`Provider`'s snapshots), the Watch, the complications, the controls, the Siri answers and the supply cost fallback. Loops over many days decode the plan once and pass the goal (`GoalProgress(nutrient:current:goal:)`).
+  - **Each day's own goal already:** `StreakService`, a weekly schedule's week progress, and History's day rows (their value and bar).
+  - **Not yet (phase 2):** `HistoryLog`, and so History's calendar, a day's score and its met badges, the recaps, analytics and the report, still judge every day by the base goal. On a plan day in phase 1, a History row's bar can read full beside a missed badge.
   - **`ProFeature.dosePlans`** ("Dose plans", "A goal that follows steps you set", green `stairs`) isn't shipped (`isShipped` is false), so it's in no paywall group yet.
   - **Debug:** `DosePlanDebug` (`nutrx.debug.dosePlans`, by name: `"Magnesium" "200x7,400x14|keep"`, or `"none"`) sets a plan at launch, once per value.
 
@@ -1163,6 +1164,8 @@ User-defined nutrient to track.
 | `refillReminderDays` | `Int = 7` | Supply: remind when this many days are left |
 | `endDate` | `Date? = nil` | Courses (Pro, #99): the last day of a set course (start of day); nil = ongoing. Written through `setCourse(endDate:)` |
 | `courseGapsRaw` | `String = ""` | Courses: days between an end and a restart, "yyyyMMdd-yyyyMMdd" pairs, comma-separated; read via `courseGaps(calendar:)` |
+| `dosePlanRaw` | `String = ""` | Dose plans (Pro, #135): the plan and the goals it gave past days (`h=` frozen pieces, `p=` the plan); "" = never had one. Read via `dosePlan(calendar:)`, and the day's goal via `goal(on:)` |
+| `dosePlanSeenWithPro` | `String = ""` | Dose plans: the last day ("yyyyMMdd") a device knew Pro was active, so a device without Pro holds the plan only when it's more than a day old (docs/pro/DOSE-PLANS.md §6). Unlocks nothing |
 | `scheduleRaw` | `String = ""` | Schedules (Pro, #132): "yyyyMMdd=kind" pieces, ";"-separated, each in effect from its day; "" = every day. Read via `schedule(calendar:)` (`NutrientSchedule`) |
 
 **Relationships:** → many `IntakeRecord`? (cascade), → many `Exclusion`? (cascade), → many `NutrientReminder`? (cascade), → one `NutrientGroup?` (nullify)

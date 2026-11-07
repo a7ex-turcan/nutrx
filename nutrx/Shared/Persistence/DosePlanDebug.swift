@@ -40,7 +40,10 @@ enum DosePlanDebug {
             let created = plan.creating(steps: steps, end: end, start: now, base: nutrient.baseGoal, today: now,
                                         calendar: calendar)
             nutrient.dosePlanRaw = created.encode(calendar: calendar)
-            nutrient.setCourse(endDate: created.stopDay(calendar: calendar), now: now, calendar: calendar)
+            // Only a plan that stops sets the course's end; one that keeps leaves Duration alone (§5).
+            if end == .stop {
+                nutrient.setCourse(endDate: created.stopDay(calendar: calendar), now: now, calendar: calendar)
+            }
         }
         UserDefaults.standard.set(applied, forKey: appliedKey)
         try? context.save()

@@ -455,8 +455,10 @@ extension Nutrient {
             totals[calendar.startOfDay(for: record.date), default: 0] += record.amount
         }
         let gaps = courseGaps(calendar: calendar)
+        let plan = dosePlan(calendar: calendar)  // each day's own goal (#135), decoded once
         let metDays = totals.compactMap { date, total -> Date? in
-            GoalProgress(nutrient: self, current: max(0, total), on: date).countsAsMet
+            GoalProgress(nutrient: self, current: max(0, total),
+                         goal: plan.goal(on: date, calendar: calendar) ?? baseGoal).countsAsMet
                 && NutrientCourse.includes(endDate, gaps: gaps, day: date, calendar: calendar) ? date : nil
         }
         return schedule.weekProgress(on: start, metDays: metDays, calendar: calendar)
