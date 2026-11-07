@@ -124,6 +124,14 @@ def item_version_id(item):
     return (((item.get("relationships") or {}).get("appStoreVersion") or {}).get("data") or {}).get("id")
 
 
+def tagged(tag):
+    """Whether this repo has the tag: Tools/testflight tags its uploads; an Xcode Cloud build is tagged only once its
+    version has shipped, so at submission it usually isn't."""
+    result = subprocess.run(["git", "-C", ROOT, "rev-parse", "-q", "--verify", f"refs/tags/{tag}"],
+                            capture_output=True, text=True)
+    return result.returncode == 0
+
+
 def read_text(path):
     if path is None:
         return None
@@ -303,6 +311,9 @@ def main():
     elif not args.apply:
         print(f"{run.writes} write(s) to make. Run again with --apply once the user has said go for this release.")
         print(f"Before --apply, run the UI tests on the build's commit (#222, #340):\n  {UI_TESTS}")
+        tag = f"v{args.version}-b{args.build}"  # what Tools/testflight tags its uploads with
+        if tagged(tag):
+            print(f"  Build {args.build} is tagged: git checkout {tag}")
 
 
 if __name__ == "__main__":
