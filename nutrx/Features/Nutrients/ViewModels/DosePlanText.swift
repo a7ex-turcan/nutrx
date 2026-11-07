@@ -16,6 +16,12 @@ struct DosePlanText {
     static let typeLocked = "Remove the dose plan to change the goal type."
     static let removeTitle = "Remove the dose plan?"
     static let editPlan = "Edit plan"
+    static let needsPro = "Changing a dose plan is part of nutrx Pro. Removing it isn't."
+
+    /// The sheet without Pro (§6): "Paused without nutrx Pro since 20 Nov".
+    func pausedSince(_ heldFrom: Date) -> String {
+        "Paused without nutrx Pro since \(date(heldFrom, weekday: false))"
+    }
 
     // MARK: - Amounts
 

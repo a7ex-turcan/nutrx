@@ -56,6 +56,14 @@ nonisolated struct WhatsNew: Equatable {
                  subtitle: "Give a stack a reminder of its own, from its screen in Stacks.",
                  symbolName: "square.stack.3d.up", tint: .green),
         ]),
+        WhatsNew(version: "2.7", items: [
+            Item(title: "Dose plans",
+                 subtitle: "A goal that follows the steps you or your doctor set: up after a week, or a taper that stops.",
+                 symbolName: "stairs", tint: .green, isPro: true),
+            Item(title: "Siri & Shortcuts in Settings",
+                 subtitle: "What to say to Siri for each nutrient and stack, with no setup.",
+                 symbolName: "waveform", tint: .indigo),
+        ]),
     ]
 
     /// The card to show, if any: the release `appVersion` belongs to (its first two numbers), with only the items

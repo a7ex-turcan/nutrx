@@ -72,13 +72,16 @@ enum ScreenshotDemoData {
                               group: morning, order: 1)
         let magnesium = nutrient("Magnesium", "mg", step: 200, target: 400, tint: .indigo, symbol: "pills",
                                  group: morning, order: 2)
-        // A dose plan from the day it was added (#135): 200 mg for five weeks, then 400 mg for two, and it keeps
-        // 400 mg. Its history shows both goals, and the step falls inside the 30-day chart.
+        // A dose plan from the day it was added (#135): 200 mg for five weeks, then 400 mg for three, and it keeps
+        // 400 mg. Its history shows both goals, the step falls inside the 30-day chart, and today is in step 2 of 2,
+        // so Today's card shows it.
         let magnesiumFirstStep = NutrientDosePlan.Step(goal: NutrientGoal(target: 200), days: 35)
         magnesium.dosePlanRaw = NutrientDosePlan()
-            .creating(steps: [magnesiumFirstStep, .init(goal: NutrientGoal(target: 400), days: 14)], end: .keep,
+            .creating(steps: [magnesiumFirstStep, .init(goal: NutrientGoal(target: 400), days: 21)], end: .keep,
                       start: created, base: NutrientGoal(target: 400), today: created, calendar: calendar)
             .encode(calendar: calendar)
+        // Seen with Pro today, so a simulator without Pro (the App Store captures) doesn't hold it (§6).
+        magnesium.dosePlanSeenWithPro = StoredDay.string(today, calendar: calendar)
         let water = nutrient("Water", "L", step: 0.25, target: 2.5, tint: .blue, symbol: "drop",
                              group: daytime, order: 0)
         let protein = nutrient("Protein", "g", step: 20, target: 120, goal: .range, upper: 160, tint: .coral,

@@ -69,6 +69,14 @@ final class ScreenshotDemoDataTests: XCTestCase {
         XCTAssertEqual(goals.filter { $0.goal.target == 200 }.count, 35)
         XCTAssertTrue(goals.allSatisfy(\.isMet))
         XCTAssertEqual(magnesium.goal().target, 400)
+        XCTAssertEqual(magnesium.dosePlan().position(on: .now)?.step, 2, "today in its second step, for Today's line")
+    }
+
+    /// The App Store captures run without Pro: the demo's plan is seen with Pro today, so it doesn't hold (§6).
+    func testTheDemoPlanDoesntHoldWithoutPro() throws {
+        XCTAssertFalse(DosePlanHold.sync(isPro: false, context: context))
+        let magnesium = try XCTUnwrap(try nutrients().first { $0.name == "Magnesium" })
+        XCTAssertFalse(magnesium.dosePlan().isHeld(on: .now))
     }
 
     /// The demo logs Vitamin D first at 8:00 every day: a usual time to show (#137, docs/pro/REMINDERS.md §7).
