@@ -22,7 +22,7 @@ All notable changes to nutrx are documented in this file.
 - **One wording for the day you tend to miss** — The weekly recap's card read "2 of the last 4 weeks" while the month's read "Missed 2 of 4 Sundays", so side by side on Recaps they looked like two different facts. Both now say "Missed 2 of 4 Sundays", or "Missed 2 of 4, but not this one" when this week's was a full day, in two lines rather than four.
 - **Done in the same place** — A saved nutrient's Reminders sheet had Done on the left and a + on the right, while a new nutrient's and a stack's have Done on the right. Done is on the right in all three now, and a saved nutrient adds a reminder the way a new one does: pick the time, then Add Reminder, under the list.
 
-## v2.6 — submitted for review 2026-11-07 (build 216)
+## v2.6 — 2026-11-07
 
 ### nutrx Pro
 - **Monthly and yearly recaps** — Beside the weekly recap, History's **Recaps** now sums up each month and each year, with a Week / Month / Year switch. A month shows your goals met and full days, a calendar of its full days, your steadiest nutrient, what slipped and on which days, your best run, and how it compares with the month before. A year shows its months side by side as bars, its best month, the month you logged most, your longest run and when you started. Both work for the month or year so far too. "Your October" shows on Today on the 1st and 2nd and "Your 2026" in the first week of January, and a notification arrives on the 1st (and on 1 January) at 18:00, only one a night. Settings → Notifications → **Recaps** turns all three off together. As with the week, the summary is reworded on your device with Apple Intelligence, and never leaves it.

@@ -1149,7 +1149,9 @@ Every item here has an issue, so GitHub issues are the one list of what's left (
 
 **Deferred:** Localisation (#129). Large screens (#130) shipped in 2.3; what's left of them is in its open `large-screens` issues.
 
-**Last release:** 2.5 on 2026-10-28 (build 205, tags `v2.5` and `v2.5-b205` at ddeafee, phased release, complete; the website's 2.5 update is its own PR). **2.6** (build 216) was submitted for App Review on 2026-11-07, phased and manual release, with a new description (Recaps for the week, month and year, and Reminders at your usual time, in the Pro list; stack reminders in the free one) and the Pro panel retaken with the renamed plans row and the shorter recaps row; `main` builds **2.7** since. 2.7 pins only the paywall's button and plan line and floats its ✕ (#325), so retake the App Store's Pro panel for 2.7's submission.
+**Last release:** 2.6 on 2026-11-07 (build 216, tags `v2.6` and `v2.6-b216` at db28a4f, phased release, started that day; the website's 2.6 update is its own PR). `main` builds **2.7**, bumped when 2.6 was submitted (#328), so there's no second bump. For 2.7's submission:
+- **The Pro panel:** retake it. 2.7 pins only the paywall's button and plan line and floats its ✕ (#325), and renames two rows: "Courses, schedules & dose plans" and "Widgets, controls & app icons".
+- **The header and search art:** attach the new image, already in the asset library, to 2.7's listing (#355).
 
 **If App Review rejects a submitted version:** a metadata or notes fix needs no build: change it in App Store Connect and resubmit there. A code fix can't come from `main`, which already builds the next version (bumped at submission). Branch from that version's submission commit, fix it there, and upload with `Tools/testflight --build <n>` from that branch: it insists on origin/main, so either merge the fix with a temporary version or relax that check for the run. Then attach the new build to the version and resubmit in the web UI. Merge the fix into `main` afterwards.
 

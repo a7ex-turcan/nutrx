@@ -166,16 +166,16 @@ Released on the App Store on 28 Oct 2026 (build 205, phased release; tag `v2.5`)
 | Siri tip says "stack" once | ✅ Shipped (v2.5, #292) |
 | Group names at the largest text sizes | ✅ Shipped (v2.5, #273) |
 
-### v2.6 — Monthly and yearly recaps
+### v2.6 — Monthly and yearly recaps ✅
 
-Submitted for App Review on 7 Nov 2026 (build 216, phased release). Main builds 2.7 from here.
+Released on the App Store on 7 Nov 2026 (build 216, phased release; tag `v2.6`). Main builds 2.7 from here.
 
 | Feature | Status |
 |---|---|
-| Monthly and yearly recaps: Week / Month / Year on Recaps, Today cards, notifications (Pro) | ✅ Built (v2.6, #136: #308–#312) |
-| Recap polish: the weekday card, the streak unit, weekly sentences, today's ring, lone cards | ✅ Built (v2.6, #313–#317: #318) |
-| Reminders at your usual time (Pro), and stack reminders | ✅ Built (v2.6, #137: #319–#322) |
-| The Pro page: "Courses, schedules & reminders", a shorter recaps row | ✅ Built (v2.6, #322) |
+| Monthly and yearly recaps: Week / Month / Year on Recaps, Today cards, notifications (Pro) | ✅ Shipped (v2.6, #136: #308–#312) |
+| Recap polish: the weekday card, the streak unit, weekly sentences, today's ring, lone cards | ✅ Shipped (v2.6, #313–#317: #318) |
+| Reminders at your usual time (Pro), and stack reminders | ✅ Shipped (v2.6, #137: #319–#322) |
+| The Pro page: "Courses, schedules & reminders", a shorter recaps row | ✅ Shipped (v2.6, #322) |
 
 ### v2.7 — Dose plans
 
