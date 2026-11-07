@@ -21,6 +21,10 @@ struct TodayView: View {
     @State private var settledLayout: TodayLayout?
     /// Where the day-score card is as Today scrolls, for its collapsing copy (#243).
     @State private var scoreCardTracker = DayScoreCardTracker()
+    /// The list's or the columns' scroll position, for going back to the very top after a text-size change (#198).
+    @State private var scrollPosition = ScrollPosition()
+    /// Today's navigation bar, to open its large title again after that scroll.
+    @State private var navigationBar = NavigationBarHandle()
 
     /// Until Today has measured itself, a guess from the window's class, so an iPad's first frame doesn't build the
     /// iPhone list and then swap it for the grid.
@@ -219,6 +223,7 @@ struct TodayView: View {
             }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { measuredWidth = $0 }
+        .navigationBarHandle(navigationBar)
         .background(Theme.surfaceGround)
         .toolbar {
             // Free / PRO (#101), on the leading side; the profile avatar keeps the trailing one. Left out at
@@ -454,6 +459,25 @@ struct TodayView: View {
                         guard self.layout == layout else { return }
                         proxy.scrollTo(anchorID, anchor: .top)
                         settledLayout = layout
+                    }
+                }
+                // A text-size change in the same layout re-measures every row and leaves the page part-way down
+                // under a collapsed bar, with no large title and the day score's pin line stale, until it's pulled
+                // down (#198). Scrolling to the card, or to the top edge alone, only lined it up under that small
+                // bar, so this goes to the top edge and then has the bar take its full height again, large title and
+                // all, as a status-bar tap does. A change that switches the layout (the columns ↔ the list at
+                // accessibility sizes) keeps its anchor through `onAppear` above instead. Not beside the side column:
+                // its own column would stay where it was while the nutrients went back to the top.
+                .scrollPosition($scrollPosition)
+                .onChange(of: dynamicTypeSize) {
+                    guard self.layout == layout, layout != .sideColumn else { return }
+                    Task { @MainActor in
+                        // Real waits, not yields, which can run back to back before a layout pass: first for the
+                        // rows to take their new heights, then for the scroll to land before the bar grows.
+                        try? await Task.sleep(for: .milliseconds(100))
+                        scrollPosition.scrollTo(edge: .top)
+                        try? await Task.sleep(for: .milliseconds(50))
+                        navigationBar.expandLargeTitle()
                     }
                 }
                 // A tap on the collapsed day score brings the card back (#246). In the columns the card's 8 pt top
