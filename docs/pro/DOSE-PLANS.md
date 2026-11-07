@@ -55,13 +55,14 @@ No reader reads `dailyTarget` / `upperBound` for a day any more. The form edits 
 
 As with schedules (#132):
 - A plan is stored as the goals it gives, each **from its day**. Past days keep the goal they had.
+- **Creating a plan pins the days before it:** the first piece is the base goal as it is then, from the start of the nutrient's history up to the plan's start. From then on every day is covered by a piece, so neither a later change to the base goal nor removing the plan re-judges a day before the plan.
 - **Editing a plan** (its steps, their lengths or its end) applies **from today**. Days before today keep their pieces, and a change can't make last week's misses into hits.
 - **Removing a plan** also applies from today:
   - From today the base goal is back.
   - Removing a plan that was keeping its last goal first makes that goal the base goal, so nothing jumps.
 - **Calendar days are stored as `yyyyMMdd`** and rebuilt in the reading calendar, as course gaps and schedules are, so a time-zone change never moves a step.
 
-The base goal still behaves as it does now. Editing it in the form re-judges the days that aren't covered by a plan piece, as editing a goal always has. While a plan applies today, the form's goal card hands over to the plan (§5).
+Without a plan, the base goal behaves as it does now: editing it re-judges the nutrient's history, as editing a goal always has. Once a plan has existed, the pieces cover the past, and editing the base goal only changes the days from today (after the plan, or once it's removed). While a plan applies today, its goal amount is edited in the plan (§5).
 
 ## 4. Where it shows
 
@@ -89,7 +90,11 @@ The base goal still behaves as it does now. Editing it in the form re-judges the
   - **The no-advice line:** "nutrx doesn't suggest amounts. Set the steps you or your doctor chose."
   - **Remove plan**, when editing, with a confirmation that says past days keep their goals.
   - Cancel / Done.
-- **The form's goal card while a plan applies today** is replaced by a summary: "Set by your dose plan: 400 mg a day until Fri", with **Edit plan**. Before the plan starts, or after it was removed, the goal card is as now.
+- **The form's goal card while a plan applies today:**
+  - **The goal amount:** the amount fields (or a range's minimum and maximum) give way to a summary, "Set by your dose plan: 400 mg a day until Fri", with **Edit plan**.
+  - **"Each tap adds"** stays in the card, editable, as before: the plan never sets it.
+  - **The goal type is locked:** `GoalTypePicker` stays visible but can't be changed, with a footnote, "Remove the dose plan to change the goal type". Steps are in their type's shape (a range's steps have a minimum and a maximum), so a change would leave them half-filled. Blocking it is simpler and clearer than converting the steps.
+  - Before the plan starts, or after it was removed, the goal card is as now.
 - **With Duration:**
   - A plan that **stops** sets the course's end (`Nutrient.setCourse(endDate:)`, its last step's last day). The Duration row then reads "Ends with the dose plan · Sun 6 Dec" and opens the plan sheet.
   - A plan that **keeps** leaves Duration alone. If a course ends before the plan does, the sheet's footer says the plan is cut short on that day.
@@ -97,14 +102,18 @@ The base goal still behaves as it does now. Editing it in the form re-judges the
 
 ## 6. Without Pro
 
-- **The hold:** from the first day the app knows Pro isn't active, the goal stays at the step in effect that day, and later steps wait.
+- **The marker:** any device that knows Pro is active records the day in the plan, at most once a day ("seen with Pro on 20 Nov"). It's the plan's own progress marker: nothing reads it to unlock anything, and Pro is still read from StoreKit every launch, never stored.
+- **The hold:** a device that knows Pro **isn't** active holds the plan from the day after the marker, but only when the marker is more than a day old.
   - "Knows" means `ProAccess.refreshEntitlement` came back false, never an unknown entitlement such as a cold background launch.
-  - The hold day is stored in the plan, so it syncs and every device, widget and the Watch holds the same way. It's plan data, not the entitlement, which is still never stored.
-  - A held plan that was going to **stop** doesn't stop. Its course end is lifted while held, and set again on resume.
-- **Pro comes back:** the plan **resumes where it held**. The remaining steps, and the stop day, move later by the days it was held, and the hold is cleared.
+  - **Why the marker:** if two devices disagree (an iPad on another App Store account, with Family Sharing off), the one with Pro keeps the marker current. The other then never holds, so the plan can't be held and resumed back and forth, with each resume pushing the steps later.
+  - **The hold day is stored in the plan,** so it syncs, and every device, widget and the Watch holds the same way. The goal stays at the step in effect on that day, and later steps wait.
+  - **A held plan that stops doesn't stop:** its course end is lifted while held, and set again on resume.
+  - **A finished plan never holds:** one past its stop day has already ended its course, so a hold first noticed after the stop day changes nothing and brings nothing back.
+- **Pro comes back:** the plan **resumes where it held**. The remaining steps and the stop day move later by the days it was held. The hold is cleared, and the marker is set to today.
 - **Setting or editing a plan needs Pro.** **Removing one doesn't**: it never takes anything free away.
   - **The row:** while held, it reads "Paused" with the PRO chip.
   - **The sheet:** it opens read-only, with "Paused without nutrx Pro since 20 Nov" and Remove plan.
+  - **Removing a held plan** keeps the held goal as the base goal, as removing a kept plan does. One that was going to stop leaves the nutrient ongoing, since its end was lifted, and the confirmation says so: "Magnesium stays on Today at 300 mg a day, with no end." Setting an end again needs Pro, and Delete is always there.
 - **The base goal stays free,** as every goal is today.
 
 ## 7. Data
@@ -113,7 +122,7 @@ The base goal still behaves as it does now. Editing it in the form re-judges the
 - **What it stores:**
   - the goal pieces, each from its day, with an upper bound for a range;
   - the plan's definition, for editing: the start day, the steps' goals and lengths, and keep or stop;
-  - the hold day, when there is one.
+  - the Pro marker's day, and the hold day when there is one.
 
   The exact encoding is settled in phase 1, with round-trip tests, in the style of `scheduleRaw`'s pieces (`20261110=200;20261117=400`).
 - **CloudKit:** it's a CloudKit-safe scalar with a default. **Its field (`CD_dosePlanRaw`) must be in the production schema before the first TestFlight build with it:**

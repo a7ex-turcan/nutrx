@@ -184,14 +184,15 @@ In progress on main.
 | Feature | Status |
 |---|---|
 | Dose plans: a goal that follows steps you set, then keeps or stops (Pro) | 📝 Spec (#135, docs/pro/DOSE-PLANS.md) |
-| Alternate app icons (Pro) | Planned (#139) |
-| Settings → Siri screen | Planned (#127) |
+| Alternate app icons (Pro) | 📋 Planned (#139) |
+| Settings → Siri screen | 📋 Planned (#127) |
 | The paywall's footer: only the button pinned, the plan line while your plan is out of view, a ✕ that stays | ✅ Built (v2.7, #325, #338: #330, #341) |
 | The weekday pattern in two rows from AX1 | ✅ Built (v2.7, #289: #334) |
 | Arrow keys in My Nutrients on iPad | ✅ Built (v2.7, #195: #336) |
 | A stack's steppers line up | ✅ Built (v2.7, #288: #333) |
 | One wording for the day you tend to miss; Done on the right in every reminders sheet | ✅ Built (v2.7, #327, #326: #332, #331) |
-| UI tests: the sheets' Log buttons on the SE; paywall checks and a submit reminder planned | ✅ Built (#222: #337); planned (#339, #340) |
+| UI tests: the sheets' Log buttons on the SE; the dry runs' reminder to run them | ✅ Built (v2.7, #222, #340: #337, #343) |
+| UI tests: the paywall | 📋 Planned (#339) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
