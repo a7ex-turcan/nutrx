@@ -38,11 +38,18 @@ xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=nutrx Du
 ```
 Runs are serial because parallel test clones stall ("Simulator device failed to launch", over and over). Never start two test runs on the same simulator.
 
-UI tests (#222) have their own scheme, `nutrxUITests`, so the `nutrx` scheme's run stays the unit tests only. Run them on the iPhone SE **before each release submission**, and after changing a sheet's height or its pinned buttons:
+UI tests (#222) have their own scheme, `nutrxUITests`, so the `nutrx` scheme's run stays the unit tests only. Run them on the iPhone SE and the iPhone 17, one after the other, **before each release submission**, and after changing a sheet's height, its pinned buttons or the paywall:
 ```bash
-xcodebuild test -scheme nutrxUITests -destination 'platform=iOS Simulator,name=nutrx SE' -parallel-testing-enabled NO
+xcodebuild test -scheme nutrxUITests -destination 'platform=iOS Simulator,name=nutrx SE' -destination 'platform=iOS Simulator,name=nutrx iPhone 17' -disable-concurrent-destination-testing -parallel-testing-enabled NO
 ```
 `SheetButtonsUITests` launches with `-screenshotDemoData` (so only on a simulator signed out of iCloud) and `-screenshotRoute today`, opens Vitamin D's log sheet and the Morning stack's sheet, and checks that each sheet's Log button is tappable at the height it opens at (#212, #180). They find elements by their VoiceOver labels ("Vitamin D", "Log Morning", "… Log 1,000 IU"), so a label change can break them.
+
+`PaywallUITests` (#339) launches with `-screenshotRoute paywall`:
+- **As it opens:** the purchase button ("Start free week", "Subscribe", "Buy lifetime") is wholly on screen, and the selected plan is in view, as its card or as the plan line. The line shows only while the card is out of view (#338).
+- **Scrolled to the end:** Close is still hittable at the top (#325), and Lifetime and Restore purchases · Terms · Privacy sit above the pinned button, not behind it.
+- **The plan line** shows once the Yearly card has scrolled away.
+
+The UI test scheme's launch uses `StoreKit/nutrxPro.storekit` too, so the plans load with their prices; without it the paywall reads "Couldn't reach the App Store" and the tests skip. Anything else missing, such as a changed label, fails. The paywall route opens the paywall whatever the Pro state. "In view" is the app's own rule (`PlanLine.shows`: the card's middle below the sheet's top and 10 pt above the button). The cards are found by their combined labels ("Yearly, …, billed yearly"). The plan line's parts are joined by no-break spaces around "·".
 
 ### Simulators
 
