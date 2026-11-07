@@ -14,6 +14,7 @@ All notable changes to nutrx are documented in this file.
 - **A stack's rows line up** — In the stack log sheet every amount stepper is as wide as the widest one, so the − buttons line up from row to row and each total gets the same room beside it: on a narrow phone, "2,000 / 4,000" in one row and only "2,000" in the next no longer happens because one amount was a few characters longer.
 
 ### Fixes
+- **Edits are saved straight away** — Adding a nutrient or saving one waited for the app's next automatic save, so closing nutrx right away, or a crash, could lose the change, and widgets and the Watch saw it late. Add and Save now save at once.
 - **One wording for the day you tend to miss** — The weekly recap's card read "2 of the last 4 weeks" while the month's read "Missed 2 of 4 Sundays", so side by side on Recaps they looked like two different facts. Both now say "Missed 2 of 4 Sundays", or "Missed 2 of 4, but not this one" when this week's was a full day, in two lines rather than four.
 - **Done in the same place** — A saved nutrient's Reminders sheet had Done on the left and a + on the right, while a new nutrient's and a stack's have Done on the right. Done is on the right in all three now, and a saved nutrient adds a reminder the way a new one does: pick the time, then Add Reminder, under the list.
 
