@@ -50,7 +50,7 @@ extension NutrientDraft {
             StackShortcutLogging.stacksChanged()
             NotificationService.refreshAllNutrientReminders(context: context)  // a stack's reminder (#137)
         }
-        saved(context)
+        saveAndReloadWidgets(context)
         return nutrient
     }
 
@@ -78,12 +78,12 @@ extension NutrientDraft {
         if !(nutrient.reminders ?? []).isEmpty, let context = nutrient.modelContext {
             NotificationService.refreshAllNutrientReminders(context: context)
         }
-        if let context = nutrient.modelContext { saved(context) }
+        if let context = nutrient.modelContext { saveAndReloadWidgets(context) }
     }
 
     /// Saved straight away, not at SwiftData's next autosave: a quit right after Save or Add kept nothing (#347), and
     /// the widgets and the Watch read what's stored.
-    private func saved(_ context: ModelContext) {
+    private func saveAndReloadWidgets(_ context: ModelContext) {
         try? context.save()
         WidgetReload.all()
     }
