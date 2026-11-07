@@ -289,17 +289,19 @@ nutrx/
 │   │
 │   ├── Settings/
 │   │   ├── Views/
-│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups, Siri & Shortcuts; Apple Health; Rate nutrx, Suggest a feature, About) with values, privacy footer.
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups, Siri & Shortcuts; App icon, Apple Health; Rate nutrx, Suggest a feature, About) with values, privacy footer.
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
 │   │   │   ├── SiriSettingsView.swift       # Siri & Shortcuts (#127): each Today nutrient's and stack's phrase, and ShortcutsLink.
+│   │   │   ├── AppIconSettingsView.swift    # App icon (Pro, #139): the seven icons as tiles, the one in use ringed; a tap sets it.
 │   │   │   ├── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
 │   │   │   ├── AppleHealthSettingsView.swift # Settings → Apple Health (Pro): switch, what's read (data found?), privacy, Disconnect.
 │   │   │   └── ProSettingsCard.swift        # Settings' nutrx Pro card (free: Learn more → paywall; Pro: status → ProStatusView).
 │   │   └── ViewModels/
 │   │       ├── SettingsSummary.swift        # Row values: "On", "Noon check-in", "No account", group count, profile title.
-│   │       └── FeatureSuggestion.swift      # Suggest a feature: the mailto draft to support@nutrx-labs.com with the versions (#142).
+│   │       ├── FeatureSuggestion.swift      # Suggest a feature: the mailto draft to support@nutrx-labs.com with the versions (#142).
+│   │       └── AppIconChoice.swift          # App icons (Pro, #139): Forest (default) and six alternates, their set and preview names (pure).
 │   │
 │   ├── Pro/                     # nutrx Pro (hidden until phase 4; see nutrx Pro: StoreKit).
 │   │   ├── Views/
@@ -308,7 +310,7 @@ nutrx/
 │   │   │   ├── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
 │   │   │   └── PlanChip.swift               # Today's Free / PRO chip and the "Enjoy nutrx Pro" sheet (#101).
 │   │   └── ViewModels/
-│   │       ├── ProFeature.swift             # The Pro features (courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans since 2.7); `listed` = shipped ones only.
+│   │       ├── ProFeature.swift             # The Pro features (courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans and app icons since 2.7); `listed` = shipped ones only.
 │   │       ├── ProFeatureGroup.swift        # The paywall's four rows: related features share one (supply & scan, courses & schedules, recaps/trends/reports, widgets).
 │   │       └── ProText.swift                # Paywall / status copy (pure).
 │   │
@@ -830,14 +832,14 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - **Never stored**: not in SwiftData, iCloud or UserDefaults. It's derived from StoreKit every launch, and no receipt leaves the device.
 - **Visible:** `ProAccess.isStoreVisible` is `true` from phase 4 on, now that supply has shipped. It stays a single switch, in case Pro ever has to be hidden again.
 - **Paywall** (`Features/Pro/`, docs/pro/design/2-paywall):
-  - `PaywallView` is a full-height sheet, presented through `.proPaywall(isPresented:)`. It has a forest header (`ProWordmark`, `ProRingMotif`) with the close button floating over it (forest-tinted glass with a white ✕, in the header's row but outside the scroll view, so it stays at the top right as the header scrolls away, #325) and four rows, one per `ProFeatureGroup`: "Supply & label scan", "Courses, schedules & reminders" (since 2.6), "Recaps, trends & reports" and "Widgets and controls", each naming its features. Eight rows of their own pushed the plans below the fold (only half of Yearly showed on an iPhone); grouped, an iPhone 17 shows Yearly and Monthly and the SE the top of Yearly. The Pro screen and "Enjoy nutrx Pro" keep a row per feature.
+  - `PaywallView` is a full-height sheet, presented through `.proPaywall(isPresented:)`. It has a forest header (`ProWordmark`, `ProRingMotif`) with the close button floating over it (forest-tinted glass with a white ✕, in the header's row but outside the scroll view, so it stays at the top right as the header scrolls away, #325) and four rows, one per `ProFeatureGroup`: "Supply & label scan", "Courses, schedules & reminders" (since 2.6), "Recaps, trends & reports" and "Widgets, controls & app icons" (since 2.7), each naming its features. Eight rows of their own pushed the plans below the fold (only half of Yearly showed on an iPhone); grouped, an iPhone 17 shows Yearly and Monthly and the SE the top of Yearly. The Pro screen and "Enjoy nutrx Pro" keep a row per feature.
   - The three plans are radio cards with prices from StoreKit. Lifetime sits under "or pay once", and yearly carries "1 WEEK FREE" only while `isEligibleForIntroOffer`.
   - The button reads Start free week / Subscribe / Buy lifetime. The terms, "Everything you use today stays free." and Restore purchases · Terms (Apple's standard EULA) · Privacy (the website) follow the plans.
   - A purchase or restore that unlocks Pro turns the sheet into `ProWelcomeView`: at medium height on iPhone; from regular widths it keeps the page sheet's full height (a medium detent shrank it into the lower half of the iPad's screen) with its text and Continue in the paywall's 640 pt column (#206). Pending, failed and nothing-to-restore show alerts. Offline, the plans area offers Try again.
   - Below accessibility sizes only the button is pinned at the bottom, with `ProText.planSummary` above it ("Yearly · $14.99 a year · 1 week free", "Plans ⌃", which scrolls to the plans) and a hairline on top; the terms and links scroll after the plans. With them pinned too, the footer hid the plans: from xLarge (#189), on large widths (#205), and at the default size on an iPhone 17, where Lifetime sat behind it with nothing to say there was a third plan (#325). Below xLarge on a compact width the plan line itself shows only while the selected plan's card is out of view (`PlanLine`, pure, tested in `PlanLineTests`, #338): its middle measured against the pinned button's top, which doesn't move when the line comes and goes, so showing it can't keep itself showing. The positions live in a plain class (`PlanLinePositions`), not state, so scrolling only updates the paywall when the line actually changes. At the top of the page that leaves just the button: on an iPhone 17 all three cards show above it, on the SE the whole Yearly card (with the line, only its top did). It shows for a selected plan behind the button or scrolled away, and fades in and out with the whole footer. At accessibility sizes the button scrolls with the content.
   - The paywall never claims a store it can't reach, and never says nothing was charged.
   - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
-- **`ProFeature`**: the Pro features with titles, symbols and tints (eight since widgets and controls, #138). A new Pro feature gets a case here **and a place in a `ProFeatureGroup`** once it ships (`ProFeatureGroupTests` fails otherwise; a group names all its features, so it only holds shipped ones), or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2, schedules since 2.4, widgets and controls since 2.5).
+- **`ProFeature`**: the Pro features with titles, symbols and tints (eleven since dose plans and app icons in 2.7). A new Pro feature gets a case here **and a place in a `ProFeatureGroup`** once it ships (`ProFeatureGroupTests` fails otherwise; a group names all its features, so it only holds shipped ones), or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans and app icons since 2.7).
 - **Settings:** `ProSettingsCard` sits under the profile card, only when `isStoreVisible` is true.
   - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Supply and label scan" now, a plain list for two or three, and "… and more" only from four) with **Learn more**, which opens the paywall.
   - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.
@@ -1049,6 +1051,20 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **Reminders:** `ReminderSchedule.Plan.doneWeekStart`, set when the count is reached with today's logs, drops the rest of that week; the next week's stay.
   - **The sheet:** a **Times a week** option (1–6, "Any 3 days a week, Monday to Sunday."). It's greyed out with a footnote unless the goal is "At least". `NutrientDraft.scheduleError` blocks Save if the goal changes afterwards, and its message shows under the Schedule row.
 - **Phase 5 (shipping):** the Schedule row is in every build (it was Debug-only through phase 4, since merges reach TestFlight). `ProFeature.schedules` ("Schedules", "Take something on set days", pink `calendar.badge.clock`) puts it on the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line, and 2.4's What's New card has it with Suggest a feature.
+
+### nutrx Pro: App icons (#139, 2.7)
+
+Six alternate app icons beside the forest default, picked in Settings → **App icon**.
+- **The art:** each is the app icon's own "n+" mark, never redrawn (DESIGN.md §5.8), on another background. `swift Tools/AppIcons/compose-icon.swift <AppIcon 1024 png> <out.png> --background <#RRGGBB | image.png> --mark <#RRGGBB>` reads every pixel of the app icon as a mix of its forest (#1A3D2B) and its green (#1DB954). That gives the mark's anti-aliased edges as a mask, which is drawn in the new colour over the new background. The output is an opaque 1024 PNG.
+  - **Flat backgrounds:** Light (#F3F0E7 with a forest mark), Mint (#1DB954 with forest) and Mono (#111312 with white).
+  - **Generated backgrounds:** Midnight and Botanical (green mark) and Sunrise (forest mark), from gpt-image-2 by `python3 -I Tools/AppIcons/generate-background.py <midnight|botanical|sunrise> <out.png>`. The prompts are in that script, which reads the key from `~/.config/openai/api_key` itself. The results are in `Tools/AppIcons/backgrounds/`, so the icons can be remade without generating again.
+- **The assets:** `AppIcon-<Name>.appiconset` in the app's catalog (one 1024 universal image each), listed in the app target's `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES` (Debug and Release), which writes them into the Info.plist's `CFBundleAlternateIcons`. 180 px previews are in `AppIconPreviews/AppIconPreview-<Name>`, since an app icon set can't be loaded as an image.
+- **`AppIconChoice`** (pure, `AppIconChoiceTests`): the seven icons, their set and preview names, `current(alternateIconName:)`, and `shouldReset(alternateIconName:isPro:)`. The tests check that every alternate is in the built app's Info.plist and has a preview.
+- **`AppIconSettingsView`:** the icons as 72 pt tiles in a card, the one in use with a `Control/Primary` ring. A tap calls `setAlternateIconName`, and iOS confirms in its own alert. If that fails: "Couldn't change the icon".
+- **Settings:** the App icon row is in the Pro section, above Apple Health. With Pro it shows the icon's name and opens the page; free, it shows the PRO chip and opens the paywall.
+- **Without Pro:** after a foreground check that knows Pro isn't active (`nutrxApp.syncWithPro`, beside the dose plans' hold), an alternate goes back to Forest, and iOS shows its alert.
+- **The paywall:** `ProFeature.appIcons` ("App icons", "Pick nutrx's icon on your Home Screen", green `app.badge.checkmark`) joins the widgets row: "Widgets, controls & app icons", "Log from Control Center and the Home Screen, and pick nutrx's icon". On the SE, the plans still start on screen (`PaywallUITests`). What's New 2.7 has an item.
+- **The widget extension and the Watch** keep their own icons.
 
 ### nutrx Pro: Dose plans (#135, 2.7)
 

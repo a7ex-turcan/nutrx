@@ -1,7 +1,8 @@
 import Foundation
 
 /// What nutrx Pro adds (docs/pro/PLAN.md, D5 order, then courses from 2.2, schedules from 2.4, widgets and controls
-/// from 2.5, and reminders at your usual time from 2.6), as the paywall and the Pro screen list them.
+/// from 2.5, reminders at your usual time from 2.6, and dose plans and app icons from 2.7), as the paywall and the Pro
+/// screen list them.
 enum ProFeature: String, CaseIterable, Identifiable {
     case supply
     case scan
@@ -13,6 +14,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
     case widgets
     case reminders
     case dosePlans
+    case appIcons
 
     var id: Self { self }
 
@@ -28,6 +30,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .widgets: "Widgets and controls"
         case .reminders: "Reminders at your usual time"
         case .dosePlans: "Dose plans"
+        case .appIcons: "App icons"
         }
     }
 
@@ -48,6 +51,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .widgets: "Log from Control Center and the Home Screen"
         case .reminders: "A nudge only when you're running late"
         case .dosePlans: "A goal that follows steps you set"
+        case .appIcons: "Pick nutrx's icon on your Home Screen"
         }
     }
 
@@ -64,6 +68,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .widgets: "widgets"
         case .reminders: "smarter reminders"
         case .dosePlans: "dose plans"
+        case .appIcons: "app icons"
         }
     }
 
@@ -80,6 +85,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .widgets: "widgets"  // "…, schedules and widgets are on": "and controls" doubled the "and"
         case .reminders: "reminders at your usual time"
         case .dosePlans: "dose plans"
+        case .appIcons: "app icons"
         }
     }
 
@@ -88,7 +94,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         switch self {
         case .scan: "label scanning"
         case .recap: "recaps"
-        case .supply, .health, .report, .courses, .schedules, .widgets, .reminders, .dosePlans: nil
+        case .supply, .health, .report, .courses, .schedules, .widgets, .reminders, .dosePlans, .appIcons: nil
         }
     }
 
@@ -104,6 +110,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .widgets: "square.grid.2x2"
         case .reminders: "bell.badge"
         case .dosePlans: "stairs"
+        case .appIcons: "app.badge.checkmark"
         }
     }
 
@@ -119,12 +126,13 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .widgets: .brown
         case .reminders: .indigo
         case .dosePlans: .green
+        case .appIcons: .green
         }
     }
 
     /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, courses since 2.2,
-    /// schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans since
-    /// 2.7). A feature being built returns false here until it ships.
+    /// schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans and app
+    /// icons since 2.7). A feature being built returns false here until it ships.
     var isShipped: Bool {
         true
     }

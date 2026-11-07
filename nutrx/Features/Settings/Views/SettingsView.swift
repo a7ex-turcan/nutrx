@@ -97,24 +97,12 @@ struct SettingsView: View {
             }
             .listRowBackground(Theme.surfaceCard)
 
-            // Apple Health (Pro). Export data and the doctor report live in History's "Your data" (#103).
-            if ProAccess.isStoreVisible, HealthReader.isAvailable {
+            // App icon and Apple Health (Pro). Export data and the doctor report live in History's "Your data" (#103).
+            if ProAccess.isStoreVisible {
                 Section {
-                    if proAccess?.isPro == true {
-                        NavigationLink {
-                            AppleHealthSettingsView()
-                        } label: {
-                            row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral,
-                                value: healthConnected ? "On" : "Off")
-                        }
-                    } else {
-                        ProGatedButton(action: {}) { _ in
-                            HStack(spacing: 8) {
-                                row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral, value: nil)
-                                ProBadge()
-                            }
-                        }
-                        .foregroundStyle(Theme.textPrimary)
+                    appIconRow
+                    if HealthReader.isAvailable {
+                        appleHealthRow
                     }
                 }
                 .listRowBackground(Theme.surfaceCard)
@@ -211,6 +199,50 @@ struct SettingsView: View {
     // MARK: - Rows
 
     /// A coloured 32pt icon tile, the title, and the current value in secondary text.
+    /// App icon (nutrx Pro, #139): the one in use, or the PRO chip.
+    @ViewBuilder
+    private var appIconRow: some View {
+        if proAccess?.isPro == true {
+            NavigationLink {
+                AppIconSettingsView()
+                    .navigationTitle("App icon")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                row("App icon", symbol: ProFeature.appIcons.symbolName, color: Theme.SettingsTile.green,
+                    value: AppIconChoice.current(alternateIconName: UIApplication.shared.alternateIconName).title)
+            }
+        } else {
+            ProGatedButton(action: {}) { _ in
+                HStack(spacing: 8) {
+                    row("App icon", symbol: ProFeature.appIcons.symbolName, color: Theme.SettingsTile.green, value: nil)
+                    ProBadge()
+                }
+            }
+            .foregroundStyle(Theme.textPrimary)
+        }
+    }
+
+    /// Apple Health (nutrx Pro): on or off, or the PRO chip.
+    @ViewBuilder
+    private var appleHealthRow: some View {
+        if proAccess?.isPro == true {
+            NavigationLink {
+                AppleHealthSettingsView()
+            } label: {
+                row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral,
+                    value: healthConnected ? "On" : "Off")
+            }
+        } else {
+            ProGatedButton(action: {}) { _ in
+                HStack(spacing: 8) {
+                    row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral, value: nil)
+                    ProBadge()
+                }
+            }
+            .foregroundStyle(Theme.textPrimary)
+        }
+    }
+
     private func row(_ title: String, symbol: String, color: Color, value: String?) -> some View {
         HStack(spacing: 14) {
             // Fixed glyph size: the tile doesn't grow with Dynamic Type (like iOS Settings), so neither does the symbol.
