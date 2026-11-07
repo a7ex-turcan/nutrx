@@ -18,8 +18,14 @@
 import AppKit
 
 let width: CGFloat = 5244, height: CGFloat = 2950
+/// The crops measured on an iPhone on 2026-11-07 (see the top of this file).
+let headerCrop = CGRect(x: 1045, y: 0, width: 4214 - 1045, height: 1875)
+let searchCrop = CGRect(x: 1485, y: 420, width: 3722 - 1485, height: 1908 - 420)
 /// Where everything that matters goes: inside every crop measured on an iPhone.
 let safe = CGRect(x: 1800, y: 560, width: 1650, height: 1200)
+guard headerCrop.contains(safe), searchCrop.contains(safe) else {
+    print("`safe` has to sit inside both measured crops"); exit(1)
+}
 
 func color(_ hex: UInt32, _ alpha: CGFloat = 1) -> NSColor {
     NSColor(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
@@ -139,7 +145,11 @@ func headline(size: CGFloat) -> NSAttributedString {
 let textWidth = phoneScreen.minX - 22 - 90 - safe.minX
 var fontSize: CGFloat = 260
 while headline(size: fontSize).boundingRect(with: CGSize(width: 4000, height: 4000),
-                                            options: [.usesLineFragmentOrigin]).width > textWidth { fontSize -= 2 }
+                                            options: [.usesLineFragmentOrigin]).width > textWidth {
+    fontSize -= 2
+    // A wider capture (landscape, an iPad) leaves no room: say so rather than shrink the headline to nothing.
+    guard fontSize > 60 else { print("no room for the headline: is the iPhone capture portrait?"); exit(1) }
+}
 let text = headline(size: fontSize)
 let textBounds = text.boundingRect(with: CGSize(width: textWidth, height: 2000), options: [.usesLineFragmentOrigin])
 let textTop = max(safe.minY, min(phoneScreen.midY - textBounds.height / 2,
@@ -157,8 +167,8 @@ if args.count == 5 {
         path.lineWidth = 8
         path.stroke()
     }
-    guide(CGRect(x: 1045, y: 0, width: 4214 - 1045, height: 1875), 0xFF3B30)   // the header on an iPhone
-    guide(CGRect(x: 1485, y: 420, width: 3722 - 1485, height: 1908 - 420), 0x0A84FF)   // the search result
+    guide(headerCrop, 0xFF3B30)
+    guide(searchCrop, 0x0A84FF)
     guide(safe, 0x34C759)
 }
 
