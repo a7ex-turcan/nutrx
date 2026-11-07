@@ -1,6 +1,6 @@
 # Reminders at your usual time — spec (nutrx Pro, #137)
 
-A reminder that learns when you usually log, and nudges only when you're running late. Planned for 2.6, beside the monthly and yearly recaps.
+A reminder that learns when you usually log, and nudges only when you're running late. In 2.6, beside the monthly and yearly recaps.
 
 Decided with the user on 2026-10-28:
 - **When it fires:** a bit after your usual time: the time by which you've logged on most days (about 3 in 4) over the last 4 weeks, e.g. "usually by 8:30". On a normal day you've logged by then and it never fires.
