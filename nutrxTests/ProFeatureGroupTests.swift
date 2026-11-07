@@ -23,7 +23,7 @@ final class ProFeatureGroupTests: XCTestCase {
         XCTAssertEqual(ProFeatureGroup.groups(listing: ProFeature.allCases), [.supply, .plans, .insights, .widgets])
         XCTAssertEqual(ProFeatureGroup.groups(listing: ProFeature.allCases).map(\.title),
                        ["Supply & label scan", "Courses, schedules & dose plans", "Recaps, trends & reports",
-                        "Widgets and controls"])
+                        "Widgets, controls & app icons"])
     }
 
     /// A group shows while any of its features is listed (shipped).

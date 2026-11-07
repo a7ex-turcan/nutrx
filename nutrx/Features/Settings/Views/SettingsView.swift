@@ -2,7 +2,8 @@ import SwiftUI
 import SwiftData
 
 /// Settings sheet (DESIGN.md §5.9): profile card, then rows with Settings-style icon tiles — iCloud Sync,
-/// Notifications, Streaks, Groups, Siri & Shortcuts; Apple Health (Pro); Rate nutrx, Suggest a feature, About — and the privacy footer.
+/// Notifications, Streaks, Groups, Siri & Shortcuts; App icon and Apple Health (Pro); Rate nutrx, Suggest a feature, About —
+/// and the privacy footer.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -18,6 +19,8 @@ struct SettingsView: View {
     /// Read here so the Apple Health row follows the switch on its page.
     @AppStorage(HealthReader.connectedKey) private var healthConnected = false
     @State private var notificationsAllowed = false
+    /// The app icon in use (#139): `alternateIconName` isn't observable, so it's read again whenever Settings shows.
+    @State private var appIcon = AppIconChoice.current(alternateIconName: UIApplication.shared.alternateIconName)
     @AppStorage(RecapSchedule.enabledKey) private var weeklyRecapEnabled = true
     @State private var showProStatus = false
     @State private var showNoMailApp = false
@@ -97,24 +100,12 @@ struct SettingsView: View {
             }
             .listRowBackground(Theme.surfaceCard)
 
-            // Apple Health (Pro). Export data and the doctor report live in History's "Your data" (#103).
-            if ProAccess.isStoreVisible, HealthReader.isAvailable {
+            // App icon and Apple Health (Pro). Export data and the doctor report live in History's "Your data" (#103).
+            if ProAccess.isStoreVisible {
                 Section {
-                    if proAccess?.isPro == true {
-                        NavigationLink {
-                            AppleHealthSettingsView()
-                        } label: {
-                            row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral,
-                                value: healthConnected ? "On" : "Off")
-                        }
-                    } else {
-                        ProGatedButton(action: {}) { _ in
-                            HStack(spacing: 8) {
-                                row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral, value: nil)
-                                ProBadge()
-                            }
-                        }
-                        .foregroundStyle(Theme.textPrimary)
+                    appIconRow
+                    if HealthReader.isAvailable {
+                        appleHealthRow
                     }
                 }
                 .listRowBackground(Theme.surfaceCard)
@@ -209,6 +200,52 @@ struct SettingsView: View {
     }
 
     // MARK: - Rows
+
+    /// App icon (nutrx Pro, #139): the one in use, or the PRO chip.
+    @ViewBuilder
+    private var appIconRow: some View {
+        if proAccess?.isPro == true {
+            NavigationLink {
+                AppIconSettingsView()
+                    .navigationTitle("App icon")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                row("App icon", symbol: ProFeature.appIcons.symbolName, color: Theme.SettingsTile.teal,
+                    value: appIcon.title)
+            }
+            // Back from the picker (or iOS's alert): the icon may have changed.
+            .onAppear { appIcon = AppIconChoice.current(alternateIconName: UIApplication.shared.alternateIconName) }
+        } else {
+            ProGatedButton(action: {}) { _ in
+                HStack(spacing: 8) {
+                    row("App icon", symbol: ProFeature.appIcons.symbolName, color: Theme.SettingsTile.teal, value: nil)
+                    ProBadge()
+                }
+            }
+            .foregroundStyle(Theme.textPrimary)
+        }
+    }
+
+    /// Apple Health (nutrx Pro): on or off, or the PRO chip.
+    @ViewBuilder
+    private var appleHealthRow: some View {
+        if proAccess?.isPro == true {
+            NavigationLink {
+                AppleHealthSettingsView()
+            } label: {
+                row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral,
+                    value: healthConnected ? "On" : "Off")
+            }
+        } else {
+            ProGatedButton(action: {}) { _ in
+                HStack(spacing: 8) {
+                    row("Apple Health", symbol: "heart.fill", color: Theme.SettingsTile.coral, value: nil)
+                    ProBadge()
+                }
+            }
+            .foregroundStyle(Theme.textPrimary)
+        }
+    }
 
     /// A coloured 32pt icon tile, the title, and the current value in secondary text.
     private func row(_ title: String, symbol: String, color: Color, value: String?) -> some View {

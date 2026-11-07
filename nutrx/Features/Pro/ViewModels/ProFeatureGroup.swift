@@ -17,7 +17,7 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
         case .supply: [.supply, .scan]
         case .plans: [.courses, .schedules, .dosePlans, .reminders]
         case .insights: [.recap, .health, .report]
-        case .widgets: [.widgets]
+        case .widgets: [.widgets, .appIcons]
         }
     }
 
@@ -26,7 +26,7 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
         case .supply: "Supply & label scan"
         case .plans: "Courses, schedules & dose plans"
         case .insights: "Recaps, trends & reports"
-        case .widgets: ProFeature.widgets.title
+        case .widgets: "Widgets, controls & app icons"
         }
     }
 
@@ -35,7 +35,7 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
         case .supply: "Know when a bottle runs out and what it costs, and add one from its label"
         case .plans: "For a set time, on set days or in steps, with a nudge when you're running late"
         case .insights: "Your week, month and year, Apple Health trends, and a PDF for your doctor"
-        case .widgets: ProFeature.widgets.subtitle
+        case .widgets: "Log from Control Center and the Home Screen, and pick nutrx's icon"
         }
     }
 

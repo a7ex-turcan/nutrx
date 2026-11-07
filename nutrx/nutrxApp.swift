@@ -45,12 +45,13 @@ struct nutrxApp: App {
                 .onOpenURL { url in NotificationRouter.shared.open(AppLink(url) ?? .today) }
                 .task {
                     await proAccess.refreshEntitlement()
-                    syncDosePlans()
+                    syncWithPro()
                 }
                 .onChange(of: proAccess.isPro) {
-                    // Becoming Pro (or lapsing) adds or removes refill reminders, and resumes or holds dose plans.
+                    // Becoming Pro (or lapsing) adds or removes refill reminders, resumes or holds dose plans, and
+                    // puts back the default app icon.
                     NotificationService.refreshAllNutrientReminders(context: modelContainer.mainContext)
-                    syncDosePlans()
+                    syncWithPro()
                 }
         }
         .modelContainer(modelContainer)
@@ -65,7 +66,7 @@ struct nutrxApp: App {
                 // A subscription that lapses sends no `Transaction.updates`, so look again whenever the app comes back.
                 Task {
                     await proAccess.refreshEntitlement()
-                    syncDosePlans()
+                    syncWithPro()
                 }
                 StackLogging.repairDuplicateIDs(context: modelContainer.mainContext)
                 WidgetReload.all()
@@ -78,12 +79,26 @@ struct nutrxApp: App {
         }
     }
 
-    /// Dose plans hold without Pro and resume with it (#135, `DosePlanHold`), only after a check that knows which.
-    /// A stopping plan's hold or resume moves its course end, the reminders' last day, so they're rebuilt then.
-    private func syncDosePlans() {
+    /// What follows Pro, only after a check that knows whether it's active:
+    /// - Dose plans hold without Pro and resume with it (#135, `DosePlanHold`). A stopping plan's hold or resume moves
+    ///   its course end, the reminders' last day, so they're rebuilt then.
+    /// - An alternate app icon goes back to the default without Pro (#139); iOS says so in its own alert.
+    private func syncWithPro() {
         guard ProAccess.isStoreVisible, proAccess.hasCheckedEntitlements else { return }
         if DosePlanHold.sync(isPro: proAccess.isPro, context: modelContainer.mainContext) {
             NotificationService.refreshAllNutrientReminders(context: modelContainer.mainContext)
         }
+        // Once: a lapse found on becoming active runs this from the check and from `onChange(of: isPro)`.
+        if !Self.resettingAppIcon,
+           AppIconChoice.shouldReset(alternateIconName: UIApplication.shared.alternateIconName, isPro: proAccess.isPro) {
+            Self.resettingAppIcon = true
+            Task {
+                try? await UIApplication.shared.setAlternateIconName(nil)
+                Self.resettingAppIcon = false
+            }
+        }
     }
+
+    /// An app icon reset in flight (#139).
+    private static var resettingAppIcon = false
 }
