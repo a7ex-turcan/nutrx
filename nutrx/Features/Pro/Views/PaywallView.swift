@@ -24,11 +24,11 @@ struct PaywallView: View {
     @State private var restoring = false
     @State private var welcomed = false
     @State private var message: Message?
-    /// Where each plan card's middle, the pinned button's top and the sheet's top are on screen, for the plan line
-    /// (#338). Cards by their plan's name.
-    @State private var planCardMidY: [String: CGFloat] = [:]
-    @State private var pinnedButtonTop: CGFloat?
-    @State private var scrollTop: CGFloat = 0
+    /// Where the plan cards, the pinned button and the sheet are on screen, for the plan line (#338): not observed, so
+    /// a scroll only changes `planLineShown` when the selected card crosses in or out of view, rather than the whole
+    /// paywall on every frame.
+    @State private var positions = PlanLinePositions()
+    @State private var planLineShown = false
 
     private struct Message: Identifiable {
         let title: String
@@ -77,14 +77,18 @@ struct PaywallView: View {
     }
 
     /// The plan line above the pinned button names the selected plan, so it shows only while that plan's card is out
-    /// of view (#338). With it always there, Lifetime's card sat half behind the footer on an iPhone 17. Measured
-    /// against the button, which stays put when the line comes and goes, so showing it can't hide the card and keep
-    /// itself showing. From xLarge and on large widths the plans start below the fold: it always shows there (#189,
-    /// #205). Not measured yet (the first frame after the plans load), it stays hidden.
+    /// of view (#338, `PlanLine`). With it always there, Lifetime's card sat half behind the footer on an iPhone 17.
+    /// From xLarge and on large widths the plans start below the fold: it always shows there (#189, #205).
     private var showsPlanLine: Bool {
         guard dynamicTypeSize < .xLarge, widthClass == .compact else { return true }
-        guard let midY = planCardMidY[ProText.planTitle(selected)], let buttonTop = pinnedButtonTop else { return false }
-        return !(midY > scrollTop && midY < buttonTop - 10)
+        return planLineShown
+    }
+
+    /// `planLineShown` from the positions, set only when it changes.
+    private func updatePlanLine() {
+        let shows = PlanLine.shows(cardMidY: positions.cardMidY[selected], sheetTop: positions.sheetTop,
+                                   buttonTop: positions.buttonTop)
+        if shows != planLineShown { planLineShown = shows }
     }
 
     private var paywall: some View {
@@ -113,7 +117,10 @@ struct PaywallView: View {
             }
             .scrollBounceBehavior(.basedOnSize)
             .ignoresSafeArea(edges: .top)
-            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { scrollTop = $0 }
+            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: {
+                positions.sheetTop = $0
+                updatePlanLine()
+            }
             .safeAreaInset(edge: .bottom) {
                 if layout == .buttonPinned {
                     VStack(spacing: 8) {
@@ -127,7 +134,8 @@ struct PaywallView: View {
                         }
                         purchaseButton
                             .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: {
-                                pinnedButtonTop = $0
+                                positions.buttonTop = $0
+                                updatePlanLine()
                             }
                     }
                     .padding(.bottom, 8)
@@ -309,6 +317,9 @@ struct PaywallView: View {
             let selectedBorder = colorScheme == .dark ? Theme.green : Theme.forest
             Button {
                 selected = plan
+                // In the same update: a separate onChange left one frame with the line already reading the new plan,
+                // which was what faded out.
+                updatePlanLine()
             } label: {
                 // At accessibility sizes the parts stack under the radio, so nothing breaks mid-word (#161).
                 let large = dynamicTypeSize.isAccessibilitySize
@@ -358,7 +369,8 @@ struct PaywallView: View {
             }
             .buttonStyle(.plain)
             .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).midY } action: {
-                planCardMidY[ProText.planTitle(plan)] = $0
+                positions.cardMidY[plan] = $0
+                updatePlanLine()
             }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
@@ -546,6 +558,14 @@ struct PaywallView: View {
     }
 }
 
+/// Where the paywall's plan cards, pinned button and sheet are on screen (#338). A plain class rather than state, so
+/// writing a position on every scroll frame doesn't redraw the paywall.
+private final class PlanLinePositions {
+    var cardMidY: [ProAccess.Plan: CGFloat] = [:]
+    var sheetTop: CGFloat = 0
+    var buttonTop: CGFloat?
+}
+
 private extension View {
     /// The header's insets and width, shared with the ✕ floating over it so it stays in the header's row: the
     /// sheet's top inset, then the design's 26; 22 in from the sides; and in a wide sheet lined up with the 640 pt
@@ -573,8 +593,8 @@ extension View {
         .environment(ProAccess())
 }
 
-// Inline rather than in a sheet: preview snapshots don't capture presented sheets. Only the button is pinned, with
-// the plan summary above it, so Lifetime is in view; the ✕ floats over the header (#325).
+// Inline rather than in a sheet: preview snapshots don't capture presented sheets. Only the button is pinned, the
+// plan summary showing only once the selected plan scrolls out of view (#338); the ✕ floats over the header (#325).
 #Preview("Paywall, inline") {
     PaywallView()
         .environment(ProAccess())
