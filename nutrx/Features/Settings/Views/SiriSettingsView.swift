@@ -24,7 +24,7 @@ struct SiriSettingsView: View {
                     .foregroundStyle(Theme.textSecondary)
                     .listRowBackground(Color.clear)
                     // Lined up with the section headers and footers below.
-                    .listRowInsets(EdgeInsets(top: 4, leading: 20, bottom: 0, trailing: 20))
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 0, trailing: 16))
             }
 
             if !nutrients.isEmpty {
