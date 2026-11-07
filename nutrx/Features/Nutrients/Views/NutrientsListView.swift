@@ -725,7 +725,7 @@ struct NutrientsListView: View {
     /// ↑ / ↓ on a hardware keyboard move the selection through the sidebar, as in a system sidebar, scrolling the row
     /// into view (#195). The rows are buttons rather than the list's own selection, which carries Select mode's set,
     /// so the list doesn't do it by itself. Only in the split view and outside Select mode; the sidebar takes the
-    /// focus when it appears and when a row is tapped.
+    /// focus when it appears, when a row is tapped and when Select mode ends.
     private func arrowKeys(_ list: some View) -> some View {
         let handlesKeys = usesSplitView && !isSelecting
         return ScrollViewReader { proxy in
@@ -736,6 +736,10 @@ struct NutrientsListView: View {
                 .onKeyPress(.downArrow) { step(by: 1, proxy) }
                 .onKeyPress(.upArrow) { step(by: -1, proxy) }
                 .onAppear { if handlesKeys { sidebarFocused = true } }
+                // Done keeps this same view, so the focus comes back here rather than on appear.
+                .onChange(of: isSelecting) { _, selecting in
+                    if !selecting, usesSplitView { sidebarFocused = true }
+                }
         }
     }
 

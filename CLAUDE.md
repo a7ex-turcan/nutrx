@@ -223,7 +223,8 @@ nutrx/
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       ├── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │       ├── CourseText.swift                 # Courses (Pro, #99): "Until Fri 24 Oct · 5 days", "Last day today", "Ended 24 Oct".
-│   │       └── ScheduleText.swift               # Schedules (Pro, #132): the row's summary, the sheet's next days, Not today's "Next: Sunday".
+│   │       ├── ScheduleText.swift               # Schedules (Pro, #132): the row's summary, the sheet's next days, Not today's "Next: Sunday".
+│   │       └── SidebarStep.swift                # iPad sidebar (#195): the row ↑ / ↓ move the selection to, held at the ends (pure).
 │   │
 │   ├── History/                 # Tab 4 — read-only log of past days.
 │   │   ├── Views/
