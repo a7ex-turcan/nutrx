@@ -3,9 +3,10 @@ import XCTest
 /// The paywall's pinned button, plans and close button on the smallest iPhone and a usual one (#339). Its layout broke
 /// three ways, each caught only by eye: the plans below the fold (#189, #205), Lifetime behind the footer and the ✕
 /// scrolling away (#325). Run on "nutrx SE" and "nutrx iPhone 17" with the `nutrxUITests` scheme before a release
-/// (CLAUDE.md, UI tests). The scheme's launch uses `StoreKit/nutrxPro.storekit`, so the plans load with their prices; a
-/// simulator that already has a test purchase shows "Enjoy nutrx Pro" instead, and the tests skip. It launches with
-/// `-screenshotDemoData`, which replaces the store, so only on a simulator that's signed out of iCloud.
+/// (CLAUDE.md, UI tests). The scheme's launch uses `StoreKit/nutrxPro.storekit`, so the plans load with their prices;
+/// without it the paywall reads "Couldn't reach the App Store" and the tests skip. The paywall route opens the paywall
+/// whatever the Pro state. It launches with `-screenshotDemoData`, which replaces the store, so only on a simulator
+/// that's signed out of iCloud.
 final class PaywallUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -41,12 +42,34 @@ final class PaywallUITests: XCTestCase {
         app.launchArguments = ["-screenshotDemoData", "-screenshotRoute", "paywall"]
         app.launch()
         XCTAssertTrue(app.buttons["Close"].firstMatch.waitForExistence(timeout: 15), "The paywall didn't open")
-        // The plans, once the store answers: with no products the button stays disabled and there's nothing to check.
-        let loaded = purchaseButton.waitForExistence(timeout: 15) && yearlyCard.waitForExistence(timeout: 5)
-        if !loaded, app.staticTexts["Couldn't reach the App Store"].exists {
+        // The plans, once the store answers. Only an unreachable store skips: anything else missing (a changed label)
+        // fails, so the tests can't quietly stop testing.
+        if !yearlyCard.waitForExistence(timeout: 15), app.staticTexts["Couldn't reach the App Store"].exists {
             throw XCTSkip("The plans didn't load: is StoreKit/nutrxPro.storekit in the nutrxUITests scheme's launch?")
         }
-        try XCTSkipUnless(loaded, "No plans on the paywall (a test purchase on this simulator shows Pro instead)")
+        XCTAssertTrue(yearlyCard.exists, "No Yearly card on the paywall: did its label change?")
+        XCTAssertTrue(purchaseButton.exists, "No purchase button on the paywall: did its label change?")
+    }
+
+    /// In view the way the app judges it (`PlanLine.shows`): the card's middle below the sheet's top and more than
+    /// `PlanLine.margin` (10 pt) above the pinned button's top.
+    private func isInView(_ card: XCUIElement) -> Bool {
+        let middle = card.frame.midY
+        return middle > app.scrollViews.firstMatch.frame.minY && middle < purchaseButton.frame.minY - 10
+    }
+
+    /// The plan line follows the card: absent while it's in view, above the button while it isn't. The line fades, so
+    /// both wait a moment.
+    private func assertThePlanLineFollows(_ card: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        if isInView(card) {
+            let gone = expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: planLine)
+            XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 2), .completed,
+                           "The plan line shows while the Yearly card is in view", file: file, line: line)
+        } else {
+            XCTAssertTrue(planLine.waitForExistence(timeout: 2), "No plan line with the Yearly card out of view",
+                          file: file, line: line)
+            assertAboveTheButton(planLine, "The plan line", file: file, line: line)
+        }
     }
 
     /// Wholly inside the window and above the pinned button: `isHittable` only looks at the centre.
@@ -60,10 +83,10 @@ final class PaywallUITests: XCTestCase {
 
     /// A slow drag up the sheet, a step at a time, until `element` is clear of the pinned button (a swipe's momentum
     /// overshoots).
-    private func scroll(until element: XCUIElement, clearsTheButton: Bool = true) {
+    private func scroll(until element: XCUIElement) {
         let sheet = app.scrollViews.firstMatch
         for _ in 0..<8 {
-            if element.exists, element.isHittable, !clearsTheButton || element.frame.maxY <= purchaseButton.frame.minY {
+            if element.exists, element.isHittable, element.frame.maxY <= purchaseButton.frame.minY {
                 return
             }
             sheet.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
@@ -79,14 +102,7 @@ final class PaywallUITests: XCTestCase {
         XCTAssertTrue(button.isHittable, "The purchase button isn't tappable")
         XCTAssertLessThanOrEqual(button.frame.maxY, window.maxY, "The purchase button is cut off at the bottom")
 
-        let yearly = yearlyCard
-        let cardInView = yearly.isHittable && yearly.frame.maxY <= button.frame.minY + 1
-        if cardInView {
-            XCTAssertFalse(planLine.exists, "The plan line shows while the Yearly card is in view")
-        } else {
-            XCTAssertTrue(planLine.isHittable, "Neither the Yearly card nor the plan line is on screen")
-            assertAboveTheButton(planLine, "The plan line")
-        }
+        assertThePlanLineFollows(yearlyCard)
     }
 
     /// Scrolled to the end: the ✕ still at the top (#325), and Lifetime and Restore · Terms · Privacy above the
@@ -113,15 +129,7 @@ final class PaywallUITests: XCTestCase {
     func testThePlanLineShowsOnceTheCardScrollsAway() throws {
         try launchOnThePaywall()
         scroll(until: app.buttons["Privacy"].firstMatch)
-        let yearly = yearlyCard
-        let cardInView = yearly.isHittable && yearly.frame.minY >= window.minY
-            && yearly.frame.maxY <= purchaseButton.frame.minY + 1
-        if cardInView {
-            // A tall screen: the whole sheet fits, and the card never leaves.
-            XCTAssertFalse(planLine.exists, "The plan line shows while the Yearly card is in view")
-        } else {
-            XCTAssertTrue(planLine.waitForExistence(timeout: 2), "No plan line with the Yearly card scrolled away")
-            assertAboveTheButton(planLine, "The plan line")
-        }
+        // On a screen tall enough that the whole sheet fits, the card never leaves, and the line stays away.
+        assertThePlanLineFollows(yearlyCard)
     }
 }

@@ -49,7 +49,7 @@ xcodebuild test -scheme nutrxUITests -destination 'platform=iOS Simulator,name=n
 - **Scrolled to the end:** Close is still hittable at the top (#325), and Lifetime and Restore purchases · Terms · Privacy sit above the pinned button, not behind it.
 - **The plan line** shows once the Yearly card has scrolled away.
 
-The UI test scheme's launch uses `StoreKit/nutrxPro.storekit` too, so the plans load with their prices. Its StoreKit session starts without the test purchases of earlier Xcode runs, so the iPhone 17 showed the paywall, not Pro, on 2026-11-07. With no plans (the store unreachable, or Pro), the tests skip. The cards are found by their combined labels ("Yearly, …, billed yearly"); the plan line's parts are joined by no-break spaces around "·".
+The UI test scheme's launch uses `StoreKit/nutrxPro.storekit` too, so the plans load with their prices; without it the paywall reads "Couldn't reach the App Store" and the tests skip. Anything else missing, such as a changed label, fails. The paywall route opens the paywall whatever the Pro state. "In view" is the app's own rule (`PlanLine.shows`: the card's middle below the sheet's top and 10 pt above the button). The cards are found by their combined labels ("Yearly, …, billed yearly"). The plan line's parts are joined by no-break spaces around "·".
 
 ### Simulators
 
