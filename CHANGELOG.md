@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### nutrx Pro
+- **Dose plans** — A nutrient's goal can follow steps you or your doctor set: "200 mg for a week, then 400 mg", or a taper such as "400 mg, 300 mg, 200 mg, then stop". Set it from **Dose plan** in the nutrient's form, right after Schedule: when it starts, 2–6 steps of a goal and a length in days or weeks, and whether it then keeps the last goal or stops, which ends the nutrient's course. It works with every goal type (at least, at most and between). Today shows the step ("Step 2 of 3 · until Fri"), and so does the nutrient's analytics header. Each past day keeps the goal it had: History, streaks, recaps, analytics and the report for your doctor judge every day by its own goal, the analytics chart's goal line steps with the plan, and the report lists the steps. Changing or removing a plan applies from today. nutrx never suggests the steps. Without Pro a running plan pauses at its step and picks up where it left off when Pro comes back. Removing a plan never needs Pro.
+
 ### Improvements
 - **Siri & Shortcuts in Settings** — A new Settings page lists what to say to Siri for each of your nutrients and stacks ("Log my Vitamin D with nutrx", "Log my Morning stack with nutrx"). They work as they are, with no setup, and a button opens nutrx's actions in the Shortcuts app.
 - **The Pro page's footer and close button** — At the bottom, only the button stays pinned, with the line naming your plan above it while that plan is out of view (as at larger text sizes and on iPad, where it always shows), so on an iPhone 17 all three plans, Lifetime included, show above the button instead of Lifetime hiding behind the footer; the terms and Restore · Terms · Privacy follow the plans. The ✕ stays at the top right while you scroll, on tinted glass, instead of scrolling away with the header.

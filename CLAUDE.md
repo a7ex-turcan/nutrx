@@ -301,7 +301,7 @@ nutrx/
 │   │   │   ├── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
 │   │   │   └── PlanChip.swift               # Today's Free / PRO chip and the "Enjoy nutrx Pro" sheet (#101).
 │   │   └── ViewModels/
-│   │       ├── ProFeature.swift             # The Pro features (courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6; dose plans being built for 2.7, not shipped); `listed` = shipped ones only.
+│   │       ├── ProFeature.swift             # The Pro features (courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans since 2.7); `listed` = shipped ones only.
 │   │       ├── ProFeatureGroup.swift        # The paywall's four rows: related features share one (supply & scan, courses & schedules, recaps/trends/reports, widgets).
 │   │       └── ProText.swift                # Paywall / status copy (pure).
 │   │
@@ -1043,7 +1043,7 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **The sheet:** a **Times a week** option (1–6, "Any 3 days a week, Monday to Sunday."). It's greyed out with a footnote unless the goal is "At least". `NutrientDraft.scheduleError` blocks Save if the goal changes afterwards, and its message shows under the Schedule row.
 - **Phase 5 (shipping):** the Schedule row is in every build (it was Debug-only through phase 4, since merges reach TestFlight). `ProFeature.schedules` ("Schedules", "Take something on set days", pink `calendar.badge.clock`) puts it on the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line, and 2.4's What's New card has it with Suggest a feature.
 
-### nutrx Pro: Dose plans (#135, being built for 2.7)
+### nutrx Pro: Dose plans (#135, 2.7)
 
 A goal that follows steps the user sets: "200 mg for a week, then 400 mg", or a taper that stops. The spec is `docs/pro/DOSE-PLANS.md`, decided with the user on 2026-11-07.
 - **Phase 1 (the rule and today's goal):**
@@ -1081,8 +1081,15 @@ A goal that follows steps the user sets: "200 mg for a week, then 400 mg", or a 
   - **Duration:** with a plan that stops, the row reads "Ends with the dose plan · Sun 6 Dec" and opens the plan sheet.
   - **Today:** `NutrientCard.dosePlanLine` (`DosePlanText.TodayLine`: "Step 2 of 3 · until Fri", "· last day"; a stairs icon) shares the third line after a weekly count, a course's last day and a low bottle. Beside the goal status it shortens to "Step 2 of 3", then "2 of 3", as a bottle's hint does. On the last day of a plan that stops, the course's "Last day" says it.
   - **The analytics header:** "At least 400 mg a day · Step 2 of 3, until 20 Nov · Morning stack" (`NutrientSummaryText.goalLine(planPart:)`).
-  - **Not yet (phase 4):** the hold and resume. Until then a free user with a plan (synced from a Pro device) sees the PRO chip on the row, and can't open the sheet to remove it.
-  - **`ProFeature.dosePlans`** ("Dose plans", "A goal that follows steps you set", green `stairs`) isn't shipped (`isShipped` is false), so it's in no paywall group yet.
+- **Phase 4 (without Pro, and shipping):**
+  - **`DosePlanHold.sync(isPro:context:)`** runs after each foreground entitlement check (`nutrxApp.syncDosePlans`: at launch, on becoming active, and when `isPro` changes), never on an unknown one. When it changes anything, the reminders are rebuilt, since a stopping plan's hold or resume moves the course end they stop at. Tested in `DosePlanHoldTests`.
+    - **With Pro:** a moving or held plan's marker (`dosePlanSeenWithPro`) becomes today, once a day, and a held plan resumes (`resuming`): the held step runs longer by the days held, and a stopping plan's course end is set again.
+    - **Without Pro:** a moving plan holds from today (`holding`), only when the marker is more than a day old, and a stopping plan's course end is lifted while held. A finished or kept plan never holds.
+  - **"Plan paused"** on Today and in the analytics header, and "Paused" in the form's row.
+  - **Free users can remove a plan:** `ProGatedButton(freeAction:)` opens the sheet for a free user with a plan, read-only, with "Paused without nutrx Pro since 20 Nov" when held, `DosePlanText.needsPro`, Close and Remove Plan. Removing a held plan keeps the held goal as the base.
+  - **Shipped:** `ProFeature.isShipped` is true for all ten. Dose plans join the paywall's plans row, "Courses, schedules & dose plans" ("For a set time, on set days or in steps, with a nudge when you're running late"). What's New 2.7 has Dose plans and Siri & Shortcuts.
+  - **Demo data:** Magnesium's second step runs 21 days, so today is "Step 2 of 2", and its marker is today, so the App Store captures (no Pro) don't hold it.
+  - **`ProFeature.dosePlans`** ("Dose plans", "A goal that follows steps you set", green `stairs`); shipped in phase 4.
   - **Debug:** `DosePlanDebug` (`nutrx.debug.dosePlans`, by name: `"Magnesium" "200x7,400x14|keep"`, or `"none"`) sets a plan at launch, once per value.
 
 ### nutrx Pro: Report for your doctor (phase 8)

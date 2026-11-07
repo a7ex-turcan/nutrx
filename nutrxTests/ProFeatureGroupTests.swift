@@ -22,7 +22,7 @@ final class ProFeatureGroupTests: XCTestCase {
     func testFourRowsInOrder() {
         XCTAssertEqual(ProFeatureGroup.groups(listing: ProFeature.allCases), [.supply, .plans, .insights, .widgets])
         XCTAssertEqual(ProFeatureGroup.groups(listing: ProFeature.allCases).map(\.title),
-                       ["Supply & label scan", "Courses, schedules & reminders", "Recaps, trends & reports",
+                       ["Supply & label scan", "Courses, schedules & dose plans", "Recaps, trends & reports",
                         "Widgets and controls"])
     }
 
