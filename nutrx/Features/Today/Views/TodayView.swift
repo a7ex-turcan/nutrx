@@ -466,15 +466,17 @@ struct TodayView: View {
                 // down (#198). Scrolling to the card, or to the top edge alone, only lined it up under that small
                 // bar, so this goes to the top edge and then has the bar take its full height again, large title and
                 // all, as a status-bar tap does. A change that switches the layout (the columns ↔ the list at
-                // accessibility sizes) keeps its anchor through `onAppear` above instead.
+                // accessibility sizes) keeps its anchor through `onAppear` above instead. Not beside the side column:
+                // its own column would stay where it was while the nutrients went back to the top.
                 .scrollPosition($scrollPosition)
                 .onChange(of: dynamicTypeSize) {
-                    guard self.layout == layout else { return }
+                    guard self.layout == layout, layout != .sideColumn else { return }
                     Task { @MainActor in
-                        // A frame for the rows to take their new heights first.
-                        await Task.yield()
+                        // Real waits, not yields, which can run back to back before a layout pass: first for the
+                        // rows to take their new heights, then for the scroll to land before the bar grows.
+                        try? await Task.sleep(for: .milliseconds(100))
                         scrollPosition.scrollTo(edge: .top)
-                        await Task.yield()
+                        try? await Task.sleep(for: .milliseconds(50))
                         navigationBar.expandLargeTitle()
                     }
                 }
