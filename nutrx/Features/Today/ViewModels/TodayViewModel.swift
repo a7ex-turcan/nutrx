@@ -179,13 +179,6 @@ final class TodayViewModel {
         let allGroups = (try? context.fetch(groupDescriptor)) ?? []
         let generalGroup = allGroups.first(where: { $0.isSystem })
 
-        // Fetch today's exclusions
-        let exclusionDescriptor = FetchDescriptor<Exclusion>(
-            predicate: #Predicate<Exclusion> { $0.date >= startOfDay && $0.date < endOfDay }
-        )
-        let exclusions = (try? context.fetch(exclusionDescriptor)) ?? []
-        let excludedNutrientIDs = Set(exclusions.compactMap { $0.nutrient?.persistentModelID })
-
         // Fetch today's intake records
         let intakeDescriptor = FetchDescriptor<IntakeRecord>(
             predicate: #Predicate<IntakeRecord> { $0.date >= startOfDay && $0.date < endOfDay }
@@ -201,15 +194,14 @@ final class TodayViewModel {
         }
 
         // Build flat list (kept for backward compat with decrement lookup)
-        let activeNutrients = nutrients.filter { !excludedNutrientIDs.contains($0.persistentModelID) }
-        refreshSupplyLogs(nutrients: activeNutrients, context: context)
-        nutrientIntakes = activeNutrients.map { nutrient in
+        refreshSupplyLogs(nutrients: nutrients, context: context)
+        nutrientIntakes = nutrients.map { nutrient in
             (nutrient: nutrient, total: totalsByID[nutrient.persistentModelID] ?? 0)
         }
 
         // Build grouped sections
         var sectionsByGroupID: [PersistentIdentifier: [NutrientIntake]] = [:]
-        for nutrient in activeNutrients {
+        for nutrient in nutrients {
             let groupID = (nutrient.group ?? generalGroup)?.persistentModelID ?? generalGroup?.persistentModelID
             guard let gid = groupID else { continue }
             let total = totalsByID[nutrient.persistentModelID] ?? 0
