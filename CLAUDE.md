@@ -306,7 +306,7 @@ nutrx/
 │   │   │   ├── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
 │   │   │   └── PlanChip.swift               # Today's Free / PRO chip and the "Enjoy nutrx Pro" sheet (#101).
 │   │   └── ViewModels/
-│   │       ├── ProFeature.swift             # The nine Pro features (courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6); `listed` = shipped ones only.
+│   │       ├── ProFeature.swift             # The Pro features (courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6; dose plans being built for 2.7, not shipped); `listed` = shipped ones only.
 │   │       ├── ProFeatureGroup.swift        # The paywall's four rows: related features share one (supply & scan, courses & schedules, recaps/trends/reports, widgets).
 │   │       └── ProText.swift                # Paywall / status copy (pure).
 │   │
@@ -367,7 +367,8 @@ nutrx/
     │   ├── PreviewSampleData.swift
     │   ├── RecapPreviewSample.swift         # DEBUG: a month and a year of recaps for the recap views' previews (#136).
     │   ├── ScreenshotDemoData.swift         # DEBUG: -screenshotDemoData replaces the store with the App Store demo set.
-    │   └── ScheduleDebug.swift              # DEBUG: nutrx.debug.schedules sets schedules by name at launch (#132, until the sheet).
+    │   ├── ScheduleDebug.swift              # DEBUG: nutrx.debug.schedules sets schedules by name at launch (#132, until the sheet).
+    │   └── DosePlanDebug.swift              # DEBUG: nutrx.debug.dosePlans gives nutrients a dose plan by name at launch (#135, until the sheet).
     ├── Intents/                         # Siri & Shortcuts (see "Siri & App Shortcuts"); the two entities and OpenNutrxIntent also in the widget extension (#138).
     │   ├── LogNutrientShortcutIntent.swift  # "Log Nutrient": nutrient + optional amount; NutrientShortcutLogging.
     │   ├── NutrientEntity.swift         # AppEntity + EntityStringQuery: nutrients by name, in Today's order.
@@ -1046,6 +1047,23 @@ The spec is `docs/pro/SCHEDULES.md`: set weekdays, every few days, on / off cycl
   - **Reminders:** `ReminderSchedule.Plan.doneWeekStart`, set when the count is reached with today's logs, drops the rest of that week; the next week's stay.
   - **The sheet:** a **Times a week** option (1–6, "Any 3 days a week, Monday to Sunday."). It's greyed out with a footnote unless the goal is "At least". `NutrientDraft.scheduleError` blocks Save if the goal changes afterwards, and its message shows under the Schedule row.
 - **Phase 5 (shipping):** the Schedule row is in every build (it was Debug-only through phase 4, since merges reach TestFlight). `ProFeature.schedules` ("Schedules", "Take something on set days", pink `calendar.badge.clock`) puts it on the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line, and 2.4's What's New card has it with Suggest a feature.
+
+### nutrx Pro: Dose plans (#135, being built for 2.7)
+
+A goal that follows steps the user sets: "200 mg for a week, then 400 mg", or a taper that stops. The spec is `docs/pro/DOSE-PLANS.md`, decided with the user on 2026-11-07.
+- **Phase 1 (the rule and today's goal):**
+  - **Model:** `Nutrient.dosePlanRaw` (the plan and the goals it gave past days) and `Nutrient.dosePlanSeenWithPro` (the Pro marker, §6). Their CloudKit fields are `CD_dosePlanRaw` and `CD_dosePlanSeenWithPro`: development was imported on 2026-11-07, and production is the user's Console deploy before phase 1 merges.
+  - **`NutrientDosePlan`** (in `Nutrient.swift`, so the widgets and the Watch have it; tested in `NutrientDosePlanTests`):
+    - **The plan:** start, steps (a `NutrientGoal` and 1–90 days), keep or stop, `appliesFrom` and an optional `heldFrom`.
+    - **`history`:** frozen pieces, each from its day, where a nil goal is the base goal. Creating a plan pins the days before it to the base goal, as a `*` piece.
+    - **Reading it:** `goal(on:)` (nil = the base goal), `position(on:)` for "Step 2 of 3", `stopDay`, `isMoving`.
+    - **Changing it:** `creating`, `editing` and `removing` (each freezes what the plan gave up to today; removing returns the goal the base should take, for a kept or held plan), and `pinningBase` (before the base goal changes).
+    - **Without Pro:** `canHold(on:seenWithPro:)` (only when the marker is more than a day old), `holding(from:)`, and `resuming(today:)`, which lengthens the held step by the held days.
+    - **Stored form:** `h=*:100;p=20261110,20261110,keep|200x7,400x14`. Decoding skips what it can't read.
+  - **`Nutrient.goal(on:)`** is the plan's goal for the day, else `baseGoal` (`dailyTarget` / `upperBound`). `GoalProgress(nutrient:current:on:)` uses it, with today as the default, so today's readers follow the plan: Today, the log and stack sheets, the widgets (`Provider`'s snapshots), the Watch, the complications, the controls, the Siri answers, the supply cost fallback, and the week progress of a weekly schedule (each day's own goal).
+  - **Not yet:** History, streaks, analytics, the recaps and the report still judge every day by the base goal, which is phase 2.
+  - **`ProFeature.dosePlans`** ("Dose plans", "A goal that follows steps you set", green `stairs`) isn't shipped (`isShipped` is false), so it's in no paywall group yet.
+  - **Debug:** `DosePlanDebug` (`nutrx.debug.dosePlans`, by name: `"Magnesium" "200x7,400x14|keep"`, or `"none"`) sets a plan at launch, once per value.
 
 ### nutrx Pro: Report for your doctor (phase 8)
 

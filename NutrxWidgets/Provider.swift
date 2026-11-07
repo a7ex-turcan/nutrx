@@ -88,15 +88,16 @@ struct NutrxTimelineProvider: TimelineProvider {
             }
 
         let snapshots = activeNutrients.map { n in
-            NutrientSnapshot(
+            let goal = n.goal(on: startOfDay)  // today's, with a dose plan's step (#135)
+            return NutrientSnapshot(
                 id: n.id.uuidString,
                 name: n.name,
                 unit: n.unit,
                 current: max(0, totals[n.persistentModelID] ?? 0),
-                target: n.dailyTarget,
+                target: goal.target,
                 step: n.step,
                 goalType: n.goalType,
-                upperBound: n.upperBound,
+                upperBound: goal.upperBound,
                 tint: n.tint,
                 symbolName: n.symbolName
             )

@@ -99,8 +99,10 @@ final class ProTextTests: XCTestCase {
     }
 
     func testShippedFeatures() {
-        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), ProFeature.allCases)
+        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), ProFeature.allCases.filter { $0 != .dosePlans },
+                       "dose plans ship in their phase 4 (#135)")
         XCTAssertTrue(ProFeature.listed.contains(.reminders), "reminders at your usual time since 2.6 (#137)")
+        XCTAssertFalse(ProFeature.listed.contains(.dosePlans), "not on the paywall until they ship")
         XCTAssertEqual(ProText.tagline(ProFeature.allCases.filter(\.isShipped)), "Supply, label scan, recaps and more")
     }
 
@@ -128,11 +130,11 @@ final class ProTextTests: XCTestCase {
         XCTAssertNil(ProFeature.schedules.appleIntelligenceName, "schedules don't use the on-device model")
     }
 
-    /// Widgets and controls (#138) ship in 2.5, listed with the rest; nine features since reminders at your usual
-    /// time (#137) in 2.6.
+    /// Widgets and controls (#138) ship in 2.5, listed with the rest; nine shipped features since reminders at your
+    /// usual time (#137) in 2.6, and dose plans (#135) a tenth, still being built.
     func testWidgetsIsListed() {
         XCTAssertTrue(ProFeature.listed.contains(.widgets))
-        XCTAssertEqual(ProFeature.allCases.count, 9)
+        XCTAssertEqual(ProFeature.allCases.count, 10)
         XCTAssertEqual(ProFeature.widgets.title, "Widgets and controls")
         XCTAssertEqual(ProFeature.widgets.subtitle, "Log from Control Center and the Home Screen")
         XCTAssertEqual(ProFeature.widgets.symbolName, "square.grid.2x2")
