@@ -31,6 +31,13 @@
 			remoteGlobalIDString = 64DE986A2F60628D008EF50E;
 			remoteInfo = nutrx;
 		};
+		64897601309F127B0050B2B5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 64DE98632F60628D008EF50E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 64DE986A2F60628D008EF50E;
+			remoteInfo = nutrx;
+		};
 		B15066DD20CC4944AB497938 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 64DE98632F60628D008EF50E /* Project object */;
@@ -90,6 +97,7 @@
 		64702A8E2F72A89200C45D23 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		64702AA52F72A8E600C45D23 /* NutrxWidgetsExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NutrxWidgetsExtension.entitlements; sourceTree = "<group>"; };
 		647C1FC2307CFD41009812C0 /* nutrxTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = nutrxTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		648975F8309F127B0050B2B5 /* nutrxUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = nutrxUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		64DE986B2F60628D008EF50E /* nutrx.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = nutrx.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F9F8D9C91BCC4002ACD5F55D /* nutrx Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "nutrx Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -235,6 +243,11 @@
 			path = nutrxTests;
 			sourceTree = "<group>";
 		};
+		648975F9309F127B0050B2B5 /* nutrxUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = nutrxUITests;
+			sourceTree = "<group>";
+		};
 		64DE986D2F60628D008EF50E /* nutrx */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -266,6 +279,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		647C1FBF307CFD41009812C0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		648975F5309F127B0050B2B5 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -309,6 +329,7 @@
 				3ACA7CAEC3BA47A29F354908 /* NutrxWatchWidgets */,
 				64702A902F72A89200C45D23 /* NutrxWidgets */,
 				647C1FC3307CFD41009812C0 /* nutrxTests */,
+				648975F9309F127B0050B2B5 /* nutrxUITests */,
 				64702A8B2F72A89200C45D23 /* Frameworks */,
 				64DE986C2F60628D008EF50E /* Products */,
 			);
@@ -322,6 +343,7 @@
 				F9F8D9C91BCC4002ACD5F55D /* nutrx Watch App.app */,
 				02AAE38C1B8F4D32B41DA86B /* NutrxWatchWidgets.appex */,
 				647C1FC2307CFD41009812C0 /* nutrxTests.xctest */,
+				648975F8309F127B0050B2B5 /* nutrxUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -398,6 +420,29 @@
 			productReference = 647C1FC2307CFD41009812C0 /* nutrxTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		648975F7309F127B0050B2B5 /* nutrxUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 648975FC309F127B0050B2B5 /* Build configuration list for PBXNativeTarget "nutrxUITests" */;
+			buildPhases = (
+				648975F4309F127B0050B2B5 /* Sources */,
+				648975F5309F127B0050B2B5 /* Frameworks */,
+				648975F6309F127B0050B2B5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				64897602309F127B0050B2B5 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				648975F9309F127B0050B2B5 /* nutrxUITests */,
+			);
+			name = nutrxUITests;
+			packageProductDependencies = (
+			);
+			productName = nutrxUITests;
+			productReference = 648975F8309F127B0050B2B5 /* nutrxUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		64DE986A2F60628D008EF50E /* nutrx */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 64DE98762F60628E008EF50E /* Build configuration list for PBXNativeTarget "nutrx" */;
@@ -453,7 +498,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2700;
+				LastSwiftUpdateCheck = 2710;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					0502E6F679F34E15B8453146 = {
@@ -464,6 +509,10 @@
 					};
 					647C1FC1307CFD41009812C0 = {
 						CreatedOnToolsVersion = 27.0;
+						TestTargetID = 64DE986A2F60628D008EF50E;
+					};
+					648975F7309F127B0050B2B5 = {
+						CreatedOnToolsVersion = 27.1;
 						TestTargetID = 64DE986A2F60628D008EF50E;
 					};
 					64DE986A2F60628D008EF50E = {
@@ -493,6 +542,7 @@
 				0502E6F679F34E15B8453146 /* nutrx Watch App */,
 				BFE61EB901964DE89738FA46 /* NutrxWatchWidgets */,
 				647C1FC1307CFD41009812C0 /* nutrxTests */,
+				648975F7309F127B0050B2B5 /* nutrxUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -506,6 +556,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		647C1FC0307CFD41009812C0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		648975F6309F127B0050B2B5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -564,6 +621,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		648975F4309F127B0050B2B5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		64DE98672F60628D008EF50E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -583,6 +647,11 @@
 			isa = PBXTargetDependency;
 			target = 64DE986A2F60628D008EF50E /* nutrx */;
 			targetProxy = 647C1FCA307CFD41009812C0 /* PBXContainerItemProxy */;
+		};
+		64897602309F127B0050B2B5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 64DE986A2F60628D008EF50E /* nutrx */;
+			targetProxy = 64897601309F127B0050B2B5 /* PBXContainerItemProxy */;
 		};
 		64B2C4FDA3F74C9DBB8108BD /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -772,6 +841,48 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/nutrx.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/nutrx";
+			};
+			name = Release;
+		};
+		648975FD309F127B0050B2B5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6396A6L9J3;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrxUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = nutrx;
+			};
+			name = Debug;
+		};
+		648975FE309F127B0050B2B5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6396A6L9J3;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "nutrx-labs.nutrxUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = nutrx;
 			};
 			name = Release;
 		};
@@ -1068,6 +1179,15 @@
 			buildConfigurations = (
 				647C1FC6307CFD41009812C0 /* Debug */,
 				647C1FC7307CFD41009812C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		648975FC309F127B0050B2B5 /* Build configuration list for PBXNativeTarget "nutrxUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				648975FD309F127B0050B2B5 /* Debug */,
+				648975FE309F127B0050B2B5 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
