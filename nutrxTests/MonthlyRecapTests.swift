@@ -102,6 +102,9 @@ final class MonthlyRecapTests: XCTestCase {
         XCTAssertEqual(miss?.weekday, 1, "Sunday")
         XCTAssertEqual(miss?.missed, 4)
         XCTAssertEqual(miss?.weeks, 4)
+        // The week's form too (#327).
+        let card = MonthlyRecapText(recap(october, today: day(11, 1)), calendar: calendar).cards.first { $0.kind == .weekday }
+        XCTAssertEqual(card?.detail, "Missed\u{00A0}4\u{00A0}of\u{00A0}4 Sundays")
     }
 
     func testNoWeekdayStandsOutWithOneMiss() {
