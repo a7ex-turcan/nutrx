@@ -8,6 +8,7 @@ All notable changes to nutrx are documented in this file.
 
 ### Improvements
 - **The Pro page's footer and close button** — At the bottom, only the button and the plan line above it stay pinned, as they already did at larger text sizes and on iPad, so on an iPhone 17 "or pay once" and the top of the Lifetime plan show instead of hiding behind the footer; the terms and Restore · Terms · Privacy follow the plans. The ✕ stays at the top right while you scroll, on tinted glass, instead of scrolling away with the header.
+- **A stack's rows line up** — In the stack log sheet every amount stepper is as wide as the widest one, so the − buttons line up from row to row and each total gets the same room beside it: on a narrow phone, "2,000 / 4,000" in one row and only "2,000" in the next no longer happens because one amount was a few characters longer.
 
 ### Fixes
 - **One wording for the day you tend to miss** — The weekly recap's card read "2 of the last 4 weeks" while the month's read "Missed 2 of 4 Sundays", so side by side on Recaps they looked like two different facts. Both now say "Missed 2 of 4 Sundays", or "Missed 2 of 4, but not this one" when this week's was a full day, in two lines rather than four.

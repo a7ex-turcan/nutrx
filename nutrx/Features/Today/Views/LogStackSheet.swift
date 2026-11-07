@@ -19,6 +19,15 @@ struct LogStackSheet: View {
     @Environment(\.widthClass) private var widthClass
     /// Amounts changed for this time only, by entry.
     @State private var amounts: [PersistentIdentifier: Double] = [:]
+    /// Each row's amount width, by entry: every stepper takes the widest, so the − buttons line up and the totals
+    /// beside them get the same room, landing on the same step for similar amounts (#288).
+    @State private var amountWidths: [PersistentIdentifier: CGFloat] = [:]
+
+    /// The widest amount among the rows on screen: an entry gone while the sheet is open (its nutrient deleted on
+    /// another device, say) no longer counts.
+    private var widestAmount: CGFloat? {
+        entries.compactMap { amountWidths[$0.persistentModelID] }.max()
+    }
     /// Set once logged: what was logged and the amount per entry, for the done state and Undo.
     @State private var logged: StackLogging.Logged?
     @State private var loggedAmounts: [PersistentIdentifier: Double] = [:]
@@ -271,8 +280,11 @@ struct LogStackSheet: View {
                 .foregroundStyle(loggedAmount > 0 ? Theme.textGreenInk : Theme.textSecondary)
                 .fixedSize()
         } else {
+            // Stacked rows (from xLarge) keep their own widths: there the stepper sits under the name, not beside it.
             StackAmountStepper(amount: amount(for: entry), step: nutrient.step, unit: nutrient.unit,
-                               nutrientName: nutrient.name) {
+                               nutrientName: nutrient.name,
+                               amountWidth: rowsAreStacked ? nil : widestAmount,
+                               reportsAmountWidth: { amountWidths[entry.persistentModelID] = $0 }) {
                 amounts[entry.persistentModelID] = $0
             }
         }
