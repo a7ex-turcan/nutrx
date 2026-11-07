@@ -227,4 +227,56 @@ final class DoctorReportTests: XCTestCase {
         XCTAssertEqual(ReportLayout.Paper.forRegion(nil), .a4)
         XCTAssertEqual(ReportLayout.Paper.a4.size, CGSize(width: 595, height: 842))
     }
+
+    // MARK: - Dose plans (#135)
+
+    func testAPlanGivesEachDayItsGoalAndTheSectionItsSteps() throws {
+        // Vitamin D at 2,000 IU from 1 to 5 October, then 4,000 IU; 2,000 logged every day.
+        var list = nutrients
+        list[0].dosePlan = NutrientDosePlan().creating(
+            steps: [.init(goal: NutrientGoal(target: 2000), days: 5), .init(goal: NutrientGoal(target: 4000), days: 5)],
+            end: .keep, start: day(10, 1), base: NutrientGoal(target: 4000), today: day(10, 1), calendar: calendar)
+        var totals: [Date: [UUID: Double]] = [:]
+        for d in 1...10 { totals[day(10, d)] = [vitaminD: 2000, caffeine: 200] }
+        let log = HistoryLog(nutrients: list, totals: totals, today: day(10, 15), calendar: calendar)
+        let report = DoctorReport.build(log: log, names: names, units: units, start: day(10, 1), end: day(10, 10))
+
+        let d = try XCTUnwrap(report.sections.first { $0.id == vitaminD })
+        XCTAssertEqual(d.metDays, 5, "2,000 IU met the first step, not the second")
+        XCTAssertEqual(d.goalRuns, [DoctorReport.GoalRun(goal: NutrientGoal(target: 2000), first: 0, last: 4),
+                                    DoctorReport.GoalRun(goal: NutrientGoal(target: 4000), first: 5, last: 9)])
+        XCTAssertEqual(d.target, 4000, "the goal on the period's last day")
+        let text = ReportText(report: report, calendar: calendar, locale: Locale(identifier: "en_US"))
+        XCTAssertEqual(text.goal(d), "At least 2,000 → 4,000 IU")
+        XCTAssertEqual(text.goalLine(d), "Goal: at least 2,000 → 4,000 IU")
+        XCTAssertEqual(text.planLine(d), "Dose plan: 2,000 IU until Oct 5, then 4,000 IU")
+        XCTAssertEqual(ReportLayout.blockHeight(d), ReportLayout.sectionHeight + ReportLayout.planLineHeight)
+
+        let steady = try XCTUnwrap(report.sections.first { $0.id == caffeine })
+        XCTAssertNil(text.planLine(steady))
+        XCTAssertEqual(text.goal(steady), "At most 400 mg")
+        XCTAssertEqual(ReportLayout.blockHeight(steady), ReportLayout.sectionHeight)
+    }
+
+    func testManyStepsNameTheFirstAndTheLastAndARangeBothEnds() {
+        func days(_ goals: [NutrientGoal]) -> [DoctorReport.Day] {
+            goals.enumerated().map { DoctorReport.Day(date: day(10, $0.offset + 1), total: nil, isMet: false, goal: $0.element) }
+        }
+        func section(_ goalType: GoalType, unit: String, _ goals: [NutrientGoal]) -> DoctorReport.Section {
+            DoctorReport.Section(id: UUID(), name: "N", unit: unit, goalType: goalType, target: goals.last!.target,
+                                 upperBound: goals.last!.upperBound, days: days(goals), countedDays: 0, metDays: 0,
+                                 daysLogged: 0, average: nil)
+        }
+        let text = ReportText(report: report(), calendar: calendar, locale: Locale(identifier: "en_US"))
+        let taper = section(.maximum, unit: "mg", [400, 300, 200, 100].map { NutrientGoal(target: $0) })
+        XCTAssertEqual(text.goal(taper), "At most 400 → 100 mg")
+        XCTAssertEqual(text.planLine(taper),
+                       "Dose plan: 400 mg until Oct 1, then 300 mg until Oct 2, then 200 mg until Oct 3, then 100 mg")
+        let three = section(.maximum, unit: "mg", [400, 300, 200].map { NutrientGoal(target: $0) })
+        XCTAssertEqual(text.goal(three), "At most 400 → 300 → 200 mg")
+        let range = section(.range, unit: "g", [NutrientGoal(target: 120, upperBound: 160),
+                                                NutrientGoal(target: 140, upperBound: 180)])
+        XCTAssertEqual(text.goal(range), "Between 120–160 → 140–180 g")
+        XCTAssertEqual(text.planLine(range), "Dose plan: 120–160 g until Oct 1, then 140–180 g")
+    }
 }

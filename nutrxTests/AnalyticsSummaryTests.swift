@@ -161,4 +161,34 @@ final class AnalyticsSummaryTests: XCTestCase {
         XCTAssertEqual(AnalyticsStat.averageText(1.234, locale: enUS), "1.23")
         XCTAssertEqual(AnalyticsStat.averageText(8, locale: enUS), "8")
     }
+
+    // MARK: - Dose plans (#135)
+
+    func testADosePlanJudgesEachDayByItsOwnGoal() {
+        // 2,000 IU for 3 days from 6 days ago, then 4,000 IU.
+        let plan = NutrientDosePlan().creating(
+            steps: [.init(goal: NutrientGoal(target: 2000), days: 3), .init(goal: NutrientGoal(target: 4000), days: 3)],
+            end: .keep, start: day(6), base: NutrientGoal(target: 4000), today: day(6), calendar: calendar)
+        let goal = AnalyticsGoal(goalType: .minimum, target: 4000, upperBound: nil, plan: plan, calendar: calendar)
+        let result = summary(7, totals: totals((1...6).map { ($0, 2000) }), goal: goal)
+        XCTAssertEqual(result.days.map(\.goal.target), [2000, 2000, 2000, 4000, 4000, 4000, 4000])
+        XCTAssertEqual(result.days.map(\.countsAsMet), [true, true, true, false, false, false, false])
+        XCTAssertEqual(result.metDays, 3)
+        XCTAssertEqual(result.countedDays, 6)
+    }
+
+    func testDaysBeforeTheNutrientTakeItsFirstDaysGoal() {
+        // Added 3 days ago with a plan from then: 2,000 IU, then 4,000. The days before it were pinned to the base.
+        let plan = NutrientDosePlan().creating(
+            steps: [.init(goal: NutrientGoal(target: 2000), days: 2), .init(goal: NutrientGoal(target: 4000), days: 2)],
+            end: .keep, start: day(3), base: NutrientGoal(target: 4000), today: day(3), calendar: calendar)
+        let goal = AnalyticsGoal(goalType: .minimum, target: 4000, upperBound: nil, plan: plan, calendar: calendar)
+        let result = summary(7, goal: goal, createdDaysAgo: 3)
+        XCTAssertEqual(result.days.map(\.goal.target), [2000, 2000, 2000, 2000, 2000, 4000, 4000],
+                       "no 4,000 IU step before it was added")
+    }
+
+    func testWithoutAPlanEveryDayHasTheBaseGoal() {
+        XCTAssertTrue(summary(7).days.allSatisfy { $0.goal == NutrientGoal(target: 4000) })
+    }
 }

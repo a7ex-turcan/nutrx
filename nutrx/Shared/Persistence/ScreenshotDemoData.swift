@@ -7,7 +7,8 @@ private let logger = Logger(subsystem: "nutrx-labs.nutrx", category: "Screenshot
 
 /// Demo data for App Store screenshots, matching the redesign renders (docs/design/screens): a morning stack and
 /// a through-the-day group, three of six goals met today, a 10-day current streak (a longer best one before it),
-/// and Vitamin D missed on Sundays in the weeks before the streak so the weekday pattern has something to say.
+/// Vitamin D missed on Sundays in the weeks before the streak so the weekday pattern has something to say, and a dose
+/// plan on Magnesium that went from 200 mg to 400 mg.
 ///
 /// Debug builds only. Launch with `-screenshotDemoData` to replace everything in the store with it (the iPhone
 /// and Watch apps both read the argument). Never runs otherwise. **Use simulators signed out of iCloud:** the store
@@ -35,7 +36,9 @@ enum ScreenshotDemoData {
 
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: now)
-        let created = calendar.date(byAdding: .day, value: -50, to: today) ?? today
+        // How far back the demo goes: the nutrients were added then, and the log starts the day after.
+        let demoDays = 50
+        let created = calendar.date(byAdding: .day, value: -demoDays, to: today) ?? today
 
         let profile = UserProfile(name: "Alex", birthdate: .distantPast, weight: 0, height: 0, onboardingCompleted: true)
         profile.createdAt = created
@@ -69,6 +72,13 @@ enum ScreenshotDemoData {
                               group: morning, order: 1)
         let magnesium = nutrient("Magnesium", "mg", step: 200, target: 400, tint: .indigo, symbol: "pills",
                                  group: morning, order: 2)
+        // A dose plan from the day it was added (#135): 200 mg for five weeks, then 400 mg for two, and it keeps
+        // 400 mg. Its history shows both goals, and the step falls inside the 30-day chart.
+        let magnesiumFirstStep = NutrientDosePlan.Step(goal: NutrientGoal(target: 200), days: 35)
+        magnesium.dosePlanRaw = NutrientDosePlan()
+            .creating(steps: [magnesiumFirstStep, .init(goal: NutrientGoal(target: 400), days: 14)], end: .keep,
+                      start: created, base: NutrientGoal(target: 400), today: created, calendar: calendar)
+            .encode(calendar: calendar)
         let water = nutrient("Water", "L", step: 0.25, target: 2.5, tint: .blue, symbol: "drop",
                              group: daytime, order: 0)
         let protein = nutrient("Protein", "g", step: 20, target: 120, goal: .range, upper: 160, tint: .coral,
@@ -89,7 +99,7 @@ enum ScreenshotDemoData {
         // The recap's "day you tend to miss" needs Sunday missed more often than any other weekday in the four weeks
         // it looks at, which can hold only two of those Sundays (Monday to Wednesday). So the other misses (d 11, 12,
         // 20) are on three different weekdays: d 11 and a d 18 used to share one and tied with Sunday (#164).
-        for daysAgo in 1...50 {
+        for daysAgo in 1...demoDays {
             guard let day = calendar.date(byAdding: .day, value: -daysAgo, to: today) else { continue }
             let weekday = calendar.component(.weekday, from: day)
             let inGap = (11...28).contains(daysAgo)
@@ -99,7 +109,9 @@ enum ScreenshotDemoData {
             log(vitaminD, vitaminDAmount >= 4000 ? [3000, vitaminDAmount - 3000] : [vitaminDAmount],
                 day: day, hours: [8, 13])
             log(omega3, daysAgo.isMultiple(of: 4) ? [1000, 1500] : [1000, 1000], day: day, hours: [8, 20])
-            log(magnesium, [400], day: day, hours: [21])
+            // Its first step's days (d 16–50), at that step's 200 mg.
+            log(magnesium, [daysAgo > demoDays - magnesiumFirstStep.days ? magnesiumFirstStep.goal.target : 400],
+                day: day, hours: [21])
             let waterTotal: Double = [12, 20].contains(daysAgo) ? 1.75 : (daysAgo.isMultiple(of: 3) ? 2.75 : 2.5)
             log(water, [0.75, 1, waterTotal - 1.75], day: day, hours: [9, 13, 18])
             let proteinTotal: Double = daysAgo > 42 && !daysAgo.isMultiple(of: 2) ? 100 : [130, 140, 150][daysAgo % 3]

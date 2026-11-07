@@ -9,25 +9,41 @@ struct AnalyticsDay: Identifiable, Equatable {
     let isToday: Bool
     /// On or after the day the nutrient was created — earlier days don't count toward any stat.
     let isTracked: Bool
+    /// The day's own goal (a dose plan's step, #135), which `countsAsMet` judged and the chart's rule draws.
+    let goal: NutrientGoal
     let countsAsMet: Bool
 
     var id: Date { date }
 }
 
-/// The goal a day is judged against.
+/// The goal days are judged against: its type, and each day's goal (#135).
 struct AnalyticsGoal: Equatable {
     let goalType: GoalType
+    /// The base goal: every day's without a dose plan, else the days the plan doesn't set.
     let target: Double
     let upperBound: Double?
+    /// The nutrient's dose plan, decoded in `calendar`; empty without one.
+    var plan = NutrientDosePlan()
+    var calendar = Calendar.current
 
-    func isMet(_ total: Double) -> Bool {
-        GoalProgress(current: total, goalType: goalType, target: target, upperBound: upperBound).countsAsMet
+    /// The goal on `day`: the plan's, else the base goal.
+    func goal(on day: Date) -> NutrientGoal {
+        plan.goal(on: day, calendar: calendar) ?? NutrientGoal(target: target, upperBound: upperBound)
+    }
+
+    func isMet(_ total: Double, on day: Date) -> Bool {
+        isMet(total, goal(on: day))
+    }
+
+    func isMet(_ total: Double, _ goal: NutrientGoal) -> Bool {
+        GoalProgress(current: total, goalType: goalType, target: goal.target, upperBound: goal.upperBound).countsAsMet
     }
 }
 
 extension AnalyticsGoal {
-    init(nutrient: Nutrient) {
-        self.init(goalType: nutrient.goalType, target: nutrient.dailyTarget, upperBound: nutrient.upperBound)
+    init(nutrient: Nutrient, calendar: Calendar = .current) {
+        self.init(goalType: nutrient.goalType, target: nutrient.dailyTarget, upperBound: nutrient.upperBound,
+                  plan: nutrient.dosePlan(calendar: calendar), calendar: calendar)
     }
 }
 
@@ -71,18 +87,21 @@ struct AnalyticsSummary: Equatable {
         // that began before the period counts its first days right.
         let weeklyCounted = schedule.hasWeekly
             ? schedule.weeklyCountedDays(totals.compactMap { day, total in
-                covered(day) && goal.isMet(max(0, total)) ? day : nil
+                covered(day) && goal.isMet(max(0, total), on: day) ? day : nil
             }, calendar: calendar)
             : []
 
         days = (0..<dayCount).reversed().compactMap { offset in
             guard let date = calendar.date(byAdding: .day, value: -offset, to: startOfToday) else { return nil }
             let total = max(0, totals[date] ?? 0)
+            // Before the nutrient was added, its first day's goal: a plan pins those days to the base goal (#135),
+            // and a step the chart drew there would never have been.
+            let dayGoal = goal.goal(on: max(date, firstTracked))
             return AnalyticsDay(date: date, total: total, isToday: offset == 0,
                                 isTracked: covered(date)
                                     && (schedule.isCountedDay(date, calendar: calendar)
                                         || weeklyCounted.contains(date)),
-                                countsAsMet: goal.isMet(total))
+                                goal: dayGoal, countsAsMet: goal.isMet(total, dayGoal))
         }
 
         let counted = days.filter { $0.isTracked && !$0.isToday }

@@ -201,4 +201,17 @@ final class HealthTrendsTests: XCTestCase {
             }
         }
     }
+
+    // MARK: - Dose plans (#135)
+
+    func testTheSleepThresholdIsTodaysLimit() {
+        // A taper from 400 mg to 200 mg: the finding names one amount, today's three quarters of 200.
+        let start = calendar.date(byAdding: .day, value: -10, to: today)!
+        let plan = NutrientDosePlan().creating(
+            steps: [.init(goal: NutrientGoal(target: 400), days: 5), .init(goal: NutrientGoal(target: 200), days: 5)],
+            end: .keep, start: start, base: NutrientGoal(target: 400), today: start, calendar: calendar)
+        let goal = AnalyticsGoal(goalType: .maximum, target: 400, upperBound: nil, plan: plan, calendar: calendar)
+        XCTAssertEqual(HealthTrends.sleepThreshold(goal, on: today), 150)
+        XCTAssertEqual(HealthTrends.sleepThreshold(caffeineLimit, on: today), 300)
+    }
 }
