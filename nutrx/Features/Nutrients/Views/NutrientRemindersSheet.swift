@@ -7,13 +7,11 @@ struct NutrientRemindersSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let nutrient: Nutrient
     /// Fetched, and fetched again after each add or delete. The \@Query this replaced didn't update in this sheet
     /// (opened from Edit Nutrient), so an added time never appeared and people added it again (#163).
     @State private var reminders: [NutrientReminder] = []
 
-    @State private var showTimePicker = false
     @State private var selectedTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now)!
     @State private var showDeniedAlert = false
     @State private var showNotAskedAlert = false
@@ -46,21 +44,10 @@ struct NutrientRemindersSheet: View {
             .listStyle(.insetGrouped)
             .navigationTitle("Reminders")
             .navigationBarTitleDisplayMode(.inline)
+            // Done on the right, as in a new nutrient's and a stack's reminders (#326).
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
-                }
-                if !atUsualTime {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            withAnimation(.unlessReduceMotion(reduceMotion)) {
-                                showTimePicker.toggle()
-                            }
-                        } label: {
-                            Image(systemName: showTimePicker ? "xmark" : "plus")
-                        }
-                        .accessibilityLabel(showTimePicker ? "Cancel" : "Add Reminder")
-                    }
                 }
             }
             .alert("Enable Notifications", isPresented: $showNotAskedAlert) {
@@ -127,58 +114,36 @@ struct NutrientRemindersSheet: View {
 
     // MARK: - Set times
 
+    /// The times, then a time and Add Reminder, as in a new nutrient's reminders (`PendingRemindersSheet`): the + in
+    /// the bar that opened them is gone with Done's move to the right (#326).
     @ViewBuilder
     private var setTimesSections: some View {
-        if sortedReminders.isEmpty {
-            Section {
-                Text("No reminders configured. Tap + to add one.")
-                    .foregroundStyle(.secondary)
-            }
-        } else {
-            Section {
-                ForEach(sortedReminders, id: \.persistentModelID) { reminder in
-                    HStack {
-                        Image(systemName: "bell.fill")
-                            .foregroundStyle(.blue)
-                            .font(.subheadline)
-
-                        Text(reminder.formattedTime)
-                            .font(.body)
-
-                        Spacer()
-                    }
+        Section {
+            ForEach(sortedReminders, id: \.persistentModelID) { reminder in
+                Label {
+                    Text(reminder.formattedTime)
+                        .monospacedDigit()
+                } icon: {
+                    Image(systemName: "bell.fill")
+                        .foregroundStyle(Theme.textSecondary)
                 }
-                .onDelete(perform: deleteReminders)
-            } footer: {
+            }
+            .onDelete(perform: deleteReminders)
+        } footer: {
+            if sortedReminders.isEmpty {
+                Text("No reminders yet.")
+            } else {
                 Text("Reminders fire daily at the configured times. If you've already logged \(nutrient.name) that day, upcoming reminders are silenced.")
             }
         }
 
-        if showTimePicker {
-            Section {
-                DatePicker(
-                    "Time",
-                    selection: $selectedTime,
-                    displayedComponents: .hourAndMinute
-                )
-
-                Button {
-                    addReminder()
-                } label: {
-                    Text("Add Reminder")
-                        .font(.headline)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.controlPrimary)
-                .foregroundStyle(Theme.controlOnPrimary)
+        Section {
+            DatePicker("Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
+            Button("Add Reminder") { addReminder() }
                 .disabled(isAlreadyAdded)
-            } header: {
-                Text("New Reminder")
-            } footer: {
-                if isAlreadyAdded {
-                    Text("\(selectedTime.formatted(date: .omitted, time: .shortened)) is already in the list.")
-                }
+        } footer: {
+            if isAlreadyAdded {
+                Text("\(selectedTime.formatted(date: .omitted, time: .shortened)) is already in the list.")
             }
         }
     }
@@ -232,11 +197,6 @@ struct NutrientRemindersSheet: View {
         try? modelContext.save()
         loadReminders()
         NotificationService.refreshAllNutrientReminders(context: modelContext)
-
-        withAnimation(.unlessReduceMotion(reduceMotion)) {
-            showTimePicker = false
-            selectedTime = Calendar.current.date(bySettingHour: 9, minute: 0, second: 0, of: .now)!
-        }
     }
 
     private func deleteReminders(at offsets: IndexSet) {
