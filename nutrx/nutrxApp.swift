@@ -30,7 +30,7 @@ struct nutrxApp: App {
             ScreenshotDemoData.replaceStore(in: modelContainer.mainContext)
         }
         ScheduleDebug.apply(to: modelContainer.mainContext)  // until the Schedule sheet exists (#132)
-        DosePlanDebug.apply(to: modelContainer.mainContext)  // until the Dose plan sheet exists (#135)
+        DosePlanDebug.apply(to: modelContainer.mainContext)  // a plan by name, without the sheet (#135)
         #endif
     }
 
@@ -43,10 +43,14 @@ struct nutrxApp: App {
                 .environment(NotificationRouter.shared)
                 // Widget and control taps (docs/pro/WIDGETS.md §5); a link the app doesn't know opens Today.
                 .onOpenURL { url in NotificationRouter.shared.open(AppLink(url) ?? .today) }
-                .task { await proAccess.refreshEntitlement() }
+                .task {
+                    await proAccess.refreshEntitlement()
+                    syncDosePlans()
+                }
                 .onChange(of: proAccess.isPro) {
-                    // Becoming Pro (or lapsing) adds or removes refill reminders.
+                    // Becoming Pro (or lapsing) adds or removes refill reminders, and resumes or holds dose plans.
                     NotificationService.refreshAllNutrientReminders(context: modelContainer.mainContext)
+                    syncDosePlans()
                 }
         }
         .modelContainer(modelContainer)
@@ -59,7 +63,10 @@ struct nutrxApp: App {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 // A subscription that lapses sends no `Transaction.updates`, so look again whenever the app comes back.
-                Task { await proAccess.refreshEntitlement() }
+                Task {
+                    await proAccess.refreshEntitlement()
+                    syncDosePlans()
+                }
                 StackLogging.repairDuplicateIDs(context: modelContainer.mainContext)
                 WidgetReload.all()
                 // Siri's "Log my <nutrient>" phrases use the current nutrient names.
@@ -68,6 +75,15 @@ struct nutrxApp: App {
                 // Renames and other edits made in the app reach the widgets and controls.
                 WidgetReload.all()
             }
+        }
+    }
+
+    /// Dose plans hold without Pro and resume with it (#135, `DosePlanHold`), only after a check that knows which.
+    /// A stopping plan's hold or resume moves its course end, the reminders' last day, so they're rebuilt then.
+    private func syncDosePlans() {
+        guard ProAccess.isStoreVisible, proAccess.hasCheckedEntitlements else { return }
+        if DosePlanHold.sync(isPro: proAccess.isPro, context: modelContainer.mainContext) {
+            NotificationService.refreshAllNutrientReminders(context: modelContainer.mainContext)
         }
     }
 }

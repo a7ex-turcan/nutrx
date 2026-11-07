@@ -123,10 +123,10 @@ enum ProFeature: String, CaseIterable, Identifiable {
     }
 
     /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, courses since 2.2,
-    /// schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6). Dose plans are
-    /// being built for 2.7 (#135, docs/pro/DOSE-PLANS.md §9): they ship in phase 4.
+    /// schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans since
+    /// 2.7). A feature being built returns false here until it ships.
     var isShipped: Bool {
-        self != .dosePlans
+        true
     }
 
     /// Its way in shows in the app: once shipped, and in Debug builds while it's being built, to check it.

@@ -99,10 +99,9 @@ final class ProTextTests: XCTestCase {
     }
 
     func testShippedFeatures() {
-        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), ProFeature.allCases.filter { $0 != .dosePlans },
-                       "dose plans ship in their phase 4 (#135)")
+        XCTAssertEqual(ProFeature.allCases.filter(\.isShipped), ProFeature.allCases, "dose plans since 2.7 (#135)")
         XCTAssertTrue(ProFeature.listed.contains(.reminders), "reminders at your usual time since 2.6 (#137)")
-        XCTAssertFalse(ProFeature.listed.contains(.dosePlans), "not on the paywall until they ship")
+        XCTAssertTrue(ProFeature.listed.contains(.dosePlans))
         XCTAssertEqual(ProText.tagline(ProFeature.allCases.filter(\.isShipped)), "Supply, label scan, recaps and more")
     }
 
@@ -131,7 +130,7 @@ final class ProTextTests: XCTestCase {
     }
 
     /// Widgets and controls (#138) ship in 2.5, listed with the rest; nine shipped features since reminders at your
-    /// usual time (#137) in 2.6, and dose plans (#135) a tenth, still being built.
+    /// usual time (#137) in 2.6, and ten with dose plans (#135) in 2.7.
     func testWidgetsIsListed() {
         XCTAssertTrue(ProFeature.listed.contains(.widgets))
         XCTAssertEqual(ProFeature.allCases.count, 10)
@@ -155,7 +154,7 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.welcome([.supply, .scan]),
                        "Supply and label scanning are on. Nothing you already use has changed.")
         XCTAssertEqual(ProText.welcome(ProFeature.listed),
-                       "Supply, label scanning, recaps, Apple Health trends, doctor reports, courses, schedules, widgets and reminders at your usual time are on. Nothing you already use has changed.")
+                       "Supply, label scanning, recaps, Apple Health trends, doctor reports, courses, schedules, widgets, reminders at your usual time and dose plans are on. Nothing you already use has changed.")
     }
 
     func testPlanChip() {

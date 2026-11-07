@@ -299,8 +299,12 @@ struct NutrientFormView: View {
             // new-nutrient form, not onboarding's.
             if offersDosePlan {
                 Rectangle().fill(Theme.lineHairline).frame(height: 1)
-                ProGatedButton(action: { showDosePlan = true }) { showsBadge in
-                    settingsRow("Dose plan", value: showsBadge ? "" : dosePlanText.summary(draft.dosePlan, today: .now),
+                // A free user can still open a plan to remove it (§6): removing never needs Pro.
+                ProGatedButton(action: { showDosePlan = true },
+                               freeAction: draft.dosePlan == nil ? nil : { showDosePlan = true }) { showsBadge in
+                    // Free, a plan's row still says where it is ("Paused"), with the PRO chip.
+                    settingsRow("Dose plan",
+                                value: showsBadge && draft.dosePlan == nil ? "" : dosePlanText.summary(draft.dosePlan, today: .now),
                                 shortValue: dosePlanText.shortSummary(draft.dosePlan, today: .now), badge: showsBadge)
                 }
                 .buttonStyle(.plain)

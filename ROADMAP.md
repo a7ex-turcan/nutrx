@@ -183,9 +183,9 @@ In progress on main.
 
 | Feature | Status |
 |---|---|
-| Dose plans: a goal that follows steps you set, then keeps or stops (Pro) | 📝 Spec (#135, docs/pro/DOSE-PLANS.md) |
+| Dose plans: a goal that follows steps you set, then keeps or stops (Pro) | ✅ Built (v2.7, #135, docs/pro/DOSE-PLANS.md: #342, #345, #346, #348 and phase 4) |
 | Alternate app icons (Pro) | 📋 Planned (#139) |
-| Settings → Siri screen | 📋 Planned (#127) |
+| Settings → Siri screen | ✅ Built (v2.7, #127: #344) |
 | The paywall's footer: only the button pinned, the plan line while your plan is out of view, a ✕ that stays | ✅ Built (v2.7, #325, #338: #330, #341) |
 | The weekday pattern in two rows from AX1 | ✅ Built (v2.7, #289: #334) |
 | Arrow keys in My Nutrients on iPad | ✅ Built (v2.7, #195: #336) |

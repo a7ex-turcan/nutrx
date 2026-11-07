@@ -3,11 +3,13 @@ import SwiftUI
 /// A goal that follows steps (nutrx Pro, #135, docs/pro/DOSE-PLANS.md §5): when it starts, 2–6 steps of a goal and a
 /// length, then keep the last goal or stop. Writes the plan to the draft, and a plan that stops sets the Duration's
 /// last day; the form's Save or Add applies it from today, so past days keep their goals. The steps start at the
-/// nutrient's own goal: nutrx never suggests one.
+/// nutrient's own goal: nutrx never suggests one. Without Pro it opens read-only, with Remove Plan (§6): removing a
+/// plan never needs Pro.
 struct DosePlanSheet: View {
     @Bindable var draft: NutrientDraft
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(ProAccess.self) private var proAccess: ProAccess?
     @State private var startsToday = true
     @State private var startDate = Date.now
     @State private var rows: [StepRow] = []
@@ -26,6 +28,8 @@ struct DosePlanSheet: View {
     enum Field: Hashable {
         case target(UUID), upper(UUID)
     }
+
+    private var isReadOnly: Bool { !(proAccess?.isPro ?? false) }
 
     private var calendar: Calendar { .current }
     private var today: Date { calendar.startOfDay(for: .now) }
@@ -64,9 +68,12 @@ struct DosePlanSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                if isReadOnly { readOnlyNote }
                 startSection
                 stepsSection
+                    .disabled(isReadOnly)
                 endSection
+                    .disabled(isReadOnly)
                 Section {
                     Text(DosePlanText.noAdvice)
                         .font(.footnote)
@@ -97,12 +104,14 @@ struct DosePlanSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button(isReadOnly ? "Close" : "Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done", action: save)
-                        .fontWeight(.semibold)
-                        .confirmButton(enabled: plan != nil)
+                if !isReadOnly {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done", action: save)
+                            .fontWeight(.semibold)
+                            .confirmButton(enabled: plan != nil)
+                    }
                 }
                 // Done for the return-less amount fields, at the toolbar's root like the form's.
                 ToolbarItemGroup(placement: .keyboard) {
@@ -119,11 +128,38 @@ struct DosePlanSheet: View {
 
     // MARK: - Sections
 
+    /// Without Pro: why it can't be changed, and since when a held plan has waited.
+    private var readOnlyNote: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 4) {
+                if let heldFrom = draft.dosePlan?.heldFrom {
+                    Text(text.pausedSince(heldFrom))
+                        .font(.headline)
+                        .foregroundStyle(Theme.textPrimary)
+                }
+                Text(DosePlanText.needsPro)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+            .padding(.vertical, 2)
+        }
+        .listRowBackground(Theme.surfaceCard)
+    }
+
     @ViewBuilder
     private var startSection: some View {
         Section {
             if let startedOn {
                 LabeledContent("Started", value: startedOn.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+            } else if isReadOnly {
+                let first = draft.dosePlan?.start ?? start
+                if let heldFrom = draft.dosePlan?.heldFrom, first > heldFrom {
+                    // Held before it started: resuming moves the start later by the days it waited.
+                    LabeledContent("Starts", value: DosePlanText.startsWhenProIsBack)
+                } else {
+                    LabeledContent(first <= today ? "Started" : "Starts",
+                                   value: first.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated)))
+                }
             } else {
                 Picker("Starts", selection: $startsToday) {
                     Text("Today").tag(true)
@@ -137,7 +173,7 @@ struct DosePlanSheet: View {
         } header: {
             Text("Starting")
         } footer: {
-            if startedOn != nil { Text("Changes apply from today. Past days keep their goals.") }
+            if startedOn != nil, !isReadOnly { Text("Changes apply from today. Past days keep their goals.") }
         }
         .listRowBackground(Theme.surfaceCard)
     }
@@ -147,13 +183,13 @@ struct DosePlanSheet: View {
             // By each step's own id, so deleting one animates that row and the focus stays with its fields.
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, _ in
                 stepRow(index)
-                    .deleteDisabled(rows.count <= NutrientDosePlan.stepCounts.lowerBound)
+                    .deleteDisabled(isReadOnly || rows.count <= NutrientDosePlan.stepCounts.lowerBound)
             }
             .onDelete { offsets in
                 guard rows.count - offsets.count >= NutrientDosePlan.stepCounts.lowerBound else { return }
                 rows.remove(atOffsets: offsets)
             }
-            if rows.count < NutrientDosePlan.stepCounts.upperBound {
+            if rows.count < NutrientDosePlan.stepCounts.upperBound, !isReadOnly {
                 Button {
                     let last = rows.last
                     rows.append(StepRow(target: last?.target ?? draft.dailyTarget, upper: last?.upper ?? draft.upperBound,
@@ -165,7 +201,11 @@ struct DosePlanSheet: View {
         } header: {
             Text("Steps")
         } footer: {
-            if let plan {
+            // Held, its dates would be wrong: later steps wait.
+            if let held = draft.dosePlan, let heldFrom = held.heldFrom, today >= heldFrom,
+               let goal = held.goal(on: today, calendar: calendar) {
+                Text(text.heldSentence(goal))
+            } else if let plan {
                 Text(text.sentence(plan, today: today, courseEnd: draft.courseEndOutsideDosePlan(calendar: calendar)))
             }
         }
@@ -181,13 +221,16 @@ struct DosePlanSheet: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Theme.textSecondary)
                 Spacer()
-                Picker("Length in", selection: Binding(get: { rows[safe: index]?.inWeeks ?? false },
-                                                         set: { setWeeks($0, at: index) })) {
-                    Text("Days").tag(false)
-                    Text("Weeks").tag(true)
+                // Read-only, the steps are just what they say: no switch or stepper that does nothing.
+                if !isReadOnly {
+                    Picker("Length in", selection: Binding(get: { rows[safe: index]?.inWeeks ?? false },
+                                                             set: { setWeeks($0, at: index) })) {
+                        Text("Days").tag(false)
+                        Text("Weeks").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .fixedSize()
                 }
-                .pickerStyle(.segmented)
-                .fixedSize()
             }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 amountField(binding(index, \.target), field: .target(id),
@@ -208,10 +251,15 @@ struct DosePlanSheet: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Theme.textAmberInk)
             }
-            Stepper(value: lengthBinding(index), in: row.inWeeks ? 1...(NutrientDosePlan.stepDays.upperBound / 7)
-                                                              : NutrientDosePlan.stepDays) {
+            if isReadOnly {
                 Text(DosePlanText.length(days: row.days, inWeeks: row.inWeeks))
                     .monospacedDigit()
+            } else {
+                Stepper(value: lengthBinding(index), in: row.inWeeks ? 1...(NutrientDosePlan.stepDays.upperBound / 7)
+                                                                  : NutrientDosePlan.stepDays) {
+                    Text(DosePlanText.length(days: row.days, inWeeks: row.inWeeks))
+                        .monospacedDigit()
+                }
             }
         }
         .padding(.vertical, 4)
@@ -331,38 +379,44 @@ private extension Array {
 }
 
 #if DEBUG
-/// The sheet's states: a new plan, a saved plan that has started, a range's steps, and a plan that stops.
-private func previewDraft(goalType: GoalType = .minimum, plan: NutrientDosePlan.Plan? = nil) -> NutrientDraft {
+/// The sheet's states: a new plan, a saved plan that has started, a range's steps, a plan that stops, and a held one
+/// without Pro. Saved plans go through `populate(from:)`, as the form fills a draft, so they read as started.
+private func previewDraft(goalType: GoalType = .minimum, saved plan: NutrientDosePlan? = nil) -> NutrientDraft {
+    let nutrient = Nutrient(name: "Magnesium", unit: goalType == .range ? "g" : "mg", step: 100,
+                            dailyTarget: goalType == .range ? 120 : 200, sortOrder: 0, goalType: goalType,
+                            upperBound: goalType == .range ? 160 : nil)
+    nutrient.dosePlanRaw = plan?.encode() ?? ""
     let draft = NutrientDraft()
-    draft.name = "Magnesium"
-    draft.unit = goalType == .range ? "g" : "mg"
-    draft.goalType = goalType
-    draft.dailyTarget = goalType == .range ? "120" : "200"
-    draft.upperBound = goalType == .range ? "160" : ""
-    draft.step = "100"
-    draft.dosePlan = plan
+    draft.populate(from: nutrient)
     return draft
 }
 
-private func previewPlan(_ goals: [NutrientGoal], startedDaysAgo: Int, end: NutrientDosePlan.End) -> NutrientDosePlan.Plan {
+private func previewPlan(_ goals: [NutrientGoal], startedDaysAgo: Int, end: NutrientDosePlan.End) -> NutrientDosePlan {
     let start = Calendar.current.date(byAdding: .day, value: -startedDaysAgo, to: Calendar.current.startOfDay(for: .now))!
-    return NutrientDosePlan.Plan(start: start, steps: goals.map { .init(goal: $0, days: 14) }, end: end, appliesFrom: start)
+    return NutrientDosePlan().creating(steps: goals.map { .init(goal: $0, days: 14) }, end: end, start: start,
+                                       base: goals[0], today: start)
 }
 
 #Preview("New plan") {
     DosePlanSheet(draft: previewDraft()).environment(ProAccess.previewPro())
 }
 #Preview("Started, keeps") {
-    DosePlanSheet(draft: previewDraft(plan: previewPlan([NutrientGoal(target: 200), NutrientGoal(target: 400)],
-                                                        startedDaysAgo: 5, end: .keep)))
+    DosePlanSheet(draft: previewDraft(saved: previewPlan([NutrientGoal(target: 200), NutrientGoal(target: 400)],
+                                                         startedDaysAgo: 5, end: .keep)))
         .environment(ProAccess.previewPro())
 }
 #Preview("Range, stops") {
     DosePlanSheet(draft: previewDraft(goalType: .range,
-                                      plan: previewPlan([NutrientGoal(target: 140, upperBound: 180),
-                                                         NutrientGoal(target: 120, upperBound: 160)],
-                                                        startedDaysAgo: 0, end: .stop)))
+                                      saved: previewPlan([NutrientGoal(target: 140, upperBound: 180),
+                                                          NutrientGoal(target: 120, upperBound: 160)],
+                                                         startedDaysAgo: 0, end: .stop)))
         .environment(ProAccess.previewPro())
+}
+#Preview("Paused, without Pro") {
+    // No ProAccess in the environment: read-only, with Remove Plan (§6).
+    DosePlanSheet(draft: previewDraft(saved: previewPlan([NutrientGoal(target: 200), NutrientGoal(target: 400)],
+                                                         startedDaysAgo: 5, end: .keep)
+        .holding(from: Calendar.current.date(byAdding: .day, value: -2, to: .now)!)))
 }
 #Preview("Dark, largest text") {
     DosePlanSheet(draft: previewDraft()).environment(ProAccess.previewPro())
