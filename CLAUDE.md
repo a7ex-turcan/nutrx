@@ -18,6 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `nutrx Watch App` — watchOS companion (`nutrx-labs.nutrx.watchkitapp`)
 - `NutrxWatchWidgets` — watchOS complications (`nutrx-labs.nutrx.watchkitapp.widgets`)
 - `nutrxTests` — XCTest unit tests, hosted in the `nutrx` app (`@testable import nutrx`)
+- `nutrxUITests` — XCUITest UI tests of the `nutrx` app (`nutrx-labs.nutrxUITests`), run from their own scheme (below)
 
 ## Build & Run
 
@@ -36,6 +37,12 @@ Run tests (the `nutrx` scheme's test action runs `nutrxTests`):
 xcodebuild test -scheme nutrx -destination 'platform=iOS Simulator,name=nutrx Duo' -parallel-testing-enabled NO
 ```
 Runs are serial because parallel test clones stall ("Simulator device failed to launch", over and over). Never start two test runs on the same simulator.
+
+UI tests (#222) have their own scheme, `nutrxUITests`, so the `nutrx` scheme's run stays the unit tests only. Run them on the iPhone SE **before each release submission**, and after changing a sheet's height or its pinned buttons:
+```bash
+xcodebuild test -scheme nutrxUITests -destination 'platform=iOS Simulator,name=nutrx SE' -parallel-testing-enabled NO
+```
+`SheetButtonsUITests` launches with `-screenshotDemoData` (so only on a simulator signed out of iCloud) and `-screenshotRoute today`, opens Vitamin D's log sheet and the Morning stack's sheet, and checks that each sheet's Log button is tappable at the height it opens at (#212, #180). They find elements by their VoiceOver labels ("Vitamin D", "Log Morning", "… Log 1,000 IU"), so a label change can break them.
 
 ### Simulators
 
