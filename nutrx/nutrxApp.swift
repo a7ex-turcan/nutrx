@@ -18,6 +18,8 @@ struct nutrxApp: App {
         if StackLogging.repairDuplicateIDs(context: container.mainContext) {
             NutrxShortcuts.updateAppShortcutParameters()  // phrases registered with the old shared id
         }
+        // Two devices that turned on the same How you feel preset before syncing (#133).
+        FeelingQuestions.mergeDuplicatePresets(in: container.mainContext)
         // Refill reminder actions (Refilled, Remind me tomorrow) and taps; actions can arrive with the app in the
         // background.
         NotificationHandler.shared.container = container
@@ -69,6 +71,7 @@ struct nutrxApp: App {
                     syncWithPro()
                 }
                 StackLogging.repairDuplicateIDs(context: modelContainer.mainContext)
+                FeelingQuestions.mergeDuplicatePresets(in: modelContainer.mainContext)
                 WidgetReload.all()
                 // Siri's "Log my <nutrient>" phrases use the current nutrient names.
                 NutrxShortcuts.updateAppShortcutParameters()

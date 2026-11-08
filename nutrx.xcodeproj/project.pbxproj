@@ -107,6 +107,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/Exclusion.swift,
+				Models/FeelingAnswer.swift,
+				Models/FeelingQuestion.swift,
 				Models/IntakeRecord.swift,
 				Models/LogStack.swift,
 				Models/LogStackEntry.swift,
@@ -141,6 +143,8 @@
 			membershipExceptions = (
 				Features/Nutrients/ViewModels/ScheduleText.swift,
 				Models/Exclusion.swift,
+				Models/FeelingAnswer.swift,
+				Models/FeelingQuestion.swift,
 				Models/IntakeRecord.swift,
 				Models/LogStack.swift,
 				Models/LogStackEntry.swift,
@@ -194,6 +198,8 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Models/Exclusion.swift,
+				Models/FeelingAnswer.swift,
+				Models/FeelingQuestion.swift,
 				Models/IntakeRecord.swift,
 				Models/LogStack.swift,
 				Models/LogStackEntry.swift,

@@ -54,6 +54,12 @@ enum SettingsSummary {
         enabled ? "On" : "Off"
     }
 
+    /// How you feel (#133): "Off", or when Today starts asking ("From 19:00").
+    static func howYouFeel(enabled: Bool, askMinutes: Int, calendar: Calendar = .current,
+                           locale: Locale = .current) -> String {
+        enabled ? "From \(UsualTimeText.time(askMinutes, calendar: calendar, locale: locale))" : "Off"
+    }
+
     /// Groups the user made — General isn't counted.
     static func groups(userGroupCount: Int) -> String {
         userGroupCount == 0 ? "None" : "\(userGroupCount)"

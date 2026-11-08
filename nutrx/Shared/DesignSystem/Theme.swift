@@ -61,6 +61,7 @@ enum Theme {
         static let amber = color(.settingsTileAmber)
         static let grey = color(.settingsTileGrey)
         static let teal = color(.settingsTileTeal)
+        static let pink = color(.settingsTilePink)
     }
 
     // MARK: - Shape & spacing (§1.4)
@@ -132,6 +133,7 @@ enum Theme {
         case settingsTileAmber = "SettingsTile/Amber"
         case settingsTileGrey = "SettingsTile/Grey"
         case settingsTileTeal = "SettingsTile/Teal"
+        case settingsTilePink = "SettingsTile/Pink"
     }
 
     private static func color(_ asset: ColorAsset) -> Color {

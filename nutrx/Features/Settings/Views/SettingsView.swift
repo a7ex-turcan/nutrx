@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 /// Settings sheet (DESIGN.md §5.9): profile card, then rows with Settings-style icon tiles — iCloud Sync,
-/// Notifications, Streaks, Groups, Siri & Shortcuts; App icon and Apple Health (Pro); Rate nutrx, Suggest a feature, About —
+/// Notifications, Streaks, How you feel, Groups, Siri & Shortcuts; App icon and Apple Health (Pro); Rate nutrx, Suggest a feature, About —
 /// and the privacy footer.
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -82,6 +82,15 @@ struct SettingsView: View {
                 } label: {
                     row("Streaks", symbol: "flame", color: Theme.SettingsTile.green,
                         value: SettingsSummary.streaks(enabled: preferences?.streaksEnabled ?? true))
+                }
+                NavigationLink {
+                    HowYouFeelSettingsView()
+                        .navigationTitle("How you feel")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    row("How you feel", symbol: "face.smiling", color: Theme.SettingsTile.pink,
+                        value: SettingsSummary.howYouFeel(enabled: preferences?.feelingsEnabled ?? false,
+                                                          askMinutes: preferences?.feelingsAskMinutes ?? 1140))
                 }
                 NavigationLink {
                     ManageGroupsView()

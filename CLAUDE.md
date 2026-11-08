@@ -174,6 +174,9 @@ nutrx/
 │   ├── NutrientReminder.swift   # One row per dose reminder per nutrient.
 │   ├── LogStack.swift           # A named set of nutrients with preset amounts, logged in one go (stacks).
 │   ├── LogStackEntry.swift      # One nutrient + amount in a LogStack.
+│   ├── FeelingQuestion.swift    # How you feel (#133): a check-in question, preset or the user's own; FeelingKind (1–5 / yes-no).
+│   ├── FeelingAnswer.swift      # How you feel: a question's answer for one day.
+│   ├── FeelingPreset.swift      # How you feel's eight presets (pure enum; app only, not the extensions).
 │   ├── NutrientGroup.swift      # Named group for organising nutrients. System "General" group seeded on first launch.
 │   └── NutrientTint.swift       # User-chosen nutrient colour (pure enum) + stable id-derived fallback.
 │
@@ -292,10 +295,12 @@ nutrx/
 │   │
 │   ├── Settings/
 │   │   ├── Views/
-│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, Groups, Siri & Shortcuts; App icon, Apple Health; Rate nutrx, Suggest a feature, About) with values, privacy footer.
+│   │   │   ├── SettingsView.swift           # Large title, profile card, icon-tile rows (iCloud Sync, Notifications, Streaks, How you feel, Groups, Siri & Shortcuts; App icon, Apple Health; Rate nutrx, Suggest a feature, About) with values, privacy footer.
 │   │   │   ├── ICloudSyncSettingsView.swift # Status, sync toggle, Delete iCloud Data.
 │   │   │   ├── NotificationsSettingsView.swift # Noon check-in toggle + permission flow.
 │   │   │   ├── StreaksSettingsView.swift    # Streaks toggle.
+│   │   │   ├── HowYouFeelSettingsView.swift # How you feel (#133): the switch, Ask from, the questions (reorder, remove), presets and your own to add.
+│   │   │   ├── FeelingQuestionSheet.swift   # A How you feel question of your own: name, 1 to 5 or yes or no, Remove.
 │   │   │   ├── SiriSettingsView.swift       # Siri & Shortcuts (#127): each Today nutrient's and stack's phrase, and ShortcutsLink.
 │   │   │   ├── AppIconSettingsView.swift    # App icon (Pro, #139): the seven icons as tiles, the one in use ringed; a tap sets it.
 │   │   │   ├── ManageGroupsView.swift       # Create, rename, reorder, delete groups (counts exclude deleted nutrients).
@@ -407,6 +412,8 @@ nutrx/
         ├── RefillSchedule.swift             # Refill reminders: when (one per bottle, 10:00), snooze, title/body (pure).
         ├── UsualTime.swift                  # Reminders at your usual time (Pro, #137): samples, the learned time, which time is planned (pure); Nutrient.usualTime().
         ├── UsualTimeText.swift              # The usual time's words: the sheets' explanation, the Reminders row (pure).
+        ├── FeelingQuestions.swift           # How you feel (#133): the questions' one writer — presets, your own, order, merging duplicates.
+        ├── FeelingText.swift                # How you feel's words (pure).
         ├── StackReminderText.swift          # A stack reminder's words: the notification, the Reminder row, the own-reminders note (pure).
         ├── ScreenshotRoute.swift            # DEBUG: -screenshotRoute opens a tab, a nutrient, a History day or the paywall (#218).
         ├── NotificationHandler.swift        # UNUserNotificationCenterDelegate (refill actions, taps) + NotificationRouter.
@@ -732,6 +739,29 @@ Daily streak tracking, opt-in via `UserPreferences.streaksEnabled` (default `tru
 
 ---
 
+## How you feel (#133, 2.8)
+
+A daily check-in on how the day went, on questions the user picks, each 1–5 or yes / no. Checking in is free; patterns between the answers and each nutrient are nutrx Pro. The spec is `docs/pro/HOW-YOU-FEEL.md`, decided with the user on 2026-11-08. In the app it's **How you feel**: "check-in" is the noon reminder's name (Settings → Notifications), and the code says "feeling".
+- **Phase 1 (the data and Settings):**
+  - **Models:** `FeelingQuestion` (title, `kindRaw`, `presetRaw` for a preset, `sortOrder`, `isRemoved`, `answers`) and `FeelingAnswer` (`day`, `value` 1–5 or 1 / 0, `updatedAt`, `question`). Both are compiled into the Watch app, the widgets and the complications, like every model, since `ModelContainerFactory.models` lists them. `FeelingPreset` (the eight presets: title, kind, end words, symbol; Sleep `isAboutNightBefore`) is the app's only. Its raw values are stored, so never rename one.
+  - **`UserPreferences`:** `feelingsEnabled` (off), `feelingsAskMinutes` (19:00) and `feelingsReminderEnabled` (for phase 2's reminder).
+  - **`FeelingQuestions`** (`Shared/Services/`, tested in `FeelingQuestionsTests`) is the questions' one writer:
+    - the first turn-on adds Energy, Mood and Sleep (`setUpIfNeeded`), and later turn-ons keep the user's choice, even none;
+    - a preset goes on at the end, and one that was removed comes back with its answers;
+    - removing only sets `isRemoved`, so History and the patterns keep the answers;
+    - the user's own: at most 5 on the card, titles trimmed to 40 characters and never another active question's (ignoring case), a removed one with the same title and kind comes back, renamed only by the user, and the kind changes only before it has answers;
+    - `move` reorders without SwiftUI, and removed questions keep their places after the card's;
+    - `mergeDuplicatePresets` runs at launch and whenever the app becomes active, like `StackLogging.repairDuplicateIDs`: a preset two devices turned on before syncing keeps its oldest question, which takes the other's answers.
+  - **Settings → How you feel** (`HowYouFeelSettingsView`, a pink `face.smiling` tile after Streaks; the row reads "Off" or "From 19:00", `SettingsSummary.howYouFeel`):
+    - the switch, with the privacy line;
+    - Ask from;
+    - **Questions:** drag to reorder, swipe to remove, and tap one of your own for `FeelingQuestionSheet` (name, 1 to 5 or yes or no, Remove Question);
+    - **Add a question:** the presets left, with a +, and Your own question (disabled at 5).
+  - The spec's "presets as toggles" became the two lists: a preset is a row on the card, or in Add a question.
+  - Words in `FeelingText`.
+  - **CloudKit:** `CD_FeelingQuestion`, `CD_FeelingAnswer` and the three `CD_UserPreferences` fields are in development (2026-11-08). Production is the user's Console deploy before phase 1 merges.
+  - Nothing reads `feelingsEnabled` outside Settings yet: the Today card, History's answers, the reminder and export are phase 2.
+
 ## In-App Review Prompt
 
 Uses `SKStoreReviewController` — no custom UI. Triggered after intake actions when any condition is met: streak hits 3/7/14 days, or total intake count crosses 30. Guards: once per app version, 90-day cooldown, account age ≥ 3 days, never on cold launch. Implemented in `ReviewService`.
@@ -809,7 +839,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
 - **Settings → iCloud Sync (#113):** the switch is **per device** (`ICloudSync`, UserDefaults `nutrx.iCloudSyncEnabled`, in `ModelContainerFactory.swift` so the Watch has it), and `create()` opens the store with `cloudKitDatabase: .none` when it's off. The store opens once per launch, so a change applies the next time nutrx opens; until then the status reads "Stops / Starts when you reopen nutrx", the Settings row "Turning off / on", and the footer says to reopen (`SettingsSummary.iCloud` / `iCloudStatus` / `iCloudFooter`). `ICloudSync.isActive` is what this launch does: Today's sync banners and the launch's 3-second wait for iCloud data only happen while it's true and the device has an iCloud account (the CloudKit store opens without one too). If the CloudKit store fails to open with sync on, the local fallback sets `couldNotConnect` and the status reads "Couldn't connect". **Delete iCloud Data** is only offered while sync is off by choice and this launch doesn't sync (deleting the zone under a running sync is unpredictable); its confirmation asks to turn sync off on the other devices first. Delete, then turning sync back on, hasn't been tried on a signed-in device yet (#119). The old `UserPreferences.iCloudSyncEnabled` synced itself to every device and nothing read it, so nutrx always synced; the first launch with the new switch keeps what that flag showed on this iPhone or iPad when there's an existing store (`adoptLegacyChoice`). A fresh install starts on, so an "off" synced from another device can't turn a new device off. The Watch has no switch and always syncs.
 - **Banners:** one-time sync-restored and sync-enabled banners on Today screen (priority below notification banner).
 - **CloudKit model rules:** all relationships optional arrays (`[T]?`), no `@Attribute(.unique)`, all scalars need property-level defaults.
-- **New models *and new fields* need their CloudKit schema deployed before any TestFlight build:** TestFlight builds use the **production** CloudKit environment, like the App Store, so a new field that isn't in production can make CloudKit reject that record type's saves on testers' devices. Development: `xcrun cktool export-schema … --environment development`, add the field (`CD_<name>`, e.g. `CD_isRemoved INT64 QUERYABLE SORTABLE`), `validate-schema`, `import-schema`, then export again to check (team `6396A6L9J3`, container `iCloud.nutrx-labs.nutrx`). Production: only through the CloudKit Console (Deploy Schema Changes…), which the user does; check it afterwards with `export-schema --environment production`. Adding fields doesn't affect older app versions, and production can never remove or rename one. 2.2 added `CD_endDate`, `CD_courseGapsRaw` and `CD_isRemoved` this way; 2.6 adds `CD_usualReminderMinutes` on `CD_Nutrient` and `CD_reminderMinutes`, `CD_remindsAtUsualTime` on `CD_LogStack` (development on 2026-10-28; production before #137's phases 1 and 2 merge). **Before every TestFlight upload run `Tools/check-cloudkit-schema`** (production by default; `development` as an argument): it exports the schema with `cktool` and lists any model field missing there (#145). The fields it expects are `Tools/CloudKitSchema/fields.txt`, which `CloudKitSchemaFieldsTests` keeps in step with `ModelContainerFactory.models` (each attribute and to-one relationship as `CD_<name>`); after changing a model, rewrite it with `TEST_RUNNER_UPDATE_CLOUDKIT_FIELDS=1 xcodebuild test … -only-testing:nutrxTests/CloudKitSchemaFieldsTests`.
+- **New models *and new fields* need their CloudKit schema deployed before any TestFlight build:** TestFlight builds use the **production** CloudKit environment, like the App Store, so a new field that isn't in production can make CloudKit reject that record type's saves on testers' devices. Development: `xcrun cktool export-schema … --environment development`, add the field (`CD_<name>`, e.g. `CD_isRemoved INT64 QUERYABLE SORTABLE`), `validate-schema`, `import-schema`, then export again to check (team `6396A6L9J3`, container `iCloud.nutrx-labs.nutrx`). Production: only through the CloudKit Console (Deploy Schema Changes…), which the user does; check it afterwards with `export-schema --environment production`. Adding fields doesn't affect older app versions, and production can never remove or rename one. 2.2 added `CD_endDate`, `CD_courseGapsRaw` and `CD_isRemoved` this way; 2.6 adds `CD_usualReminderMinutes` on `CD_Nutrient` and `CD_reminderMinutes`, `CD_remindsAtUsualTime` on `CD_LogStack` (development on 2026-10-28; production before #137's phases 1 and 2 merge). 2.8 adds the record types `CD_FeelingQuestion` and `CD_FeelingAnswer` and `CD_feelingsEnabled`, `CD_feelingsAskMinutes`, `CD_feelingsReminderEnabled` on `CD_UserPreferences` (How you feel, #133; development on 2026-11-08, production before its phase 1 merges). **Before every TestFlight upload run `Tools/check-cloudkit-schema`** (production by default; `development` as an argument): it exports the schema with `cktool` and lists any model field missing there (#145). The fields it expects are `Tools/CloudKitSchema/fields.txt`, which `CloudKitSchemaFieldsTests` keeps in step with `ModelContainerFactory.models` (each attribute and to-one relationship as `CD_<name>`); after changing a model, rewrite it with `TEST_RUNNER_UPDATE_CLOUDKIT_FIELDS=1 xcodebuild test … -only-testing:nutrxTests/CloudKitSchemaFieldsTests`.
 
 ---
 
