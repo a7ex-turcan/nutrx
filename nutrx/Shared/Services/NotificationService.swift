@@ -244,7 +244,10 @@ enum NotificationService {
             }
         }
         let wanted = Set(requests.map(\.identifier))
-        scheduleBackgroundRefresh(needed: !requests.isEmpty)
+        // How you feel's reminder (#133) is scheduled one at a time, so it needs the refresh too, even alone.
+        let feelings = fetchPreferences(context: context)
+        scheduleBackgroundRefresh(needed: !requests.isEmpty
+                                  || (feelings.feelingsEnabled && feelings.feelingsReminderEnabled))
 
         let previous = reminderSync
         reminderSync = Task {

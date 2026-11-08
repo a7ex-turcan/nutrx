@@ -55,7 +55,8 @@ struct ExportDataView: View {
                     periodPicker
                     summaryLine(summary)
                         .padding(.horizontal, 4)
-                    if !feelingEntries.isEmpty {
+                    // Only beside the log: a period with answers but no entries exports nothing, as before.
+                    if summary.entryCount > 0, !feelingEntries.isEmpty {
                         Text("How you feel's answers come as a second file.")
                             .font(.footnote)
                             .foregroundStyle(Theme.textSecondary)
@@ -216,10 +217,10 @@ struct ExportDataView: View {
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .background(Theme.controlPrimary,
                                 in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
-                    .opacity(summary.entryCount == 0 && feelingEntries.isEmpty ? 0.4 : 1)
+                    .opacity(summary.entryCount == 0 ? 0.4 : 1)
             }
             .buttonStyle(.plain)
-            .disabled(summary.entryCount == 0 && feelingEntries.isEmpty)
+            .disabled(summary.entryCount == 0)
             Text("The file is made on your \(UIDevice.current.model). nutrx never sees it.")
                 .font(.footnote)
                 .foregroundStyle(Theme.textSecondary)
@@ -254,10 +255,10 @@ struct ExportDataView: View {
         let feelings = ExportService.feelingEntries(for: period, context: modelContext)
         entries = current
         feelingEntries = feelings
-        var files: [(csv: String, fileName: String)] = []
-        if !current.isEmpty { files.append((ExportService.csv(current), ExportService.fileName())) }
+        // The log, then How you feel's answers beside it when the period has any (#133).
+        guard !current.isEmpty else { return }
+        var files: [(csv: String, fileName: String)] = [(ExportService.csv(current), ExportService.fileName())]
         if !feelings.isEmpty { files.append((ExportService.feelingsCSV(feelings), ExportService.feelingsFileName())) }
-        guard !files.isEmpty else { return }
         do {
             let urls = try ExportService.writeExport(files)
             writtenFile = urls.first
