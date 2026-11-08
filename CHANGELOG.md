@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### Fixes
+- **Today's date at the largest text sizes** — From the first accessibility size, the date under Today's title was cut off ("Saturday, 7 Novemb…"). It's shortened there now ("Sat, 7 Nov"), and stays in full at other sizes.
+
 ## v2.7 — submitted for review 2026-11-08 (build 241)
 
 ### nutrx Pro
