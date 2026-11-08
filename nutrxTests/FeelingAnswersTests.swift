@@ -127,6 +127,7 @@ final class FeelingAnswersTests: XCTestCase {
         let questions = [energy, headache]
         let values = [energy.persistentModelID: 4, headache.persistentModelID: 0]
         XCTAssertEqual(FeelingText.summary(questions, values: values), "Energy 4 · Headache no")
+        XCTAssertEqual(FeelingText.checkedIn(questions, values: values), "Checked in · Energy 4 · Headache no")
         XCTAssertEqual(FeelingText.summary(questions, values: [energy.persistentModelID: 2]), "Energy 2")
         XCTAssertEqual(FeelingText.answer(1, kind: .yesNo), "Yes")
         XCTAssertEqual(FeelingText.scaleValue(nil), "Not answered")

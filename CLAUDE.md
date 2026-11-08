@@ -770,7 +770,7 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
     - `cardShows`: on, with questions, from the Ask from time until the day ends, unless hidden today;
     - `isEditable`: today and the 7 days before;
     - `firstDay`: the first question's day.
-  - **`FeelingQuestionRows`** (`Shared/Components/`) has, per question, its symbol and name, then five 40 pt round buttons 1–5 with the end words under the first and last, or Yes / No capsules.
+  - **`FeelingQuestionRows`** (`Shared/Components/`) has, per question, its symbol and name, then five round buttons 1–5 with the end words under the first and last, or Yes / No capsules.
     - One layout for every row (`ViewThatFits` over the whole list): the answers beside the names when every name fits unbroken beside its answers (a wide card), else each name above its answers (a phone, mostly), so the answers always line up. The circles are 38 pt in 44 pt tap areas, and Yes / No are inset to match.
     - Tapping the chosen answer clears it.
     - VoiceOver: a scale is one adjustable element ("Energy", "4 of 5", swipe up or down); Yes and No are buttons with the selected trait.
@@ -778,10 +778,11 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
     - Once every question is answered, it folds to "Checked in · Energy 4 · Mood 3 · Headache no" with Edit, which opens it again with Done to fold it.
     - ✕ hides it until tomorrow (`nutrx.hiddenFeelingCardDay`, this device).
     - Answers save on each tap, with `Haptics.adjusted()`.
-    - TodayView's minute timer moves `feelingClock` only when the card would appear or go, so Today isn't redrawn every minute; the clock also moves when the app becomes active.
+    - A minute loop (`.task`) moves `feelingClock` only when the card would appear or go, so Today isn't redrawn every minute; the clock also moves when the app becomes active, and to now before each answer, so a tap after midnight answers the day the card then shows.
   - **History:** `FeelingDayCard`, "How you felt", is on a day's detail from `firstDay` on.
     - It lists the day's answers, removed questions' too ("4 of 5", "No"), or "No check-in".
     - On editable days, Edit opens `FeelingDaySheet` with the card's rows. History doesn't open today, so in practice that's the 7 days before; today's answers change on Today's card.
+    - With How you feel turned off, the card shows only on days with answers, and without Edit.
   - **What's New 2.8** has a How you feel item; it points to Settings, since the card has no buttons.
   - Not yet (phase 2b): the reminder, export's second file and the demo data.
 

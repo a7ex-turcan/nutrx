@@ -69,7 +69,7 @@ nonisolated struct WhatsNew: Equatable {
         ]),
         WhatsNew(version: "2.8", items: [
             Item(title: "How you feel",
-                 subtitle: "Check in each evening on how the day went. Turn it on in Settings → How you feel.",
+                 subtitle: "Check in on how the day went, from a time you set. Turn it on in Settings → How you feel.",
                  symbolName: "face.smiling", tint: .pink),
         ]),
     ]

@@ -142,7 +142,10 @@ struct TodayView: View {
             FeelingTodayCard(questions: questions,
                              values: FeelingAnswers.values(for: questions, on: feelingClock),
                              onAnswer: { question, value in
-                                 FeelingAnswers.set(value, for: question, on: .now, in: modelContext)
+                                 // The card reads at its clock: move it to now first, so a tap after midnight
+                                 // answers the day the card then shows.
+                                 feelingClock = .now
+                                 FeelingAnswers.set(value, for: question, on: feelingClock, in: modelContext)
                                  Haptics.adjusted()
                              },
                              onDismiss: {
@@ -352,7 +355,12 @@ struct TodayView: View {
             viewModel.refresh(context: modelContext)
         }
         // "How was today?" from the Ask from time, and gone at midnight (#133).
-        .onReceive(Timer.publish(every: 60, on: .main, in: .common).autoconnect()) { tickFeelingClock($0) }
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60))
+                tickFeelingClock(.now)
+            }
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 feelingClock = .now

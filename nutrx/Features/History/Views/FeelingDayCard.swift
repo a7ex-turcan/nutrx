@@ -2,11 +2,13 @@ import SwiftUI
 import SwiftData
 
 /// "How you felt" on a History day (#133, docs/pro/HOW-YOU-FEEL.md §2): the day's How you feel answers, removed
-/// questions' included, or "No check-in". Today and the 7 days before can be changed with Edit; older days are
-/// read-only.
+/// questions' included, or "No check-in". The last week's can be changed with Edit while How you feel is on; older
+/// days are read-only.
 struct FeelingDayCard: View {
     let date: Date
     let questions: [FeelingQuestion]
+    /// How you feel is on: off, the card only shows a day's answers.
+    var canEdit = true
     let onEdit: () -> Void
 
     var body: some View {
@@ -19,7 +21,7 @@ struct FeelingDayCard: View {
                     .foregroundStyle(Theme.textPrimary)
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
-                if FeelingAnswers.isEditable(date), questions.contains(where: { !$0.isRemoved }) {
+                if canEdit, FeelingAnswers.isEditable(date), questions.contains(where: { !$0.isRemoved }) {
                     Button(action: onEdit) {
                         Text("Edit")
                             .font(.subheadline.weight(.semibold))

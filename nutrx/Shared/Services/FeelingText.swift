@@ -21,7 +21,12 @@ enum FeelingText {
         value.map { "\($0) of 5" } ?? "Not answered"
     }
 
-    /// The folded card's line: "Energy 4 · Mood 3 · Headache no", in the questions' order, answered ones only.
+    /// The folded card: "Checked in · Energy 4 · Mood 3 · Headache no".
+    static func checkedIn(_ questions: [FeelingQuestion], values: [PersistentIdentifier: Int]) -> String {
+        "Checked in · \(summary(questions, values: values))"
+    }
+
+    /// The answers' line: "Energy 4 · Mood 3 · Headache no", in the questions' order, answered ones only.
     static func summary(_ questions: [FeelingQuestion], values: [PersistentIdentifier: Int]) -> String {
         questions.compactMap { question in
             values[question.persistentModelID].map { "\(question.displayTitle) \(answer($0, kind: question.kind).lowercased())" }

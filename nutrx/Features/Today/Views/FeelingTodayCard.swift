@@ -45,7 +45,7 @@ struct FeelingTodayCard: View {
             .padding(.trailing, -10)  // the ✕'s touch area reaches the card's padding
 
             if isFolded {
-                Text("Checked in · \(FeelingText.summary(questions, values: values))")
+                Text(FeelingText.checkedIn(questions, values: values))
                     .font(.subheadline)
                     .foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
