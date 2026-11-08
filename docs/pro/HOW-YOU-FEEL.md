@@ -57,7 +57,7 @@ This document is the spec to build from. The build phases are at the end.
 - **The reminder:**
   - "How was today?" at the Ask from time, only while today has no answer. The body names the questions in the user's order, as a list formatted for the locale (`ListFormatter`): "Check in on Energy." for one, "Check in on Energy, Mood and Sleep." for three. With more than three it names the first three and the rest as a count: "Check in on Energy, Mood, Sleep and 2 more."
   - It's scheduled like the noon check-in: only the next one, refreshed when the app becomes active, after a check-in, and by the background refresh.
-  - **The budget:** iOS keeps 64 pending requests. Today `ReminderSchedule.budget` gives refills and dose reminders 60, leaving 4: the noon check-in and up to three recaps in December. This reminder is one more fixed request, so the budget drops to 59, with its doc comment and tests, and the total stays at 64.
+  - **The budget:** iOS keeps 64 pending requests. Today `ReminderSchedule.budget` gives refills and dose reminders 60, leaving 4: the noon check-in and up to three recaps in December. This reminder is one more fixed request, so the budget drops to 59, with its doc comment, its tests and CLAUDE.md's Notifications section ("what's left of the 60"), and the total stays at 64.
   - A tap opens Today, where the card is.
 - **Notifications off:** the card still shows, and the Remind me row says notifications are off, with the way to allow them.
 
@@ -108,7 +108,7 @@ This document is the spec to build from. The build phases are at the end.
   - synced, with the same reinstall check as `dailyReminderEnabled`: if iOS hasn't been asked for notifications, the reminder reads as off.
 - **CloudKit:**
   - new record types `CD_FeelingQuestion` and `CD_FeelingAnswer`, plus the three `CD_UserPreferences` fields;
-  - development is imported with `cktool` before phase 1 merges. Production is the user's Console deploy, before any TestFlight build with phase 1 (`Tools/check-cloudkit-schema`; `fields.txt` is rewritten by `CloudKitSchemaFieldsTests`).
+  - development is imported with `cktool`, and production is the user's Console deploy, both before phase 1 merges, since every merge to `main` becomes a TestFlight build (`Tools/check-cloudkit-schema`; `fields.txt` is rewritten by `CloudKitSchemaFieldsTests`).
 - **Two devices:**
   - Answers are read per question and day, and the newest `updatedAt` wins, so no repair is needed.
   - A preset is one question per `presetRaw`: turning one on reuses the existing (removed) one. Two made on two devices before syncing are merged at launch and on remote changes, keeping the oldest and moving the other's answers to it, like `StackLogging.repairDuplicateIDs`.
@@ -116,7 +116,7 @@ This document is the spec to build from. The build phases are at the end.
 - **Privacy:**
   - The answers are the user's own entries, not Apple Health data. PLAN.md §0.5 is about Health data, which stays unstored.
   - The website's privacy policy gets a line about How you feel, and the support FAQ an entry.
-- **Demo data** (`-screenshotDemoData`): Energy, Mood and Sleep answered on most of the seven weeks, with Sleep higher on the days Magnesium was met, so the analytics card has a finding for the App Store shots.
+- **Demo data** (`-screenshotDemoData`): Energy, Mood and Sleep answered on most of the seven weeks, with Sleep higher on the days after Magnesium was met (Sleep pairs with the day before, §1), so the analytics card has a finding for the App Store shots.
 
 ## 7. Rules it keeps (docs/pro/PLAN.md §0)
 
@@ -131,7 +131,7 @@ This document is the spec to build from. The build phases are at the end.
    - the models, the preferences and the presets;
    - the user's own questions;
    - the Settings page;
-   - the CloudKit schema (development; production by the user before this merges);
+   - the CloudKit schema (development, and production by the user, both before this merges: §6);
    - tests for the questions, presets, merging duplicates and the schema fields.
 2. **Checking in:**
    - the Today card;
