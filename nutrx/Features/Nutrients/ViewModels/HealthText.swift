@@ -69,9 +69,10 @@ struct HealthText {
         }
     }
 
-    /// One line at the end of the weekly recap, or nil.
-    static func recapLine(_ status: HealthInsights.Status) -> String? {
-        switch status {
+    /// One line at the end of the weekly recap, or nil. The month's and the year's recaps have none (#377).
+    static func recapLine(_ status: HealthInsights.Status, on tab: RecapTab) -> String? {
+        guard tab == .week else { return nil }
+        return switch status {
         case .gathering: "Apple Health insights start after about two weeks of logging."
         case .ready(_, let name): "See how \(name) lines up with your sleep and workouts in its analytics."
         case .noHealthData, .noPattern: nil

@@ -37,7 +37,7 @@ struct RecapsView: View {
                 case .month: monthContent
                 case .year: yearContent
                 }
-                if let status = healthStatus, let line = HealthText.recapLine(status) {
+                if let status = healthStatus, let line = HealthText.recapLine(status, on: tab) {
                     healthLine(line)
                 }
             }
