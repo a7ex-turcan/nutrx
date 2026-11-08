@@ -90,7 +90,8 @@ struct SettingsView: View {
                 } label: {
                     row("How you feel", symbol: "face.smiling", color: Theme.SettingsTile.pink,
                         value: SettingsSummary.howYouFeel(enabled: preferences?.feelingsEnabled ?? false,
-                                                          askMinutes: preferences?.feelingsAskMinutes ?? 1140))
+                                                          askMinutes: preferences?.feelingsAskMinutes
+                                                              ?? UserPreferences.defaultFeelingsAskMinutes))
                 }
                 NavigationLink {
                     ManageGroupsView()

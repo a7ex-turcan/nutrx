@@ -27,10 +27,15 @@ enum FeelingQuestions {
         all(in: context).filter { !$0.isRemoved }
     }
 
-    /// The presets that aren't on the card, in the presets' order.
+    /// The presets that aren't on the card, in the presets' order. One whose title a question of the user's own
+    /// already has is left out, so the card never shows two of a name.
     static func presetsToAdd(besides active: [FeelingQuestion]) -> [FeelingPreset] {
         let on = Set(active.compactMap(\.preset))
-        return FeelingPreset.allCases.filter { !on.contains($0) }
+        return FeelingPreset.allCases.filter { preset in
+            !on.contains(preset) && !active.contains {
+                $0.preset == nil && $0.title.compare(preset.title, options: .caseInsensitive) == .orderedSame
+            }
+        }
     }
 
     /// The first time How you feel is turned on, Energy, Mood and Sleep. Later it keeps whatever the user chose,
@@ -44,9 +49,14 @@ enum FeelingQuestions {
         try? context.save()
     }
 
-    /// Puts a preset on the card, at the end. One that was removed comes back with its answers.
+    /// Puts a preset on the card, at the end. One that was removed comes back with its answers. Nil when a question
+    /// of the user's own already has its title.
     @discardableResult
-    static func add(_ preset: FeelingPreset, in context: ModelContext) -> FeelingQuestion {
+    static func add(_ preset: FeelingPreset, in context: ModelContext) -> FeelingQuestion? {
+        let active = active(in: context)
+        guard active.contains(where: { $0.preset == preset }) || presetsToAdd(besides: active).contains(preset) else {
+            return nil
+        }
         if let existing = all(in: context).first(where: { $0.preset == preset }) {
             if existing.isRemoved {
                 existing.isRemoved = false

@@ -1192,7 +1192,7 @@ Every item here has an issue, so GitHub issues are the one list of what's left (
 
 ## Data Models
 
-All persistence is handled via SwiftData. Nine model classes. No data is ever sent off-device.
+All persistence is handled via SwiftData. Eleven model classes. No data is ever sent off-device.
 
 ### Design principles
 - **Everything is derived from raw records** — no pre-aggregated totals. Today's intake = SUM of `IntakeRecord` rows for today's calendar day.
@@ -1288,6 +1288,9 @@ Single instance. App-wide settings.
 | `hasSeenSyncEnabledBanner` | `Bool` | `false` | One-time banner |
 | `lastReviewRequestedVersion` | `String?` | `nil` | Review prompt version gate |
 | `lastReviewRequestedDate` | `Date?` | `nil` | Review prompt 90-day cooldown |
+| `feelingsEnabled` | `Bool` | `false` | How you feel (#133): the daily check-in, off until turned on in Settings |
+| `feelingsAskMinutes` | `Int` | `1140` | How you feel: when Today starts asking, minutes after midnight (`UserPreferences.defaultFeelingsAskMinutes`, 19:00) |
+| `feelingsReminderEnabled` | `Bool` | `false` | How you feel: a notification at that time while today has no answer (phase 2) |
 
 ---
 
@@ -1352,6 +1355,35 @@ A named set of nutrients with preset amounts, logged in one go (see Stacks).
 | `nutrient` | `Nutrient?` | Relationship. `Nutrient.stackEntries` is the inverse (cascade on hard delete) |
 | `amount` | `Double` | Logged each time, in the nutrient's unit; starts at its step |
 | `sortOrder` | `Int` | Order within the stack |
+
+---
+
+### FeelingQuestion
+
+How you feel (#133, docs/pro/HOW-YOU-FEEL.md): one question of the daily check-in. Written only through `FeelingQuestions`.
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `UUID = UUID()` | Stable identity |
+| `title` | `String` | The user's own wording; a preset reads `FeelingPreset.title` (`displayTitle`) |
+| `kindRaw` | `String = "scale"` | `scale` (1–5) or `yesNo`; read via `kind: FeelingKind`. Fixed once the question has answers |
+| `presetRaw` | `String? = nil` | `FeelingPreset`'s raw value; nil for the user's own. One question per preset |
+| `sortOrder` | `Int` | The card's order |
+| `isRemoved` | `Bool = false` | Off the card; its answers stay |
+| `createdAt` | `Date = Date()` | The oldest wins when two devices made the same preset |
+
+**Relationships:** → many `FeelingAnswer`? (nullify)
+
+---
+
+### FeelingAnswer
+
+| Field | Type | Notes |
+|---|---|---|
+| `question` | `FeelingQuestion?` | Relationship |
+| `day` | `Date` | The start of the local day it's about |
+| `value` | `Int` | 1–5, or 1 yes / 0 no |
+| `updatedAt` | `Date` | The newest answer for a question and day is the one read |
 
 ---
 

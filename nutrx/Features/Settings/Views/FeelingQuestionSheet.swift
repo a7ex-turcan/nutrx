@@ -109,3 +109,19 @@ struct FeelingQuestionSheet: View {
         dismiss()
     }
 }
+
+#Preview("New") {
+    FeelingQuestionSheet(question: nil)
+        .modelContainer(previewContainer)
+}
+
+/// An answered question of your own: the kind is locked, and Remove Question shows.
+#Preview("Edit, answered") {
+    let container = previewContainer
+    let question = FeelingQuestion(title: "Skin", kind: .yesNo, sortOrder: 0)
+    container.mainContext.insert(question)
+    container.mainContext.insert(FeelingAnswer(question: question, day: Calendar.current.startOfDay(for: .now),
+                                               value: 1))
+    return FeelingQuestionSheet(question: question)
+        .modelContainer(container)
+}

@@ -55,7 +55,7 @@ final class FeelingQuestionsTests: XCTestCase {
         let back = FeelingQuestions.add(.energy, in: context)
         XCTAssertTrue(back === energy, "the same question, not a new one")
         XCTAssertEqual(titles(), ["Mood", "Sleep last night", "Energy"])
-        XCTAssertEqual(back.answers?.map(\.value), [4])
+        XCTAssertEqual(back?.answers?.map(\.value), [4])
         XCTAssertEqual(FeelingQuestions.all(in: context).count, 3)
     }
 
@@ -63,6 +63,21 @@ final class FeelingQuestionsTests: XCTestCase {
         FeelingQuestions.setUpIfNeeded(in: context)
         FeelingQuestions.add(.mood, in: context)
         XCTAssertEqual(titles(), ["Energy", "Mood", "Sleep last night"])
+    }
+
+    func testAPresetNamedLikeYourOwnQuestionIsntOffered() {
+        FeelingQuestions.setUpIfNeeded(in: context)
+        FeelingQuestions.remove(FeelingQuestions.active(in: context)[0], in: context)  // Energy
+        FeelingQuestions.addOwn(title: "energy", kind: .yesNo, in: context)
+
+        XCTAssertFalse(FeelingQuestions.presetsToAdd(besides: FeelingQuestions.active(in: context)).contains(.energy))
+        XCTAssertNil(FeelingQuestions.add(.energy, in: context))
+        XCTAssertEqual(titles(), ["Mood", "Sleep last night", "energy"])
+
+        // Once your own goes, the preset can come back.
+        FeelingQuestions.remove(FeelingQuestions.active(in: context)[2], in: context)
+        XCTAssertNotNil(FeelingQuestions.add(.energy, in: context))
+        XCTAssertEqual(titles(), ["Mood", "Sleep last night", "Energy"])
     }
 
     func testPresetsToAddFollowThePresetsOrder() {
@@ -154,7 +169,7 @@ final class FeelingQuestionsTests: XCTestCase {
         XCTAssertFalse(FeelingQuestions.setKind(.scale, of: skin, in: context))
         XCTAssertEqual(skin.kind, .yesNo)
 
-        let energy = FeelingQuestions.add(.energy, in: context)
+        let energy = FeelingQuestions.add(.energy, in: context)!
         XCTAssertFalse(FeelingQuestions.canChangeKind(of: energy), "a preset's kind is the preset's")
     }
 
