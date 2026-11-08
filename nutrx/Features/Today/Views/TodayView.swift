@@ -1016,11 +1016,14 @@ struct TodayView: View {
 }
 
 private struct TodayPreview: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
         NavigationStack {
             TodayView()
                 .navigationTitle("Today")
-                .navigationSubtitle(TodaySubtitle.text(for: .now, isAccessibilitySize: false))
+                .navigationSubtitle(TodaySubtitle.text(for: .now,
+                                                       isAccessibilitySize: dynamicTypeSize.isAccessibilitySize))
                 .navigationBarTitleDisplayMode(.large)
                 .withProfileMenu()
         }
