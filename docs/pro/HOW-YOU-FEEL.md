@@ -57,7 +57,7 @@ This document is the spec to build from. The build phases are at the end.
 - **The reminder:**
   - "How was today?" at the Ask from time, only while today has no answer. The body names the questions in the user's order, as a list formatted for the locale (`ListFormatter`): "Check in on Energy." for one, "Check in on Energy, Mood and Sleep." for three. With more than three it names the first three and the rest as a count: "Check in on Energy, Mood, Sleep and 2 more."
   - It's scheduled like the noon check-in: only the next one, refreshed when the app becomes active, after a check-in, and by the background refresh.
-  - **The budget:** iOS keeps 64 pending requests. Today `ReminderSchedule.budget` gives refills and dose reminders 60, leaving 4: the noon check-in and up to three recaps in December. This reminder is one more fixed request, so the budget drops to 59, with its doc comment, its tests and CLAUDE.md's Notifications section ("what's left of the 60"), and the total stays at 64.
+  - **The budget:** iOS keeps 64 pending requests. Today `ReminderSchedule.budget` gives refills and dose reminders 60, leaving 4: the noon check-in and up to three recaps in December. This reminder is one more fixed request, so the budget drops to 59, with its doc comment, its tests and CLAUDE.md's Supply & refills budget line ("what's left of the 60"), and the total stays at 64.
   - A tap opens Today, where the card is.
 - **Notifications off:** the card still shows, and the Remind me row says notifications are off, with the way to allow them.
 
