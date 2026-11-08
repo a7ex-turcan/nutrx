@@ -76,8 +76,8 @@ struct PaywallView: View {
         dynamicTypeSize.isAccessibilitySize ? .scrolls : .buttonPinned
     }
 
-    /// The plan line above the pinned button names the selected plan, so it shows only while that plan's card is out
-    /// of view (#338, `PlanLine`). With it always there, Lifetime's card sat half behind the footer on an iPhone 17.
+    /// The plan line above the pinned button names the selected plan, so it shows only while that plan's card isn't
+    /// wholly in view (#338, #352, `PlanLine`). With it always there, Lifetime's card sat half behind the footer on an iPhone 17.
     /// From xLarge and on large widths the plans start below the fold: it always shows there (#189, #205).
     private var showsPlanLine: Bool {
         guard dynamicTypeSize < .xLarge, widthClass == .compact else { return true }
@@ -86,7 +86,7 @@ struct PaywallView: View {
 
     /// `planLineShown` from the positions, set only when it changes.
     private func updatePlanLine() {
-        let shows = PlanLine.shows(cardMidY: positions.cardMidY[selected], sheetTop: positions.sheetTop,
+        let shows = PlanLine.shows(card: positions.cards[selected], sheetTop: positions.sheetTop,
                                    buttonTop: positions.buttonTop)
         if shows != planLineShown { planLineShown = shows }
     }
@@ -368,8 +368,11 @@ struct PaywallView: View {
                 .contentShape(RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
             }
             .buttonStyle(.plain)
-            .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).midY } action: {
-                positions.cardMidY[plan] = $0
+            .onGeometryChange(for: ClosedRange<CGFloat>.self) {
+                let frame = $0.frame(in: .global)
+                return frame.minY...frame.maxY
+            } action: {
+                positions.cards[plan] = $0
                 updatePlanLine()
             }
             .accessibilityElement(children: .combine)
@@ -561,7 +564,8 @@ struct PaywallView: View {
 /// Where the paywall's plan cards, pinned button and sheet are on screen (#338). A plain class rather than state, so
 /// writing a position on every scroll frame doesn't redraw the paywall.
 private final class PlanLinePositions {
-    var cardMidY: [ProAccess.Plan: CGFloat] = [:]
+    /// Each plan card's top to bottom on screen.
+    var cards: [ProAccess.Plan: ClosedRange<CGFloat>] = [:]
     var sheetTop: CGFloat = 0
     var buttonTop: CGFloat?
 }

@@ -13,6 +13,7 @@ struct SettingsView: View {
     @Query private var profiles: [UserProfile]
     @Query(filter: #Predicate<NutrientGroup> { !$0.isSystem }) private var userGroups: [NutrientGroup]
     @Environment(ProAccess.self) private var proAccess: ProAccess?
+    @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @State private var showPaywall = false
     /// Read here so the iCloud Sync row follows the switch on its page.
     @AppStorage(ICloudSync.enabledKey) private var iCloudSyncEnabled = true
@@ -150,6 +151,15 @@ struct SettingsView: View {
             }
         }
         .proPaywall(isPresented: $showPaywall)
+        #if DEBUG
+        // `-screenshotRoute settings/paywall` (#362): the paywall as the nutrx Pro card's Learn more opens it, whatever
+        // the Pro state. Cleared once shown, so closing the paywall leaves Settings.
+        .onChange(of: router?.screenshotRoute, initial: true) { _, route in
+            guard route == .settingsPaywall else { return }
+            showPaywall = true
+            router?.screenshotRoute = nil
+        }
+        #endif
         .navigationDestination(isPresented: $showProStatus) {
             ProStatusView()
         }

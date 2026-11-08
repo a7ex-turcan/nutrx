@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ProfileToolbarModifier: ViewModifier {
+    @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @State private var showEditProfile = false
     @State private var showSettings = false
 
@@ -22,6 +23,12 @@ struct ProfileToolbarModifier: ViewModifier {
                     SettingsView()
                 }
             }
+            #if DEBUG
+            // `-screenshotRoute settings/paywall` (#362): Settings first; SettingsView opens the paywall over it.
+            .onChange(of: router?.screenshotRoute, initial: true) { _, route in
+                if route == .settingsPaywall { showSettings = true }
+            }
+            #endif
     }
 }
 

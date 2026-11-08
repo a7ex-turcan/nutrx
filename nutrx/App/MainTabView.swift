@@ -91,7 +91,7 @@ struct MainTabView: View {
             guard let screenshot = ScreenshotRoute.requested else { return }
             router?.screenshotRoute = screenshot
             switch screenshot {
-            case .today, .paywall: route(to: .today)
+            case .today, .paywall, .settingsPaywall: route(to: .today)
             case .nutrients, .nutrient: route(to: .nutrients)
             case .stacks: route(to: .stacks)
             case .history, .historyDay: route(to: .history)

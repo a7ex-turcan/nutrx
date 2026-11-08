@@ -11,6 +11,10 @@ final class ScreenshotRouteTests: XCTestCase {
         XCTAssertEqual(ScreenshotRoute.parse("stacks"), .stacks)
         XCTAssertEqual(ScreenshotRoute.parse("history"), .history)
         XCTAssertEqual(ScreenshotRoute.parse("paywall"), .paywall)
+        XCTAssertEqual(ScreenshotRoute.parse("settings/paywall"), .settingsPaywall)
+        XCTAssertEqual(ScreenshotRoute.parse("Settings/Paywall"), .settingsPaywall)
+        XCTAssertNil(ScreenshotRoute.parse("settings"), "Settings alone isn't a route")
+        XCTAssertNil(ScreenshotRoute.parse("settings/icloud"))
     }
 
     func testNutrientByName() {
