@@ -20,8 +20,12 @@ struct nutrxWatchApp: App {
         #endif
         self.modelContainer = container
         // Siri on the Watch (#57): "Log my Vitamin D with nutrx" runs in this process, on this store, not a second
-        // container. Siri can launch the app in the background for it.
+        // container. Siri can launch the app in the background for it, so the stacks' ids are repaired here too, as
+        // on the iPhone: with the shared pre-#54 id, "Log my Morning stack" could log another stack.
         AppDependencyManager.shared.add(dependency: container)
+        if StackLogging.repairDuplicateIDs(context: container.mainContext) {
+            NutrxShortcuts.updateAppShortcutParameters()
+        }
     }
 
     var body: some Scene {
@@ -32,7 +36,9 @@ struct nutrxWatchApp: App {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 WidgetCenter.shared.reloadAllTimelines()
-                // The phrases name the user's nutrients and stacks, which change on the iPhone and sync here.
+                // A sync can bring duplicate stack ids, as on the iPhone; the phrases name the user's nutrients and
+                // stacks, which change on the iPhone and sync here.
+                StackLogging.repairDuplicateIDs(context: modelContainer.mainContext)
                 NutrxShortcuts.updateAppShortcutParameters()
             }
         }

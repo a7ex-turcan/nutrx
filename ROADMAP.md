@@ -207,7 +207,7 @@ Planned on 8 Nov 2026. The spec is `docs/pro/HOW-YOU-FEEL.md`.
 | Patterns in how you feel, per nutrient, in analytics, recaps and the doctor report (Pro) | 📋 Planned (#133, phases 3–4) |
 | Today's date at the largest text sizes | 📋 Planned (#360) |
 | The paywall opened from Settings on an SE, and its UI test | 📋 Planned (#352, #362) |
-| Siri on Apple Watch | 🔨 In review (#57; needs a check on a real Watch) |
+| Siri on Apple Watch | 📋 Planned (#57) |
 | The website's screenshot tools | 📋 Planned (#361) |
 
 ---
