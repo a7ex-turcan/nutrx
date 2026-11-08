@@ -25,6 +25,11 @@ final class NutrientAnalyticsViewModel {
     /// Trends with Apple Health (nutrx Pro): nil until read, or when not connected.
     private(set) var healthState: HealthTrends.State?
     private(set) var isHealthConnected = HealthReader.isConnected
+    /// Patterns with How you feel (nutrx Pro, #133): nil without questions.
+    private(set) var feelingState: FeelingTrends.State?
+    /// How you feel is on, or has answers: the card shows the state (or the Pro teaser) rather than where to turn
+    /// it on.
+    private(set) var feelingsInUse = false
 
     private let nutrient: Nutrient
     private let modelContext: ModelContext
@@ -58,6 +63,26 @@ final class NutrientAnalyticsViewModel {
         weekdayPattern = schedule.weeklyTimes(on: now, calendar: calendar) != nil ? nil
             : WeekdayPattern(totals: totals, goal: goal, createdAt: nutrient.createdAt, endDate: nutrient.endDate,
                              courseGaps: courseGaps, schedule: schedule, today: now, calendar: calendar)
+        refreshFeelings(totals: totals, courseGaps: courseGaps, schedule: schedule, now: now, calendar: calendar)
+    }
+
+    /// How you feel's answers against this nutrient's last four weeks (#133). Read with the rest, not on its own:
+    /// it's all in the store.
+    private func refreshFeelings(totals: [Date: Double], courseGaps: [ClosedRange<Date>], schedule: NutrientSchedule,
+                                 now: Date, calendar: Calendar) {
+        let questions = FeelingQuestions.active(in: modelContext)
+        let enabled = (try? modelContext.fetch(FetchDescriptor<UserPreferences>()))?.first?.feelingsEnabled ?? false
+        feelingsInUse = enabled || FeelingQuestions.all(in: modelContext).contains { !($0.answers ?? []).isEmpty }
+        let firstTracked = calendar.startOfDay(for: nutrient.createdAt)
+        let endDate = nutrient.endDate
+        feelingState = FeelingTrends.state(
+            totals: totals, loggedDays: loggedDays(daysBack: FeelingTrends.windowDays + 1, now: now, calendar: calendar),
+            questions: questions.map { FeelingTrends.Question($0, calendar: calendar) }, goal: goal,
+            counts: { day in
+                day >= firstTracked && schedule.isCountedDay(day, calendar: calendar)
+                    && NutrientCourse.includes(endDate, gaps: courseGaps, day: day, calendar: calendar)
+            },
+            today: now, calendar: calendar)
     }
 
     /// Reads Apple Health (live, never stored) and pairs it with the last four weeks of this nutrient.

@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### nutrx Pro
+- **Patterns in how you feel** — A nutrient's analytics shows how your How you feel answers line up with it over the last four weeks: "After days you reach your Magnesium goal, you rated your Sleep 4.4 on average, vs 2.5 after other days." They're worked out on your device, with the days behind each, and they describe patterns, never causes. Sleep is compared with the day before, since it's about the night.
+
 ### Features
 - **How you feel** — A daily check-in on how the day went, on questions you pick: Energy, Mood, Sleep, Focus, Stress, Digestion, Headache, Aches, or up to five of your own, each 1 to 5 or yes or no. Turn it on in Settings → How you feel. From the time you set (19:00 to start with), Today asks "How was today?": a tap per question saves it, and once every question is answered the card folds to one line. History's days show how you felt, and the last week's can be changed. An optional reminder comes at that time if you haven't checked in, and Export data adds your answers as a second file. Your answers stay on your devices and in your private iCloud.
 
