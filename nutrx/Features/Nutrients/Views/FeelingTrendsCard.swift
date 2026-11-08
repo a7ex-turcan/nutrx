@@ -9,6 +9,9 @@ struct FeelingTrendsCard: View {
     let state: FeelingTrends.State?
     /// How you feel is on, or has answers.
     let isInUse: Bool
+    /// False under a weekly schedule (#132), whose days don't count one by one: no card, as there's no weekday
+    /// pattern either.
+    var applies = true
 
     @Environment(ProAccess.self) private var proAccess: ProAccess?
     private let padding: CGFloat = 18
@@ -21,7 +24,7 @@ struct FeelingTrendsCard: View {
 
     var body: some View {
         // In use with every question removed, there's nothing to read.
-        if ProAccess.isStoreVisible, !isInUse || state != nil {
+        if ProAccess.isStoreVisible, applies, !isInUse || state != nil {
             VStack(alignment: .leading, spacing: 14) {
                 header
                 content
@@ -95,14 +98,7 @@ struct FeelingTrendsCard: View {
     private func notEnough(question: String, paired: Int) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(FeelingTrendText.notEnoughData).font(.body).foregroundStyle(Theme.textPrimary)
-            HStack(spacing: 4) {
-                ForEach(0..<FeelingTrends.minimumPairedDays, id: \.self) { index in
-                    Capsule()
-                        .fill(index < paired ? Theme.SettingsTile.pink : Theme.surfaceChip)
-                        .frame(height: 10)
-                }
-            }
-            .accessibilityHidden(true)
+            TrendProgressBar(total: FeelingTrends.minimumPairedDays, filled: paired, color: Theme.SettingsTile.pink)
             Text(FeelingTrendText.progress(question: question, pairedDays: paired))
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
@@ -134,26 +130,7 @@ struct FeelingTrendsCard: View {
     }
 
     private func bar(_ label: String, value: String, fraction: Double, color: Color) -> some View {
-        HStack(spacing: 12) {
-            Text(label)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.textSecondary)
-                .frame(width: 104, alignment: .leading)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Theme.surfaceChip)
-                    Capsule().fill(color).frame(width: max(8, geometry.size.width * fraction))
-                }
-            }
-            .frame(height: 12)
-            Text(value)
-                .font(.system(.subheadline, design: .rounded, weight: .bold))
-                .monospacedDigit()
-                .foregroundStyle(Theme.textPrimary)
-                .frame(minWidth: 64, alignment: .trailing)
-        }
+        TrendComparisonBar(label: label, value: value, fraction: fraction, color: color)
     }
 }
 
@@ -164,6 +141,7 @@ struct FeelingTrendsCard: View {
 private struct FeelingTrendsCardPreview: View {
     let state: FeelingTrends.State?
     var isInUse = true
+    var isPro = true
     var body: some View {
         let nutrient = Nutrient(name: "Magnesium", unit: "mg", step: 200, dailyTarget: 400, sortOrder: 0)
         ScrollView {
@@ -171,7 +149,7 @@ private struct FeelingTrendsCardPreview: View {
                 .padding()
         }
         .background(Theme.surfaceGround)
-        .environment(ProAccess.previewPro())
+        .environment(isPro ? ProAccess.previewPro() : ProAccess())
         .modelContainer(previewContainer)
     }
 }
@@ -188,5 +166,7 @@ private let previewFindings = FeelingTrends.State.findings([
 #Preview("Findings") { FeelingTrendsCardPreview(state: previewFindings) }
 #Preview("Findings, dark") { FeelingTrendsCardPreview(state: previewFindings).preferredColorScheme(.dark) }
 #Preview("Not enough data") { FeelingTrendsCardPreview(state: .notEnoughData(question: "Energy", pairedDays: 9)) }
+#Preview("No pattern") { FeelingTrendsCardPreview(state: .noPattern(checkedDays: 24)) }
+#Preview("Free") { FeelingTrendsCardPreview(state: previewFindings, isPro: false) }
 #Preview("Not in use") { FeelingTrendsCardPreview(state: nil, isInUse: false) }
 #endif

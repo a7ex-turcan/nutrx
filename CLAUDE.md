@@ -225,6 +225,7 @@ nutrx/
 │   │   │   ├── SupplyCard.swift                 # Analytics Supply card: free teaser / Set up / days left, gauge, Refilled.
 │   │   │   ├── HealthTrendsCard.swift           # Analytics "With Apple Health" (Pro): findings with two bars, or the state.
 │   │   │   ├── FeelingTrendsCard.swift          # Analytics "With how you feel" (Pro, #133): findings with two bars, the state, the teaser or where to turn it on.
+│   │   │   ├── TrendBars.swift                  # The trend cards' comparison bar and day-progress bar (Health, How you feel).
 │   │   │   ├── ScanLabelEntry.swift             # Scan a label (Pro): entry card + reading note + divider; ScanReviewBanner.
 │   │   │   ├── LabelScannerView.swift           # Full-screen VisionKit scanner (or a photo), reading pill, ScanFailCard.
 │   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics, pushed on row tap: header, period picker, stats + chart card, heatmap, Reminders row, Edit.
@@ -805,7 +806,8 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
     - Pro: the findings with two bars each (out of 5, or the share of days), the days behind them and the footer; or the 14-day progress for the closest question; or no pattern;
     - free, with How you feel on or answered: the teaser with the PRO chip;
     - How you feel off with no answers: where to turn it on, for anyone;
-    - in use with every question removed: no card.
+    - in use with every question removed, or under a weekly schedule (whose days don't count one by one; no weekday pattern either): no card.
+  - The comparison bars and the day-progress bar are `TrendComparisonBar` and `TrendProgressBar` (`Features/Nutrients/Views/TrendBars.swift`), shared with "With Apple Health".
   - The demo's Magnesium shows the Sleep finding (`FeelingTrendsTests.testTheDemosMagnesiumHasASleepPattern`).
 
 ## In-App Review Prompt

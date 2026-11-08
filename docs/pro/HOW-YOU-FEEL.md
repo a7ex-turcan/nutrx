@@ -70,7 +70,7 @@ This document is the spec to build from. The build phases are at the end.
   - **The nutrient's state:**
     - `findings`, from the ready questions;
     - else `noPattern(checkedDays:)` if any question is ready, with the most paired days among the ready ones;
-    - else `notEnoughData(pairedDays:)`, with the most paired days among the questions. The card then reads "9 of 14 days" for that question ("Sleep: 9 of 14 days").
+    - else `notEnoughData(question:pairedDays:)`, naming the question with the most paired days. The card then reads "Sleep last night: 9 of 14 days".
   - **A finding:** each group has at least 4 days. On a 1–5 scale, the averages differ by at least 0.5. For yes/no, the share of yes days differs by at least 25 points.
   - **At most two findings** per nutrient, the largest first: the scale's gap out of 4, against the yes/no share's gap.
 - **The words (`FeelingTrendText`, beside `HealthText`, since they need the nutrient)** follow `HealthText`'s rules: day counts always, "on average", never a cause, never advice.

@@ -105,7 +105,7 @@ private struct NutrientAnalyticsContent: View {
                         .id(Self.healthCardID)
 
                     FeelingTrendsCard(nutrient: nutrient, state: viewModel.feelingState,
-                                      isInUse: viewModel.feelingsInUse)
+                                      isInUse: viewModel.feelingsInUse, applies: viewModel.feelingsApply)
 
                     remindersRow
                 }

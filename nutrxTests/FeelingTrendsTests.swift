@@ -191,6 +191,28 @@ final class FeelingTrendsTests: XCTestCase {
         XCTAssertEqual(FeelingTrendText.progress(question: "Energy", pairedDays: 9), "Energy: 9 of 14 days")
     }
 
+    /// Two devices answered the same day before syncing: the trends read the newest, as `FeelingAnswers` does.
+    @MainActor
+    func testTheNewestAnswerOfADayIsTheOneRead() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let energy = FeelingQuestion(title: "Energy", kind: .scale, presetRaw: "energy", sortOrder: 0)
+        context.insert(energy)
+        let older = FeelingAnswer(question: energy, day: day(2), value: 2)
+        older.updatedAt = day(2).addingTimeInterval(3600)
+        let newer = FeelingAnswer(question: energy, day: day(2).addingTimeInterval(60), value: 5)
+        newer.updatedAt = day(2).addingTimeInterval(7200)
+        context.insert(newer)
+        context.insert(older)
+        context.insert(FeelingAnswer(question: energy, day: day(3), value: 3))
+
+        let question = FeelingTrends.Question(energy, calendar: calendar)
+        XCTAssertEqual(question.answers[day(2)], 5)
+        XCTAssertEqual(question.answers[day(3)], 3)
+        XCTAssertEqual(question.answers.count, 2)
+        XCTAssertFalse(question.aboutNightBefore)
+    }
+
     // MARK: - The demo
 
     /// The App Store demo's Magnesium shows a Sleep pattern in its analytics.

@@ -37,7 +37,7 @@ struct FeelingTrendText {
     // MARK: - Findings
 
     /// "On days you reach your Magnesium goal, you rated your Energy 3.9 on average, vs 3.2 on other days."
-    /// "After days Caffeine passes 300 mg, you had a headache on 5 of 9 days, vs 2 of 15 other days."
+    /// "On days Caffeine passes 300 mg, you had a headache on 5 of 9 days, vs 2 of 15 other days."
     func sentence(_ finding: FeelingTrends.Finding) -> String {
         let after = finding.question.aboutNightBefore
         let condition = "\(after ? "After" : "On") days \(conditionClause(finding))"

@@ -103,14 +103,7 @@ struct HealthTrendsCard: View {
     private func notEnough(_ paired: Int) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(HealthText.notEnoughData).font(.body).foregroundStyle(Theme.textPrimary)
-            HStack(spacing: 4) {
-                ForEach(0..<HealthTrends.minimumPairedDays, id: \.self) { index in
-                    Capsule()
-                        .fill(index < paired ? NutrientTint.coral.color : Theme.surfaceChip)
-                        .frame(height: 10)
-                }
-            }
-            .accessibilityHidden(true)
+            TrendProgressBar(total: HealthTrends.minimumPairedDays, filled: paired, color: NutrientTint.coral.color)
             Text(HealthText.progress(pairedDays: paired))
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
@@ -143,26 +136,7 @@ struct HealthTrendsCard: View {
     }
 
     private func bar(_ label: String, value: String, fraction: Double, color: Color) -> some View {
-        HStack(spacing: 12) {
-            Text(label)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.textSecondary)
-                .frame(width: 104, alignment: .leading)
-                .lineLimit(2)
-                .minimumScaleFactor(0.8)
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Theme.surfaceChip)
-                    Capsule().fill(color).frame(width: max(8, geometry.size.width * fraction))
-                }
-            }
-            .frame(height: 12)
-            Text(value)
-                .font(.system(.subheadline, design: .rounded, weight: .bold))
-                .monospacedDigit()
-                .foregroundStyle(Theme.textPrimary)
-                .frame(minWidth: 64, alignment: .trailing)
-        }
+        TrendComparisonBar(label: label, value: value, fraction: fraction, color: color)
     }
 }
 

@@ -30,6 +30,8 @@ final class NutrientAnalyticsViewModel {
     /// How you feel is on, or has answers: the card shows the state (or the Pro teaser) rather than where to turn
     /// it on.
     private(set) var feelingsInUse = false
+    /// False under a weekly schedule, whose days don't count one by one (no weekday pattern either).
+    private(set) var feelingsApply = true
 
     private let nutrient: Nutrient
     private let modelContext: ModelContext
@@ -70,6 +72,7 @@ final class NutrientAnalyticsViewModel {
     /// it's all in the store.
     private func refreshFeelings(totals: [Date: Double], courseGaps: [ClosedRange<Date>], schedule: NutrientSchedule,
                                  now: Date, calendar: Calendar) {
+        feelingsApply = schedule.weeklyTimes(on: now, calendar: calendar) == nil
         let questions = FeelingQuestions.active(in: modelContext)
         let enabled = (try? modelContext.fetch(FetchDescriptor<UserPreferences>()))?.first?.feelingsEnabled ?? false
         feelingsInUse = enabled || FeelingQuestions.all(in: modelContext).contains { !($0.answers ?? []).isEmpty }
