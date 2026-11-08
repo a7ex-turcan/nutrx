@@ -46,6 +46,20 @@ final class PaywallUITests: XCTestCase {
         app = XCUIApplication()
         app.launchArguments = ["-screenshotDemoData", "-screenshotRoute", "paywall"]
         app.launch()
+        try waitForThePlans()
+    }
+
+    /// The paywall as Settings opens it, a sheet on a sheet (#352, #362), whatever the Pro state:
+    /// `-screenshotRoute settings/paywall` opens Settings over Today and the paywall over Settings. Tapping through
+    /// Settings needs a free simulator, and the scheme's StoreKit purchases outlive a run (nutrx iPhone 17 has Pro).
+    private func launchOnThePaywallFromSettings() throws {
+        app = XCUIApplication()
+        app.launchArguments = ["-screenshotDemoData", "-screenshotRoute", "settings/paywall"]
+        app.launch()
+        try waitForThePlans()
+    }
+
+    private func waitForThePlans() throws {
         XCTAssertTrue(app.buttons["Close"].firstMatch.waitForExistence(timeout: 15), "The paywall didn't open")
         // The plans, once the store answers. Only an unreachable store skips: anything else missing (a changed label)
         // fails, so the tests can't quietly stop testing.
@@ -56,11 +70,10 @@ final class PaywallUITests: XCTestCase {
         XCTAssertTrue(purchaseButton.exists, "No purchase button on the paywall: did its label change?")
     }
 
-    /// In view the way the app judges it (`PlanLine.shows`): the card's middle below the sheet's top and more than
+    /// In view the way the app judges it (`PlanLine.shows`): the whole card between the sheet's top and the footer's,
     /// `PlanLine.margin` (10 pt) above the pinned button's top.
     private func isInView(_ card: XCUIElement) -> Bool {
-        let middle = card.frame.midY
-        return middle > sheet.frame.minY && middle < purchaseButton.frame.minY - 10
+        card.frame.minY >= sheet.frame.minY && card.frame.maxY <= purchaseButton.frame.minY - 10
     }
 
     /// The plan line follows the card: absent while it's in view, above the button while it isn't. The line fades, so
@@ -98,10 +111,26 @@ final class PaywallUITests: XCTestCase {
         }
     }
 
-    /// As it opens: the purchase button wholly on screen, and the selected plan in view, as its card or the line over
-    /// the button (#338: the line shows only while the card is out of view).
+    /// As it opens: the purchase button wholly on screen, and the selected plan in view, as its whole card or the line
+    /// over the button (#338, #352: the line shows only while the card isn't wholly in view).
     func testTheButtonAndTheSelectedPlanAreOnScreen() throws {
         try launchOnThePaywall()
+        let button = purchaseButton
+        XCTAssertTrue(button.isHittable, "The purchase button isn't tappable")
+        XCTAssertLessThanOrEqual(button.frame.maxY, window.maxY, "The purchase button is cut off at the bottom")
+
+        assertThePlanLineFollows(yearlyCard)
+    }
+
+    /// From Settings, where the paywall sits about 20 pt lower (#352, #362): the same as opened over Today. On an SE the
+    /// Yearly card's bottom is under the footer there, so this is where the plan line has to name it.
+    func testFromSettingsTheButtonAndTheSelectedPlanAreOnScreen() throws {
+        try launchOnThePaywallFromSettings()
+        // Kept with the results, to see the line (or the whole card) on each device.
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "Paywall from Settings"
+        shot.lifetime = .keepAlways
+        add(shot)
         let button = purchaseButton
         XCTAssertTrue(button.isHittable, "The purchase button isn't tappable")
         XCTAssertLessThanOrEqual(button.frame.maxY, window.maxY, "The purchase button is cut off at the bottom")

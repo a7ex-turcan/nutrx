@@ -6,13 +6,16 @@ import Foundation
 /// `xcrun simctl launch <UDID> nutrx-labs.nutrx -screenshotDemoData -screenshotRoute "nutrients/Vitamin D"`.
 ///
 /// Routes: `today`, `nutrients`, `stacks`, `history` (a tab); `nutrients/<name>` (that nutrient's analytics, by name,
-/// ignoring case); `history/<yyyy-MM-dd>` (that day); `paywall` (over Today). An unknown name or day opens the tab.
+/// ignoring case); `history/<yyyy-MM-dd>` (that day); `paywall` (over Today); `settings/paywall` (Settings over Today,
+/// and the paywall over Settings, as its nutrx Pro card opens it, #362). An unknown name or day opens the tab.
 /// `NotificationRouter.screenshotRoute` carries it to the screens, the way a tapped notification's route does.
 enum ScreenshotRoute: Equatable {
     case today, nutrients, stacks, history
     case nutrient(name: String)
     case historyDay(Date)
     case paywall
+    /// The paywall from Settings, a sheet on a sheet, whatever the Pro state, as `paywall` is over Today (#362).
+    case settingsPaywall
 
     static let launchArgument = "-screenshotRoute"
 
@@ -38,6 +41,7 @@ enum ScreenshotRoute: Equatable {
         // A day that doesn't read still opens History, as an unknown nutrient name opens My Nutrients.
         case ("history", false): return day(rest, calendar: calendar).map(ScreenshotRoute.historyDay) ?? .history
         case ("paywall", true): return .paywall
+        case ("settings", false) where rest.lowercased() == "paywall": return .settingsPaywall
         default: return nil
         }
     }

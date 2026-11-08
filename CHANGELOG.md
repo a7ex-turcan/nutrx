@@ -7,6 +7,7 @@ All notable changes to nutrx are documented in this file.
 ## Unreleased
 
 ### Fixes
+- **The Pro page from Settings on a small iPhone** — Opened from Settings, the Pro page sits a little lower, and on an iPhone SE the Yearly plan's bottom went under the button with nothing naming the selected plan. The line naming your plan now shows whenever the selected plan isn't wholly in view.
 - **Today's date at the largest text sizes** — From the first accessibility size, the date under Today's title was cut off ("Saturday, 7 Novemb…"). It's shortened there now ("Sat, 7 Nov"), and stays in full at other sizes.
 
 ## v2.7 — submitted for review 2026-11-08 (build 241)
