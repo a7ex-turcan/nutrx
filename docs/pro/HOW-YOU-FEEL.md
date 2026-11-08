@@ -37,7 +37,7 @@ This document is the spec to build from. The build phases are at the end.
 
 ## 2. Checking in (free)
 
-- **Off until turned on:** from Settings → How you feel (a new row), or the What's New 2.8 card's Set up. Existing users are never prompted otherwise.
+- **Off until turned on:** from Settings → How you feel (a new row). The What's New 2.8 card says where, since What's New cards have no buttons. Existing users are never prompted otherwise.
 - **Settings → How you feel:**
   - the switch;
   - **Ask from**, a time (19:00 by default);
@@ -48,11 +48,11 @@ This document is the spec to build from. The build phases are at the end.
   - It shows from the Ask from time until the day ends, with the other cards under the day score: after the recap cards, before the banners.
   - Each question is a row with its symbol and name, then five buttons 1–5 (the end words under the first and last), or Yes and No.
   - An answer is saved when it's tapped, so there's no Save. Tapping it again clears it.
-  - Once every question has an answer, the card folds to one line: "Checked in · Energy 4 · Mood 3…", with Edit. Its ✕ hides it until tomorrow.
-  - At accessibility sizes the scale buttons go onto a row of their own under the question.
+  - Once every question has an answer, the card folds to a line: "Checked in · Energy 4 · Mood 3…", with Edit, which opens it again with Done to fold it. Its ✕ hides it until tomorrow.
+  - The answers sit beside the question when both fit and under it otherwise (on a phone, usually under it), so at accessibility sizes they always have a row of their own.
   - **VoiceOver:** each scale is one adjustable element ("Energy, 4 of 5"), and yes/no are two buttons.
 - **A day with no answers** simply has no check-in: no catch-up prompt, no streak, nothing marked missed.
-- **History's day detail** gets a "How you felt" card with the day's answers. It shows on days from when How you feel was turned on, and reads "No check-in" when there's nothing. Today and the 7 days before can be edited there; older days are read-only.
+- **History's day detail** gets a "How you felt" card with the day's answers. It shows on days from when How you feel was turned on, and reads "No check-in" when there's nothing. The 7 days before today can be edited there; older days are read-only. History doesn't open today, so today's answers change on Today's card (Edit, while it's not hidden).
 - **One check-in a day, about that day.** Each question has one answer per day; changing it updates that answer (§6 covers two devices).
 - **The reminder:**
   - "How was today?" at the Ask from time, only while today has no answer. The body names the questions in the user's order, as a list formatted for the locale (`ListFormatter`): "Check in on Energy." for one, "Check in on Energy, Mood and Sleep." for three. With more than three it names the first three and the rest as a count: "Check in on Energy, Mood, Sleep and 2 more."

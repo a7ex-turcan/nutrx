@@ -202,6 +202,7 @@ nutrx/
 │   │   │   ├── HealthInsightsTodayCard.swift # Apple Health insights on the way / ready, See where, ✕ (Pro, #102).
 │   │   │   ├── NotTodaySection.swift        # Schedules (#132): collapsed "Not today" header + card of nutrients off today, "Next: Sunday".
 │   │   │   ├── CollapsingDayScore.swift     # The day-score card pinning and collapsing into a slim bar as Today scrolls (#243).
+│   │   │   ├── FeelingTodayCard.swift       # How you feel (#133): "How was today?" from the Ask from time; folds once answered, ✕ until tomorrow.
 │   │   │   ├── NavigationBarHandle.swift    # Today's navigation bar, to open the large title again after a text-size change (#198).
 │   │   │   └── NotificationBannerView.swift
 │   │   └── ViewModels/
@@ -262,7 +263,8 @@ nutrx/
 │   │   │   ├── RecapHeroCard.swift          # A recap's forest hero: ring, period, headline, summary (week, month, year).
 │   │   │   ├── RecapFactGrid.swift          # A recap's fact cards in two columns, a lone last one across both (one column at accessibility sizes).
 │   │   │   ├── RecapMonthGrid.swift         # The month recap's calendar with its full days lit (#136).
-│   │   │   └── RecapYearBars.swift          # The year recap's months as twelve goals-met bars, the best in green (#136).
+│   │   │   ├── RecapYearBars.swift          # The year recap's months as twelve goals-met bars, the best in green (#136).
+│   │   │   └── FeelingDayCard.swift         # How you feel (#133): a day's "How you felt", and FeelingDaySheet to edit the last week's.
 │   │   └── ViewModels/
 │   │       ├── HistoryViewModel.swift       # Fetches nutrients / intake / exclusions into a HistoryLog; streak; displayed month.
 │   │       ├── HistoryLog.swift             # HistoryDay / DayCompletion — which nutrients count on a day and whether they were met (pure).
@@ -368,6 +370,7 @@ nutrx/
     │   ├── ActivityView.swift               # UIActivityViewController wrapper with a completion (Export data, the doctor report).
     │   ├── SharePreviewImage.swift          # Add to list's share-sheet image: a nutrient's tile, or a list tile for several (#270).
     │   ├── ReminderTimingSection.swift      # The reminders sheets' "At set times" / "At my usual time" choice (Pro, #137).
+    │   ├── FeelingQuestionRows.swift        # How you feel's questions with 1–5 or Yes / No to tap (Today's card, History's edit sheet).
     │   └── ProGate.swift                    # ProGatedButton: Pro entry points (badge + paywall for free users).
     ├── Persistence/
     │   ├── ModelContainerFactory.swift      # CloudKit-backed config with local fallback; createForExtension() for widgets / complications (no CloudKit).
@@ -413,6 +416,7 @@ nutrx/
         ├── UsualTime.swift                  # Reminders at your usual time (Pro, #137): samples, the learned time, which time is planned (pure); Nutrient.usualTime().
         ├── UsualTimeText.swift              # The usual time's words: the sheets' explanation, the Reminders row (pure).
         ├── FeelingQuestions.swift           # How you feel (#133): the questions' one writer — presets, your own, order, merging duplicates.
+        ├── FeelingAnswers.swift             # How you feel: the answers' one writer (one per question and day), when Today's card shows, editable days.
         ├── FeelingText.swift                # How you feel's words (pure).
         ├── StackReminderText.swift          # A stack reminder's words: the notification, the Reminder row, the own-reminders note (pure).
         ├── ScreenshotRoute.swift            # DEBUG: -screenshotRoute opens a tab, a nutrient, a History day or the paywall (#218).
@@ -760,7 +764,26 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
   - The spec's "presets as toggles" became the two lists: a preset is a row on the card, or in Add a question.
   - Words in `FeelingText`.
   - **CloudKit:** `CD_FeelingQuestion`, `CD_FeelingAnswer` and the three `CD_UserPreferences` fields are in development (2026-11-08) and production (the user's Console deploy, 2026-11-09).
-  - Nothing reads `feelingsEnabled` outside Settings yet: the Today card, History's answers, the reminder and export are phase 2.
+- **Phase 2a (checking in):**
+  - **`FeelingAnswers`** (`Shared/Services/`, tested in `FeelingAnswersTests`) is the answers' one writer: `set` answers a question for a day (start of day) or clears it with nil, and removes any other answer that day, so two devices' answers end up one. `value` / `values` read the newest by `updatedAt`.
+  - It also holds the pure rules:
+    - `cardShows`: on, with questions, from the Ask from time until the day ends, unless hidden today;
+    - `isEditable`: today and the 7 days before;
+    - `firstDay`: the first question's day.
+  - **`FeelingQuestionRows`** (`Shared/Components/`) has, per question, its symbol and name, then five 40 pt round buttons 1–5 with the end words under the first and last, or Yes / No capsules.
+    - One layout for every row (`ViewThatFits` over the whole list): the answers beside the names when every name fits unbroken beside its answers (a wide card), else each name above its answers (a phone, mostly), so the answers always line up. The circles are 38 pt in 44 pt tap areas, and Yes / No are inset to match.
+    - Tapping the chosen answer clears it.
+    - VoiceOver: a scale is one adjustable element ("Energy", "4 of 5", swipe up or down); Yes and No are buttons with the selected trait.
+  - **Today:** `FeelingTodayCard`, "How was today?", is in `todayCards` after the recap cards.
+    - Once every question is answered, it folds to "Checked in · Energy 4 · Mood 3 · Headache no" with Edit, which opens it again with Done to fold it.
+    - ✕ hides it until tomorrow (`nutrx.hiddenFeelingCardDay`, this device).
+    - Answers save on each tap, with `Haptics.adjusted()`.
+    - TodayView's minute timer moves `feelingClock` only when the card would appear or go, so Today isn't redrawn every minute; the clock also moves when the app becomes active.
+  - **History:** `FeelingDayCard`, "How you felt", is on a day's detail from `firstDay` on.
+    - It lists the day's answers, removed questions' too ("4 of 5", "No"), or "No check-in".
+    - On editable days, Edit opens `FeelingDaySheet` with the card's rows. History doesn't open today, so in practice that's the 7 days before; today's answers change on Today's card.
+  - **What's New 2.8** has a How you feel item; it points to Settings, since the card has no buttons.
+  - Not yet (phase 2b): the reminder, export's second file and the demo data.
 
 ## In-App Review Prompt
 

@@ -67,6 +67,11 @@ nonisolated struct WhatsNew: Equatable {
                  subtitle: "What to say to Siri for each nutrient and stack, with no setup.",
                  symbolName: "waveform", tint: .indigo),
         ]),
+        WhatsNew(version: "2.8", items: [
+            Item(title: "How you feel",
+                 subtitle: "Check in each evening on how the day went. Turn it on in Settings → How you feel.",
+                 symbolName: "face.smiling", tint: .pink),
+        ]),
     ]
 
     /// The card to show, if any: the release `appVersion` belongs to (its first two numbers), with only the items
