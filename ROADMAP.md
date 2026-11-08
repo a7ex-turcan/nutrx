@@ -197,6 +197,19 @@ Submitted for App Review on 8 Nov 2026 (build 241, phased release). Main builds 
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
+### v2.8 — How you feel
+
+Planned on 8 Nov 2026. The spec is `docs/pro/HOW-YOU-FEEL.md`.
+
+| Feature | Status |
+|---|---|
+| How you feel: a daily check-in on questions you pick, on a 1–5 scale or yes/no (free) | 📋 Planned (#133, phases 1–2) |
+| Patterns in how you feel, per nutrient, in analytics, recaps and the doctor report (Pro) | 📋 Planned (#133, phases 3–4) |
+| Today's date at the largest text sizes | 📋 Planned (#360) |
+| The paywall opened from Settings on an SE, and its UI test | 📋 Planned (#352, #362) |
+| Siri on Apple Watch | 📋 Planned (#57) |
+| The website's screenshot tools | 📋 Planned (#361) |
+
 ---
 
 ## MVP 1 — Core Tracking Loop ✅
