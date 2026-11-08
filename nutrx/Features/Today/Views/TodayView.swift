@@ -1025,7 +1025,7 @@ private struct TodayPreview: View {
                 .navigationSubtitle(TodaySubtitle.text(for: .now,
                                                        isAccessibilitySize: dynamicTypeSize.isAccessibilitySize))
                 .navigationBarTitleDisplayMode(.large)
-                .withProfileMenu()
+                .withProfileMenu(opensSettingsRoute: true)
         }
         .modelContainer(previewContainer)
     }

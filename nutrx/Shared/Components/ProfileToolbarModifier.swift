@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct ProfileToolbarModifier: ViewModifier {
+    /// Today's opens Settings for `-screenshotRoute settings/paywall` (#362). Only Today's: on large screens Nutrients
+    /// and History load at launch too, and theirs would open a second Settings in a tab that isn't showing.
+    var opensSettingsRoute = false
     @Environment(NotificationRouter.self) private var router: NotificationRouter?
     @State private var showEditProfile = false
     @State private var showSettings = false
@@ -26,14 +29,15 @@ struct ProfileToolbarModifier: ViewModifier {
             #if DEBUG
             // `-screenshotRoute settings/paywall` (#362): Settings first; SettingsView opens the paywall over it.
             .onChange(of: router?.screenshotRoute, initial: true) { _, route in
-                if route == .settingsPaywall { showSettings = true }
+                if opensSettingsRoute, route == .settingsPaywall { showSettings = true }
             }
             #endif
     }
 }
 
 extension View {
-    func withProfileMenu() -> some View {
-        modifier(ProfileToolbarModifier())
+    /// `opensSettingsRoute`: Today's, which opens Settings for `-screenshotRoute settings/paywall` (debug builds).
+    func withProfileMenu(opensSettingsRoute: Bool = false) -> some View {
+        modifier(ProfileToolbarModifier(opensSettingsRoute: opensSettingsRoute))
     }
 }

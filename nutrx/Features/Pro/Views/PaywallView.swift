@@ -77,7 +77,8 @@ struct PaywallView: View {
     }
 
     /// The plan line above the pinned button names the selected plan, so it shows only while that plan's card isn't
-    /// wholly in view (#338, #352, `PlanLine`). With it always there, Lifetime's card sat half behind the footer on an iPhone 17.
+    /// wholly in view (#338, #352, `PlanLine`). With it always there, Lifetime's card sat half behind the footer on an
+    /// iPhone 17.
     /// From xLarge and on large widths the plans start below the fold: it always shows there (#189, #205).
     private var showsPlanLine: Bool {
         guard dynamicTypeSize < .xLarge, widthClass == .compact else { return true }
