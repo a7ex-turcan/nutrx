@@ -44,6 +44,8 @@ final class HealthInsightsTests: XCTestCase {
         XCTAssertEqual(HealthText.settingsStatus(gathering), "So far: 9 of 14 days for Vitamin D. Insights start at 14.")
         XCTAssertEqual(HealthText.recapLine(gathering, on: .week),
                        "Apple Health insights start after about two weeks of logging.")
+        XCTAssertEqual(HealthText.recapLine(ready, on: .week),
+                       "See how Vitamin D lines up with your sleep and workouts in its analytics.")
         XCTAssertNil(HealthText.recapLine(.noHealthData, on: .week))
         // The weekly recap only (#377).
         XCTAssertNil(HealthText.recapLine(gathering, on: .month))
