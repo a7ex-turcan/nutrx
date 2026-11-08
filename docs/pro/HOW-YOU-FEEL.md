@@ -1,6 +1,6 @@
 # How you feel — spec (#133, 2.8)
 
-A daily check-in on how the day went, with questions the user picks (energy, mood, sleep, a headache…), each on a 1–5 scale or yes/no. Checking in is free. nutrx Pro adds patterns: how those answers line up with each nutrient ("On days you hit Magnesium, you rated your Sleep 4.1 on average, vs 3.4 on other days."). They're worked out on the device, as Trends with Apple Health are, and describe without advising.
+A daily check-in on how the day went, with questions the user picks (energy, mood, sleep, a headache…), each on a 1–5 scale or yes/no. Checking in is free. nutrx Pro adds patterns: how those answers line up with each nutrient ("After days you hit Magnesium, you rated your Sleep 4.1 on average, vs 3.4 after other days."). They're worked out on the device, as Trends with Apple Health are, and describe without advising.
 
 Decided with the user on 2026-11-08:
 - **Checking in is free; the patterns are Pro.** That covers the analytics card, the recaps' line and the doctor report's section. Because checking in starts free, it can never become Pro.
@@ -28,6 +28,7 @@ This document is the spec to build from. The build phases are at the end.
   | Headache | Headache | Yes / No | |
   | Aches | Aches or pains | Yes / No | |
 
+- **Sleep is about the night before.** Answered on the evening of day D, it describes the night between D − 1 and D, so the patterns pair it with D − 1's intake, the way Health trends pairs a day with the night after it (§3). Every other question, the user's own included, is about the day it's answered on.
 - **The user's own:** up to 5, each a name (1–40 characters) and a kind. A scale's ends read "Low – High".
 - **Symbols:** each preset has its own SF Symbol, and the user's own questions share a neutral one. They're picked in phase 1 and checked in the SF Symbols app for the deployment target.
 - **Order** is the user's, set by drag in Settings.
@@ -54,28 +55,34 @@ This document is the spec to build from. The build phases are at the end.
 - **History's day detail** gets a "How you felt" card with the day's answers. It shows on days from when How you feel was turned on, and reads "No check-in" when there's nothing. Today and the 7 days before can be edited there; older days are read-only.
 - **One check-in a day, about that day.** Each question has one answer per day; changing it updates that answer (§6 covers two devices).
 - **The reminder:**
-  - "How was today?", with the body "Check in with nutrx: Energy, Mood and Sleep." (the first three questions), at the Ask from time, only while today has no answer.
-  - It's scheduled like the noon check-in: only the next one, refreshed when the app becomes active, after a check-in, and by the background refresh. It takes one slot of the 64-request budget.
+  - "How was today?" at the Ask from time, only while today has no answer. The body names the questions in the user's order, as a list formatted for the locale (`ListFormatter`): "Check in on Energy." for one, "Check in on Energy, Mood and Sleep." for three. With more than three it names the first three and the rest as a count: "Check in on Energy, Mood, Sleep and 2 more."
+  - It's scheduled like the noon check-in: only the next one, refreshed when the app becomes active, after a check-in, and by the background refresh.
+  - **The budget:** iOS keeps 64 pending requests. Today `ReminderSchedule.budget` gives refills and dose reminders 60, leaving 4: the noon check-in and up to three recaps in December. This reminder is one more fixed request, so the budget drops to 59, with its doc comment and tests, and the total stays at 64.
   - A tap opens Today, where the card is.
 - **Notifications off:** the card still shows, and the Remind me row says notifications are off, with the way to allow them.
 
 ## 3. Patterns (nutrx Pro)
 
 - **`FeelingTrends`** (pure), like `HealthTrends.state`: over the last 28 completed days, per nutrient, for each active question.
-  - **A paired day:** the nutrient counts that day (`HistoryLog`'s rule: tracked, due under its schedule, its course running), something was logged in nutrx that day, and the question has an answer.
+  - **A paired day:** the nutrient counts that day (`HistoryLog`'s rule: tracked, due under its schedule, its course running), something was logged in nutrx that day, and the question has an answer about that day. For Sleep, that's the next day's answer, about the night after (§1), so the newest pair needs today's Sleep answer.
   - **The groups:** days over the threshold vs the others. The threshold is the same as Health trends': three quarters of an "at most" limit, else the goal met (`AnalyticsGoal.isMet`, with each day's own goal, dose plans included).
-  - **States:** `notEnoughData(answeredDays:)` while the nutrient has fewer than 14 paired days for any question ("9 of 14 days"), then `noPattern(checkedDays:)` or `findings`.
+  - **Readiness is per question.** A question with fewer than 14 paired days is still gathering, and a question added later doesn't hold back the others.
+  - **The nutrient's state:**
+    - `findings`, from the ready questions;
+    - else `noPattern(checkedDays:)` if any question is ready, with the most paired days among the ready ones;
+    - else `notEnoughData(pairedDays:)`, with the most paired days among the questions. The card then reads "9 of 14 days" for that question ("Sleep: 9 of 14 days").
   - **A finding:** each group has at least 4 days. On a 1–5 scale, the averages differ by at least 0.5. For yes/no, the share of yes days differs by at least 25 points.
   - **At most two findings** per nutrient, the largest first: the scale's gap out of 4, against the yes/no share's gap.
 - **The words (`FeelingText`)** follow `HealthText`'s rules: day counts always, "on average", never a cause, never advice.
-  - "On days you hit Magnesium, you rated your Sleep 4.1 on average, vs 3.4 on other days."
+  - "After days you hit Magnesium, you rated your Sleep 4.1 on average, vs 3.4 after other days." Sleep says "after", since it's the night after.
+  - "On days you hit Vitamin D, you rated your Energy 3.9 on average, vs 3.2 on other days."
   - "On days Caffeine passes 300 mg, you had a Headache on 5 of 9 days, vs 2 of 15 other days."
   - The footer: "Patterns in your own answers, not causes. Worked out on this iPhone." (naming the device).
 - **Where they show:**
   - **A nutrient's analytics:** a "With how you feel" card, below "With Apple Health". It has the findings with two bars and the basis, or the state.
     - With How you feel off, anyone sees "Turn on How you feel".
     - A free user with answers sees the teaser with the PRO chip.
-  - **The weekly and monthly recaps:** one line, the clearest finding of the 28 days up to the period's end, like Health's recap line.
+  - **The weekly and monthly recaps:** one line at the end, the clearest finding of the 28 days up to the period's end. Health's recap line is on the weekly recap only; this one is on both, since a month covers about its 28 days. The yearly recap gets none, because a 28-day pattern doesn't describe a year.
   - **The doctor report:** "Include how you felt", on when the period has answers. For each question it lists the period's average (or yes days) and days answered, plus the findings for the nutrients included. It's labelled as self-reported.
 - **The paywall:** `ProFeature.feelingPatterns` ("Patterns in how you feel") joins the "Recaps, trends & reports" row. Its line must still let the plans start on an SE's screen (`PaywallUITests`).
 
@@ -129,7 +136,7 @@ This document is the spec to build from. The build phases are at the end.
 2. **Checking in:**
    - the Today card;
    - History's "How you felt" with editing;
-   - the reminder;
+   - the reminder, with `ReminderSchedule.budget` down to 59;
    - export's second file;
    - the demo data;
    - What's New 2.8.
