@@ -202,6 +202,7 @@ nutrx/
 │   │   │   └── NotificationBannerView.swift
 │   │   └── ViewModels/
 │   │       ├── DayScoreMorph.swift          # The ring unrolling into the bar's line: progress and geometry (pure, #243).
+│   │       ├── TodaySubtitle.swift          # The date under Today's title; short at accessibility sizes (pure, #360).
 │   │       └── TodayViewModel.swift         # Computes today's intake by summing IntakeRecords.
 │   │                                        # Updates totals in-place on +/−/custom (avoids re-fetch reordering).
 │   │                                        # Explicitly saves context after every intake mutation.
@@ -562,7 +563,7 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
 
 ## Today Tab – Core Logging UX
 
-The central feature (DESIGN.md §5.1). Large "Today" title with the date as the navigation subtitle, 44pt profile avatar top-right, `Surface/Ground` background.
+The central feature (DESIGN.md §5.1). Large "Today" title with the date as the navigation subtitle (`TodaySubtitle`: "Saturday 7 November", shortened to "Sat 7 Nov" at accessibility sizes, where the full one was cut off, #360), 44pt profile avatar top-right, `Surface/Ground` background.
 
 - **Plan chip** (`PlanChip`, #101) on the leading side of the bar, only while `ProAccess.isStoreVisible` and after the first entitlement check (no "Free" flash for someone who paid): a grey "Free" capsule opens the paywall; a forest "PRO" capsule (green with dark text in dark mode) opens "Enjoy nutrx Pro" (the plan line, the listed features, Manage nutrx Pro → `ProStatusView`). It takes its own width (`fixedSize`; the bar otherwise gives it an icon's 44pt square). TodayView leaves it out at accessibility sizes, where the title and date reach into the bar's row; the check is in TodayView because the bar caps its items' text size. Words in `ProText.planChipTitle` / `planChipAccessibilityLabel`. **Its sheets (the paywall, Enjoy nutrx Pro) hang from TodayView** (`planChipSheets`), not from the chip: a sheet's state inside a toolbar item goes when the bar rebuilds the item, the suspected cause of the paywall closing on a first purchase tap (#170). The profile menu and History's "Your data" menu keep their sheets outside the toolbar too; do the same for any new toolbar item that opens a sheet.
 - **Day-score card** (`DayScoreCard`) on top: segmented ring ("3/6 goals met"), headline ("Halfway there — 3 to go"; "N to go" never counts a goal over its limit, and with only over-limit goals left it reads "1 over limit": `DayScore.toGo` / `overLimit`), flame streak chip when streaks are on and ≥ 1, and the next reminder still scheduled later today (only when notifications are allowed; refreshed every minute). A nutrient logged today (today's total above 0, from any source) has no more reminders today, and the card follows the same rule as the scheduler (see Notifications). Notification / sync banners render below it on the card style, with a coral bell / blue iCloud icon tile.

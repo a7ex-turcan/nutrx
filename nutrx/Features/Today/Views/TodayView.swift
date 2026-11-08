@@ -1020,7 +1020,7 @@ private struct TodayPreview: View {
         NavigationStack {
             TodayView()
                 .navigationTitle("Today")
-                .navigationSubtitle(Date.now.formatted(.dateTime.weekday(.wide).day().month(.wide)))
+                .navigationSubtitle(TodaySubtitle.text(for: .now, isAccessibilitySize: false))
                 .navigationBarTitleDisplayMode(.large)
                 .withProfileMenu()
         }
