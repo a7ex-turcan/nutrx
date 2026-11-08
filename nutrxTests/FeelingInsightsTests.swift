@@ -75,6 +75,16 @@ final class FeelingInsightsTests: XCTestCase {
                        "On days you reach your Magnesium goal, you rated your Energy 5.0 on average, vs 2.0 on other days.")
     }
 
+    /// Two nutrients with the same pattern: the line names the first in the user's order, every time.
+    func testATieGoesToTheFirstNutrient() throws {
+        let met = Set(0..<20)
+        energy(high: 5, low: 2, on: met)
+        log(nutrient("Magnesium", sortOrder: 1), met: met)
+        log(nutrient("Zinc", sortOrder: 0), met: met)
+        let best = try XCTUnwrap(FeelingInsights.clearest(context: context, through: lastDay, calendar: calendar))
+        XCTAssertEqual(best.nutrient.name, "Zinc")
+    }
+
     /// The trends read the 28 days up to the period's end, not up to now: a past week's line ignores what came after.
     func testOnlyTheDaysUpToTheLastDayCount() {
         let met = Set(0..<20)

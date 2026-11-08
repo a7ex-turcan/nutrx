@@ -24,7 +24,9 @@ enum FeelingInsights {
             if let id = record.nutrient?.id { totals[id, default: [:]][day, default: 0] += record.amount }
         }
 
-        let nutrients = (try? context.fetch(FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isRemoved }))) ?? []
+        // In the user's order, so of two equal findings the line keeps the first nutrient from one load to the next.
+        let nutrients = (try? context.fetch(FetchDescriptor<Nutrient>(predicate: #Predicate { !$0.isRemoved },
+                                                                      sortBy: [SortDescriptor(\.sortOrder)]))) ?? []
         var best: (nutrient: Nutrient, finding: FeelingTrends.Finding)?
         for nutrient in nutrients {
             let schedule = nutrient.schedule(calendar: calendar)
