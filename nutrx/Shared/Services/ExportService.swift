@@ -51,6 +51,18 @@ enum ExportService {
 
     static let header = ["date", "time", "nutrient", "amount", "unit", "note"]
 
+    /// One row of How you feel's file (#133, docs/pro/HOW-YOU-FEEL.md §5): a question's answer for a day.
+    struct FeelingEntry: Equatable {
+        let day: Date
+        let question: String
+        /// "4", or "yes" / "no".
+        let answer: String
+        /// "1–5" or "yes/no".
+        let scale: String
+    }
+
+    static let feelingsHeader = ["date", "question", "answer", "scale"]
+
     // MARK: - Fetching
 
     /// The period's entries, most recent first. Includes nutrients deleted since (it's the user's history) and
@@ -67,6 +79,26 @@ enum ExportService {
             return Entry(date: record.date, nutrient: nutrient.name, amount: record.amount, unit: nutrient.unit,
                          note: record.note)
         }
+    }
+
+    /// How you feel's answers in the period, most recent day first and then in the questions' order; removed
+    /// questions' too. One per question and day, the newest.
+    @MainActor
+    static func feelingEntries(for period: Period, context: ModelContext, now: Date = .now,
+                               calendar: Calendar = .current) -> [FeelingEntry] {
+        let start = period.start(now: now, calendar: calendar)
+        var rows: [(day: Date, order: Int, entry: FeelingEntry)] = []
+        for (order, question) in FeelingQuestions.all(in: context).enumerated() {
+            let days = Set((question.answers ?? []).map { calendar.startOfDay(for: $0.day) })
+            for day in days where start.map({ day >= $0 }) ?? true {
+                guard let value = FeelingAnswers.value(for: question, on: day, calendar: calendar) else { continue }
+                rows.append((day, order, FeelingEntry(
+                    day: day, question: question.displayTitle,
+                    answer: question.kind == .scale ? "\(value)" : (value == 1 ? "yes" : "no"),
+                    scale: question.kind == .scale ? "1–5" : "yes/no")))
+            }
+        }
+        return rows.sorted { $0.day != $1.day ? $0.day > $1.day : $0.order < $1.order }.map(\.entry)
     }
 
     static func summary(of entries: [Entry]) -> Summary {
@@ -104,6 +136,24 @@ enum ExportService {
         return "\u{FEFF}" + lines.joined(separator: "\r\n") + "\r\n"
     }
 
+    /// How you feel's file: the same quoting, BOM and formula guard as the log.
+    static func feelingsCSV(_ entries: [FeelingEntry], timeZone: TimeZone = .current) -> String {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        var lines = [feelingsHeader.joined(separator: ",")]
+        for entry in entries {
+            let parts = calendar.dateComponents([.year, .month, .day], from: entry.day)
+            let date = String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+            lines.append([date, text(entry.question), entry.answer, entry.scale].map(escaped).joined(separator: ","))
+        }
+        return "\u{FEFF}" + lines.joined(separator: "\r\n") + "\r\n"
+    }
+
+    /// "nutrx-how-you-feel-2026-11-08.csv".
+    static func feelingsFileName(now: Date = .now, timeZone: TimeZone = .current) -> String {
+        fileName(now: now, timeZone: timeZone).replacingOccurrences(of: "nutrx-export-", with: "nutrx-how-you-feel-")
+    }
+
     /// "nutrx-export-2026-10-14.csv", in the user's own calendar day.
     static func fileName(now: Date = .now, timeZone: TimeZone = .current) -> String {
         var calendar = Calendar(identifier: .gregorian)
@@ -121,12 +171,19 @@ enum ExportService {
     /// (`removeExport`), so no copy stays on the device; and every export first clears what an earlier one left
     /// behind (the app was killed with the share sheet up, so `onDismiss` never ran).
     static func writeExport(_ csv: String, fileName: String) throws -> URL {
+        try writeExport([(csv, fileName)])[0]
+    }
+
+    /// Several files in one fresh folder: the log, and How you feel's answers when there are any (#133).
+    static func writeExport(_ files: [(csv: String, fileName: String)]) throws -> [URL] {
         try? FileManager.default.removeItem(at: exportsFolder)
         let folder = exportsFolder.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let url = folder.appendingPathComponent(fileName)
-        try Data(csv.utf8).write(to: url, options: .atomic)
-        return url
+        return try files.map { file in
+            let url = folder.appendingPathComponent(file.fileName)
+            try Data(file.csv.utf8).write(to: url, options: .atomic)
+            return url
+        }
     }
 
     static func removeExport(at url: URL) {

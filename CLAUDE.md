@@ -570,7 +570,8 @@ Built in phase 2 of the Pro plan (free). Mockups: `docs/pro/design/1-stacks-expo
   - Names, units and notes that start with `= + - @` get a leading `'`, so a spreadsheet won't run them as formulas. Numbers never do.
   - Nutrients deleted since are included, because it's the user's history.
   - The name is `nutrx-export-YYYY-MM-DD.csv`.
-- **No copy stays on the device:** the file goes in its own folder under `tmp/nutrx-export/`, which is removed when the share sheet closes, whether the file was sent, cancelled or swiped away. Each export also clears that parent first, which covers a file left behind when the app was killed with the share sheet up.
+- **How you feel's answers** (#133) come as a second file when the period has any, shared with the log: `nutrx-how-you-feel-YYYY-MM-DD.csv`, `date,question,answer,scale` ("4" on "1–5", "yes" on "yes/no"), one per question and day, newest day first, removed questions' too (`ExportService.feelingEntries`, `feelingsCSV`), with the same BOM, quoting and formula guard. A line under the count says so. The log's own file doesn't change.
+- **No copy stays on the device:** the files go in their own folder under `tmp/nutrx-export/`, which is removed when the share sheet closes, whether the file was sent, cancelled or swiped away. Each export also clears that parent first, which covers a file left behind when the app was killed with the share sheet up.
 - The footnote and the error alert name the device (`UIDevice.current.model`: iPhone or iPad).
 
 ## Today Tab – Core Logging UX
@@ -704,12 +705,13 @@ No new SwiftData models, services, or files required beyond the above edits.
 
 ## Notifications
 
-All local — no push infrastructure. Four notification types:
+All local — no push infrastructure. Five notification types:
 
 1. **Daily check-in reminder** — fires at noon if no intake logged. Opt-in via Settings. Smart one-shot scheduling refreshed on foreground and after every intake action. ID: `daily-checkin-reminder`.
 2. **Per-nutrient dose reminders** — configurable times per nutrient, scheduled as **one-off requests per date** for a rolling window (`ReminderSchedule`: up to 14 days, fewer with many reminders so all fit under iOS's 64 pending; the daily check-in takes one more). The rest of today is left out for a nutrient already logged today. `NotificationService.refreshAllNutrientReminders(context:)` is the only scheduler: it rebuilds the set from the data after every log change, on foreground and remote (iCloud) changes, and after reminder or nutrient edits, so logs from the widget, Watch or Siri count from the next sync. Syncs are serialized; requests for deleted nutrients, past times and the old repeating format are removed. Today's "next reminder" line uses the same rule. **Keeping the window rolling:** every sync asks for a background app refresh (`NotificationService.reminderRefreshTaskID`, `BGTaskSchedulerPermittedIdentifiers` + the `fetch` background mode in `Info.plist`, handled by `.backgroundTask(.appRefresh(...))` in `nutrxApp`) about 12 hours out, which runs the same sync. iOS decides when it runs, and it doesn't with Background App Refresh off, so the fallback is opening the app: with neither, reminders run out only after the full window (14 days for a few reminders; a single day only with 60+ reminders a day). IDs: `nutrient-{id}-reminder-{HHmm}-{yyyyMMdd}`. A nutrient at its usual time (nutrx Pro, #137) is one a day at the learned time, else its starting time; see nutrx Pro: Reminders at your usual time. The sync logs "Dose reminders synced: N of M scheduled, K removed" (category `NotificationService`).
 3. **Refill reminders** (nutrx Pro, supply): see nutrx Pro: Supply & refills. They're scheduled first; dose reminders share the rest of the budget.
 4. **Recaps** (nutrx Pro): Sunday 18:00 for the week, the 1st at 18:00 for the month, 1 January at 18:00 for the year, one a night; two slots of the budget (three in December); see nutrx Pro: Weekly recap.
+5. **How you feel's reminder** (#133): "How was today?" at the Ask from time, only while that day has no answer; the next one only, like the noon check-in (`NotificationService.refreshFeelingsReminder`: when the app becomes active, after an answer, when its settings change, and in the background refresh). Opt-in (Settings → How you feel → Remind me). A tap opens Today. One fixed slot of the budget. ID: `feelings-reminder`.
 
 Permission flow handles not-asked, granted, and denied states. A one-time notification banner appears on Today after onboarding; whether it shows is `NotificationService.showsPermissionBanner` (always while iOS hasn't asked, never once closed, otherwise until allowed). `requestPermission()` is the only place the prompt is shown and posts `.notificationPermissionAnswered`, so Today re-checks the banner when it's answered anywhere (Settings sits in a sheet over Today, so Today doesn't re-appear), and again whenever the app becomes active (#44).
 
@@ -784,7 +786,10 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
     - On editable days, Edit opens `FeelingDaySheet` with the card's rows. History doesn't open today, so in practice that's the 7 days before; today's answers change on Today's card.
     - With How you feel turned off, the card shows only on days with answers, and without Edit.
   - **What's New 2.8** has a How you feel item; it points to Settings, since the card has no buttons.
-  - Not yet (phase 2b): the reminder, export's second file and the demo data.
+- **Phase 2b (the reminder, export, the demo):**
+  - **The reminder** (see Notifications, 5): Settings → How you feel → Remind me asks for notification permission as the other reminders do. `FeelingAnswers.reminderDate` (today at the Ask from time while it's ahead and unanswered, else tomorrow's) and `FeelingText.reminderBody` ("Check in on Energy, Mood and Sleep last night.", the first three with `ListFormatter`, then "and 2 more") are pure. `ReminderSchedule.budget` is 59. After a reinstall, Today resets `feelingsReminderEnabled` with the other synced notification flags while iOS hasn't been asked.
+  - **Export:** the answers' second file (see Data Export).
+  - **Demo data:** Energy, Mood and Sleep answered on most days of the last six weeks, Sleep higher the night after Magnesium was met; Magnesium is short on d 14–17 (outside the streaks and the latest recap's week; four weekdays d 11, 12 and 20 don't use, so Sunday stays the day you tend to miss) so that pattern has another side. How you feel stays off in the demo, so Today's App Store shots don't depend on the hour; History shows the answers. `ScreenshotDemoDataTests` checks the pattern.
 
 ## In-App Review Prompt
 
@@ -929,7 +934,7 @@ The first Pro feature. Mockups: `docs/pro/design/3-supply/`.
   - **Never twice for a bottle:** what's been scheduled is remembered per bottle *on this device* (UserDefaults `nutrx.refillReminderStates`, keyed by nutrient id with the refill date). A refill starts a new bottle.
   - **Content:** the title reads "Vitamin D runs out in about a week" (or "in about 3 days", "tomorrow", "has run out"), and the body "About 7 days left at your usual amount. Tap Refilled when you open a new bottle."
   - **Category** `nutrx.refill` has two actions: **Refilled** (runs in the background) and **Remind me tomorrow** (snoozes to 24 hours later).
-  - **Budget:** refill reminders come first, and dose reminders share what's left of the 60 (`ReminderSchedule.occurrences(budget:)`).
+  - **Budget:** refill reminders come first, and dose reminders share what's left of the 59 (`ReminderSchedule.budget`: 64 less the noon check-in, How you feel's reminder and up to three recaps; `ReminderSchedule.occurrences(budget:)`).
   - **Pro only:** `NotificationService.supplyRemindersEnabled` is three-state. It's set by `ProAccess.refreshEntitlement()`, and by `NotificationHandler` (through `ProEntitlement.current()`) before an action's resync. While it's still nil, as on a cold background launch from an action or Siri, a sync leaves pending refill reminders and their records alone. The background refresh checks the entitlement first.
   - **Records only for what was added:** a bottle's record is saved only when its request was actually added, or when it has already fired. So a reminder removed before it fired (Pro lapsed, notifications off) can still come later.
   - Each sync logs "Refill reminders: N pending <title> @ <date>; …".

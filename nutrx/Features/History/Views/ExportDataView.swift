@@ -18,8 +18,10 @@ struct ExportDataView: View {
 
     @State private var period: ExportService.Period = .allTime
     @State private var entries: [ExportService.Entry] = []
+    /// How you feel's answers in the period (#133): a second file when there are any.
+    @State private var feelingEntries: [ExportService.FeelingEntry] = []
     @State private var shareFile: ShareFile?
-    /// The file on disk while the share sheet is up; removed when it closes, however it closes.
+    /// The files on disk while the share sheet is up; removed when it closes, however it closes.
     @State private var writtenFile: URL?
     /// Set when the share sheet finished with the file sent somewhere (not cancelled).
     @State private var exported: Exported?
@@ -27,9 +29,10 @@ struct ExportDataView: View {
     @State private var headerScrolledAway = false
 
     private struct ShareFile: Identifiable {
-        let url: URL
+        /// The log, then How you feel's answers when there are any.
+        let urls: [URL]
         let entryCount: Int
-        var id: URL { url }
+        var id: URL { urls[0] }
     }
 
     private struct Exported: Equatable {
@@ -52,6 +55,12 @@ struct ExportDataView: View {
                     periodPicker
                     summaryLine(summary)
                         .padding(.horizontal, 4)
+                    if !feelingEntries.isEmpty {
+                        Text("How you feel's answers come as a second file.")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.textSecondary)
+                            .padding(.horizontal, 4)
+                    }
                 }
                 // At accessibility sizes the button scrolls with the content: pinned, it took over a third of the
                 // screen.
@@ -91,6 +100,7 @@ struct ExportDataView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: period, initial: true) {
             entries = ExportService.entries(for: period, context: modelContext)
+            feelingEntries = ExportService.feelingEntries(for: period, context: modelContext)
             exported = nil
         }
         .sheet(item: $shareFile, onDismiss: {
@@ -98,10 +108,11 @@ struct ExportDataView: View {
             if let writtenFile { ExportService.removeExport(at: writtenFile) }
             writtenFile = nil
         }) { file in
-            ActivityView(items: [file.url]) { completed in
+            ActivityView(items: file.urls) { completed in
                 if completed {
                     withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
-                        exported = Exported(entryCount: file.entryCount, fileName: file.url.lastPathComponent)
+                        exported = Exported(entryCount: file.entryCount,
+                                            fileName: file.urls.map(\.lastPathComponent).joined(separator: "\n"))
                     }
                 }
                 shareFile = nil
@@ -205,10 +216,10 @@ struct ExportDataView: View {
                     .frame(maxWidth: .infinity, minHeight: 56)
                     .background(Theme.controlPrimary,
                                 in: RoundedRectangle(cornerRadius: Theme.Radius.control, style: .continuous))
-                    .opacity(summary.entryCount == 0 ? 0.4 : 1)
+                    .opacity(summary.entryCount == 0 && feelingEntries.isEmpty ? 0.4 : 1)
             }
             .buttonStyle(.plain)
-            .disabled(summary.entryCount == 0)
+            .disabled(summary.entryCount == 0 && feelingEntries.isEmpty)
             Text("The file is made on your \(UIDevice.current.model). nutrx never sees it.")
                 .font(.footnote)
                 .foregroundStyle(Theme.textSecondary)
@@ -240,11 +251,17 @@ struct ExportDataView: View {
     private func export() {
         // Fetched again so an entry logged since the screen opened (another device, Siri) is included.
         let current = ExportService.entries(for: period, context: modelContext)
+        let feelings = ExportService.feelingEntries(for: period, context: modelContext)
         entries = current
+        feelingEntries = feelings
+        var files: [(csv: String, fileName: String)] = []
+        if !current.isEmpty { files.append((ExportService.csv(current), ExportService.fileName())) }
+        if !feelings.isEmpty { files.append((ExportService.feelingsCSV(feelings), ExportService.feelingsFileName())) }
+        guard !files.isEmpty else { return }
         do {
-            let url = try ExportService.writeExport(ExportService.csv(current), fileName: ExportService.fileName())
-            writtenFile = url
-            shareFile = ShareFile(url: url, entryCount: current.count)
+            let urls = try ExportService.writeExport(files)
+            writtenFile = urls.first
+            shareFile = ShareFile(urls: urls, entryCount: current.count)
         } catch {
             exportFailed = true
         }

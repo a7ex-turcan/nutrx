@@ -50,9 +50,9 @@ struct FeelingTodayCard: View {
                     .foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
-                FeelingQuestionRows(questions: questions, values: values) { question, value in
-                    withAnimation(.unlessReduceMotion(reduceMotion)) { onAnswer(question, value) }
-                }
+                // No animation: the card folds on the last answer, and Today's list animating the row's new height
+                // drew the old buttons over the section below for a moment.
+                FeelingQuestionRows(questions: questions, values: values, onAnswer: onAnswer)
             }
         }
         .padding(.leading, Theme.Spacing.cardPadding + 2)

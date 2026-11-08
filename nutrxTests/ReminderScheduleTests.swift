@@ -24,7 +24,7 @@ final class ReminderScheduleTests: XCTestCase {
         XCTAssertEqual(ReminderSchedule.days(forReminderCount: 0), 0)
         XCTAssertEqual(ReminderSchedule.days(forReminderCount: 1), 14)
         XCTAssertEqual(ReminderSchedule.days(forReminderCount: 4), 14)
-        XCTAssertEqual(ReminderSchedule.days(forReminderCount: 5), 12)
+        XCTAssertEqual(ReminderSchedule.days(forReminderCount: 5), 11)  // 59 / 5
         XCTAssertEqual(ReminderSchedule.days(forReminderCount: 60), 1)
         XCTAssertEqual(ReminderSchedule.days(forReminderCount: 100), 1)  // today only, rather than nothing
     }
@@ -34,7 +34,7 @@ final class ReminderScheduleTests: XCTestCase {
                                                        calendar: calendar)
         let today = occurrences.filter { calendar.isDate($0.fireDate, inSameDayAs: date(hour: 12)) }
         XCTAssertEqual(today.map(\.fireDate), [date(hour: 21)])
-        // 14 days (60 / 2 = 30, capped at maxDays), minus 09:00 today.
+        // 14 days (59 / 2 = 29, capped at maxDays), minus 09:00 today.
         XCTAssertEqual(occurrences.count, 14 * 2 - 1)
     }
 
@@ -73,12 +73,12 @@ final class ReminderScheduleTests: XCTestCase {
     }
 
     func testNutrientsShareTheBudget() {
-        // 6 reminders a day → 10 days, for both nutrients alike.
+        // 6 reminders a day → 9 days (59 / 6), for both nutrients alike.
         let plans = [plan(vitaminD, hours: [7, 9, 11, 13]), plan(magnesium, hours: [20, 22])]
         let occurrences = ReminderSchedule.occurrences(for: plans, now: date(hour: 0), calendar: calendar)
-        XCTAssertEqual(occurrences.count, 60)
+        XCTAssertEqual(occurrences.count, 54)
         XCTAssertLessThanOrEqual(occurrences.count, ReminderSchedule.budget)
-        XCTAssertEqual(occurrences.filter { $0.nutrientID == magnesium }.map(\.fireDate).max(), date(day: 22, hour: 22))
+        XCTAssertEqual(occurrences.filter { $0.nutrientID == magnesium }.map(\.fireDate).max(), date(day: 21, hour: 22))
     }
 
     func testIdentifiersCarryTheNutrientTimeAndDateAndAreUnique() {

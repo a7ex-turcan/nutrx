@@ -14,6 +14,7 @@ struct HowYouFeelSettingsView: View {
     @Query(sort: [SortDescriptor(\FeelingQuestion.sortOrder), SortDescriptor(\FeelingQuestion.createdAt)])
     private var questions: [FeelingQuestion]
     @State private var sheet: QuestionSheet?
+    @State private var showDeniedAlert = false
 
     /// The question sheet: a new one of your own, or one to edit.
     private enum QuestionSheet: Identifiable {
@@ -48,6 +49,7 @@ struct HowYouFeelSettingsView: View {
                         preferences.feelingsEnabled = turnOn
                         if turnOn { FeelingQuestions.setUpIfNeeded(in: modelContext) }
                         try? modelContext.save()
+                        NotificationService.refreshFeelingsReminder(context: modelContext)
                     }
                 ))
             } footer: {
@@ -58,6 +60,10 @@ struct HowYouFeelSettingsView: View {
             if preferences.feelingsEnabled {
                 Section {
                     DatePicker("Ask from", selection: askTime, displayedComponents: .hourAndMinute)
+                    Toggle("Remind me", isOn: Binding(
+                        get: { preferences.feelingsReminderEnabled },
+                        set: { $0 ? turnOnReminder() : setReminder(false) }
+                    ))
                 } footer: {
                     Text(FeelingText.askFromFooter)
                 }
@@ -77,6 +83,39 @@ struct HowYouFeelSettingsView: View {
             case .edit(let question): FeelingQuestionSheet(question: question)
             }
         }
+        // The questions name themselves in the reminder.
+        .onDisappear { NotificationService.refreshFeelingsReminder(context: modelContext) }
+        .alert("Notifications Disabled", isPresented: $showDeniedAlert) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("You've previously denied notification permissions for nutrx. To be reminded, please turn on "
+                 + "notifications in your device settings.")
+        }
+    }
+
+    /// Asks for notifications the first time, as the other reminders do.
+    private func turnOnReminder() {
+        Task {
+            switch await NotificationService.permissionStatus() {
+            case .notDetermined:
+                if await NotificationService.requestPermission() { setReminder(true) }
+            case .granted:
+                setReminder(true)
+            case .denied:
+                showDeniedAlert = true
+            }
+        }
+    }
+
+    private func setReminder(_ on: Bool) {
+        preferences.feelingsReminderEnabled = on
+        try? modelContext.save()
+        NotificationService.refreshFeelingsReminder(context: modelContext)
     }
 
     private var questionsSection: some View {
@@ -205,6 +244,7 @@ struct HowYouFeelSettingsView: View {
             let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
             preferences.feelingsAskMinutes = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
             try? modelContext.save()
+            NotificationService.refreshFeelingsReminder(context: modelContext)
         })
     }
 }
