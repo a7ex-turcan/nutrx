@@ -3,8 +3,9 @@ import SwiftData
 
 @MainActor
 let previewContainer: ModelContainer = {
+    // Every stored model (`ModelContainerFactory.schema`), so a new one is in previews without a second list.
     let container = try! ModelContainer(
-        for: UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self, UserPreferences.self, NutrientReminder.self, NutrientGroup.self, LogStack.self, LogStackEntry.self,
+        for: ModelContainerFactory.schema,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let context = container.mainContext
