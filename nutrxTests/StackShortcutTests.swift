@@ -118,6 +118,12 @@ final class StackShortcutTests: XCTestCase {
         XCTAssertEqual(StackShortcutLogging.siriPhrase(for: "Morning"), "Log my Morning stack with nutrx")
     }
 
+    /// On iPhone the tip says the phrase works on Apple Watch too (#57); an iPad can't pair with one.
+    func testTheSiriTipNamesTheWatchOnIPhone() {
+        XCTAssertEqual(StackShortcutLogging.tipDetail(isPad: false), "Also works on Apple Watch and from the Shortcuts app.")
+        XCTAssertEqual(StackShortcutLogging.tipDetail(isPad: true), "Also works from the Shortcuts app.")
+    }
+
     /// A name that already ends in "stack" doesn't get it twice (#292).
     func testTheSiriTipDoesntSayStackTwice() {
         XCTAssertEqual(StackShortcutLogging.siriPhrase(for: "Morning stack"), "Log the Morning stack with nutrx")

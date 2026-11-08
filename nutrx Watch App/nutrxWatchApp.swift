@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import SwiftData
 import WidgetKit
@@ -18,6 +19,9 @@ struct nutrxWatchApp: App {
         }
         #endif
         self.modelContainer = container
+        // Siri on the Watch (#57): "Log my Vitamin D with nutrx" runs in this process, on this store, not a second
+        // container. Siri can launch the app in the background for it.
+        AppDependencyManager.shared.add(dependency: container)
     }
 
     var body: some Scene {
@@ -28,6 +32,8 @@ struct nutrxWatchApp: App {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 WidgetCenter.shared.reloadAllTimelines()
+                // The phrases name the user's nutrients and stacks, which change on the iPhone and sync here.
+                NutrxShortcuts.updateAppShortcutParameters()
             }
         }
     }

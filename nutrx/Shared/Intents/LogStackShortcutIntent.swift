@@ -28,8 +28,11 @@ struct LogStackShortcutIntent: AppIntent {
         let context = modelContainer.mainContext
         let confirmation = try StackShortcutLogging.log(stackID: stack.id, context: context)
         // The same follow-ups as Log on Today's stack card.
+        // On the Watch (#57) only its complications: the iPhone reschedules its reminders when the log syncs.
+        #if os(iOS)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
+        #endif
         WidgetReload.all()
         NotificationCenter.default.post(name: .intakeLoggedByShortcut, object: nil)
         return .result(dialog: "\(confirmation)")
@@ -71,6 +74,11 @@ enum StackShortcutLogging {
     static func stacksChanged() {
         NutrxShortcuts.updateAppShortcutParameters()
         WidgetReload.all()  // the Log stack control shows the stack's name
+    }
+
+    /// The Siri tip's second line: the phrase works on Apple Watch too (#57), which an iPad can't pair with.
+    static func tipDetail(isPad: Bool) -> String {
+        isPad ? "Also works from the Shortcuts app." : "Also works on Apple Watch and from the Shortcuts app."
     }
 
     /// What to say to Siri for a stack — the first "Log Stack" phrase in `NutrxShortcuts`, with the stack's name, or

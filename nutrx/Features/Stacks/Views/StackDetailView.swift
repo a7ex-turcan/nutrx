@@ -302,7 +302,7 @@ private struct StackSiriTip: View {
             Text("Say “\(StackShortcutLogging.siriPhrase(for: stackName))” to Siri")
                 .font(.body.weight(.semibold))
                 .foregroundStyle(Theme.textPrimary)
-            Text("Also works from the Shortcuts app.")
+            Text(StackShortcutLogging.tipDetail(isPad: UIDevice.current.userInterfaceIdiom == .pad))
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
         }
