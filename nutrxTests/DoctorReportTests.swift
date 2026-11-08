@@ -111,10 +111,16 @@ final class DoctorReportTests: XCTestCase {
         }
     }
 
-    private func fixture(sections: Int, notes: Int, trends: Int = 0) -> DoctorReport {
+    private func fixture(sections: Int, notes: Int, trends: Int = 0, feelings: Int = 0,
+                         patterns: Int = 0) -> DoctorReport {
         DoctorReport(start: day(10, 1), end: day(10, 10), name: nil, sections: manySections(sections, trends: trends),
                      notes: (0..<notes).map { DoctorReport.Note(date: day(10, 1), nutrientName: "N", text: "Note \($0)") },
-                     daysWithEntries: 0, overallHitRate: nil, longestStreak: 0, days: [])
+                     daysWithEntries: 0, overallHitRate: nil, longestStreak: 0, days: [],
+                     feelings: (0..<feelings).map {
+                         DoctorReport.Feeling(title: "Q\($0)", kind: .scale, average: 3, yesDays: 0, answeredDays: 5,
+                                              lowWord: "Low", highWord: "High")
+                     },
+                     feelingPatterns: (0..<patterns).map { "Pattern \($0)." })
     }
 
     func testTheDesignsFourPages() {
@@ -141,34 +147,45 @@ final class DoctorReportTests: XCTestCase {
 
     func testEveryBlockAppearsOnceAndInOrder() {
         for paper in [ReportLayout.Paper.a4, .letter] {
-            for (sections, notes, trends) in [(1, 0, 0), (6, 3, 0), (13, 40, 0), (5, 90, 2), (25, 0, 1)] {
-                let report = fixture(sections: sections, notes: notes, trends: trends)
+            for (sections, notes, trends, feelings, patterns) in [(1, 0, 0, 0, 0), (6, 3, 0, 3, 2), (13, 40, 0, 8, 6),
+                                                                   (5, 90, 2, 13, 20), (25, 0, 1, 2, 0), (2, 0, 0, 40, 40)] {
+                let report = fixture(sections: sections, notes: notes, trends: trends, feelings: feelings,
+                                     patterns: patterns)
                 let layout = ReportLayout(report: report, paper: paper)
                 var summaryRows: [Int] = []
                 var sectionOrder: [Int] = []
+                var feelingOrder: [Int] = []
+                var patternOrder: [Int] = []
                 var noteOrder: [Int] = []
+                // Sections, then How you felt, then its patterns, then the notes.
+                var kinds: [Int] = []
                 for page in layout.pages {
                     switch page {
                     case .cover(let rows), .summary(let rows): summaryRows += Array(rows)
                     case .content(let blocks):
-                        var used: CGFloat = 0
                         for block in blocks {
                             switch block {
-                            case .section(let i):
-                                sectionOrder.append(i)
-                                used += ReportLayout.blockHeight(report.sections[i])
-                            case .notesHeader: used += ReportLayout.notesHeaderHeight
-                            case .notes(let range):
-                                noteOrder += Array(range)
-                                used += range.reduce(0) { $0 + ReportLayout.noteHeight(report.notes[$1], paper: paper) }
+                            case .section(let i): sectionOrder.append(i); kinds.append(0)
+                            case .feelingsHeader, .feelings: kinds.append(1)
+                            case .feelingPatternsHeader, .feelingPatterns: kinds.append(2)
+                            case .notesHeader, .notes: kinds.append(3)
                             }
+                            if case .feelings(let range) = block { feelingOrder += Array(range) }
+                            if case .feelingPatterns(let range) = block { patternOrder += Array(range) }
+                            if case .notes(let range) = block { noteOrder += Array(range) }
+                        }
+                        let used = blocks.reduce(CGFloat(0)) {
+                            $0 + ReportLayout.height(of: $1, in: report, paper: paper)
                         }
                         XCTAssertLessThanOrEqual(used, ReportLayout.contentHeight(paper), "\(paper) \(sections)/\(notes): a page overflows")
                     }
                 }
                 XCTAssertEqual(summaryRows, Array(0..<sections))
                 XCTAssertEqual(sectionOrder, Array(0..<sections))
+                XCTAssertEqual(feelingOrder, Array(0..<feelings))
+                XCTAssertEqual(patternOrder, Array(0..<patterns))
                 XCTAssertEqual(noteOrder, Array(0..<notes))
+                XCTAssertEqual(kinds, kinds.sorted())
             }
         }
     }
@@ -180,6 +197,113 @@ final class DoctorReportTests: XCTestCase {
                 XCTFail("a notes header with no rows under it")
             }
         }
+    }
+
+    /// How you felt (#133) comes after the sections and before the notes, with its patterns under its rows; neither
+    /// header ends a page.
+    func testHowYouFeltSitsBetweenTheSectionsAndTheNotes() {
+        let layout = ReportLayout(report: fixture(sections: 1, notes: 2, feelings: 3, patterns: 2), paper: .a4)
+        XCTAssertEqual(layout.pages, [
+            .cover(summaryRows: 0..<1),
+            .content([.section(0), .feelingsHeader, .feelings(0..<3), .feelingPatternsHeader, .feelingPatterns(0..<2),
+                      .notesHeader, .notes(0..<2)]),
+        ])
+        for (sections, feelings) in [(2, 1), (3, 13), (2, 30)] {
+            for paper in [ReportLayout.Paper.a4, .letter] {
+                let layout = ReportLayout(report: fixture(sections: sections, notes: 0, feelings: feelings, patterns: 4),
+                                          paper: paper)
+                for page in layout.pages {
+                    guard case .content(let blocks) = page, let last = blocks.last else { continue }
+                    XCTAssertNotEqual(last, .feelingsHeader)
+                    XCTAssertNotEqual(last, .feelingPatternsHeader)
+                }
+            }
+        }
+    }
+
+    /// A table that fits on a page isn't split: with two sections leaving too little room for all four rows, the
+    /// header and rows start the next page together. One too long for a page still splits.
+    func testHowYouFeltKeepsAShortTableTogether() {
+        let layout = ReportLayout(report: fixture(sections: 2, notes: 0, feelings: 4), paper: .a4)
+        XCTAssertEqual(Array(layout.pages.dropFirst()), [
+            .content([.section(0), .section(1)]),
+            .content([.feelingsHeader, .feelings(0..<4)]),
+        ])
+        let long = ReportLayout(report: fixture(sections: 0, notes: 0, feelings: 40), paper: .a4)
+        XCTAssertEqual(long.pages.count, 3, "the cover, then 40 rows over two pages")
+    }
+
+    /// The patterns stay with How you felt's rows: when the two don't fit together under the sections, the whole
+    /// section starts the next page (the patterns alone on a page had no title above them).
+    func testHowYouFeltsPatternsStayWithItsRows() {
+        // Two sections leave 158 pt: room for the header and three rows (140), not for the patterns too.
+        let layout = ReportLayout(report: fixture(sections: 2, notes: 0, feelings: 3, patterns: 1), paper: .a4)
+        XCTAssertEqual(Array(layout.pages.dropFirst()), [
+            .content([.section(0), .section(1)]),
+            .content([.feelingsHeader, .feelings(0..<3), .feelingPatternsHeader, .feelingPatterns(0..<1)]),
+        ])
+    }
+
+    func testTheCaptionNamesTheScalesInUse() {
+        func caption(_ kinds: [FeelingKind]) -> String {
+            var report = fixture(sections: 0, notes: 0)
+            report.feelings = kinds.map {
+                DoctorReport.Feeling(title: "Q", kind: $0, average: 1, yesDays: 1, answeredDays: 1, lowWord: "Low",
+                                     highWord: "High")
+            }
+            return ReportText(report: report).feelingsCaption
+        }
+        XCTAssertEqual(caption([.scale, .scale]), "Self-reported: a daily answer to each question in nutrx, on a 1 to 5 scale.")
+        XCTAssertEqual(caption([.yesNo]), "Self-reported: a daily answer to each question in nutrx, yes or no.")
+        XCTAssertEqual(caption([.scale, .yesNo]),
+                       "Self-reported: a daily answer to each question in nutrx, on a 1 to 5 scale or yes or no.")
+    }
+
+    /// Without answers there's no How you felt at all.
+    func testNoFeelingsNoBlocks() {
+        let layout = ReportLayout(report: fixture(sections: 1, notes: 0), paper: .a4)
+        XCTAssertEqual(layout.pages, [.cover(summaryRows: 0..<1), .content([.section(0)])])
+    }
+
+    // MARK: - How you felt (#133)
+
+    private func question(_ title: String, kind: FeelingKind = .scale, preset: FeelingPreset? = nil,
+                          answers: [Int: Int]) -> FeelingTrends.Question {
+        FeelingTrends.Question(title: title, kind: kind, preset: preset, aboutNightBefore: false,
+                               answers: Dictionary(uniqueKeysWithValues: answers.map { (day(10, $0.key), $0.value) }))
+    }
+
+    func testHowYouFeltSumsThePeriodsAnswers() throws {
+        // 1–10 October. Energy every day (and 30 September, outside); Mood on two days; a yes / no on 7; one
+        // question answered only outside the period.
+        var energyAnswers = Dictionary(uniqueKeysWithValues: (1...10).map { (day(10, $0), $0 <= 5 ? 4 : 3) })
+        energyAnswers[day(9, 30)] = 1
+        let energy = FeelingTrends.Question(title: "Energy", kind: .scale, preset: .energy, aboutNightBefore: false,
+                                            answers: energyAnswers)
+        let mood = question("Mood", preset: .mood, answers: [2: 5, 3: 4])
+        let skin = question("Skin", kind: .yesNo, answers: [1: 1, 2: 0, 3: 1, 4: 0, 5: 1, 6: 0, 7: 0])
+        let focus = question("Focus", preset: .focus, answers: [20: 3])
+        let feelings = DoctorReport.feelings([energy, mood, skin, focus], start: day(10, 1), end: day(10, 10))
+
+        XCTAssertEqual(feelings.map(\.title), ["Energy", "Mood", "Skin"], "in order, without the unanswered one")
+        XCTAssertEqual(feelings[0].average, 3.5)
+        XCTAssertEqual(feelings[0].answeredDays, 10, "30 September is outside the period")
+        XCTAssertEqual(feelings[1].average, 4.5)
+        XCTAssertEqual(feelings[2].yesDays, 3)
+        XCTAssertEqual(feelings[2].answeredDays, 7)
+
+        let text = ReportText(report: report(), calendar: calendar, locale: Locale(identifier: "en_US"))
+        XCTAssertEqual(text.feelingValue(feelings[0]), "3.5 on average")
+        XCTAssertEqual(text.feelingScale(feelings[0]), "1 Low – 5 High")
+        XCTAssertEqual(text.feelingScale(feelings[1]), "1 Poor – 5 Great", "Mood's own end words")
+        XCTAssertEqual(text.feelingValue(feelings[2]), "Yes on 3 days")
+        XCTAssertEqual(text.feelingScale(feelings[2]), "Yes or no")
+        XCTAssertEqual(text.feelingAnswered(feelings[2]), "7 of 10 days answered")
+        let once = DoctorReport.feelings([question("Skin", kind: .yesNo, answers: [1: 1, 2: 0])],
+                                         start: day(10, 1), end: day(10, 10))
+        XCTAssertEqual(text.feelingValue(try XCTUnwrap(once.first)), "Yes on 1 day")
+        XCTAssertEqual(text.feelingPatternsHeader,
+                       "With nutrients · the 28 days to Oct 10 · patterns in the answers, not causes")
     }
 
     func testLongNotesTakeMoreRoomAndStillFit() {
@@ -194,13 +318,7 @@ final class DoctorReportTests: XCTestCase {
         let layout = ReportLayout(report: report, paper: .a4)
         for page in layout.pages {
             guard case .content(let blocks) = page else { continue }
-            let used = blocks.reduce(CGFloat(0)) { total, block in
-                switch block {
-                case .section(let i): total + ReportLayout.blockHeight(report.sections[i])
-                case .notesHeader: total + ReportLayout.notesHeaderHeight
-                case .notes(let r): total + r.reduce(0) { $0 + ReportLayout.noteHeight(report.notes[$1], paper: .a4) }
-                }
-            }
+            let used = blocks.reduce(CGFloat(0)) { $0 + ReportLayout.height(of: $1, in: report, paper: .a4) }
             XCTAssertLessThanOrEqual(used, ReportLayout.contentHeight(.a4))
         }
     }

@@ -73,6 +73,19 @@ struct DoctorReport: Equatable {
         let text: String
     }
 
+    /// A How you feel question over the period (#133, docs/pro/HOW-YOU-FEEL.md §3), from the user's own answers.
+    struct Feeling: Equatable {
+        let title: String
+        let kind: FeelingKind
+        /// A scale's average; a yes / no question reads `yesDays`.
+        let average: Double
+        let yesDays: Int
+        let answeredDays: Int
+        /// The words under 1 and 5 ("Poor", "Great"), so a doctor can tell which way the scale runs.
+        let lowWord: String
+        let highWord: String
+    }
+
     /// First and last day of the period (start of day), both included.
     let start: Date
     let end: Date
@@ -87,6 +100,10 @@ struct DoctorReport: Equatable {
     let longestStreak: Int
     /// Every day of the period, oldest first (empty when the period is).
     let days: [Date]
+    /// How you felt (#133), when the report includes it: each question answered in the period.
+    var feelings: [Feeling] = []
+    /// How you feel's patterns for the included nutrients over the 28 days up to the period's last day, in words.
+    var feelingPatterns: [String] = []
 
     var dayCount: Int { days.count }
 
@@ -180,6 +197,22 @@ struct DoctorReport: Equatable {
                             sections: sections, notes: reportNotes, daysWithEntries: logged.count,
                             overallHitRate: counted > 0 ? Double(met) / Double(counted) : nil,
                             longestStreak: longest, days: dates)
+    }
+
+    /// Each question's answers from `start` through `end` (both start of day), in the questions' order; one without an
+    /// answer then is left out. Removed questions count too: their answers are still the user's.
+    static func feelings(_ questions: [FeelingTrends.Question], start: Date, end: Date) -> [Feeling] {
+        questions.compactMap { question -> Feeling? in
+            let values = question.answers.filter { $0.key >= start && $0.key <= end }.map(\.value)
+            guard !values.isEmpty else { return nil }
+            let yes = values.filter { $0 == 1 }.count
+            let average = question.kind == .scale ? Double(values.reduce(0, +)) / Double(values.count)
+                                                  : Double(yes) / Double(values.count)
+            let ends = question.preset?.ends ?? (low: "Low", high: "High")
+            return Feeling(title: question.title, kind: question.kind, average: average,
+                           yesDays: question.kind == .yesNo ? yes : 0, answeredDays: values.count,
+                           lowWord: ends.low, highWord: ends.high)
+        }
     }
 
     /// The last `days` completed days: "Last 30 days" ends yesterday.

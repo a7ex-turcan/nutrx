@@ -85,4 +85,52 @@ final class ReportViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.canCreate)
         XCTAssertEqual(viewModel.blockedReason, "Choose at least one nutrient")
     }
+
+    /// How you felt (#133): offered while the period has answers, on by default, with the included nutrients'
+    /// patterns over the 28 days to the period's end.
+    @MainActor
+    func testHowYouFeltComesWithThePeriodsAnswers() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        let magnesium = Nutrient(name: "Magnesium", unit: "mg", step: 100, dailyTarget: 400, sortOrder: 0)
+        magnesium.createdAt = daysAgo(60)
+        context.insert(magnesium)
+        let energy = FeelingQuestion(title: "Energy", kind: .scale, presetRaw: FeelingPreset.energy.rawValue,
+                                     sortOrder: 0)
+        context.insert(energy)
+        // Logged 40 days back; met on the last 20, with Energy at 5 then and 2 on the other answered days (21–28).
+        for day in 1...40 {
+            context.insert(IntakeRecord(nutrient: magnesium, amount: day <= 20 ? 400 : 100, date: daysAgo(day)))
+        }
+        for day in 1...28 {
+            context.insert(FeelingAnswer(question: energy, day: Calendar.current.startOfDay(for: daysAgo(day)),
+                                         value: day <= 20 ? 5 : 2))
+        }
+        try context.save()
+
+        let viewModel = ReportViewModel()
+        viewModel.load(context: context)
+        XCTAssertTrue(viewModel.hasFeelings)
+        XCTAssertEqual(viewModel.report?.feelings.map(\.title), ["Energy"])
+        XCTAssertEqual(viewModel.report?.feelings.first?.answeredDays, 28)
+        XCTAssertEqual(viewModel.report?.feelingPatterns, [], "patterns come with loadFeelingPatterns")
+        XCTAssertEqual(viewModel.feelingPatternsEnd, viewModel.report?.end)
+        viewModel.loadFeelingPatterns(context: context)
+        XCTAssertEqual(viewModel.report?.feelingPatterns,
+                       ["On days you reach your Magnesium goal, you rated your Energy 5.0 on average, vs 2.0 on other days."])
+
+        viewModel.includesFeelings = false
+        XCTAssertEqual(viewModel.report?.feelings, [])
+        XCTAssertEqual(viewModel.report?.feelingPatterns, [])
+        XCTAssertNil(viewModel.feelingPatternsEnd)
+        viewModel.includesFeelings = true
+
+        // A period before any answer: nothing to offer.
+        viewModel.period = .custom
+        viewModel.customStart = daysAgo(40)
+        viewModel.customEnd = daysAgo(35)
+        XCTAssertFalse(viewModel.hasFeelings)
+        XCTAssertEqual(viewModel.report?.feelings, [])
+        XCTAssertEqual(viewModel.report?.feelingPatterns, [], "no patterns without the answers")
+    }
 }

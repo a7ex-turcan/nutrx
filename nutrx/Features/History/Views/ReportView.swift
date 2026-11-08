@@ -3,8 +3,8 @@ import SwiftData
 import UIKit
 
 /// Report for your doctor (nutrx Pro, docs/pro/design/7-doctor-report: create): a thumbnail of the cover with the
-/// page count and Preview, the period (30 days / 90 days / Custom), which nutrients, and whether the name, notes and
-/// Apple Health trends go in. Create PDF makes the file on the device and opens the share sheet; the file is removed
+/// page count and Preview, the period (30 days / 90 days / Custom), which nutrients, and whether the name, notes,
+/// Apple Health trends and How you feel's answers (#133) go in. Create PDF makes the file on the device and opens the share sheet; the file is removed
 /// when the sheet closes. Presented from History (with Cancel) and pushed from Settings.
 struct ReportView: View {
     var showsCancel = false
@@ -75,6 +75,9 @@ struct ReportView: View {
                 if healthAvailable {
                     Toggle("Include Apple Health trends", isOn: $viewModel.includesHealth)
                 }
+                if viewModel.hasFeelings {
+                    Toggle("Include how you felt", isOn: $viewModel.includesFeelings)
+                }
             }
             .listRowBackground(Theme.surfaceCard)
             .tint(Theme.green)
@@ -118,6 +121,8 @@ struct ReportView: View {
         .task(id: viewModel.includesHealth) {
             if viewModel.includesHealth { await viewModel.loadHealthTrends(context: modelContext) }
         }
+        // How you feel's patterns (#133) are worked out to the period's last day, again when that day moves.
+        .task(id: viewModel.feelingPatternsEnd) { viewModel.loadFeelingPatterns(context: modelContext) }
         .sheet(item: $shareFile, onDismiss: {
             // Sent, cancelled or swiped away: the file shouldn't outlive the sheet.
             if let writtenFile { ReportPDF.remove(at: writtenFile) }
