@@ -246,6 +246,7 @@ nutrx/
 │   │       ├── FeelingTrendText.swift           # "With how you feel" card copy: findings, bars, basis, states (pure).
 │   │       ├── HealthText.swift                 # "With Apple Health" card copy: findings, bars, basis, states, where insights appear (pure).
 │   │       ├── HealthInsights.swift             # Where Health insights stand across nutrients (gathering / ready / …) for the hints (#102).
+│   │       ├── FeelingInsights.swift            # How you feel's clearest pattern across nutrients, for the weekly and monthly recaps' line (#133).
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       ├── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │       ├── CourseText.swift                 # Courses (Pro, #99): "Until Fri 24 Oct · 5 days", "Last day today", "Ended 24 Oct".
@@ -324,8 +325,8 @@ nutrx/
 │   │   │   ├── ProStatusView.swift          # Pro screen: plan, included features, manage, restore.
 │   │   │   └── PlanChip.swift               # Today's Free / PRO chip and the "Enjoy nutrx Pro" sheet (#101).
 │   │   └── ViewModels/
-│   │       ├── ProFeature.swift             # The Pro features (courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans and app icons since 2.7); `listed` = shipped ones only.
-│   │       ├── ProFeatureGroup.swift        # The paywall's four rows: related features share one (supply & scan, courses & schedules, recaps/trends/reports, widgets).
+│   │       ├── ProFeature.swift             # The Pro features (courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans and app icons since 2.7, How you feel's patterns since 2.8); `listed` = shipped ones only.
+│   │       ├── ProFeatureGroup.swift        # The paywall's four rows: related features share one (supply & scan, courses & schedules, recaps/trends/reports with How you feel's patterns, widgets).
 │   │       └── ProText.swift                # Paywall / status copy (pure).
 │   │
 │   └── Profile/
@@ -809,6 +810,10 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
     - in use with every question removed, or under a weekly schedule (whose days don't count one by one; no weekday pattern either): no card.
   - The comparison bars and the day-progress bar are `TrendComparisonBar` and `TrendProgressBar` (`Features/Nutrients/Views/TrendBars.swift`), shared with "With Apple Health".
   - The demo's Magnesium shows the Sleep finding (`FeelingTrendsTests.testTheDemosMagnesiumHasASleepPattern`).
+- **Phase 4a (Pro's other places):**
+  - **The recaps:** the Week and Month tabs end with the clearest finding of the 28 days up to the shown period's last day, in its sentence beside a pink `face.smiling` (`FeelingInsights`, `Features/Nutrients/ViewModels/`, tested in `FeelingInsightsTests`): the largest finding among the nutrients that aren't removed or under a weekly schedule, worked out as the analytics would on the day after that last day. Read in `RecapsView`'s `.task(id:)` on that day, so it follows the period picked; the Year tab has none. Recaps are Pro already.
+  - **The paywall:** `ProFeature.feelingPatterns` ("Patterns in how you feel", pink `face.smiling`) is in the Recaps, trends & reports row, whose line names it ("…trends with Health and how you feel…"). The Pro screen, "Enjoy nutrx Pro" and the welcome line list it like the rest.
+  - **What's New 2.8** has a Pro item for it.
 
 ## In-App Review Prompt
 
@@ -920,7 +925,7 @@ Automatic CloudKit sync across all Apple devices. On by default, no setup requir
   - Below accessibility sizes only the button is pinned at the bottom, with `ProText.planSummary` above it ("Yearly · $14.99 a year · 1 week free", "Plans ⌃", which scrolls to the plans) and a hairline on top; the terms and links scroll after the plans. With them pinned too, the footer hid the plans: from xLarge (#189), on large widths (#205), and at the default size on an iPhone 17, where Lifetime sat behind it with nothing to say there was a third plan (#325). Below xLarge on a compact width the plan line itself shows only while the selected plan's card isn't wholly in view (`PlanLine`, pure, tested in `PlanLineTests`, #338): the whole card, between the sheet's top and the footer's (#352: from Settings, a sheet on a sheet about 20 pt lower, the SE's Yearly card went under the footer while its middle still counted), measured against the pinned button's top, which doesn't move when the line comes and goes, so showing it can't keep itself showing. The positions live in a plain class (`PlanLinePositions`), not state, so scrolling only updates the paywall when the line actually changes. At the top of the page that leaves just the button: on an iPhone 17 all three cards show above it, on the SE the whole Yearly card (with the line, only its top did). It shows for a selected plan behind the button or scrolled away, and fades in and out with the whole footer. At accessibility sizes the button scrolls with the content.
   - The paywall never claims a store it can't reach, and never says nothing was charged.
   - All copy comes from `ProText`, which is pure and tested in `ProTextTests`.
-- **`ProFeature`**: the Pro features with titles, symbols and tints (eleven since dose plans and app icons in 2.7). A new Pro feature gets a case here **and a place in a `ProFeatureGroup`** once it ships (`ProFeatureGroupTests` fails otherwise; a group names all its features, so it only holds shipped ones), or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans and app icons since 2.7).
+- **`ProFeature`**: the Pro features with titles, symbols and tints (twelve since How you feel's patterns in 2.8). A new Pro feature gets a case here **and a place in a `ProFeatureGroup`** once it ships (`ProFeatureGroupTests` fails otherwise; a group names all its features, so it only holds shipped ones), or the paywall, the Pro screen, "Enjoy nutrx Pro" and the welcome line never mention it. **`listed` only includes features where `isShipped` is true**, so the paywall can't advertise an unbuilt feature. Debug builds list all of them until one ships, to check the design. All are shipped (the first five since phase 8, courses since 2.2, schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans and app icons since 2.7, How you feel's patterns since 2.8).
 - **Settings:** `ProSettingsCard` sits under the profile card, only when `isStoreVisible` is true.
   - Free: `ProText.tagline(ProFeature.listed)` (shipped features only: "Supply and label scan" now, a plain list for two or three, and "… and more" only from four) with **Learn more**, which opens the paywall.
   - Pro: a check badge and `ProText.shortStatus` ("Yearly · renews Oct 14, 2027", "… free until …", "… ends …", "Lifetime"). It pushes `ProStatusView`.

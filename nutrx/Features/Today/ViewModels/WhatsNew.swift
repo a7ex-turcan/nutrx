@@ -71,6 +71,9 @@ nonisolated struct WhatsNew: Equatable {
             Item(title: "How you feel",
                  subtitle: "Check in on how the day went, from a time you set. Turn it on in Settings → How you feel.",
                  symbolName: "face.smiling", tint: .pink),
+            Item(title: "Patterns in how you feel",
+                 subtitle: "How your answers line up with each nutrient, in its analytics and your recaps.",
+                 symbolName: "chart.line.uptrend.xyaxis", tint: .pink, isPro: true),
         ]),
     ]
 
