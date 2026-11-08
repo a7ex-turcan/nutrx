@@ -179,7 +179,7 @@ Released on the App Store on 7 Nov 2026 (build 216, phased release; tag `v2.6`).
 
 ### v2.7 — Dose plans
 
-In progress on main.
+Submitted for App Review on 8 Nov 2026 (build 241, phased release). Main builds 2.8 from here.
 
 | Feature | Status |
 |---|---|
@@ -193,6 +193,7 @@ In progress on main.
 | One wording for the day you tend to miss; Done on the right in every reminders sheet | ✅ Built (v2.7, #327, #326: #332, #331) |
 | UI tests: the sheets' Log buttons on the SE; the dry runs' reminder to run them | ✅ Built (v2.7, #222, #340: #337, #343) |
 | UI tests: the paywall on the SE and the iPhone 17 | ✅ Built (v2.7, #339) |
+| Today at the largest text sizes: back to the top after a size change, the streak chip and the reminder line | ✅ Built (v2.7, #198, #358: #357, #359) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
