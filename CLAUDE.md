@@ -812,7 +812,7 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
   - The demo's Magnesium shows the Sleep finding (`FeelingTrendsTests.testTheDemosMagnesiumHasASleepPattern`).
 - **Phase 4a (Pro's other places):**
   - **The recaps:** the Week and Month tabs end with the clearest finding of the 28 days up to the shown period's last day, in its sentence beside a pink `face.smiling` (`FeelingInsights`, `Features/Nutrients/ViewModels/`, tested in `FeelingInsightsTests`): the largest finding among the nutrients that aren't removed or under a weekly schedule, worked out as the analytics would on the day after that last day. Read in `RecapsView`'s `.task(id:)` on that day, so it follows the period picked; the Year tab has none. Recaps are Pro already.
-  - **The paywall:** `ProFeature.feelingPatterns` ("Patterns in how you feel", pink `face.smiling`) is in the Recaps, trends & reports row, whose line names it ("…trends with Health and how you feel…"). The Pro screen, "Enjoy nutrx Pro" and the welcome line list it like the rest.
+  - **The paywall:** `ProFeature.feelingPatterns` ("Patterns in how you feel", pink `face.smiling`) is in the Recaps, trends & reports row, whose line names it ("Recaps, trends with Health and how you feel, and a PDF for your doctor": with "Your week, month and year" it took three lines on an SE). The Pro screen, "Enjoy nutrx Pro" and the welcome line list it like the rest.
   - **What's New 2.8** has a Pro item for it.
 
 ## In-App Review Prompt

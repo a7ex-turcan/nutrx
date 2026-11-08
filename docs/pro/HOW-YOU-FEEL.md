@@ -86,7 +86,7 @@ This document is the spec to build from. The build phases are at the end.
     - Built as `FeelingInsights`: the largest finding among the nutrients that aren't removed or under a weekly schedule, read as the analytics would on the day after the period's last day, in the finding's own sentence beside a pink `face.smiling`.
   - **The doctor report:** "Include how you felt", on when the period has answers. For each question it lists the period's average (or yes days) and days answered, plus the findings for the nutrients included. It's labelled as self-reported.
 - **The paywall:** `ProFeature.feelingPatterns` ("Patterns in how you feel") joins the "Recaps, trends & reports" row. Its line must still let the plans start on an SE's screen (`PaywallUITests`).
-  - The row now reads "Your week, month and year, trends with Health and how you feel, and a PDF for your doctor". The Pro screen and "Enjoy nutrx Pro" list the feature on its own ("How your check-ins line up with what you take"), and What's New 2.8 has it as a Pro item.
+  - The row now reads "Recaps, trends with Health and how you feel, and a PDF for your doctor": naming the week, month and year as before took three lines on an SE. The Pro screen and "Enjoy nutrx Pro" list the feature on its own ("How your check-ins line up with what you take"), and What's New 2.8 has it as a Pro item.
 
 ## 4. Without Pro
 
