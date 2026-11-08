@@ -821,7 +821,7 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
   - **On the page:** "How you felt" sits after the sections and before the notes. Its header reads "Self-reported: a daily answer to each question in nutrx", then the scales its rows use.
     - Each row: the question, "3.8 on average" or "Yes on 6 days", "1 Poor – 5 Great" or "Yes or no", and "52 of 90 days answered".
     - The patterns follow under "With nutrients · the 28 days to 7 Nov · patterns in the answers, not causes".
-  - **The layout:** `ReportLayout` packs the rows, the patterns and the notes the same way (`addList`: a header never ends a page). How you felt and its patterns start a new page together when they'd otherwise split and fit on one. `ReportLayout.height(of:in:paper:)` gives any block's height.
+  - **The layout:** `ReportLayout` packs the rows, the patterns and the notes the same way (`addList`: a header never ends a page). How you felt and its patterns start a new page together when they'd otherwise split and fit on one; a longer one splits, its patterns starting right under its rows. `ReportLayout.height(of:in:paper:)` gives any block's height.
 
 ## In-App Review Prompt
 

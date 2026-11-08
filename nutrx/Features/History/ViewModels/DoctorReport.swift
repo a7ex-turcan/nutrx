@@ -208,10 +208,9 @@ struct DoctorReport: Equatable {
             let yes = values.filter { $0 == 1 }.count
             let average = question.kind == .scale ? Double(values.reduce(0, +)) / Double(values.count)
                                                   : Double(yes) / Double(values.count)
-            let ends = question.preset?.ends ?? (low: "Low", high: "High")
             return Feeling(title: question.title, kind: question.kind, average: average,
                            yesDays: question.kind == .yesNo ? yes : 0, answeredDays: values.count,
-                           lowWord: ends.low, highWord: ends.high)
+                           lowWord: question.ends.low, highWord: question.ends.high)
         }
     }
 

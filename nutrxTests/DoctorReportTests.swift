@@ -147,8 +147,9 @@ final class DoctorReportTests: XCTestCase {
 
     func testEveryBlockAppearsOnceAndInOrder() {
         for paper in [ReportLayout.Paper.a4, .letter] {
-            for (sections, notes, trends, feelings, patterns) in [(1, 0, 0, 0, 0), (6, 3, 0, 3, 2), (13, 40, 0, 8, 6),
-                                                                   (5, 90, 2, 13, 20), (25, 0, 1, 2, 0), (2, 0, 0, 40, 40)] {
+            let cases = [(1, 0, 0, 0, 0), (6, 3, 0, 3, 2), (13, 40, 0, 8, 6), (5, 90, 2, 13, 20), (25, 0, 1, 2, 0),
+                         (2, 0, 0, 40, 40)]
+            for (sections, notes, trends, feelings, patterns) in cases {
                 let report = fixture(sections: sections, notes: notes, trends: trends, feelings: feelings,
                                      patterns: patterns)
                 let layout = ReportLayout(report: report, paper: paper)
@@ -210,8 +211,8 @@ final class DoctorReportTests: XCTestCase {
         ])
         for (sections, feelings) in [(2, 1), (3, 13), (2, 30)] {
             for paper in [ReportLayout.Paper.a4, .letter] {
-                let layout = ReportLayout(report: fixture(sections: sections, notes: 0, feelings: feelings, patterns: 4),
-                                          paper: paper)
+                let report = fixture(sections: sections, notes: 0, feelings: feelings, patterns: 4)
+                let layout = ReportLayout(report: report, paper: paper)
                 for page in layout.pages {
                     guard case .content(let blocks) = page, let last = blocks.last else { continue }
                     XCTAssertNotEqual(last, .feelingsHeader)
@@ -257,6 +258,23 @@ final class DoctorReportTests: XCTestCase {
         XCTAssertEqual(caption([.yesNo]), "Self-reported: a daily answer to each question in nutrx, yes or no.")
         XCTAssertEqual(caption([.scale, .yesNo]),
                        "Self-reported: a daily answer to each question in nutrx, on a 1 to 5 scale or yes or no.")
+    }
+
+    /// A section too long for one page (many findings) splits, and its patterns start right under its rows rather
+    /// than alone on a fresh page without "How you felt" above them.
+    func testALongHowYouFeltSplitsWithItsPatternsUnderItsRows() {
+        let report = fixture(sections: 1, notes: 0, feelings: 3, patterns: 18)
+        let layout = ReportLayout(report: report, paper: .a4)
+        guard case .content(let first) = layout.pages[1] else { return XCTFail("expected a content page") }
+        XCTAssertEqual(Array(first.prefix(4)), [.section(0), .feelingsHeader, .feelings(0..<3), .feelingPatternsHeader])
+        let patterns = layout.pages.flatMap { page -> [Int] in
+            guard case .content(let blocks) = page else { return [] }
+            return blocks.flatMap { block -> [Int] in
+                if case .feelingPatterns(let range) = block { return Array(range) }
+                return []
+            }
+        }
+        XCTAssertEqual(patterns, Array(0..<18))
     }
 
     /// Without answers there's no How you felt at all.

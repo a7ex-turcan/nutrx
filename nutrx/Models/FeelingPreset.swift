@@ -28,6 +28,9 @@ enum FeelingPreset: String, CaseIterable {
         }
     }
 
+    /// The words under 1 and 5 of the user's own scales.
+    static let ownEnds = (low: "Low", high: "High")
+
     /// The words under 1 and 5.
     var ends: (low: String, high: String) {
         switch self {
@@ -62,5 +65,5 @@ extension FeelingQuestion {
     var symbolName: String { preset?.symbolName ?? "text.bubble" }
 
     /// The words under 1 and 5; the user's own scales read Low – High.
-    var ends: (low: String, high: String) { preset?.ends ?? ("Low", "High") }
+    var ends: (low: String, high: String) { preset?.ends ?? FeelingPreset.ownEnds }
 }

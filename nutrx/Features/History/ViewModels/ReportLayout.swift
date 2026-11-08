@@ -2,8 +2,8 @@ import CoreGraphics
 import Foundation
 
 /// How the report falls onto pages (nutrx Pro, phase 8): the cover with the summary table, then nutrient sections,
-/// How you felt (#133) and the notes packed onto content pages. `ImageRenderer` draws one view per page, so the split is decided here, from
-/// fixed block heights in points (pure, `DoctorReportTests`).
+/// How you felt (#133) and the notes packed onto content pages. `ImageRenderer` draws one view per page, so the split
+/// is decided here, from fixed block heights in points (pure, `DoctorReportTests`).
 struct ReportLayout: Equatable {
     enum Paper: Equatable {
         case a4, letter
@@ -156,15 +156,15 @@ struct ReportLayout: Equatable {
             used += height
         }
         // How you felt reads as one section: its rows and its patterns start a new page together rather than split,
-        // when they fit on one (the patterns alone on a page had no title above them).
+        // when they fit on one (the patterns alone on a page had no title above them). One too long for a page splits,
+        // its patterns starting right under its rows.
         let patterns = report.feelingPatterns.isEmpty ? 0
             : Self.feelingPatternsHeaderHeight + CGFloat(report.feelingPatterns.count) * Self.trendLineHeight
         addList(.feelingsHeader, headerHeight: Self.feelingsHeaderHeight,
                 rowHeights: report.feelings.map { _ in Self.feelingRowHeight }, keepsTogether: true,
                 followedBy: patterns, rows: Block.feelings)
         addList(.feelingPatternsHeader, headerHeight: Self.feelingPatternsHeaderHeight,
-                rowHeights: report.feelingPatterns.map { _ in Self.trendLineHeight }, keepsTogether: true,
-                rows: Block.feelingPatterns)
+                rowHeights: report.feelingPatterns.map { _ in Self.trendLineHeight }, rows: Block.feelingPatterns)
         addList(.notesHeader, headerHeight: Self.notesHeaderHeight,
                 rowHeights: report.notes.map { Self.noteHeight($0, paper: paper) }, rows: Block.notes)
         newPage()
