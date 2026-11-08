@@ -9,6 +9,7 @@ All notable changes to nutrx are documented in this file.
 ### Fixes
 - **The Pro page from Settings on a small iPhone** — Opened from Settings, the Pro page sits a little lower, and on an iPhone SE the Yearly plan's bottom went under the button with nothing naming the selected plan. The line naming your plan now shows whenever the selected plan isn't wholly in view.
 - **Names and totals on the smallest Apple Watch** — On a 40 mm Watch, a nutrient's name broke mid-word ("Vita- / min D") and its total was cut off ("2,000 / 4,0…"). A name now takes the largest size at which its words fit whole, a long single word shrinks rather than breaks, and a total that doesn't fit puts its goal on a second line. Larger Watches look as before.
+- **The Apple Health line in Recaps** — The line about Apple Health insights ("…start after about two weeks of logging", or which nutrient to look at) belongs to the weekly recap, but it also showed under the Month and Year tabs. It's on the Week tab only now.
 - **Today's date at the largest text sizes** — From the first accessibility size, the date under Today's title was cut off ("Saturday, 7 Novemb…"). It's shortened there now ("Sat, 7 Nov"), and stays in full at other sizes.
 
 ## v2.7 — submitted for review 2026-11-08 (build 241)

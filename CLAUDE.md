@@ -997,7 +997,7 @@ Mockups: `docs/pro/design/6-health-trends/`.
   - **Connect confirmation:** after the permission sheet, `HealthIntroView` shows "Apple Health is connected", what happens next and where (`HealthText.connectedBody`, `whereLine`), then Done.
   - **Today:** `HealthInsightsTodayCard` (Pro, connected) under the recap card while gathering ("Keep logging: Vitamin D has 9 of 14 days…") and once ready ("Your first Apple Health insight is ready"). **See where** sets `NotificationRouter.healthNutrientID`: the tab bar switches to Nutrients, which pushes that nutrient's analytics, which scrolls to its Health card. ✕ hides the gathering card (`nutrx.hidesInsightsGatheringCard`); the ready card goes once opened or hidden (`nutrx.hidesInsightsReadyCard`): the rule is `HealthInsights.TodayCard`, pure and tested. The keys leave out "health" on purpose: `HealthPrivacyTests` allows only the Health switch among keys that mention it. Read again on every appearance and activation.
   - **Settings → Apple Health:** a "Where you'll see it" card with the progress (`HealthText.settingsStatus`).
-  - **Weekly recap:** a line at the end while gathering or once ready (`HealthText.recapLine`); none otherwise.
+  - **Weekly recap:** a line at the end while gathering or once ready (`HealthText.recapLine`); none otherwise, and none on the Month and Year tabs (#377: it showed under all three).
 - Health trends are shipped on the paywall (the Settings card's tagline becomes "Supply, label scan, recaps and more").
 
 ### nutrx Pro: Courses (#99)

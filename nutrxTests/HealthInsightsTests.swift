@@ -42,8 +42,12 @@ final class HealthInsightsTests: XCTestCase {
         XCTAssertEqual(HealthText.todayTitle(ready), "Your first Apple Health insight is ready")
         XCTAssertNil(HealthText.todayTitle(.noPattern))
         XCTAssertEqual(HealthText.settingsStatus(gathering), "So far: 9 of 14 days for Vitamin D. Insights start at 14.")
-        XCTAssertEqual(HealthText.recapLine(gathering), "Apple Health insights start after about two weeks of logging.")
-        XCTAssertNil(HealthText.recapLine(.noHealthData))
+        XCTAssertEqual(HealthText.recapLine(gathering, on: .week),
+                       "Apple Health insights start after about two weeks of logging.")
+        XCTAssertNil(HealthText.recapLine(.noHealthData, on: .week))
+        // The weekly recap only (#377).
+        XCTAssertNil(HealthText.recapLine(gathering, on: .month))
+        XCTAssertNil(HealthText.recapLine(ready, on: .year))
         // Descriptive only, like the rest of the Health words.
         for text in [HealthText.connectedBody, HealthText.whereLine, HealthText.todayBody(ready) ?? ""] {
             XCTAssertFalse(text.localizedCaseInsensitiveContains("should"), text)
