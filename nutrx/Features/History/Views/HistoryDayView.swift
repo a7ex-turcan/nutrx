@@ -9,6 +9,11 @@ struct HistoryDayView: View {
 
     @State private var selectedNutrient: Nutrient?
     @State private var headerScrolledAway = false
+    /// How you feel's questions, removed ones too, for "How you felt" (#133).
+    @Query(sort: [SortDescriptor(\FeelingQuestion.sortOrder), SortDescriptor(\FeelingQuestion.createdAt)])
+    private var feelingQuestions: [FeelingQuestion]
+    @State private var editsFeelings = false
+    @Query private var allPreferences: [UserPreferences]
 
     var body: some View {
         let day = viewModel.day(date)
@@ -46,6 +51,17 @@ struct HistoryDayView: View {
                         }
                     }
                 }
+
+                // From the day How you feel's first question was made (#133). Turned off, only a day with answers
+                // shows them, and they can't be changed.
+                let feelingsOn = allPreferences.first?.feelingsEnabled ?? false
+                if let firstDay = FeelingAnswers.firstDay(of: feelingQuestions), date >= firstDay,
+                   feelingsOn || !FeelingAnswers.values(for: feelingQuestions, on: date).isEmpty {
+                    FeelingDayCard(date: date, questions: feelingQuestions, canEdit: feelingsOn) {
+                        editsFeelings = true
+                    }
+                    .padding(.top, Theme.Spacing.sectionTop - Theme.Spacing.cardGap)
+                }
             }
             .padding(.horizontal, Theme.Spacing.screenMargin)
             .padding(.bottom, Theme.Spacing.sectionTop)
@@ -63,6 +79,9 @@ struct HistoryDayView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $selectedNutrient) { nutrient in
             DayEntriesSheet(nutrient: nutrient, date: date, viewModel: viewModel)
+        }
+        .sheet(isPresented: $editsFeelings) {
+            FeelingDaySheet(date: date, questions: feelingQuestions.filter { !$0.isRemoved })
         }
     }
 

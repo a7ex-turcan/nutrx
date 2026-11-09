@@ -1,10 +1,42 @@
 import Foundation
+import SwiftData
 
-/// How you feel's words (#133, docs/pro/HOW-YOU-FEEL.md): Settings → How you feel and its question sheet. Pure.
+/// How you feel's words (#133, docs/pro/HOW-YOU-FEEL.md): Settings → How you feel, its question sheet, Today's card
+/// and History's answers. Pure.
 enum FeelingText {
+    static let cardTitle = "How was today?"
+    static let historyTitle = "How you felt"
+    static let noCheckIn = "No check-in"
+
+    /// An answer as it reads: "4", "Yes", "No".
+    static func answer(_ value: Int, kind: FeelingKind) -> String {
+        switch kind {
+        case .scale: "\(value)"
+        case .yesNo: value == 1 ? "Yes" : "No"
+        }
+    }
+
+    /// What VoiceOver reads for a scale: "4 of 5", or "Not answered".
+    static func scaleValue(_ value: Int?) -> String {
+        value.map { "\($0) of 5" } ?? "Not answered"
+    }
+
+    /// The folded card: "Checked in · Energy 4 · Mood 3 · Headache no".
+    static func checkedIn(_ questions: [FeelingQuestion], values: [PersistentIdentifier: Int]) -> String {
+        "Checked in · \(summary(questions, values: values))"
+    }
+
+    /// The answers' line: "Energy 4 · Mood 3 · Headache no", in the questions' order, answered ones only.
+    static func summary(_ questions: [FeelingQuestion], values: [PersistentIdentifier: Int]) -> String {
+        questions.compactMap { question in
+            values[question.persistentModelID].map { "\(question.displayTitle) \(answer($0, kind: question.kind).lowercased())" }
+        }
+        .joined(separator: " · ")
+    }
+
     /// Under the switch.
-    static let intro = "Each evening, Today asks how the day went, one tap per question. Your answers stay on "
-        + "your devices and in your private iCloud, like your logs. nutrx never sees them."
+    static let intro = "From the time you set, Today asks how the day went, one tap per question. Your answers stay "
+        + "on your devices and in your private iCloud, like your logs. nutrx never sees them."
 
     static let askFromFooter = "Today asks “How was today?” from this time until the day ends."
 

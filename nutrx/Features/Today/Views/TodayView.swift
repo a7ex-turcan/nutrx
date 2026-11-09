@@ -65,6 +65,14 @@ struct TodayView: View {
     @Query private var allPreferences: [UserPreferences]
     @Query private var allGroups: [NutrientGroup]
     @Query(sort: \LogStack.sortOrder) private var stacks: [LogStack]
+    /// How you feel's questions (#133), for "How was today?".
+    @Query(sort: [SortDescriptor(\FeelingQuestion.sortOrder), SortDescriptor(\FeelingQuestion.createdAt)])
+    private var feelingQuestions: [FeelingQuestion]
+    /// The day "How was today?" was hidden with its ✕ (start of day), or 0.
+    @AppStorage("nutrx.hiddenFeelingCardDay") private var hiddenFeelingCardDay: Double = 0
+    /// The time the card was last judged at: moved by a minute timer only when that changes whether it shows, so Today
+    /// isn't redrawn every minute.
+    @State private var feelingClock = Date.now
     @State private var viewModel = TodayViewModel()
     @State private var nutrientToLog: Nutrient?
     /// Whether the Not today section is open (schedules, #132); per device, collapsed by default.
@@ -105,6 +113,48 @@ struct TodayView: View {
         let new = UserPreferences()
         modelContext.insert(new)
         return new
+    }
+
+    // MARK: - How you feel (#133)
+
+    private var activeFeelingQuestions: [FeelingQuestion] { feelingQuestions.filter { !$0.isRemoved } }
+
+    private func feelingCardShows(at now: Date) -> Bool {
+        FeelingAnswers.cardShows(enabled: preferences.feelingsEnabled, hasQuestions: !activeFeelingQuestions.isEmpty,
+                                 askMinutes: preferences.feelingsAskMinutes,
+                                 hiddenDay: hiddenFeelingCardDay > 0 ? Date(timeIntervalSince1970: hiddenFeelingCardDay)
+                                                                     : nil,
+                                 now: now)
+    }
+
+    /// The minute timer's tick: the clock moves only when the card would appear or go (the Ask from time, midnight).
+    private func tickFeelingClock(_ now: Date) {
+        if feelingCardShows(at: now) != feelingCardShows(at: feelingClock)
+            || !Calendar.current.isDate(now, inSameDayAs: feelingClock) {
+            feelingClock = now
+        }
+    }
+
+    @ViewBuilder
+    private var feelingCard: some View {
+        if feelingCardShows(at: feelingClock) {
+            let questions = activeFeelingQuestions
+            FeelingTodayCard(questions: questions,
+                             values: FeelingAnswers.values(for: questions, on: feelingClock),
+                             onAnswer: { question, value in
+                                 // The card reads at its clock: move it to now first, so a tap after midnight
+                                 // answers the day the card then shows.
+                                 feelingClock = .now
+                                 FeelingAnswers.set(value, for: question, on: feelingClock, in: modelContext)
+                                 Haptics.adjusted()
+                             },
+                             onDismiss: {
+                                 withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
+                                     hiddenFeelingCardDay = Calendar.current.startOfDay(for: .now)
+                                         .timeIntervalSince1970
+                                 }
+                             })
+        }
     }
 
     /// The Health card's status, when it should show (`HealthInsights.TodayCard.visible`).
@@ -304,8 +354,16 @@ struct TodayView: View {
         .onChange(of: allGroups.count) {
             viewModel.refresh(context: modelContext)
         }
+        // "How was today?" from the Ask from time, and gone at midnight (#133).
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60))
+                tickFeelingClock(.now)
+            }
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
+                feelingClock = .now
                 viewModel.refresh(context: modelContext)
                 refreshStreak()
                 refreshWeekRecap()
@@ -749,6 +807,8 @@ struct TodayView: View {
                 }
             })
         }
+
+        feelingCard
 
         if let healthCard = visibleHealthStatus {
             HealthInsightsTodayCard(status: healthCard, onSeeWhere: {
