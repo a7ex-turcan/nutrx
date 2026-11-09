@@ -20,6 +20,8 @@ enum ModelContainerFactory {
         NutrientGroup.self,
         LogStack.self,
         LogStackEntry.self,
+        FeelingQuestion.self,
+        FeelingAnswer.self,
     ]
 
     nonisolated static var schema: Schema {

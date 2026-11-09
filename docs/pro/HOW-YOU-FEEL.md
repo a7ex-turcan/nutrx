@@ -20,7 +20,7 @@ This document is the spec to build from. The build phases are at the end.
   | Preset | Reads | Kind | Ends |
   |---|---|---|---|
   | Energy | Energy | 1–5 | Low – High |
-  | Mood | Mood | 1–5 | Low – Great |
+  | Mood | Mood | 1–5 | Poor – Great |
   | Sleep | Sleep last night | 1–5 | Poor – Great |
   | Focus | Focus | 1–5 | Low – High |
   | Stress | Stress | 1–5 | Low – High |

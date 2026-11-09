@@ -54,10 +54,8 @@ final class NutrientRemovalTests: XCTestCase {
             nutrient.isRemoved = true
             try context.save()
         }
-        let models: [any PersistentModel.Type] = [UserProfile.self, Nutrient.self, IntakeRecord.self, Exclusion.self,
-                                                  UserPreferences.self, NutrientReminder.self, NutrientGroup.self,
-                                                  LogStack.self, LogStackEntry.self]
-        let model = try XCTUnwrap(NSManagedObjectModel.makeManagedObjectModel(for: models))
+        // Every stored model, as the store was made with: a shorter list is a different model version.
+        let model = try XCTUnwrap(NSManagedObjectModel.makeManagedObjectModel(for: ModelContainerFactory.models))
         let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
         try coordinator.addPersistentStore(type: .sqlite, at: url)
         let context = NSManagedObjectContext(.mainQueue)

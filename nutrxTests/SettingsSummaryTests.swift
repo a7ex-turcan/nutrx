@@ -42,6 +42,18 @@ final class SettingsSummaryTests: XCTestCase {
         XCTAssertEqual(SettingsSummary.streaks(enabled: false), "Off")
     }
 
+    func testHowYouFeel() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let locale = Locale(identifier: "en_GB")
+        XCTAssertEqual(SettingsSummary.howYouFeel(enabled: false, askMinutes: 1140, calendar: calendar, locale: locale),
+                       "Off")
+        XCTAssertEqual(SettingsSummary.howYouFeel(enabled: true, askMinutes: 1140, calendar: calendar, locale: locale),
+                       "From 19:00")
+        XCTAssertEqual(SettingsSummary.howYouFeel(enabled: true, askMinutes: 20 * 60 + 30, calendar: calendar,
+                                                  locale: locale), "From 20:30")
+    }
+
     func testGroupsCountOnlyTheUsersOwn() {
         XCTAssertEqual(SettingsSummary.groups(userGroupCount: 0), "None")
         XCTAssertEqual(SettingsSummary.groups(userGroupCount: 2), "2")

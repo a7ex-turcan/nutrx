@@ -3,6 +3,17 @@
 # production (CloudKit Console) before a TestFlight upload. Check with Tools/check-cloudkit-schema.
 CD_Exclusion CD_date
 CD_Exclusion CD_nutrient
+CD_FeelingAnswer CD_day
+CD_FeelingAnswer CD_question
+CD_FeelingAnswer CD_updatedAt
+CD_FeelingAnswer CD_value
+CD_FeelingQuestion CD_createdAt
+CD_FeelingQuestion CD_id
+CD_FeelingQuestion CD_isRemoved
+CD_FeelingQuestion CD_kindRaw
+CD_FeelingQuestion CD_presetRaw
+CD_FeelingQuestion CD_sortOrder
+CD_FeelingQuestion CD_title
 CD_IntakeRecord CD_amount
 CD_IntakeRecord CD_date
 CD_IntakeRecord CD_note
@@ -52,6 +63,9 @@ CD_NutrientGroup CD_sortOrder
 CD_NutrientReminder CD_nutrient
 CD_NutrientReminder CD_timeOfDay
 CD_UserPreferences CD_dailyReminderEnabled
+CD_UserPreferences CD_feelingsAskMinutes
+CD_UserPreferences CD_feelingsEnabled
+CD_UserPreferences CD_feelingsReminderEnabled
 CD_UserPreferences CD_hasSeenAnalyticsBanner
 CD_UserPreferences CD_hasSeenNotificationBanner
 CD_UserPreferences CD_hasSeenSyncEnabledBanner
