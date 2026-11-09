@@ -350,8 +350,14 @@ def finish(build, number, tag, commit, what_to_test, testers, steps):
 
     print(f"5. {steps[4]}")
     if testers:
-        write("internal testers", "post", f"/v1/betaGroups/{INTERNAL_GROUP}/relationships/builds",
-              {"data": [{"type": "builds", "id": build["id"]}]})
+        # A group with access to all builds already has this one, and App Store Connect refuses to add it
+        # (422 "Cannot add internal group to a build", build 244): check instead of stopping there.
+        group = get(f"/v1/betaGroups/{INTERNAL_GROUP}?fields[betaGroups]=name,hasAccessToAllBuilds")["data"]
+        if group["attributes"].get("hasAccessToAllBuilds"):
+            print(f"  ✓ {group['attributes'].get('name', 'the internal group')} gets every build already")
+        else:
+            write("internal testers", "post", f"/v1/betaGroups/{INTERNAL_GROUP}/relationships/builds",
+                  {"data": [{"type": "builds", "id": build["id"]}]})
 
     print(f"6. {steps[5]}")
     git("tag", tag, commit)
