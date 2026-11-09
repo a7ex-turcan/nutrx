@@ -224,6 +224,8 @@ nutrx/
 │   │   │   ├── DosePlanSheet.swift              # Dose plan (Pro, #135): start, 2–6 steps (goal + length), keep or stop, sentence, Remove plan.
 │   │   │   ├── SupplyCard.swift                 # Analytics Supply card: free teaser / Set up / days left, gauge, Refilled.
 │   │   │   ├── HealthTrendsCard.swift           # Analytics "With Apple Health" (Pro): findings with two bars, or the state.
+│   │   │   ├── FeelingTrendsCard.swift          # Analytics "With how you feel" (Pro, #133): findings with two bars, the state, the teaser or where to turn it on.
+│   │   │   ├── TrendBars.swift                  # The trend cards' comparison bar and day-progress bar (Health, How you feel).
 │   │   │   ├── ScanLabelEntry.swift             # Scan a label (Pro): entry card + reading note + divider; ScanReviewBanner.
 │   │   │   ├── LabelScannerView.swift           # Full-screen VisionKit scanner (or a photo), reading pill, ScanFailCard.
 │   │   │   ├── NutrientAnalyticsView.swift      # Per-nutrient analytics, pushed on row tap: header, period picker, stats + chart card, heatmap, Reminders row, Edit.
@@ -240,6 +242,8 @@ nutrx/
 │   │       ├── LabelScan.swift                  # Photo → label (recognise, extract; nil = couldn't read) + ScanText copy.
 │   │       ├── WeekdayPattern.swift             # Per-weekday hit rate over the last 28 days, weakest-day insight, heatmap fill levels (pure).
 │   │       ├── HealthTrends.swift               # Health trends (Pro): HealthDay + findings vs sleep, workouts, active energy (pure).
+│   │       ├── FeelingTrends.swift              # How you feel's patterns (Pro, #133): answers on goal-met days vs others, per question (pure).
+│   │       ├── FeelingTrendText.swift           # "With how you feel" card copy: findings, bars, basis, states (pure).
 │   │       ├── HealthText.swift                 # "With Apple Health" card copy: findings, bars, basis, states, where insights appear (pure).
 │   │       ├── HealthInsights.swift             # Where Health insights stand across nutrients (gathering / ready / …) for the hints (#102).
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
@@ -790,6 +794,21 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
   - **The reminder** (see Notifications, 5): Settings → How you feel → Remind me asks for notification permission as the other reminders do. `FeelingAnswers.reminderDate` (today at the Ask from time while it's ahead and unanswered, else tomorrow's) and `FeelingText.reminderBody` ("Check in on Energy, Mood and Sleep last night.", the first three with `ListFormatter`, then "and 2 more") are pure. `ReminderSchedule.budget` is 59. After a reinstall, Today resets `feelingsReminderEnabled` with the other synced notification flags while iOS hasn't been asked.
   - **Export:** the answers' second file (see Data Export).
   - **Demo data:** Energy, Mood and Sleep answered on most days of the last six weeks, Sleep higher the night after Magnesium was met; Magnesium is short on d 14–17 (outside the streaks and the latest recap's week; four weekdays d 11, 12 and 20 don't use, so Sunday stays the day you tend to miss) so that pattern has another side. How you feel stays off in the demo, so Today's App Store shots don't depend on the hour; History shows the answers. `ScreenshotDemoDataTests` checks the pattern.
+
+- **Phase 3 (patterns, nutrx Pro):**
+  - **`FeelingTrends`** (`Features/Nutrients/ViewModels/`, pure, tested in `FeelingTrendsTests`) mirrors `HealthTrends`:
+    - over the last 28 completed days, a nutrient's paired days are those it counts (tracked, due under its schedule, its course running; a `counts` closure), with anything logged in nutrx, and an answer about the day. Sleep's answer is the next day's (`isAboutNightBefore`), so the newest pair needs today's;
+    - the groups are the days over `HealthTrends.sleepThreshold` (three quarters of an "at most" limit, else the day's goal met, dose plans included) against the others, each at least 4 days;
+    - a finding: a scale's averages 0.5 or more apart, or yes shares 25 points or more apart. At most two, the largest first (a scale's gap out of 4 against a yes share's gap);
+    - readiness is per question (14 paired days). The state: `findings`, else `noPattern(checkedDays:)` with a ready question, else `notEnoughData(question:pairedDays:)` naming the closest.
+  - **`FeelingTrendText`** (beside `HealthText`, since it needs the nutrient's name, unit and goal; the spec called it `FeelingText`): "After days you reach your Magnesium goal, you rated your Sleep 4.4 on average, vs 2.5 after other days.", "On days Caffeine passes 300 mg, you had a headache on 5 of 9 days, vs 2 of 15 other days." (own yes / no questions: "you answered yes to Skin"), the bars' labels and values ("4.4", "5 of 9"), the basis, the states and the footer.
+  - **`FeelingTrendsCard`**, "With how you feel", is in a nutrient's analytics below "With Apple Health", read with the rest in `NutrientAnalyticsViewModel.refresh` (`feelingState`, `feelingsInUse`):
+    - Pro: the findings with two bars each (out of 5, or the share of days), the days behind them and the footer; or the 14-day progress for the closest question; or no pattern;
+    - free, with How you feel on or answered: the teaser with the PRO chip;
+    - How you feel off with no answers: where to turn it on, for anyone;
+    - in use with every question removed, or under a weekly schedule (whose days don't count one by one; no weekday pattern either): no card.
+  - The comparison bars and the day-progress bar are `TrendComparisonBar` and `TrendProgressBar` (`Features/Nutrients/Views/TrendBars.swift`), shared with "With Apple Health".
+  - The demo's Magnesium shows the Sleep finding (`FeelingTrendsTests.testTheDemosMagnesiumHasASleepPattern`).
 
 ## In-App Review Prompt
 

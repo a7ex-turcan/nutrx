@@ -104,6 +104,9 @@ private struct NutrientAnalyticsContent: View {
                                      isConnected: viewModel.isHealthConnected) { showHealthIntro = true }
                         .id(Self.healthCardID)
 
+                    FeelingTrendsCard(nutrient: nutrient, state: viewModel.feelingState,
+                                      isInUse: viewModel.feelingsInUse, applies: viewModel.feelingsApply)
+
                     remindersRow
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }

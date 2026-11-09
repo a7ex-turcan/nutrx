@@ -1,6 +1,6 @@
 # How you feel — spec (#133, 2.8)
 
-A daily check-in on how the day went, with questions the user picks (energy, mood, sleep, a headache…), each on a 1–5 scale or yes/no. Checking in is free. nutrx Pro adds patterns: how those answers line up with each nutrient ("After days you hit Magnesium, you rated your Sleep 4.1 on average, vs 3.4 after other days."). They're worked out on the device, as Trends with Apple Health are, and describe without advising.
+A daily check-in on how the day went, with questions the user picks (energy, mood, sleep, a headache…), each on a 1–5 scale or yes/no. Checking in is free. nutrx Pro adds patterns: how those answers line up with each nutrient ("After days you reach your Magnesium goal, you rated your Sleep 4.1 on average, vs 3.4 after other days."). They're worked out on the device, as Trends with Apple Health are, and describe without advising.
 
 Decided with the user on 2026-11-08:
 - **Checking in is free; the patterns are Pro.** That covers the analytics card, the recaps' line and the doctor report's section. Because checking in starts free, it can never become Pro.
@@ -70,12 +70,12 @@ This document is the spec to build from. The build phases are at the end.
   - **The nutrient's state:**
     - `findings`, from the ready questions;
     - else `noPattern(checkedDays:)` if any question is ready, with the most paired days among the ready ones;
-    - else `notEnoughData(pairedDays:)`, with the most paired days among the questions. The card then reads "9 of 14 days" for that question ("Sleep: 9 of 14 days").
+    - else `notEnoughData(question:pairedDays:)`, naming the question with the most paired days. The card then reads "Sleep last night: 9 of 14 days".
   - **A finding:** each group has at least 4 days. On a 1–5 scale, the averages differ by at least 0.5. For yes/no, the share of yes days differs by at least 25 points.
   - **At most two findings** per nutrient, the largest first: the scale's gap out of 4, against the yes/no share's gap.
-- **The words (`FeelingText`)** follow `HealthText`'s rules: day counts always, "on average", never a cause, never advice.
-  - "After days you hit Magnesium, you rated your Sleep 4.1 on average, vs 3.4 after other days." Sleep says "after", since it's the night after.
-  - "On days you hit Vitamin D, you rated your Energy 3.9 on average, vs 3.2 on other days."
+- **The words (`FeelingTrendText`, beside `HealthText`, since they need the nutrient)** follow `HealthText`'s rules: day counts always, "on average", never a cause, never advice.
+  - "After days you reach your Magnesium goal, you rated your Sleep 4.1 on average, vs 3.4 after other days." Sleep says "after", since it's the night after.
+  - "On days you reach your Vitamin D goal, you rated your Energy 3.9 on average, vs 3.2 on other days."
   - "On days Caffeine passes 300 mg, you had a Headache on 5 of 9 days, vs 2 of 15 other days."
   - The footer: "Patterns in your own answers, not causes. Worked out on this iPhone." (naming the device).
 - **Where they show:**
