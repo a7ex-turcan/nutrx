@@ -103,6 +103,20 @@ struct ReportPageView: View {
                         let section = report.sections[index]
                         sectionBlock(section)
                             .frame(height: ReportLayout.blockHeight(section), alignment: .top)
+                    case .feelingsHeader:
+                        feelingsHeader
+                    case .feelings(let range):
+                        ForEach(range, id: \.self) {
+                            feelingRow(report.feelings[$0], isLast: $0 == report.feelings.count - 1)
+                        }
+                    case .feelingPatternsHeader:
+                        Text(text.feelingPatternsHeader)
+                            .font(.system(size: 9.5, weight: .semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .frame(height: ReportLayout.feelingPatternsHeaderHeight, alignment: .bottom)
+                    case .feelingPatterns(let range):
+                        ForEach(range, id: \.self) { trendLine(report.feelingPatterns[$0]) }
                     case .notesHeader:
                         notesHeader
                     case .notes(let range):
@@ -249,15 +263,18 @@ struct ReportPageView: View {
                 Text(ReportText.healthHeader)
                     .font(.system(size: 9.5, weight: .semibold))
                     .frame(height: ReportLayout.trendHeaderHeight, alignment: .bottom)
-                ForEach(section.trends, id: \.self) { trend in
-                    Text(trend)
-                        .font(.system(size: 9.5))
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.85)
-                        .frame(width: contentWidth, height: ReportLayout.trendLineHeight, alignment: .leading)
-                }
+                ForEach(section.trends, id: \.self) { trendLine($0) }
             }
         }
+    }
+
+    /// A trend's sentence: Apple Health's under a section, How you feel's under How you felt.
+    private func trendLine(_ trend: String) -> some View {
+        Text(trend)
+            .font(.system(size: 9.5))
+            .lineLimit(2)
+            .minimumScaleFactor(0.85)
+            .frame(width: contentWidth, height: ReportLayout.trendLineHeight, alignment: .leading)
     }
 
     private func statBox(_ label: String, _ value: String) -> some View {
@@ -268,6 +285,50 @@ struct ReportPageView: View {
         .padding(.horizontal, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .overlay(RoundedRectangle(cornerRadius: 7, style: .continuous).stroke(Ink.boxRule, lineWidth: 0.75))
+    }
+
+    // MARK: How you felt (#133)
+
+    private var feelingsHeader: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(ReportText.feelingsTitle).font(.system(size: 19, weight: .bold))
+            Text(text.feelingsCaption)
+                .font(.system(size: 9.5))
+                .foregroundStyle(Ink.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            Rectangle().fill(Ink.rule).frame(height: 0.75).padding(.top, 4)
+        }
+        .frame(height: ReportLayout.feelingsHeaderHeight, alignment: .bottom)
+    }
+
+    private func feelingRow(_ feeling: DoctorReport.Feeling, isLast: Bool) -> some View {
+        VStack(spacing: 0) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(feeling.title).fontWeight(.semibold)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .frame(width: contentWidth * 0.27, alignment: .leading)
+                Text(text.feelingValue(feeling))
+                    .lineLimit(1)
+                    .frame(width: contentWidth * 0.2, alignment: .leading)
+                Text(text.feelingScale(feeling))
+                    .foregroundStyle(Ink.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                // Whole: the scale's words shrink first.
+                Text(text.feelingAnswered(feeling))
+                    .foregroundStyle(Ink.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .font(.system(size: 11))
+            .padding(.top, 7)
+            .frame(maxHeight: .infinity, alignment: .top)
+            if !isLast { Rectangle().fill(Ink.rule).frame(height: 0.5) }
+        }
+        .frame(height: ReportLayout.feelingRowHeight)
     }
 
     // MARK: Notes
@@ -441,12 +502,40 @@ private enum DosePlanPreviewReport {
         return DoctorReport.build(log: log, names: [magnesium: "Magnesium", caffeine: "Caffeine"],
                                   units: [magnesium: "mg", caffeine: "mg"], start: start, end: today)
     }
+
+    /// The same, with How you felt (#133): four questions and two patterns.
+    static func withFeelings(calendar: Calendar = .current) -> DoctorReport {
+        var report = make(calendar: calendar)
+        report.feelings = [
+            .init(title: "Energy", kind: .scale, average: 3.8, yesDays: 0, answeredDays: 26, lowWord: "Low",
+                  highWord: "High"),
+            .init(title: "Sleep last night", kind: .scale, average: 3.4, yesDays: 0, answeredDays: 25,
+                  lowWord: "Poor", highWord: "Great"),
+            .init(title: "Stress", kind: .scale, average: 2.1, yesDays: 0, answeredDays: 12, lowWord: "Low",
+                  highWord: "High"),
+            .init(title: "Headache", kind: .yesNo, average: 0.25, yesDays: 6, answeredDays: 24, lowWord: "Low",
+                  highWord: "High"),
+        ]
+        report.feelingPatterns = [
+            "After days you reach your Magnesium goal, you rated your Sleep 4.1 on average, vs 3.4 after other days.",
+            "On days Caffeine passes 300 mg, you had a headache on 5 of 9 days, vs 1 of 15 other days.",
+        ]
+        return report
+    }
 }
 
 #Preview("Dose plans") {
     let report = DosePlanPreviewReport.make()
     // A whole A4 page on a phone's screen.
     ReportPageView(report: report, layout: ReportLayout(report: report, paper: .a4), index: 1, generatedOn: .now)
+        .scaleEffect(0.6)
+        .frame(width: 357, height: 505)
+}
+
+#Preview("How you felt") {
+    let report = DosePlanPreviewReport.withFeelings()
+    let layout = ReportLayout(report: report, paper: .a4)
+    ReportPageView(report: report, layout: layout, index: layout.pages.count - 1, generatedOn: .now)
         .scaleEffect(0.6)
         .frame(width: 357, height: 505)
 }

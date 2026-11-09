@@ -246,7 +246,7 @@ nutrx/
 │   │       ├── FeelingTrendText.swift           # "With how you feel" card copy: findings, bars, basis, states (pure).
 │   │       ├── HealthText.swift                 # "With Apple Health" card copy: findings, bars, basis, states, where insights appear (pure).
 │   │       ├── HealthInsights.swift             # Where Health insights stand across nutrients (gathering / ready / …) for the hints (#102).
-│   │       ├── FeelingInsights.swift            # How you feel's clearest pattern across nutrients, for the weekly and monthly recaps' line (#133).
+│   │       ├── FeelingInsights.swift            # How you feel's patterns across nutrients up to a day: the recaps' line, the doctor report's (#133).
 │   │       ├── AnalyticsStat.swift              # Formatted stat-triplet text ("83 %", "5 of 6 days", "Peak day").
 │   │       ├── NutrientSummaryText.swift        # Analytics header goal line + Reminders row summary ("None", "13:00", "3 a day").
 │   │       ├── CourseText.swift                 # Courses (Pro, #99): "Until Fri 24 Oct · 5 days", "Last day today", "Ended 24 Oct".
@@ -283,7 +283,7 @@ nutrx/
 │   │       ├── YearlyRecapText.swift        # The year's words: range, headline, summary, bars, cards (#136).
 │   │       ├── RecapText.swift              # Recap copy: range, headline, template summary, cards, notification.
 │   │       ├── RecapPhrasing.swift          # On-device rewording of a recap's summary (`RecapWording`), checked against the facts, cached per period.
-│   │       ├── DoctorReport.swift           # Report for your doctor (Pro): a period's facts from a HistoryLog (pure).
+│   │       ├── DoctorReport.swift           # Report for your doctor (Pro): a period's facts from a HistoryLog, and How you felt's rows (pure).
 │   │       ├── ReportText.swift             # The report's words: period, goals, percentages, footer, file name (pure).
 │   │       ├── ReportLayout.swift           # The report's pagination onto A4 / Letter pages (pure).
 │   │       ├── ReportViewModel.swift        # The create sheet's choices → the report and its pages; Health trend lines.
@@ -814,6 +814,14 @@ A daily check-in on how the day went, on questions the user picks, each 1–5 or
   - **The recaps:** the Week and Month tabs end with the clearest finding of the 28 days up to the shown period's last day, in its sentence beside a pink `face.smiling` (`FeelingInsights`, `Features/Nutrients/ViewModels/`, tested in `FeelingInsightsTests`): the largest finding among the nutrients that aren't removed or under a weekly schedule, worked out as the analytics would on the day after that last day. Read in `RecapsView`'s `.task(id:)` on that day, so it follows the period picked; the Year tab has none. Recaps are Pro already.
   - **The paywall:** `ProFeature.feelingPatterns` ("Patterns in how you feel", pink `face.smiling`) is in the Recaps, trends & reports row, whose line names it ("Recaps, trends with Health and how you feel, and a PDF for your doctor": with "Your week, month and year" it took three lines on an SE). The Pro screen, "Enjoy nutrx Pro" and the welcome line list it like the rest.
   - **What's New 2.8** has a Pro item for it.
+- **Phase 4b (the doctor report):**
+  - **The toggle:** "Include how you felt" is on the create sheet only while the period has answers (`ReportViewModel.hasFeelings`), and is on by default.
+  - **The rows:** `DoctorReport.feelings` builds each question's row from the period's answers: removed questions too, one without answers left out.
+  - **The patterns:** `report.feelingPatterns` holds the included nutrients' findings over the 28 days to the period's last day. They come from `FeelingInsights.sentences`, loaded in a `.task(id: feelingPatternsEnd)` and kept only for the end they were worked out to.
+  - **On the page:** "How you felt" sits after the sections and before the notes. Its header reads "Self-reported: a daily answer to each question in nutrx", then the scales its rows use.
+    - Each row: the question, "3.8 on average" or "Yes on 6 days", "1 Poor – 5 Great" or "Yes or no", and "52 of 90 days answered".
+    - The patterns follow under "With nutrients · the 28 days to 7 Nov · patterns in the answers, not causes".
+  - **The layout:** `ReportLayout` packs the rows, the patterns and the notes the same way (`addList`: a header never ends a page). How you felt and its patterns start a new page together when they'd otherwise split and fit on one; a longer one splits, its patterns starting right under its rows. `ReportLayout.height(of:in:paper:)` gives any block's height.
 
 ## In-App Review Prompt
 

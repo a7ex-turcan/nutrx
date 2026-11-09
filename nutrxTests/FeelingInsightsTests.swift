@@ -85,6 +85,19 @@ final class FeelingInsightsTests: XCTestCase {
         XCTAssertEqual(best.nutrient.name, "Zinc")
     }
 
+    /// The doctor report's patterns: every finding of each nutrient, in words, by nutrient.
+    func testSentencesByNutrient() throws {
+        let met = Set(0..<20)
+        energy(high: 5, low: 2, on: met)
+        let magnesium = nutrient("Magnesium", sortOrder: 0)
+        log(magnesium, met: met)
+        log(nutrient("Zinc", sortOrder: 1), met: Set(stride(from: 0, to: 28, by: 2)))
+        let sentences = FeelingInsights.sentences(context: context, through: lastDay, calendar: calendar)
+        XCTAssertEqual(sentences[magnesium.id],
+                       ["On days you reach your Magnesium goal, you rated your Energy 5.0 on average, vs 2.0 on other days."])
+        XCTAssertEqual(sentences.count, 1, "Zinc has no finding")
+    }
+
     /// The trends read the 28 days up to the period's end, not up to now: a past week's line ignores what came after.
     func testOnlyTheDaysUpToTheLastDayCount() {
         let met = Set(0..<20)

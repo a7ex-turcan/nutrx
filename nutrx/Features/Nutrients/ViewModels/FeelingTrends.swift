@@ -114,6 +114,9 @@ enum FeelingTrends {
 }
 
 extension FeelingTrends.Question {
+    /// The words under 1 and 5, as `FeelingQuestion.ends`.
+    var ends: (low: String, high: String) { preset?.ends ?? FeelingPreset.ownEnds }
+
     /// From the store: the newest answer per day.
     init(_ question: FeelingQuestion, calendar: Calendar = .current) {
         var answers: [Date: (value: Int, updatedAt: Date)] = [:]

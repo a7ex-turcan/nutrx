@@ -2,7 +2,8 @@ import Foundation
 import SwiftData
 
 /// The create sheet's state (docs/pro/design/7-doctor-report: create): the period, which nutrients, and whether the
-/// name, notes and Apple Health trends go in; rebuilds the report and its pages whenever one changes.
+/// name, notes, Apple Health trends and How you feel's answers go in; rebuilds the report and its pages whenever one
+/// changes.
 @Observable
 final class ReportViewModel {
     enum Period: Hashable, CaseIterable {
@@ -51,12 +52,16 @@ final class ReportViewModel {
     var includesName = true { didSet { rebuild() } }
     var includesNotes = true { didSet { rebuild() } }
     var includesHealth = false { didSet { rebuild() } }
+    /// How you felt (#133): on by default; offered only while the period has answers (`hasFeelings`).
+    var includesFeelings = true { didSet { rebuild() } }
 
     private(set) var report: DoctorReport?
     private(set) var layout: ReportLayout?
     /// The nutrients that count in the period, in display order.
     private(set) var candidates: [Candidate] = []
     private(set) var personName: String?
+    /// The period has How you feel answers, so the sheet offers them.
+    private(set) var hasFeelings = false
     /// The first day with anything logged, and yesterday: the custom period's bounds.
     private(set) var earliestDay: Date = .now
     private(set) var latestDay: Date = .now
@@ -66,6 +71,9 @@ final class ReportViewModel {
     private var units: [UUID: String] = [:]
     private var notes: [DoctorReport.NoteEntry] = []
     private var trends: [UUID: [String]] = [:]
+    private var feelingQuestions: [FeelingTrends.Question] = []
+    /// How you feel's patterns by nutrient, and the period's last day they were worked out to.
+    private var feelingPatterns: (end: Date, sentences: [UUID: [String]])?
     private var now: Date = .now
     private let paper = ReportLayout.Paper.forRegion(Locale.current.region?.identifier)
 
@@ -87,6 +95,11 @@ final class ReportViewModel {
     /// "All 6", or "4 of 6".
     var nutrientsValue: String {
         selectedCount == candidates.count ? "All \(candidates.count)" : "\(selectedCount) of \(candidates.count)"
+    }
+
+    /// The day How you feel's patterns are read up to: the period's last day, while the report includes them.
+    var feelingPatternsEnd: Date? {
+        includesFeelings && hasFeelings ? report?.end : nil
     }
 
     var canCreate: Bool { (report?.daysWithEntries ?? 0) > 0 && !(report?.sections.isEmpty ?? true) }
@@ -111,6 +124,8 @@ final class ReportViewModel {
                   let note = record.note?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty else { return nil }
             return DoctorReport.NoteEntry(date: record.date, nutrientID: nutrient.id, text: note)
         }
+        // Removed questions too: their answers are still the user's.
+        feelingQuestions = FeelingQuestions.all(in: context).map { FeelingTrends.Question($0, calendar: calendar) }
         let name = ((try? context.fetch(FetchDescriptor<UserProfile>()))?.first?.name ?? "")
             .trimmingCharacters(in: .whitespaces)
         personName = name.isEmpty ? nil : name
@@ -155,6 +170,14 @@ final class ReportViewModel {
         rebuild()
     }
 
+    /// How you feel's patterns for each nutrient over the 28 days up to the period's last day (#133), as in the
+    /// recaps; the report keeps the included nutrients'.
+    func loadFeelingPatterns(context: ModelContext) {
+        guard let end = feelingPatternsEnd else { return }
+        feelingPatterns = (end, FeelingInsights.sentences(context: context, through: end))
+        rebuild()
+    }
+
     private func clamp(_ date: Date) -> Date {
         let day = Calendar.current.startOfDay(for: date)
         return min(max(day, earliestDay), latestDay)
@@ -179,6 +202,15 @@ final class ReportViewModel {
         if includesHealth {
             report = report.withTrends(trends)
         }
+        let feelings = DoctorReport.feelings(feelingQuestions, start: report.start, end: report.end)
+        if hasFeelings != !feelings.isEmpty { hasFeelings = !feelings.isEmpty }
+        if includesFeelings {
+            report.feelings = feelings
+            // Only patterns worked out to this period's end: a new period's arrive with `loadFeelingPatterns`.
+            if !feelings.isEmpty, let patterns = feelingPatterns, patterns.end == report.end {
+                report.feelingPatterns = report.sections.flatMap { patterns.sentences[$0.id] ?? [] }
+            }
+        }
         self.report = report
         layout = ReportLayout(report: report, paper: paper)
     }
@@ -194,6 +226,6 @@ extension DoctorReport {
                          return section
                      },
                      notes: notes, daysWithEntries: daysWithEntries, overallHitRate: overallHitRate,
-                     longestStreak: longestStreak, days: days)
+                     longestStreak: longestStreak, days: days, feelings: feelings, feelingPatterns: feelingPatterns)
     }
 }

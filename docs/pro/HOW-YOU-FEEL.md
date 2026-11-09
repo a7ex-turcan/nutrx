@@ -85,6 +85,9 @@ This document is the spec to build from. The build phases are at the end.
   - **The weekly and monthly recaps:** one line at the end, the clearest finding of the 28 days up to the period's end. Health's recap line is on the weekly recap only; this one is on both, since a month covers about its 28 days. The yearly recap gets none, because a 28-day pattern doesn't describe a year.
     - Built as `FeelingInsights`: the largest finding among the nutrients that aren't removed or under a weekly schedule, read as the analytics would on the day after the period's last day, in the finding's own sentence beside a pink `face.smiling`.
   - **The doctor report:** "Include how you felt", on when the period has answers. For each question it lists the period's average (or yes days) and days answered, plus the findings for the nutrients included. It's labelled as self-reported.
+    - Built as a "How you felt" block after the nutrient sections and before the notes. Each row has the question, "3.8 on average" or "Yes on 6 days", what 1 and 5 mean ("1 Poor – 5 Great", so a doctor can tell which way Stress runs) and "52 of 90 days answered".
+    - Removed questions with answers in the period count too.
+    - The patterns are the included nutrients' findings over the 28 days to the period's last day (`FeelingInsights.sentences`, the recaps' rule), under "With nutrients · the 28 days to 7 Nov · patterns in the answers, not causes".
 - **The paywall:** `ProFeature.feelingPatterns` ("Patterns in how you feel") joins the "Recaps, trends & reports" row. Its line must still let the plans start on an SE's screen (`PaywallUITests`).
   - The row now reads "Recaps, trends with Health and how you feel, and a PDF for your doctor": naming the week, month and year as before took three lines on an SE. The Pro screen and "Enjoy nutrx Pro" list the feature on its own ("How your check-ins line up with what you take"), and What's New 2.8 has it as a Pro item.
 
