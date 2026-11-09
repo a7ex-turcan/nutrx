@@ -18,7 +18,7 @@ All notable changes to nutrx are documented in this file.
 - **The Apple Health line in Recaps** — The line about Apple Health insights ("…start after about two weeks of logging", or which nutrient to look at) belongs to the weekly recap, but it also showed under the Month and Year tabs. It's on the Week tab only now.
 - **Today's date at the largest text sizes** — From the first accessibility size, the date under Today's title was cut off ("Saturday, 7 Novemb…"). It's shortened there now ("Sat, 7 Nov"), and stays in full at other sizes.
 
-## v2.7 — submitted for review 2026-11-08 (build 241)
+## v2.7 — 2026-11-09
 
 ### nutrx Pro
 - **App icons** — Six more icons for your Home Screen, from Settings → **App icon**: Light, Mint, Midnight, Botanical, Sunrise and Mono, beside the forest one. Each keeps the nutrx mark. Without Pro, nutrx goes back to the forest icon.

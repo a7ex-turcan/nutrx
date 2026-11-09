@@ -1243,7 +1243,10 @@ Every item here has an issue, so GitHub issues are the one list of what's left (
 
 **Deferred:** Localisation (#129). Large screens (#130) shipped in 2.3; what's left of them is in its open `large-screens` issues.
 
-**Last release:** 2.6 on 2026-11-07 (build 216, tags `v2.6` and `v2.6-b216` at db28a4f, phased release, started that day; the website's 2.6 update is its own PR). **2.7** (build 241) was submitted for App Review on 2026-11-08, phased and manual release. It has a new description (Dose plans and App icons in the Pro list, and Siri's phrases listed in Settings in the free one), the Pro panel retaken (the paywall's pinned button and floating ✕, and the rows "Courses, schedules & dose plans" and "Widgets, controls & app icons"), and the new header and search art (#355). `main` builds **2.8** since.
+**Last release:** 2.7 on 2026-11-09 (build 241, tags `v2.7` and `v2.7-b241` at 287caa0, phased release, started that day; the website's 2.6 and 2.7 updates are their own PRs). `main` builds **2.8**, bumped when 2.7 was submitted (#363), so there's no second bump. For 2.8's submission:
+- **The Pro panel:** retake it. The paywall's Recaps row now reads "Recaps, trends with Health and how you feel, and a PDF for your doctor" (#373).
+- **The description:** How you feel in the free list, its patterns in the Pro one.
+- **The build:** Xcode Cloud ran out of build minutes on 2026-11-09, so builds go up with `Tools/testflight` from this Mac until they're back. Its runs then were cancelled within seconds of being created, never started and gave no reason (244–252); that is what running out looks like.
 
 **If App Review rejects a submitted version:** a metadata or notes fix needs no build: change it in App Store Connect and resubmit there. A code fix can't come from `main`, which already builds the next version (bumped at submission). Branch from that version's submission commit, fix it there, and upload with `Tools/testflight --build <n>` from that branch: it insists on origin/main, so either merge the fix with a temporary version or relax that check for the run. Then attach the new build to the version and resubmit in the web UI. Merge the fix into `main` afterwards.
 
