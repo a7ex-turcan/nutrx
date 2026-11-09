@@ -130,14 +130,26 @@ final class ProTextTests: XCTestCase {
     }
 
     /// Widgets and controls (#138) ship in 2.5, listed with the rest; nine shipped features since reminders at your
-    /// usual time (#137) in 2.6, and eleven with dose plans (#135) and app icons (#139) in 2.7.
+    /// usual time (#137) in 2.6, eleven with dose plans (#135) and app icons (#139) in 2.7, and twelve with How you
+    /// feel's patterns (#133) in 2.8.
     func testWidgetsIsListed() {
         XCTAssertTrue(ProFeature.listed.contains(.widgets))
-        XCTAssertEqual(ProFeature.allCases.count, 11)
+        XCTAssertEqual(ProFeature.allCases.count, 12)
         XCTAssertEqual(ProFeature.widgets.title, "Widgets and controls")
         XCTAssertEqual(ProFeature.widgets.subtitle, "Log from Control Center and the Home Screen")
         XCTAssertEqual(ProFeature.widgets.symbolName, "square.grid.2x2")
         XCTAssertNil(ProFeature.widgets.appleIntelligenceName, "widgets don't use the on-device model")
+    }
+
+    /// How you feel's patterns (#133) ship in 2.8, in the paywall's Recaps, trends & reports row; checking in stays
+    /// free, so only the patterns are listed.
+    func testFeelingPatternsIsListed() {
+        XCTAssertTrue(ProFeature.listed.contains(.feelingPatterns))
+        XCTAssertEqual(ProFeature.feelingPatterns.title, "Patterns in how you feel")
+        XCTAssertEqual(ProFeature.feelingPatterns.subtitle, "How your check-ins line up with what you take")
+        XCTAssertEqual(ProFeature.feelingPatterns.symbolName, "face.smiling")
+        XCTAssertNil(ProFeature.feelingPatterns.appleIntelligenceName, "the patterns don't use the on-device model")
+        XCTAssertTrue(ProFeatureGroup.insights.features.contains(.feelingPatterns))
     }
 
     func testPrimaryButtonIsLabelledWhilePurchasing() {
@@ -154,7 +166,7 @@ final class ProTextTests: XCTestCase {
         XCTAssertEqual(ProText.welcome([.supply, .scan]),
                        "Supply and label scanning are on. Nothing you already use has changed.")
         XCTAssertEqual(ProText.welcome(ProFeature.listed),
-                       "Supply, label scanning, recaps, Apple Health trends, doctor reports, courses, schedules, widgets, reminders at your usual time, dose plans and app icons are on. Nothing you already use has changed.")
+                       "Supply, label scanning, recaps, Apple Health trends, doctor reports, courses, schedules, widgets, reminders at your usual time, dose plans, app icons and patterns in how you feel are on. Nothing you already use has changed.")
     }
 
     func testPlanChip() {

@@ -1,8 +1,8 @@
 import Foundation
 
 /// What nutrx Pro adds (docs/pro/PLAN.md, D5 order, then courses from 2.2, schedules from 2.4, widgets and controls
-/// from 2.5, reminders at your usual time from 2.6, and dose plans and app icons from 2.7), as the paywall and the Pro
-/// screen list them.
+/// from 2.5, reminders at your usual time from 2.6, dose plans and app icons from 2.7, and How you feel's patterns
+/// from 2.8), as the paywall and the Pro screen list them.
 enum ProFeature: String, CaseIterable, Identifiable {
     case supply
     case scan
@@ -15,6 +15,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
     case reminders
     case dosePlans
     case appIcons
+    case feelingPatterns
 
     var id: Self { self }
 
@@ -31,6 +32,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .reminders: "Reminders at your usual time"
         case .dosePlans: "Dose plans"
         case .appIcons: "App icons"
+        case .feelingPatterns: "Patterns in how you feel"
         }
     }
 
@@ -52,6 +54,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .reminders: "A nudge only when you're running late"
         case .dosePlans: "A goal that follows steps you set"
         case .appIcons: "Pick nutrx's icon on your Home Screen"
+        case .feelingPatterns: "How your check-ins line up with what you take"
         }
     }
 
@@ -69,6 +72,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .reminders: "smarter reminders"
         case .dosePlans: "dose plans"
         case .appIcons: "app icons"
+        case .feelingPatterns: "how-you-feel patterns"
         }
     }
 
@@ -86,6 +90,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .reminders: "reminders at your usual time"
         case .dosePlans: "dose plans"
         case .appIcons: "app icons"
+        case .feelingPatterns: "patterns in how you feel"
         }
     }
 
@@ -94,7 +99,8 @@ enum ProFeature: String, CaseIterable, Identifiable {
         switch self {
         case .scan: "label scanning"
         case .recap: "recaps"
-        case .supply, .health, .report, .courses, .schedules, .widgets, .reminders, .dosePlans, .appIcons: nil
+        case .supply, .health, .report, .courses, .schedules, .widgets, .reminders, .dosePlans, .appIcons,
+             .feelingPatterns: nil
         }
     }
 
@@ -111,6 +117,7 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .reminders: "bell.badge"
         case .dosePlans: "stairs"
         case .appIcons: "app.badge.checkmark"
+        case .feelingPatterns: "face.smiling"
         }
     }
 
@@ -128,12 +135,14 @@ enum ProFeature: String, CaseIterable, Identifiable {
         case .dosePlans: .green
         // Not green: on the Pro screen it comes right after dose plans.
         case .appIcons: .teal
+        // How you feel's own colour, as in Settings and the analytics card.
+        case .feelingPatterns: .pink
         }
     }
 
     /// Built and in the app. The paywall never advertises a feature that isn't (phases 4–8, courses since 2.2,
     /// schedules since 2.4, widgets and controls since 2.5, reminders at your usual time since 2.6, dose plans and app
-    /// icons since 2.7). A feature being built returns false here until it ships.
+    /// icons since 2.7, How you feel's patterns since 2.8). A feature being built returns false here until it ships.
     var isShipped: Bool {
         true
     }

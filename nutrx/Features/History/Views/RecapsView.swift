@@ -12,6 +12,9 @@ struct RecapsView: View {
     @State private var tab: RecapTab
     /// Apple Health insights (#102): one line at the end while they're gathering, or a pointer once one is ready.
     @State private var healthStatus: HealthInsights.Status?
+    /// How you feel's clearest pattern over the 28 days up to the shown week's or month's last day (#133); none on
+    /// the year.
+    @State private var feelingLine: String?
 
     init(tab: RecapTab = .week) {
         _tab = State(initialValue: tab)
@@ -40,6 +43,9 @@ struct RecapsView: View {
                 if let status = healthStatus, let line = HealthText.recapLine(status, on: tab) {
                     healthLine(line)
                 }
+                if let feelingLine {
+                    insightLine(feelingLine, symbol: "face.smiling", color: Theme.SettingsTile.pink)
+                }
             }
             .padding(.horizontal, Theme.Spacing.screenMargin)
             .padding(.bottom, Theme.Spacing.sectionTop)
@@ -63,6 +69,9 @@ struct RecapsView: View {
         }
         // The recap is Pro already; the line needs Health connected (`load` is nil otherwise).
         .task { healthStatus = await HealthInsights.load(context: modelContext) }
+        .task(id: feelingPeriodEnd) {
+            feelingLine = feelingPeriodEnd.flatMap { FeelingInsights.recapLine(context: modelContext, through: $0) }
+        }
         // Each tab's rewording runs only while it's shown: the week opened from Today needn't reword a month too.
         .task(id: tab == .week ? viewModel.selected?.weekStart : nil) {
             if tab == .week, let recap = viewModel.selected { await viewModel.loadSummary(for: recap) }
@@ -180,11 +189,24 @@ struct RecapsView: View {
             .padding(.top, 4)
     }
 
+    /// The shown week's or month's last day, for How you feel's line; nil on the year.
+    private var feelingPeriodEnd: Date? {
+        switch tab {
+        case .week: viewModel.selected?.lastDay
+        case .month: viewModel.selectedMonthRecap?.lastDay
+        case .year: nil
+        }
+    }
+
     private func healthLine(_ line: String) -> some View {
+        insightLine(line, symbol: "heart.fill", color: NutrientTint.coral.tileGlyph)
+    }
+
+    private func insightLine(_ line: String, symbol: String, color: Color) -> some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "heart.fill")
+            Image(systemName: symbol)
                 .font(.subheadline)
-                .foregroundStyle(NutrientTint.coral.tileGlyph)
+                .foregroundStyle(color)
                 .accessibilityHidden(true)
             Text(line)
                 .font(.subheadline)

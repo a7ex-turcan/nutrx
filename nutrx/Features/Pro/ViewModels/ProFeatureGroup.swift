@@ -16,7 +16,7 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
         switch self {
         case .supply: [.supply, .scan]
         case .plans: [.courses, .schedules, .dosePlans, .reminders]
-        case .insights: [.recap, .health, .report]
+        case .insights: [.recap, .health, .feelingPatterns, .report]
         case .widgets: [.widgets, .appIcons]
         }
     }
@@ -34,7 +34,8 @@ enum ProFeatureGroup: String, CaseIterable, Identifiable {
         switch self {
         case .supply: "Know when a bottle runs out and what it costs, and add one from its label"
         case .plans: "For a set time, on set days or in steps, with a nudge when you're running late"
-        case .insights: "Your week, month and year, Apple Health trends, and a PDF for your doctor"
+        // Two lines on the SE: "Your week, month and year, …" took three once How you feel joined (#133).
+        case .insights: "Recaps, trends with Health and how you feel, and a PDF for your doctor"
         case .widgets: "Log from Control Center and the Home Screen, and pick nutrx's icon"
         }
     }

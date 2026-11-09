@@ -22,23 +22,28 @@ final class SheetButtonsUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-screenshotDemoData", "-screenshotRoute", "today"]
         app.launch()
+        XCTAssertTrue(app.collectionViews.firstMatch.waitForExistence(timeout: 15), "Today didn't load")
         return app
+    }
+
+    /// Scrolls Today until `element` is tappable. On the SE much of Today is below the fold (the release's What's
+    /// New card and the notification banner come first), and its list only builds the rows near the screen. A slow
+    /// drag a third of the list at a time, not a swipe: a swipe's momentum carried it past.
+    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
+        let list = app.collectionViews.firstMatch
+        for _ in 0..<8 where !(element.exists && element.isHittable) {
+            list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75))
+                .press(forDuration: 0.1, thenDragTo: list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)))
+        }
     }
 
     /// A nutrient card opens the log sheet at half height, with Log on screen and tappable without dragging the
     /// sheet up.
     func testLogSheetsLogButtonIsTappableAtHalfHeight() {
         let app = launchOnToday()
-        // Below the fold on the SE, and Today's list only builds the rows near the screen: scroll until it's there.
-        // A slow drag a third of the list at a time, not a swipe: a swipe's momentum carried it past (the card
-        // isn't a button to the tests, so it's matched by its label whatever its type).
+        // The card isn't a button to the tests, so it's matched by its label whatever its type.
         let card = app.descendants(matching: .any)["Vitamin D"].firstMatch
-        XCTAssertTrue(app.buttons["Log Morning"].firstMatch.waitForExistence(timeout: 15), "Today didn't load")
-        let list = app.collectionViews.firstMatch
-        for _ in 0..<6 where !card.isHittable {
-            list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75))
-                .press(forDuration: 0.1, thenDragTo: list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)))
-        }
+        scrollTo(card, in: app)
         XCTAssertTrue(card.isHittable, "No Vitamin D card on Today")
         card.tap()
 
@@ -52,7 +57,8 @@ final class SheetButtonsUITests: XCTestCase {
     func testStackSheetsLogButtonIsTappableWhenItOpens() {
         let app = launchOnToday()
         let logStack = app.buttons["Log Morning"].firstMatch
-        XCTAssertTrue(logStack.waitForExistence(timeout: 15), "No Morning stack on Today")
+        scrollTo(logStack, in: app)
+        XCTAssertTrue(logStack.exists && logStack.isHittable, "No Morning stack on Today")
         logStack.tap()
 
         let log = app.buttons.matching(sheetLogButton).firstMatch
