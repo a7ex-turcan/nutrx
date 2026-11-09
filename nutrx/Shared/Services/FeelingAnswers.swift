@@ -60,6 +60,14 @@ enum FeelingAnswers {
         return (parts.hour ?? 0) * 60 + (parts.minute ?? 0) >= askMinutes
     }
 
+    /// When "How was today?" next reminds (§2): today at the Ask from time while it's still ahead and today has no
+    /// answer, else tomorrow at that time.
+    static func reminderDate(askMinutes: Int, answeredToday: Bool, now: Date, calendar: Calendar = .current) -> Date {
+        let todayAt = calendar.date(bySettingHour: askMinutes / 60, minute: askMinutes % 60, second: 0, of: now)!
+        if !answeredToday, todayAt > now { return todayAt }
+        return calendar.date(byAdding: .day, value: 1, to: todayAt)!
+    }
+
     /// History can change a day's answers from today back `editableDays` days; older days are read-only.
     static func isEditable(_ day: Date, today: Date = .now, calendar: Calendar = .current) -> Bool {
         let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: day),

@@ -147,6 +147,8 @@ struct TodayView: View {
                                  feelingClock = .now
                                  FeelingAnswers.set(value, for: question, on: feelingClock, in: modelContext)
                                  Haptics.adjusted()
+                                 // Answered today: the reminder moves to tomorrow.
+                                 NotificationService.refreshFeelingsReminder(context: modelContext)
                              },
                              onDismiss: {
                                  withAnimation(.unlessReduceMotion(reduceMotion, .easeInOut(duration: 0.25))) {
@@ -371,6 +373,7 @@ struct TodayView: View {
                 // Allowed in iOS Settings, or after the system prompt (#44).
                 refreshBannerVisibility()
                 NotificationService.refreshDailyReminder(context: modelContext)
+                NotificationService.refreshFeelingsReminder(context: modelContext)
                 viewModel.rescheduleReminders(context: modelContext)
             }
         }
@@ -990,9 +993,11 @@ struct TodayView: View {
             // If iOS hasn't been asked yet, reset the synced preferences so the banner
             // reappears and the toggle reflects reality.
             if status == .notDetermined,
-               preferences.hasSeenNotificationBanner || preferences.dailyReminderEnabled {
+               preferences.hasSeenNotificationBanner || preferences.dailyReminderEnabled
+                || preferences.feelingsReminderEnabled {
                 preferences.hasSeenNotificationBanner = false
                 preferences.dailyReminderEnabled = false
+                preferences.feelingsReminderEnabled = false
             }
 
             let shows = NotificationService.showsPermissionBanner(status: status,

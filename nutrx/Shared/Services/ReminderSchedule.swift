@@ -54,8 +54,9 @@ enum ReminderSchedule {
         let fireDate: Date
     }
 
-    /// Requests left for dose reminders under iOS's 64-pending limit, keeping room for the daily check-in.
-    static let budget = 60
+    /// Requests left for dose reminders under iOS's 64-pending limit, keeping room for the daily check-in, How you
+    /// feel's reminder (#133) and up to three recaps (December's week, month and year).
+    static let budget = 59
     /// The longest window, for someone with few reminders.
     static let maxDays = 14
 

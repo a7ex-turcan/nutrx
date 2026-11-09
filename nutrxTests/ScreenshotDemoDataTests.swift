@@ -67,7 +67,8 @@ final class ScreenshotDemoDataTests: XCTestCase {
         XCTAssertEqual(goals.count, 50)
         XCTAssertEqual(Set(goals.map(\.goal.target)), [200, 400])
         XCTAssertEqual(goals.filter { $0.goal.target == 200 }.count, 35)
-        XCTAssertTrue(goals.allSatisfy(\.isMet))
+        // Met every day but d 14–17, short for How you feel's Sleep pattern (#133).
+        XCTAssertEqual(goals.indices.filter { !goals[$0].isMet }.map { $0 + 1 }, [14, 15, 16, 17])
         XCTAssertEqual(magnesium.goal().target, 400)
         XCTAssertEqual(magnesium.dosePlan().position(on: .now)?.step, 2, "today in its second step, for Today's line")
     }
@@ -145,5 +146,31 @@ final class ScreenshotDemoDataTests: XCTestCase {
         ScreenshotDemoData.replaceStore(in: context)
         XCTAssertEqual(try nutrients().count, 6)
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<UserProfile>()), 1)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<FeelingQuestion>()), 3)
+    }
+
+    /// How you feel (#133): answered, but off (Today's shots don't depend on the hour), and Sleep better the night
+    /// after Magnesium was taken, for the patterns.
+    func testHowYouFeelHasAnswersAndASleepPattern() throws {
+        let preferences = try XCTUnwrap(context.fetch(FetchDescriptor<UserPreferences>()).first)
+        XCTAssertFalse(preferences.feelingsEnabled)
+        let questions = FeelingQuestions.active(in: context)
+        XCTAssertEqual(questions.map(\.displayTitle), ["Energy", "Mood", "Sleep last night"])
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let magnesium = try XCTUnwrap(nutrients().first { $0.name == "Magnesium" })
+        let magnesiumTotals = totals(for: magnesium)
+        var afterMet: [Int] = [], afterMissed: [Int] = []
+        for daysAgo in 1...27 {
+            let day = calendar.date(byAdding: .day, value: -daysAgo, to: today)!
+            let before = calendar.date(byAdding: .day, value: -1, to: day)!
+            guard let sleep = FeelingAnswers.value(for: questions[2], on: day) else { continue }
+            let goal = magnesium.goal(on: before).target
+            if (magnesiumTotals[before] ?? 0) >= goal { afterMet.append(sleep) } else { afterMissed.append(sleep) }
+        }
+        XCTAssertGreaterThanOrEqual(afterMissed.count, 4)
+        let average = { (values: [Int]) in Double(values.reduce(0, +)) / Double(values.count) }
+        XCTAssertGreaterThan(average(afterMet) - average(afterMissed), 1)
     }
 }

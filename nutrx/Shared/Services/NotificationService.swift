@@ -20,6 +20,8 @@ extension Notification.Name {
 
 enum NotificationService {
     private static let dailyReminderID = "daily-checkin-reminder"
+    /// How you feel's "How was today?" (#133).
+    static let feelingsReminderID = "feelings-reminder"
     private static let nutrientReminderPrefix = "nutrient-"
     /// A stack's reminder requests (#137): "stack-<uuid>-reminder-HHmm-yyyyMMdd".
     private static let stackReminderPrefix = "stack-"
@@ -115,6 +117,48 @@ enum NotificationService {
         }
     }
 
+    // MARK: - How you feel's reminder (#133)
+
+    /// "How was today?" at the Ask from time (docs/pro/HOW-YOU-FEEL.md §2): only the next one, today's while today has
+    /// no answer and the time is ahead, else tomorrow's, like the noon check-in. Refreshed when the app becomes
+    /// active, after an answer, when its settings change and by the background refresh. None while How you feel or
+    /// its reminder is off, or without questions.
+    static func refreshFeelingsReminder(context: ModelContext, now: Date = .now) {
+        let preferences = fetchPreferences(context: context)
+        let questions = FeelingQuestions.active(in: context)
+        guard preferences.feelingsEnabled, preferences.feelingsReminderEnabled, !questions.isEmpty else {
+            enqueueFeelingsReminderChange { await removePendingRequests([feelingsReminderID]) }
+            return
+        }
+        let date = FeelingAnswers.reminderDate(askMinutes: preferences.feelingsAskMinutes,
+                                               answeredToday: !FeelingAnswers.values(for: questions, on: now).isEmpty,
+                                               now: now)
+        let content = UNMutableNotificationContent()
+        content.title = FeelingText.cardTitle
+        content.body = FeelingText.reminderBody(questions.map(\.displayTitle))
+        content.sound = .default
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        let request = UNNotificationRequest(identifier: feelingsReminderID, content: content,
+                                            trigger: UNCalendarNotificationTrigger(dateMatching: components,
+                                                                                   repeats: false))
+        // Adding replaces the pending one with the same identifier.
+        enqueueFeelingsReminderChange {
+            let added = (try? await UNUserNotificationCenter.current().add(request)) != nil
+            logger.info("How you feel's reminder \(added ? "scheduled" : "not scheduled", privacy: .public) for \(date, privacy: .public)")
+        }
+    }
+
+    /// The latest change to How you feel's reminder, so changes apply in order.
+    private static var feelingsReminderChange: Task<Void, Never>?
+
+    private static func enqueueFeelingsReminderChange(_ change: @escaping @MainActor () async -> Void) {
+        let previous = feelingsReminderChange
+        feelingsReminderChange = Task {
+            await previous?.value
+            await change()
+        }
+    }
+
     /// `removePendingNotificationRequests` is synchronous and can block for minutes when the notification service
     /// is slow (#15: over two minutes right after a simulator cold boot, from Today's scene-phase handler). It runs
     /// on a private serial queue, not the main actor, and not Swift's cooperative pool either, whose few threads a
@@ -200,7 +244,10 @@ enum NotificationService {
             }
         }
         let wanted = Set(requests.map(\.identifier))
-        scheduleBackgroundRefresh(needed: !requests.isEmpty)
+        // How you feel's reminder (#133) is scheduled one at a time, so it needs the refresh too, even alone.
+        let feelings = fetchPreferences(context: context)
+        scheduleBackgroundRefresh(needed: !requests.isEmpty
+                                  || (feelings.feelingsEnabled && feelings.feelingsReminderEnabled))
 
         let previous = reminderSync
         reminderSync = Task {
@@ -423,7 +470,9 @@ enum NotificationService {
 
     /// The background refresh's work: the same sync, run to completion.
     static func refreshRemindersInBackground(container: ModelContainer) async {
+        refreshFeelingsReminder(context: container.mainContext)
         await refreshAllNutrientReminders(context: container.mainContext)?.value
+        await feelingsReminderChange?.value
     }
 
     /// Asks iOS for a background refresh about 12 hours out while any reminders are scheduled (each sync

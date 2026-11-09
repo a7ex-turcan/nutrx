@@ -25,7 +25,7 @@ enum ScreenshotDemoData {
         let models: [any PersistentModel.Type] = [IntakeRecord.self, NutrientReminder.self, Exclusion.self,
                                                   LogStackEntry.self, LogStack.self,
                                                   Nutrient.self, NutrientGroup.self, UserProfile.self,
-                                                  UserPreferences.self]
+                                                  UserPreferences.self, FeelingAnswer.self, FeelingQuestion.self]
         for model in models {
             do {
                 try context.delete(model: model)
@@ -102,6 +102,7 @@ enum ScreenshotDemoData {
         // The recap's "day you tend to miss" needs Sunday missed more often than any other weekday in the four weeks
         // it looks at, which can hold only two of those Sundays (Monday to Wednesday). So the other misses (d 11, 12,
         // 20) are on three different weekdays: d 11 and a d 18 used to share one and tied with Sunday (#164).
+        let magnesiumMissed: Set<Int> = [14, 15, 16, 17]
         for daysAgo in 1...demoDays {
             guard let day = calendar.date(byAdding: .day, value: -daysAgo, to: today) else { continue }
             let weekday = calendar.component(.weekday, from: day)
@@ -112,9 +113,12 @@ enum ScreenshotDemoData {
             log(vitaminD, vitaminDAmount >= 4000 ? [3000, vitaminDAmount - 3000] : [vitaminDAmount],
                 day: day, hours: [8, 13])
             log(omega3, daysAgo.isMultiple(of: 4) ? [1000, 1500] : [1000, 1000], day: day, hours: [8, 20])
-            // Its first step's days (d 16–50), at that step's 200 mg.
-            log(magnesium, [daysAgo > demoDays - magnesiumFirstStep.days ? magnesiumFirstStep.goal.target : 400],
-                day: day, hours: [21])
+            // Its first step's days (d 16–50), at that step's 200 mg. Short on d 14–17, outside the streaks and the
+            // latest recap's week, so How you feel's Sleep has a pattern with it (#133): four days in a row, four
+            // weekdays d 11, 12 and 20 don't use, so no weekday's misses catch up with Sunday's (#164).
+            let magnesiumGoal = daysAgo > demoDays - magnesiumFirstStep.days ? magnesiumFirstStep.goal.target : 400
+            log(magnesium, [magnesiumMissed.contains(daysAgo) ? magnesiumGoal / 2 : magnesiumGoal], day: day,
+                hours: [21])
             let waterTotal: Double = [12, 20].contains(daysAgo) ? 1.75 : (daysAgo.isMultiple(of: 3) ? 2.75 : 2.5)
             log(water, [0.75, 1, waterTotal - 1.75], day: day, hours: [9, 13, 18])
             let proteinTotal: Double = daysAgo > 42 && !daysAgo.isMultiple(of: 2) ? 100 : [130, 140, 150][daysAgo % 3]
@@ -182,6 +186,26 @@ enum ScreenshotDemoData {
         setSupply(vitaminD, refilledDaysAgo: 40, daysLeft: 6)
         setSupply(omega3, refilledDaysAgo: 30, daysLeft: 0)
         setSupply(magnesium, refilledDaysAgo: 10, daysLeft: 50)
+
+        // How you feel (#133): Energy, Mood and Sleep answered on most of the last six weeks, Sleep better the night
+        // after Magnesium was taken. Left off, so Today's App Store shots are the same at any hour; History still
+        // shows the days' answers.
+        var feelingQuestions: [FeelingQuestion] = []
+        for (index, preset) in FeelingPreset.starting.enumerated() {
+            let question = FeelingQuestion(title: preset.title, kind: preset.kind, presetRaw: preset.rawValue,
+                                           sortOrder: index)
+            question.createdAt = created
+            context.insert(question)
+            feelingQuestions.append(question)
+        }
+        for daysAgo in 1...42 where !daysAgo.isMultiple(of: 6) {
+            guard let day = calendar.date(byAdding: .day, value: -daysAgo, to: today) else { continue }
+            // Sleep on day D is about the night after D − 1 (`FeelingPreset.isAboutNightBefore`).
+            let sleep = magnesiumMissed.contains(daysAgo + 1) ? 2 + daysAgo % 2 : 4 + daysAgo % 2
+            for (question, value) in zip(feelingQuestions, [3 + daysAgo % 2, 3 + (daysAgo / 3) % 2, sleep]) {
+                context.insert(FeelingAnswer(question: question, day: day, value: value))
+            }
+        }
         try? context.save()
         #endif
     }

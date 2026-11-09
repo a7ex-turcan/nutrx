@@ -90,6 +90,12 @@ final class NotificationHandler: NSObject, UNUserNotificationCenterDelegate {
             await MainActor.run { handleRecap(action: action, tab: tab) }
             return
         }
+        // How you feel's reminder (#133): a tap opens Today, where "How was today?" is.
+        if response.notification.request.identifier == NotificationService.feelingsReminderID,
+           response.actionIdentifier == UNNotificationDefaultActionIdentifier {
+            await MainActor.run { NotificationRouter.shared.linkedTab = .today }
+            return
+        }
         // A stack reminder (#137): a tap opens the stack's log sheet on Today.
         if let stack = (content.userInfo[NotificationService.stackIDKey] as? String).flatMap(UUID.init(uuidString:)),
            response.actionIdentifier == UNNotificationDefaultActionIdentifier {

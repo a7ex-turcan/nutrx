@@ -102,6 +102,27 @@ final class FeelingAnswersTests: XCTestCase {
         XCTAssertTrue(shows(at: at(9, 20), hiddenDay: calendar.startOfDay(for: at(8, 1))), "back the next day")
     }
 
+    // MARK: - The reminder
+
+    func testTheReminderIsTodayAtTheAskFromTimeUnlessAnsweredOrPast() {
+        func date(at now: Date, answered: Bool = false) -> Date {
+            FeelingAnswers.reminderDate(askMinutes: 19 * 60, answeredToday: answered, now: now, calendar: calendar)
+        }
+        XCTAssertEqual(date(at: at(8, 12)), at(8, 19))
+        XCTAssertEqual(date(at: at(8, 12), answered: true), at(9, 19), "checked in already: tomorrow")
+        XCTAssertEqual(date(at: at(8, 19)), at(9, 19), "the time has come: tomorrow's")
+        XCTAssertEqual(date(at: at(8, 23, 30)), at(9, 19))
+    }
+
+    func testTheRemindersBodyNamesUpToThreeQuestions() {
+        let locale = Locale(identifier: "en_GB")
+        XCTAssertEqual(FeelingText.reminderBody(["Energy"], locale: locale), "Check in on Energy.")
+        XCTAssertEqual(FeelingText.reminderBody(["Energy", "Mood", "Sleep last night"], locale: locale),
+                       "Check in on Energy, Mood and Sleep last night.")
+        XCTAssertEqual(FeelingText.reminderBody(["Energy", "Mood", "Focus", "Stress", "Skin"], locale: locale),
+                       "Check in on Energy, Mood, Focus and 2 more.")
+    }
+
     // MARK: - History
 
     func testTodayAndTheSevenDaysBeforeCanBeEdited() {

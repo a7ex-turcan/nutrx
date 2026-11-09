@@ -105,6 +105,52 @@ final class ExportServiceTests: XCTestCase {
         XCTAssertEqual(ExportService.entries(for: .last90Days, context: context, now: now).count, 3)
     }
 
+    // MARK: - How you feel (#133)
+
+    func testHowYouFeelsFile() {
+        let day = Date(timeIntervalSince1970: 1_791_936_000)  // 2026-10-14 00:00 UTC
+        let entries = [
+            ExportService.FeelingEntry(day: day, question: "Energy", answer: "4", scale: "1–5"),
+            ExportService.FeelingEntry(day: day, question: "=Skin, face", answer: "yes", scale: "yes/no"),
+        ]
+        let csv = ExportService.feelingsCSV(entries, timeZone: utc)
+        XCTAssertTrue(csv.hasPrefix("\u{FEFF}date,question,answer,scale\r\n"))
+        XCTAssertTrue(csv.contains("2026-10-14,Energy,4,1–5\r\n"))
+        XCTAssertTrue(csv.contains("2026-10-14,\"'=Skin, face\",yes,yes/no\r\n"), "quoted, and not run as a formula")
+        XCTAssertEqual(ExportService.feelingsFileName(now: morning, timeZone: utc), "nutrx-how-you-feel-2026-10-14.csv")
+    }
+
+    func testFeelingEntriesNewestDayFirstInTheQuestionsOrderRemovedOnesToo() throws {
+        let container = try ModelContainer.inMemoryForTests()
+        let context = container.mainContext
+        FeelingQuestions.setUpIfNeeded(in: context)
+        let questions = FeelingQuestions.active(in: context)  // Energy, Mood, Sleep last night
+        let headache = FeelingQuestions.add(.headache, in: context)!
+        let now = Date()
+        let calendar = Calendar.current
+        let tenDaysAgo = calendar.date(byAdding: .day, value: -10, to: now)!
+        let fortyDaysAgo = calendar.date(byAdding: .day, value: -40, to: now)!
+        FeelingAnswers.set(3, for: questions[1], on: now, in: context)
+        FeelingAnswers.set(4, for: questions[0], on: now, in: context)
+        FeelingAnswers.set(1, for: headache, on: tenDaysAgo, in: context)
+        FeelingAnswers.set(2, for: questions[2], on: fortyDaysAgo, in: context)
+        FeelingQuestions.remove(headache, in: context)
+
+        let all = ExportService.feelingEntries(for: .allTime, context: context, now: now)
+        XCTAssertEqual(all.map(\.question), ["Energy", "Mood", "Headache", "Sleep last night"])
+        XCTAssertEqual(all.map(\.answer), ["4", "3", "yes", "2"])
+        XCTAssertEqual(all.map(\.scale), ["1–5", "1–5", "yes/no", "1–5"])
+        XCTAssertEqual(ExportService.feelingEntries(for: .last30Days, context: context, now: now).count, 3)
+    }
+
+    func testSeveralFilesGoInOneFolder() throws {
+        let urls = try ExportService.writeExport([("a", "one.csv"), ("b", "two.csv")])
+        XCTAssertEqual(urls.map(\.lastPathComponent), ["one.csv", "two.csv"])
+        XCTAssertEqual(urls[0].deletingLastPathComponent(), urls[1].deletingLastPathComponent())
+        ExportService.removeExport(at: urls[0])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: urls[1].path), "removing one removes the folder")
+    }
+
     // MARK: - Summary
 
     func testSummaryCountsEntriesNutrientsAndTheEarliestDay() {

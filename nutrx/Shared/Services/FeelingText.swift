@@ -5,6 +5,17 @@ import SwiftData
 /// and History's answers. Pure.
 enum FeelingText {
     static let cardTitle = "How was today?"
+
+    /// The reminder's body: the questions in order, as a list for the locale, the first three then a count ("Check
+    /// in on Energy, Mood, Sleep last night and 2 more.").
+    static func reminderBody(_ titles: [String], locale: Locale = .current) -> String {
+        guard !titles.isEmpty else { return "Check in with nutrx." }
+        var shown = Array(titles.prefix(3))
+        if titles.count > 3 { shown.append("\(titles.count - 3) more") }
+        let formatter = ListFormatter()
+        formatter.locale = locale
+        return "Check in on \(formatter.string(from: shown) ?? shown.joined(separator: ", "))."
+    }
     static let historyTitle = "How you felt"
     static let noCheckIn = "No check-in"
 
@@ -38,7 +49,8 @@ enum FeelingText {
     static let intro = "From the time you set, Today asks how the day went, one tap per question. Your answers stay "
         + "on your devices and in your private iCloud, like your logs. nutrx never sees them."
 
-    static let askFromFooter = "Today asks “How was today?” from this time until the day ends."
+    static let askFromFooter = "Today asks “How was today?” from this time until the day ends. Remind me sends a "
+        + "notification then, unless you've already checked in."
 
     static let questionsFooter = "Drag to reorder. Swipe to remove a question; its answers stay in History."
 
