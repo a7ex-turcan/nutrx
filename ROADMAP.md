@@ -177,23 +177,23 @@ Released on the App Store on 7 Nov 2026 (build 216, phased release; tag `v2.6`).
 | Reminders at your usual time (Pro), and stack reminders | ✅ Shipped (v2.6, #137: #319–#322) |
 | The Pro page: "Courses, schedules & reminders", a shorter recaps row | ✅ Shipped (v2.6, #322) |
 
-### v2.7 — Dose plans
+### v2.7 — Dose plans ✅
 
-Submitted for App Review on 8 Nov 2026 (build 241, phased release). Main builds 2.8 from here.
+Released on the App Store on 9 Nov 2026 (build 241, phased release; tag `v2.7`). Main builds 2.8 from here.
 
 | Feature | Status |
 |---|---|
-| Dose plans: a goal that follows steps you set, then keeps or stops (Pro) | ✅ Built (v2.7, #135, docs/pro/DOSE-PLANS.md: #342, #345, #346, #348 and phase 4) |
-| Alternate app icons (Pro): six beside the forest default, in Settings → App icon | ✅ Built (v2.7, #139) |
-| Settings → Siri screen | ✅ Built (v2.7, #127: #344) |
-| The paywall's footer: only the button pinned, the plan line while your plan is out of view, a ✕ that stays | ✅ Built (v2.7, #325, #338: #330, #341) |
-| The weekday pattern in two rows from AX1 | ✅ Built (v2.7, #289: #334) |
-| Arrow keys in My Nutrients on iPad | ✅ Built (v2.7, #195: #336) |
-| A stack's steppers line up | ✅ Built (v2.7, #288: #333) |
-| One wording for the day you tend to miss; Done on the right in every reminders sheet | ✅ Built (v2.7, #327, #326: #332, #331) |
-| UI tests: the sheets' Log buttons on the SE; the dry runs' reminder to run them | ✅ Built (v2.7, #222, #340: #337, #343) |
-| UI tests: the paywall on the SE and the iPhone 17 | ✅ Built (v2.7, #339) |
-| Today at the largest text sizes: back to the top after a size change, the streak chip and the reminder line | ✅ Built (v2.7, #198, #358: #357, #359) |
+| Dose plans: a goal that follows steps you set, then keeps or stops (Pro) | ✅ Shipped (v2.7, #135, docs/pro/DOSE-PLANS.md: #342, #345, #346, #348 and phase 4) |
+| Alternate app icons (Pro): six beside the forest default, in Settings → App icon | ✅ Shipped (v2.7, #139) |
+| Settings → Siri screen | ✅ Shipped (v2.7, #127: #344) |
+| The paywall's footer: only the button pinned, the plan line while your plan is out of view, a ✕ that stays | ✅ Shipped (v2.7, #325, #338: #330, #341) |
+| The weekday pattern in two rows from AX1 | ✅ Shipped (v2.7, #289: #334) |
+| Arrow keys in My Nutrients on iPad | ✅ Shipped (v2.7, #195: #336) |
+| A stack's steppers line up | ✅ Shipped (v2.7, #288: #333) |
+| One wording for the day you tend to miss; Done on the right in every reminders sheet | ✅ Shipped (v2.7, #327, #326: #332, #331) |
+| UI tests: the sheets' Log buttons on the SE; the dry runs' reminder to run them | ✅ Shipped (v2.7, #222, #340: #337, #343) |
+| UI tests: the paywall on the SE and the iPhone 17 | ✅ Shipped (v2.7, #339) |
+| Today at the largest text sizes: back to the top after a size change, the streak chip and the reminder line | ✅ Shipped (v2.7, #198, #358: #357, #359) |
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
