@@ -13,14 +13,17 @@ Checks (read only):
   - the version (MARKETING_VERSION) isn't live yet, since App Store Connect refuses builds for a released version;
   - the build number is above every build in App Store Connect. By default it's the next one up, and the plan warns
     when it's at or past Xcode Cloud's run counter, because Xcode Cloud stamps its builds with its run number and
-    would then fail to upload until its runs pass this build.
+    would then fail to upload until its runs pass this build;
+  - with --testers, the internal tester group, read now so a wrong group or a missing permission shows before anything
+    is built, and so the plan says whether step 5 adds the build or only finds the group has it already.
 
 Steps (--apply):
   1. archive with CURRENT_PROJECT_VERSION=<build> (cloud signing with the team key, passed by path, never read);
   2. export with destination upload, which sends it to App Store Connect;
   3. wait until App Store Connect has processed it (VALID);
   4. set What to Test (en-US), if --what-to-test is given;
-  5. add it to the internal group, if --testers is given;
+  5. with --testers, add it to the internal group; a group with access to all builds already has it, and App Store
+     Connect refuses to add one to such a group (422, 2.8 (244)), so then it's only reported;
   6. tag v<version>-b<build> and push the tag;
   7. put back the Watch schemes the archive rewrites.
 
@@ -239,6 +242,15 @@ def main():
             print(f"  ! Xcode Cloud's next run is {last_run['number'] + 1}: its builds will fail to upload until its "
                   f"runs pass {number}.")
 
+    group = None
+    if args.testers:
+        attributes = get(f"/v1/betaGroups/{INTERNAL_GROUP}?fields[betaGroups]=name,hasAccessToAllBuilds")["data"][
+            "attributes"]
+        group = {"name": attributes.get("name") or "the internal group",
+                 "all_builds": bool(attributes.get("hasAccessToAllBuilds"))}
+        print(f"  ✓ tester group {group['name']}"
+              + (", with access to all builds" if group["all_builds"] else ": the build will be added to it"))
+
     tag = f"v{version}-b{number}"
     if git("tag", "--list", tag):
         raise Stop(f"Tag {tag} already exists.")
@@ -250,7 +262,9 @@ def main():
         "export with destination upload (sends it to App Store Connect)",
         "wait until it's VALID",
         f"set What to Test ({LOCALE})" if what_to_test else "leave What to Test empty (no --what-to-test)",
-        "add it to the internal tester group" if args.testers else "leave tester groups alone (no --testers)",
+        ("leave tester groups alone (no --testers)" if group is None
+         else f"nothing to add: {group['name']} gets every build" if group["all_builds"]
+         else f"add it to the internal tester group ({group['name']})"),
         f"tag {tag} at {commit} and push the tag",
         "put back the Watch schemes the archive rewrites",
     ]
@@ -265,7 +279,7 @@ def main():
     try:
         build = archive_and_upload(version, number, archive, steps)
         try:
-            finish(build, number, tag, commit, what_to_test, args.testers, steps)
+            finish(build, number, tag, commit, what_to_test, group, steps)
         except Stop as stop:
             remaining = "; ".join(steps[3:6])
             raise Stop(f"{stop}\nBuild {number} is uploaded and VALID: finish steps 4 to 6 by hand ({remaining}).")
@@ -334,7 +348,7 @@ def wait_until_valid(version, number):
         time.sleep(30)
 
 
-def finish(build, number, tag, commit, what_to_test, testers, steps):
+def finish(build, number, tag, commit, what_to_test, group, steps):
     """Steps 4 to 6."""
     print(f"4. {steps[3]}")
     if what_to_test:
@@ -349,7 +363,9 @@ def finish(build, number, tag, commit, what_to_test, testers, steps):
                 "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}})
 
     print(f"5. {steps[4]}")
-    if testers:
+    # A group with access to all builds already has this one, and App Store Connect refuses to add it (422 "Cannot add
+    # internal group to a build", 2.8 (244)), so only a group without that access gets a write.
+    if group is not None and not group["all_builds"]:
         write("internal testers", "post", f"/v1/betaGroups/{INTERNAL_GROUP}/relationships/builds",
               {"data": [{"type": "builds", "id": build["id"]}]})
 
