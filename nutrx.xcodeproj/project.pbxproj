@@ -124,9 +124,16 @@
 				Shared/DesignSystem/ContrastColor.swift,
 				Shared/DesignSystem/Theme.swift,
 				"Shared/Extensions/Double+Formatting.swift",
+				Shared/Intents/LogNutrientShortcutIntent.swift,
+				Shared/Intents/LogStackShortcutIntent.swift,
+				Shared/Intents/NutrientEntity.swift,
+				Shared/Intents/NutrxShortcuts.swift,
+				Shared/Intents/StackEntity.swift,
 				Shared/Persistence/ModelContainerFactory.swift,
 				Shared/Persistence/ScreenshotDemoData.swift,
 				Shared/Services/GoalStatus.swift,
+				Shared/Services/StackLogging.swift,
+				Shared/Services/WidgetReload.swift,
 				Shared/Services/WidgetSummary.swift,
 			);
 			target = 0502E6F679F34E15B8453146 /* nutrx Watch App */;

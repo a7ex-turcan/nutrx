@@ -41,8 +41,11 @@ struct LogNutrientShortcutIntent: AppIntent {
         let context = modelContainer.mainContext
         let logged = try NutrientShortcutLogging.log(nutrientID: nutrient.id, amount: amount, context: context)
         // The same follow-ups as a + tap on Today.
+        // On the Watch (#57) only its complications: the iPhone reschedules its reminders when the log syncs.
+        #if os(iOS)
         NotificationService.refreshDailyReminder(context: context)
         NotificationService.refreshAllNutrientReminders(context: context)
+        #endif
         WidgetReload.all()
         // Today patches its totals in place, so tell it when a shortcut logs while it's on screen (Action button,
         // Back Tap).

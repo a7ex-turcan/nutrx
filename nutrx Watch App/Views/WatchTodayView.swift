@@ -45,6 +45,10 @@ struct WatchTodayView: View {
             // Picks up a new day, and whatever synced from the iPhone while the app was away.
             if phase == .active { viewModel.refresh(context: modelContext) }
         }
+        // Siri logged something (#57) while the list was on screen.
+        .onReceive(NotificationCenter.default.publisher(for: .intakeLoggedByShortcut)) { _ in
+            viewModel.refresh(context: modelContext)
+        }
     }
 
     private func log(_ nutrient: Nutrient) {
