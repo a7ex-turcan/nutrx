@@ -238,8 +238,7 @@ struct HowYouFeelSettingsView: View {
     /// The time Today starts asking, as a picker's date today.
     private var askTime: Binding<Date> {
         Binding(get: {
-            let minutes = preferences.feelingsAskMinutes
-            return Calendar.current.date(bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now)!
+            Calendar.current.date(atMinutes: preferences.feelingsAskMinutes)
         }, set: { date in
             let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
             preferences.feelingsAskMinutes = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
