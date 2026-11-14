@@ -112,8 +112,7 @@ struct PendingRemindersSheet: View {
     private var startingTimeSection: some View {
         Section {
             DatePicker("Starting time", selection: Binding(get: {
-                let minutes = draft.usualReminderMinutes
-                return Calendar.current.date(bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now)!
+                Calendar.current.date(atMinutes: draft.usualReminderMinutes)
             }, set: { time in
                 let parts = Calendar.current.dateComponents([.hour, .minute], from: time)
                 draft.usualReminderMinutes = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)

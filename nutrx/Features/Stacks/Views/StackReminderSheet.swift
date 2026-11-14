@@ -73,8 +73,7 @@ struct StackReminderSheet: View {
     /// The set time, or at the usual time the starting time: `reminderMinutes` either way.
     private var time: Binding<Date> {
         Binding(get: {
-            let minutes = max(0, stack.reminderMinutes)
-            return Calendar.current.date(bySettingHour: minutes / 60, minute: minutes % 60, second: 0, of: .now)!
+            Calendar.current.date(atMinutes: stack.reminderMinutes)
         }, set: { date in
             let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
             stack.reminderMinutes = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)

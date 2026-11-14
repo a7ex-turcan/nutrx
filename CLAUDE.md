@@ -344,6 +344,7 @@ nutrx/
     ├── Extensions/
     │   ├── Animation+ReduceMotion.swift    # Animation.unlessReduceMotion(_:_:) — nil when the passed Reduce Motion flag is on.
     │   ├── Bundle+AppVersion.swift         # Version and build number (ReviewService, Suggest a feature).
+    │   ├── Calendar+MinutesOfDay.swift     # date(atMinutes:on:): a time picker's stored minutes as a date, never nil (held to the day).
     │   ├── Date+Calendar.swift
     │   └── Double+Formatting.swift
     ├── Components/
