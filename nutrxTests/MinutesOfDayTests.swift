@@ -11,27 +11,28 @@ final class MinutesOfDayTests: XCTestCase {
     }
     private var day: Date { calendar.date(from: DateComponents(year: 2026, month: 11, day: 14, hour: 15))! }
 
-    private func hourMinute(_ date: Date) -> [Int] {
-        let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+    private func dayHourMinute(_ date: Date) -> [Int] {
+        let parts = calendar.dateComponents([.day, .hour, .minute], from: date)
         return [parts.day!, parts.hour!, parts.minute!]
     }
 
     func testMinutesAfterMidnight() {
-        XCTAssertEqual(hourMinute(calendar.date(atMinutes: 0, on: day)), [14, 0, 0])
-        XCTAssertEqual(hourMinute(calendar.date(atMinutes: 9 * 60 + 30, on: day)), [14, 9, 30])
-        XCTAssertEqual(hourMinute(calendar.date(atMinutes: 23 * 60 + 59, on: day)), [14, 23, 59])
+        XCTAssertEqual(dayHourMinute(calendar.date(atMinutes: 0, on: day)), [14, 0, 0])
+        XCTAssertEqual(dayHourMinute(calendar.date(atMinutes: 9 * 60 + 30, on: day)), [14, 9, 30])
+        XCTAssertEqual(dayHourMinute(calendar.date(atMinutes: 23 * 60 + 59, on: day)), [14, 23, 59])
     }
 
     /// -1 is "no time" (set times, or a stack without a reminder): midnight, not a crash.
     func testOutOfRangeMinutesStayOnTheDay() {
-        XCTAssertEqual(hourMinute(calendar.date(atMinutes: -1, on: day)), [14, 0, 0])
-        XCTAssertEqual(hourMinute(calendar.date(atMinutes: 24 * 60, on: day)), [14, 23, 59])
+        XCTAssertEqual(dayHourMinute(calendar.date(atMinutes: -1, on: day)), [14, 0, 0])
+        XCTAssertEqual(dayHourMinute(calendar.date(atMinutes: 24 * 60, on: day)), [14, 23, 59])
     }
 
-    /// The day the clocks go forward: 3:30 doesn't exist in Chisinau on 29 March 2026, and there's still a date.
-    func testASkippedHourStillGivesADate() {
+    /// The day the clocks go forward: Chisinau goes from 03:00 to 04:00 on 29 March 2026, so 3:30 doesn't exist.
+    /// Foundation moves it to the next time that does (04:00), and the day's start fallback isn't needed here.
+    func testASkippedTimeMovesToTheNextOne() {
         let springForward = calendar.date(from: DateComponents(year: 2026, month: 3, day: 29, hour: 12))!
-        XCTAssertEqual(calendar.dateComponents([.day], from: calendar.date(atMinutes: 3 * 60 + 30,
-                                                                            on: springForward)).day, 29)
+        XCTAssertEqual(calendar.dateInterval(of: .day, for: springForward)?.duration, 23 * 3600, "not the 23-hour day")
+        XCTAssertEqual(dayHourMinute(calendar.date(atMinutes: 3 * 60 + 30, on: springForward)), [29, 4, 0])
     }
 }
