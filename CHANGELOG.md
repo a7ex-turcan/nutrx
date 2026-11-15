@@ -6,6 +6,8 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+## v2.8 — submitted for review 2026-11-15 (build 245)
+
 ### nutrx Pro
 - **Patterns in how you feel** — A nutrient's analytics shows how your How you feel answers line up with it over the last four weeks: "After days you reach your Magnesium goal, you rated your Sleep 4.4 on average, vs 2.5 after other days." They're worked out on your device, with the days behind each, and they describe patterns, never causes. Sleep is compared with the day before, since it's about the night. The weekly and monthly recaps end with the clearest of these patterns from the four weeks up to their last day, and the Pro page lists them under "Recaps, trends & reports". The report for your doctor can include **How you felt** for its period: each question's average (or its yes days) and the days you answered, with what 1 and 5 mean, labelled as self-reported, and the patterns for the nutrients in the report.
 
