@@ -199,16 +199,19 @@ Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `nee
 
 ### v2.8 — How you feel
 
-Planned on 8 Nov 2026. The spec is `docs/pro/HOW-YOU-FEEL.md`.
+Submitted for App Review on 15 Nov 2026 (build 245, phased release). Main builds 2.9 from here. The spec is `docs/pro/HOW-YOU-FEEL.md`.
 
 | Feature | Status |
 |---|---|
-| How you feel: a daily check-in on questions you pick, on a 1–5 scale or yes/no (free) | 📋 Planned (#133, phases 1–2) |
-| Patterns in how you feel, per nutrient, in analytics, recaps and the doctor report (Pro) | 📋 Planned (#133, phases 3–4) |
-| Today's date at the largest text sizes | 📋 Planned (#360) |
-| The paywall opened from Settings on an SE, and its UI test | 📋 Planned (#352, #362) |
-| Siri on Apple Watch | 📋 Planned (#57) |
-| The website's screenshot tools | 📋 Planned (#361) |
+| How you feel: a daily check-in on questions you pick, on a 1–5 scale or yes/no (free) | ✅ Built (v2.8, #133, phases 1–2: #365, #370, #371) |
+| Patterns in how you feel, per nutrient, in analytics, recaps and the doctor report (Pro) | ✅ Built (v2.8, #133, phases 3–4: #372, #373, #374) |
+| Today's date at the largest text sizes | ✅ Built (v2.8, #360: #366) |
+| The paywall opened from Settings on an SE, and its UI test | ✅ Built (v2.8, #352, #362: #367) |
+| Siri on Apple Watch | ✅ Built (v2.8, #57: #375) |
+| The website's screenshot tools | ✅ Built (v2.8, #361: #387) |
+| Fixes: the Health line on the Week tab only, Watch rows on a 40 mm Watch, a crash in a new nutrient's reminders | ✅ Built (v2.8, #377, #378: #380, #381, #388) |
+
+Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
 ---
 
