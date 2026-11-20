@@ -213,6 +213,12 @@ Submitted for App Review on 15 Nov 2026 (build 245, phased release). Main builds
 
 Everything else that's left is a GitHub issue (labels `bug`, `enhancement`, `needs-you`).
 
+### v2.9 — in progress
+
+| Feature | Status |
+|---|---|
+| History's year of full days: a GitHub-style grid under the streak card (free) | ✅ Built (v2.9: #392). Next: a grid per nutrient (#390), a widget (#391) |
+
 ---
 
 ## MVP 1 — Core Tracking Loop ✅

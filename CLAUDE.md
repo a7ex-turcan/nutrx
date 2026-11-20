@@ -256,12 +256,13 @@ nutrx/
 │   │
 │   ├── History/                 # Tab 4 — read-only log of past days.
 │   │   ├── Views/
-│   │   │   ├── HistoryListView.swift        # Large title, "Your data" menu; StreakCard, MonthCalendar card, "Recent days" (dots + score), "Your data" card. Taps push HistoryDayView.
+│   │   │   ├── HistoryListView.swift        # Large title, "Your data" menu; StreakCard, YearGridCard, MonthCalendar card, "Recent days" (dots + score), "Your data" card. Taps push HistoryDayView.
 │   │   │   ├── ExportDataView.swift         # Export data (from History): period, entry count, Export CSV → share sheet, done strip.
 │   │   │   ├── ReportView.swift             # Report for your doctor (Pro): thumbnail, period, nutrients, toggles, Create PDF → share sheet; preview.
 │   │   │   ├── ReportPageView.swift         # One printed page of the report (cover, summary, sections, notes) + ReportBarChart.
 │   │   │   ├── ReportPDF.swift              # The pages into one PDF through ImageRenderer; temp file for the share sheet.
 │   │   │   ├── StreakCard.swift             # Forest card: flame, "10 days · Current streak", divider, best streak.
+│   │   │   ├── YearGridCard.swift           # The year of full days under the streak card (§4.9a): a square per day, tap to read a day, its line opens it.
 │   │   │   ├── MonthCalendar.swift          # Month grid (first weekday from the locale), all / some / none fills, today ring, chevrons, legend.
 │   │   │   ├── HistoryDayView.swift         # Weekday + date header, SegmentedDayRing summary, tint-bar rows with met badge, entries sheet.
 │   │   │   ├── RecapsView.swift             # Recaps (Pro): Week / Month / Year switch, hero, fact cards, calendar or bars, earlier periods, share.
@@ -274,7 +275,8 @@ nutrx/
 │   │       ├── HistoryViewModel.swift       # Fetches nutrients / intake / exclusions into a HistoryLog; streak; displayed month.
 │   │       ├── HistoryLog.swift             # HistoryDay / DayCompletion — which nutrients count on a day and whether they were met (pure).
 │   │       ├── MonthGrid.swift              # Month layout: leading blanks, days, weekday symbols (pure).
-│   │       ├── HistoryText.swift            # "10 days", "4 of 6 goals", "Missed Omega-3 and Protein".
+│   │       ├── YearGrid.swift               # The year grid's layout: 53 weeks to today, weekday rows, month labels (pure).
+│   │       ├── HistoryText.swift            # "10 days", "4 of 6 goals", "Missed Omega-3 and Protein", the year grid's title and day line.
 │   │       ├── WeeklyRecap.swift            # Recap (Pro): a Monday–Sunday week's facts from a HistoryLog (pure).
 │   │       ├── RecapTally.swift             # The day-by-day sums a week's or a month's recap is built from (pure, #136).
 │   │       ├── MonthlyRecap.swift           # Recap (Pro): a calendar month's facts from a HistoryLog (pure, #136).

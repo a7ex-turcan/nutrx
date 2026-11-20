@@ -212,6 +212,20 @@ struct HistoryListView: View {
                     StreakCard(current: streak.current, best: streak.best)
                 }
 
+                // The year of full days (§4.9a): with streaks off too, since it's the days, not the streak.
+                YearGridCard(
+                    grid: viewModel.year,
+                    completion: { viewModel.yearCompletion[$0] ?? .noEntries },
+                    fullDays: viewModel.yearFullDays,
+                    dayLine: { date in
+                        let day = log.day(date)
+                        return HistoryText.yearDayLine(date: date, completion: day.completion, met: day.metCount,
+                                                       total: day.goals.count, isToday: date == log.today)
+                    },
+                    canOpen: { $0 < log.today && log.day($0).hasEntries },
+                    onOpen: { select($0) }
+                )
+
                 if ProAccess.isStoreVisible {
                     RecapRow(line: viewModel.latestRecapLine) { recapTab = viewModel.latestRecapTab }
                 }
