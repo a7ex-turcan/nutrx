@@ -52,4 +52,14 @@ struct YearGrid: Equatable {
 
     /// Every day in the grid, oldest first: today and the days before it.
     var days: [Date] { weeks.flatMap { $0.days.compactMap { $0 } } }
+
+    /// How each of the grid's days reads in `log`, as on the calendar.
+    func completions(in log: HistoryLog) -> [Date: DayCompletion] {
+        Dictionary(days.map { ($0, log.day($0).completion) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// The title's count: the full days (every goal that counted met, the streak's days) among `completions`.
+    static func fullDayCount(_ completions: [Date: DayCompletion]) -> Int {
+        completions.values.filter { $0 == .allMet }.count
+    }
 }

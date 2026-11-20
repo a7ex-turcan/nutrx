@@ -111,9 +111,15 @@ final class YearGridTests: XCTestCase {
                              totals: [day(1): [id: 10], day(2): [id: 4], day(3): [id: 12], day(400): [id: 10]],
                              today: today, calendar: calendar)
         let grid = YearGrid(today: today, calendar: calendar)
-        let full = grid.days.filter { log.day($0).completion == .allMet }
-        // Day 400 is before the grid's year.
-        XCTAssertEqual(full, [day(3), day(1)])
-        XCTAssertEqual(log.day(day(2)).completion, .noneMet)
+        // What History's title and squares read (HistoryViewModel.refresh).
+        let completions = grid.completions(in: log)
+        XCTAssertEqual(completions.count, grid.days.count)
+        XCTAssertEqual(completions[day(1)], .allMet)
+        XCTAssertEqual(completions[day(2)], .noneMet)
+        XCTAssertEqual(completions[day(3)], .allMet)
+        XCTAssertEqual(completions[day(4)], .noEntries)
+        // Day 400 is before the grid's year: not in it, not counted.
+        XCTAssertNil(completions[day(400)])
+        XCTAssertEqual(YearGrid.fullDayCount(completions), 2)
     }
 }

@@ -205,10 +205,14 @@ struct YearGridCard: View {
     }
 
     private var legend: some View {
-        // One row normally; stacked when large text no longer fits it.
+        // One row normally; two, then one item a line, as larger text stops fitting.
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 18) { legendItems }
-            VStack(alignment: .leading, spacing: 6) { legendItems }
+            HStack(spacing: 16) { metItems; emptyItems }
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 16) { metItems }
+                HStack(spacing: 16) { emptyItems }
+            }
+            VStack(alignment: .leading, spacing: 6) { metItems; emptyItems }
         }
         .font(.footnote)
         .foregroundStyle(Theme.textSecondary)
@@ -217,16 +221,27 @@ struct YearGridCard: View {
     }
 
     @ViewBuilder
-    private var legendItems: some View {
+    private var metItems: some View {
         legendItem("All goals", state: .allMet)
         legendItem("Some", state: .someMet)
         legendItem("None", state: .noneMet)
     }
 
+    /// The lighter chip (most of a new user's year) and, only when the year has one, a rest day's outline.
+    @ViewBuilder
+    private var emptyItems: some View {
+        legendItem("Not logged", state: .noEntries)
+        if hasRestDays { legendItem("Nothing due", state: .rest) }
+    }
+
+    private var hasRestDays: Bool { grid.days.contains { completion($0) == .rest } }
+
     private func legendItem(_ title: String, state: DayCompletion) -> some View {
-        HStack(spacing: 6) {
-            RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+        let shape = RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+        return HStack(spacing: 6) {
+            shape
                 .fill(Self.fill(for: state))
+                .overlay { if state == .rest { shape.strokeBorder(Theme.surfaceChip, lineWidth: 1.5) } }
                 .frame(width: 10, height: 10)
             Text(title).fixedSize()
         }

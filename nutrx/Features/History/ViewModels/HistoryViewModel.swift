@@ -21,7 +21,7 @@ final class HistoryViewModel {
     private(set) var year = YearGrid(today: .now)
     private(set) var yearCompletion: [Date: DayCompletion] = [:]
     /// The grid's full days: every goal that counted met, the streak's days.
-    var yearFullDays: Int { yearCompletion.values.filter { $0 == .allMet }.count }
+    private(set) var yearFullDays = 0
 
     private var nutrientsByID: [UUID: Nutrient] = [:]
 
@@ -35,7 +35,8 @@ final class HistoryViewModel {
         recentDays = log.recentDays(limit: Self.recentDayCount)
         let year = YearGrid(today: log.today, calendar: log.calendar)
         self.year = year
-        yearCompletion = Dictionary(year.days.map { ($0, log.day($0).completion) }, uniquingKeysWith: { first, _ in first })
+        yearCompletion = year.completions(in: log)
+        yearFullDays = YearGrid.fullDayCount(yearCompletion)
         streak = StreakService.compute(context: context)
         refreshLatestRecap(log: log, now: now)
     }
