@@ -6,6 +6,9 @@ All notable changes to nutrx are documented in this file.
 
 ## Unreleased
 
+### Features
+- **Your year of full days** — History has a new card under the streak: a square for each day of the last year, bright green on days you met every goal, softer on days you met some, the way GitHub shows contributions. It opens on this week; swipe back for earlier ones. Tap a square to see that day ("Wed, 18 Nov · 6 of 6 goals"), and tap that line to open it. It's there with streaks turned off too.
+
 ## v2.8 — submitted for review 2026-11-15 (build 245)
 
 ### nutrx Pro

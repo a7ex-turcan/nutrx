@@ -219,6 +219,9 @@ Rounded square (40–42pt, radius 12–13), tile bg + glyph colour from §1.2. U
 7-column grid starting on `Calendar.current.firstWeekday` (the mockup is Monday-first only because of its locale; Sunday-first locales get Sunday-first). Day cell 38pt circle:
 all goals met → `Brand/Green` fill, dark number; some met → green @ 25% fill; none / no data → no fill; today → 2pt `Brand/Forest` ring; future → secondary text, disabled. Month switcher with chevrons (next disabled on current month). Legend below. Tapping a past day pushes `HistoryDayView`.
 
+### 4.9a `YearGridCard` (History)
+GitHub's contribution grid for full days, under the streak card (shown with streaks off too). Title "142 full days in the last year" (`.headline`). A column per week (53: this week and the 52 before, `YearGrid`), rows from `Calendar.current.firstWeekday`, labelled Mon / Wed / Fri wherever the week starts, month names over the week holding each 1st. 12 pt squares, radius 3, 3 pt apart: all goals met → `Brand/Green`; some → green @ 40%; logged, none met → `Surface/Chip`; nothing logged → `Surface/Chip` @ 45%; rest day → `Surface/Chip` outline; today → 1.5 pt `Control/Primary` ring; after today → no square. Scrolls sideways, opening on this week; the cut column at the leading edge fades. A tap picks the square under the finger (2 pt `Text/Primary` ring) and the legend gives way to "Wed, 18 Nov · 6 of 6 goals" — a button with a chevron when the day opens (past, something logged), as in the calendar. Legend: All goals, Some, None, Not logged, and Nothing due only when the year has a rest day; one row, else two (met / empty), else one item a line. VoiceOver reads the title; the calendar below opens each day.
+
 ### 4.10 Form pickers (Nutrient form)
 - `TintPicker`: 8 circles (34pt), selected = 3pt card-colour gap + 2pt tint ring.
 - `SymbolPicker`: grid of 44pt tiles; selected tile uses the tint's tile bg/glyph.
@@ -247,7 +250,7 @@ Header: `NutrientIconTile` (52pt) + name (`.title.bold`) + "At least 4,000 IU a 
 
 ### 5.4 History — `05-history.png`
 `Features/History/Views/HistoryListView.swift`
-Streak card (forest): `flame.fill` in a 52pt circle, "10 days" (rounded title), "Current streak · every goal met", divider, "31 Best". Hidden if streaks disabled. Then `MonthCalendar` card, then "Recent days" list: date, row of 8pt dots (one per nutrient in its tint if met, `Surface/Chip` if not), score "6/6" (`GreenInk` if all met), chevron.
+Streak card (forest): `flame.fill` in a 52pt circle, "10 days" (rounded title), "Current streak · every goal met", divider, "31 Best". Hidden if streaks disabled. Then the year grid (§4.9a), then `MonthCalendar` card, then "Recent days" list: date, row of 8pt dots (one per nutrient in its tint if met, `Surface/Chip` if not), score "6/6" (`GreenInk` if all met), chevron.
 
 ### 5.5 History day — `06-history-day.png`
 `Features/History/Views/HistoryDayView.swift`

@@ -24,4 +24,25 @@ enum HistoryText {
     static func goalsLine(met: Int, total: Int) -> String {
         "\(met) of \(total) \(GoalProgress.goals(total))"
     }
+
+    /// The year grid's title (§4.9a): "142 full days in the last year", "1 full day …", "No full days …".
+    static func fullDaysInLastYear(_ count: Int) -> String {
+        switch count {
+        case 0: "No full days in the last year"
+        case 1: "1 full day in the last year"
+        default: "\(count) full days in the last year"
+        }
+    }
+
+    /// The year grid's picked day: "Tue, 4 Nov · 3 of 4 goals", "Today · 2 of 4 goals", "Sun, 2 Nov · Nothing logged".
+    static func yearDayLine(date: Date, completion: DayCompletion, met: Int, total: Int, isToday: Bool,
+                            locale: Locale = .current) -> String {
+        let day = isToday ? "Today" : date.formatted(.dateTime.weekday(.abbreviated).day().month(.abbreviated).locale(locale))
+        let status = switch completion {
+        case .noEntries: "Nothing logged"
+        case .rest: "Nothing due"
+        case .noneMet, .someMet, .allMet: goalsLine(met: met, total: total)
+        }
+        return "\(day) · \(status)"
+    }
 }

@@ -17,6 +17,11 @@ final class HistoryViewModel {
     /// "Latest: 19 – 25 October · 38 of 38 goals", or "Your first recap arrives Sunday" before there's one.
     private(set) var latestRecapLine = RecapText.firstTitle
     private(set) var month = MonthGrid(containing: .now)
+    /// The year grid's weeks (§4.9a), up to today as of the last refresh, and how each of its days reads.
+    private(set) var year = YearGrid(today: .now)
+    private(set) var yearCompletion: [Date: DayCompletion] = [:]
+    /// The grid's full days: every goal that counted met, the streak's days.
+    private(set) var yearFullDays = 0
 
     private var nutrientsByID: [UUID: Nutrient] = [:]
 
@@ -28,6 +33,10 @@ final class HistoryViewModel {
         nutrientsByID = Dictionary(nutrients.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         self.log = log
         recentDays = log.recentDays(limit: Self.recentDayCount)
+        let year = YearGrid(today: log.today, calendar: log.calendar)
+        self.year = year
+        yearCompletion = year.completions(in: log)
+        yearFullDays = YearGrid.fullDayCount(yearCompletion)
         streak = StreakService.compute(context: context)
         refreshLatestRecap(log: log, now: now)
     }
